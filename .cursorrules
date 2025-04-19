@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Create high-level documentation focused on business logic organization for GPU optimization and management solutions that handle multi-GPU configurations and model execution
+description: Overview documentation for GPU optimization and management system focused on machine learning workloads, particularly for multi-GPU environments running large language models
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,43 +18,35 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The Dual GPU Optimizer system implements specialized logic for managing and optimizing GPU resources across several key areas:
+The system consists of three core business domains:
 
-### GPU Resource Management (Importance: 95)
-Located in `dual_gpu_optimizer/dualgpuopt/gpu_info.py`, handles critical GPU discovery and resource allocation:
-- Parallel GPU detection using NVML integration
-- Memory capacity analysis and allocation strategy
-- Real-time GPU utilization tracking 
+## GPU Management and Optimization (Importance: 95)
+- Discovers and monitors NVIDIA GPUs through NVML integration
+- Calculates optimal workload splits across multiple GPUs based on memory capacity
+- Generates environment configurations and command-line parameters for LLM frameworks
+- Determines tensor fraction allocations for distributed model loading
+- Key file: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-### Optimization Engine (Importance: 98)
-Core optimization logic in `dual_gpu_optimizer/dualgpuopt/optimizer.py`:
-- Calculates optimal GPU split configurations based on memory profiles
-- Generates tensor distribution patterns across multiple GPUs
-- Creates environment configurations for balanced GPU workloads
-- Produces framework-specific commands for LLM execution
+## Real-time GPU Telemetry (Importance: 85)
+- Collects real-time GPU metrics including load, memory usage, and PCIe throughput
+- Maintains historical performance data for trend analysis
+- Implements idle detection and notification system
+- Provides visualization of GPU utilization patterns
+- Key file: `dual_gpu_optimizer/dualgpuopt/telemetry.py`
 
-### Model Execution Management (Importance: 85)
-Implemented across `runner.py` and `gui.py`:
-- Model path and context size configuration
-- Dynamic command generation for different LLM frameworks
-- Real-time execution monitoring and control
-- Preset management for common model configurations
+## Model Configuration Management (Importance: 80)
+- Handles model path and repository selection
+- Manages context size settings for LLM operations
+- Generates optimized launch commands for llama.cpp and vLLM frameworks
+- Provides preset configurations for common model deployments
+- Key file: `dual_gpu_optimizer/dualgpuopt/gui.py`
 
-### Resource Monitoring System (Importance: 80)
-Handled by `telemetry.py` and `tray.py`:
-- NVML-based GPU performance metrics collection
-- Idle resource detection and notification
-- PCIe throughput monitoring
-- Resource utilization visualization
-
-### Configuration Management (Importance: 75)
-Split across `configio.py` and related components:
-- Theme and appearance customization
-- Persistent storage of optimization settings
-- Model configuration presets
-- Environment file generation
-
-The system architecture emphasizes real-time GPU resource optimization, focusing on efficient distribution of LLM workloads across multiple GPUs while maintaining monitoring and control capabilities.
+## Framework Integration Layer (Importance: 75)
+- Generates specific commands for LLM frameworks
+- Manages subprocess execution for model servers
+- Streams real-time logs from running processes
+- Handles framework-specific environment setup
+- Key file: `dual_gpu_optimizer/dualgpuopt/runner.py`
 
 $END$
 END SPECIFICATION

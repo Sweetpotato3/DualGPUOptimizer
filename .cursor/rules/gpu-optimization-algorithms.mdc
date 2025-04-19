@@ -1,5 +1,5 @@
 ---
-description: GPU optimization algorithms documentation for memory distribution and tensor parallel splits.
+description: Specification for GPU memory distribution and optimization algorithms for multi-GPU LLM deployments
 globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py
 alwaysApply: false
 ---
@@ -7,41 +7,44 @@ alwaysApply: false
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Distribution (Importance: 95)
+## Core Memory Distribution Algorithm (Importance: 95)
 `dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-The GPU memory distribution system calculates optimal tensor splits across multiple GPUs:
-- Determines memory allocation strategy based on available GPU capacities
-- Computes tensor fractions for distributing model layers
-- Generates split configurations for parallel processing
-- Creates environment settings for GPU visibility and memory limits
+The GPU split calculation algorithm determines optimal memory distribution across multiple GPUs:
+- Computes tensor fractions based on available GPU memory capacities
+- Generates split configuration strings for framework-specific tensor parallelism
+- Adjusts memory allocation ratios based on detected GPU capabilities
 
-## GPU Discovery and Telemetry (Importance: 85) 
+## GPU Detection and Query System (Importance: 85)
 `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
 
-The GPU detection system leverages NVML to:
-- Discover available NVIDIA GPUs in parallel using concurrent processing
-- Extract detailed GPU specifications including:
-  - Memory capacity and availability
-  - Device index and name
-  - Current utilization state
+Parallelized GPU information retrieval system:
+- Concurrent querying of multiple GPUs using ThreadPoolExecutor
+- GPU data encapsulation in structured format including index, name, memory stats
+- Direct NVML integration for accurate hardware-level information
 
-## Real-time Monitoring (Importance: 75)
+## Real-time Memory Monitoring (Importance: 80)
 `dual_gpu_optimizer/dualgpuopt/telemetry.py`
 
-Real-time GPU monitoring system that:
-- Streams telemetry data using NVML interface
-- Tracks GPU load patterns
-- Monitors memory usage fluctuations
-- Measures PCIe throughput
+GPU telemetry system for memory optimization:
+- NVML-based polling of GPU metrics for memory usage patterns
+- Memory threshold monitoring for optimization adjustments
+- PCIe throughput tracking to validate memory distribution effectiveness
 
-## Framework-Specific Optimizations (Importance: 90)
+## Memory Allocation Strategy (Importance: 90)
 `dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-Specialized optimization algorithms for LLM frameworks:
-- Generates optimized command configurations for llama.cpp
-- Creates vLLM-specific tensor parallel strategies
-- Adjusts split ratios based on framework requirements
-- Produces environment configurations tuned per framework
+Framework-specific memory allocation strategies:
+- Generates environment configurations for CUDA device visibility
+- Computes optimal tensor parallel splits based on model requirements
+- Adjusts memory allocation based on framework-specific requirements (llama.cpp vs vLLM)
+
+## Memory Configuration Output (Importance: 75)
+`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+
+Configuration generation system:
+- Environment file generation with GPU-specific memory settings
+- Framework-specific command generation incorporating memory splits
+- Dynamic adjustment of memory configurations based on model context size
 
 $END$

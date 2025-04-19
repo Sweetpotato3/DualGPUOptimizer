@@ -1,12 +1,8 @@
 """
 Test suite for configuration management.
 """
-import os
-import tempfile
 from pathlib import Path
 from unittest import mock
-
-import pytest
 
 from dualgpuopt import configio
 
@@ -79,7 +75,10 @@ def test_validate_config_env_overrides():
         "OMP_NUM_THREADS": 8
     }
     result = configio.validate_config({"env_overrides": overrides})
-    assert result["env_overrides"] == {"CUDA_VISIBLE_DEVICES": "0,1", "OMP_NUM_THREADS": "8"}
+    assert result["env_overrides"] == {
+        "CUDA_VISIBLE_DEVICES": "0,1",
+        "OMP_NUM_THREADS": "8"
+    }
 
     # Invalid type
     result = configio.validate_config({"env_overrides": "invalid"})
@@ -101,10 +100,10 @@ def test_load_cfg_no_file(monkeypatch):
     """Test loading config when file doesn't exist."""
     # Mock Path.exists to return False
     monkeypatch.setattr(Path, "exists", lambda self: False)
-        
+
     # Call the function under test
     result = configio.load_cfg()
-        
+
     # Verify results
     assert result == configio._DEFAULT
 
@@ -113,23 +112,23 @@ def test_load_cfg_with_file(monkeypatch):
     """Test loading config from file using monkeypatch."""
     # Test data
     test_config = {"theme": "light", "ctx": 32768}
-    
+
     # Mock the exists function to return True
     monkeypatch.setattr(Path, "exists", lambda self: True)
-    
+
     # Mock the open function to avoid file system access
     mock_file = mock.MagicMock()
     mock_context = mock.MagicMock()
     mock_context.__enter__.return_value = mock_file
-    
+
     monkeypatch.setattr(Path, "open", lambda self, mode: mock_context)
-    
+
     # Mock tomllib.load to return our test data
     monkeypatch.setattr("tomllib.load", lambda file: test_config)
-    
+
     # Call the function under test
     result = configio.load_cfg()
-    
+
     # Verify the result
     assert result["theme"] == "light"
     assert result["ctx"] == 32768
@@ -139,24 +138,24 @@ def test_save_cfg(monkeypatch):
     """Test saving config to file using monkeypatch."""
     # Test data
     test_config = {"theme": "light", "ctx": 32768}
-    
+
     # Mock dependencies
     mock_file = mock.MagicMock()
     mock_context = mock.MagicMock()
     mock_context.__enter__.return_value = mock_file
-    
+
     monkeypatch.setattr(Path, "open", lambda self, mode: mock_context)
-    
+
     mock_dump = mock.Mock()
     monkeypatch.setattr("tomli_w.dump", mock_dump)
-    
+
     # Call the function under test
     configio.save_cfg(test_config)
-    
+
     # Verify mock was called
     # Check validation was applied
     mock_dump.assert_called_once()
     args, _ = mock_dump.call_args
     saved_config = args[0]
     assert saved_config["theme"] == "light"
-    assert saved_config["ctx"] == 32768 
+    assert saved_config["ctx"] == 32768
