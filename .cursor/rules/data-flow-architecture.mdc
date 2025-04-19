@@ -1,63 +1,50 @@
 ---
-description: Specifications for data flow between GPU optimization components, GPU monitoring, and performance metrics
-globs: **/services/**,**/gpu_info.py,**/metrics.py,**/telemetry.py,**/event_*.py
+description: Documents core data flows between GPU optimization components, monitoring systems and state management
+globs: **/services/*,**/gpu_info.py,**/metrics.py,**/telemetry.py,**/event*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-### Core Data Flows
+The data flow architecture centers around several key pathways:
 
-1. GPU Resource Data Flow
-- GPU metrics flow from telemetry collector through middleware pipeline to event bus
-- Event bus distributes GPU metrics to dashboard, optimizer, and monitoring components 
-- Real-time updates of utilization, memory, temperature delivered every 3 seconds
-- GPU state changes trigger reoptimization of memory splits and tensor fractions
+### Core Telemetry Flow
+- GPU metrics flow from `gpu_info.py` through telemetry collection middleware 
+- `telemetry.py` processes and enriches raw metrics
+- Metrics are published to event bus subscribers via `GPUMetricsEvent`
+- Dashboard and monitoring components consume metrics events
 
-2. Optimization Parameter Flow  
-- Model configuration flows from launcher UI to optimizer service
-- Optimizer calculates GPU splits and generates framework-specific commands
-- Results flow back through event bus to UI components
-- Configuration changes trigger recalculation of optimization parameters
+### Configuration State Flow
+- `config_service.py` manages application settings
+- Changes trigger `config_changed` and `config_updated` events
+- State changes flow through `state_service.py` which publishes `state_changed` events
+- Components subscribe to relevant state/config events for updates
 
-3. Monitoring Metrics Flow
-- Prometheus metrics collector gathers batch latency and queue depth
-- Metrics flow through optional middleware to monitoring endpoints
-- GPU utilization history maintained for dashboard visualizations
-- Idle detection triggers system tray notifications after 5 minutes
+### Event Bus Architecture
+- Enhanced event bus (`event_bus.py`) handles typed events with priority dispatch
+- Events flow from producers through priority-based handler chains
+- Supports both sync and async event handlers
+- Security-critical events can be locked to specific subscribers
 
-### Key Integration Points
+### Error Flow
+- Centralized error handling in `error_service.py`
+- GPU errors trigger special handling paths with mock mode options
+- Error events published to subscribers based on severity level
+- Error logging and UI notifications controlled by error service
 
-1. Event Bus Hub
-- Central event bus coordinates data flow between all components
-- Priority-based dispatch ensures critical updates processed first
-- Typed events provide structured data exchange
-- Support for both sync and async event handling
+### Metrics Export Flow
+- Optional Prometheus metrics export pathway 
+- GPU telemetry data exported via configured endpoints
+- Fallback to no-op functions when Prometheus unavailable
+- Performance metrics collected and exported
 
-2. State Management 
-- Centralized state service maintains application configuration
-- State changes broadcast via event bus to dependent components
-- Persistent storage of GPU configurations and optimization settings
-- Mock GPU mode toggles simulated data flow for testing
+### Layer Distribution Flow
+- Layer execution profiling data collected
+- Redistribution decisions flow through optimization logic
+- Device mapping instructions published to execution components
+- Layer balance feedback flows back for refinement
 
-3. Error Handling Flow
-- Errors flow through error service to logging and UI components
-- GPU errors trigger mock mode activation if needed
-- Critical errors force application restart
-- Warning notifications delivered through system tray
-
-4. Telemetry Pipeline
-- Raw GPU metrics collected via NVML interface
-- Middleware processes and enriches telemetry data
-- Event bus publishes metrics to subscribers
-- Dashboard maintains rolling 60-sample history
-
-### File Paths
-- `/services/event_bus.py`: Core event distribution
-- `/services/state_service.py`: State management
-- `/telemetry.py`: GPU metrics collection
-- `/gpu_info.py`: GPU resource monitoring
-- `/metrics.py`: Performance metrics
+The architecture emphasizes event-driven communication between components with strong separation of data collection, processing and consumption pathways.
 
 $END$

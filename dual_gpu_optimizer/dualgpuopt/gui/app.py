@@ -37,15 +37,24 @@ from dualgpuopt.gui.constants import (
     GPU_COLORS,
     DEFAULT_FONT,
     DEFAULT_FONT_SIZE,
-    UPDATE_INTERVAL_MS
+    UPDATE_INTERVAL_MS,
+    # New purple theme colors
+    PURPLE_PRIMARY,
+    PURPLE_HIGHLIGHT,
+    BLUE_ACCENT,
+    PINK_ACCENT,
+    CYAN_ACCENT,
+    ORANGE_ACCENT,
+    DARK_BACKGROUND,
+    LIGHT_FOREGROUND,
+    WARNING_COLOR
 )
 
 # Define the progressbar thickness here since it's specific to this module
 PROGRESSBAR_THICKNESS = 8
 
-from dualgpuopt import gpu_info, telemetry
+from dualgpuopt import gpu_info, telemetry, VERSION
 from dualgpuopt.tray import init_tray
-from dualgpuopt.gui.theme import apply_theme, update_widgets_theme, generate_colors
 
 # Import services
 from dualgpuopt.services.event_service import event_bus
@@ -123,7 +132,7 @@ class DualGpuApp:
         # Use ttkbootstrap if available
         if TTKBOOTSTRAP_AVAILABLE:
             self.logger.debug("Using ttkbootstrap for theming")
-            theme = theme or self.config.get("ui.theme", "darkly")
+            theme = theme or self.config.get("ui.theme", "vapor")
             self.root = ttk.Window(
                 title="Dual GPU Optimizer", 
                 themename=theme, 
@@ -131,24 +140,26 @@ class DualGpuApp:
                 position=(100, 100),
                 minsize=(800, 600)
             )
+            # Store the theme name used
+            self.active_theme_name = theme
         # Fall back to ttkthemes if available
         elif TTKTHEMES_AVAILABLE:
             self.logger.debug("Using ttkthemes for theming")
-            theme = theme or self.config.get("ui.theme", "black")
+            theme = theme or self.config.get("ui.theme", "arc")
             self.root = ThemedTk(theme=theme)
             self.root.title("Dual GPU Optimizer")
             self.root.geometry("1024x768+100+100")
             self.root.minsize(800, 600)
+            self.active_theme_name = theme
         # Last resort: standard Tk with manual styling
         else:
-            self.logger.debug("Using basic Tk with manual styling")
+            self.logger.debug("Using basic Tk with manual styling (purple theme)")
             self.root = tk.Tk()
             self.root.title("Dual GPU Optimizer")
             self.root.geometry("1024x768+100+100")
             self.root.minsize(800, 600)
-            
-            # Apply manual dark theme
-            apply_theme(self.root)
+            self.root.configure(bg=DARK_BACKGROUND)
+            self.active_theme_name = "manual_purple"
             
         # Increase base font size to Segoe UI 11
         default_font = (DEFAULT_FONT, DEFAULT_FONT_SIZE) if sys.platform == "win32" else ("Helvetica", DEFAULT_FONT_SIZE)
@@ -174,7 +185,7 @@ class DualGpuApp:
         
         # Apply theme if using standard Tk
         if not TTKBOOTSTRAP_AVAILABLE and not TTKTHEMES_AVAILABLE:
-            apply_theme(self.root)
+            self.root.configure(bg=DARK_BACKGROUND)
             
         # Increase font size
         default_font = (DEFAULT_FONT, DEFAULT_FONT_SIZE) if sys.platform == "win32" else ("Helvetica", DEFAULT_FONT_SIZE)
@@ -192,68 +203,113 @@ class DualGpuApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
     
     def _setup_style(self):
-        """Configure ttk styles for the application."""
-        # Get ttk style object
-        if TTKBOOTSTRAP_AVAILABLE:
-            style = ttk.Style()
-        else:
-            style = ttk.Style(self.root)
+        """Configure ttk styles for the application using the purple theme."""
+        try:
+            if TTKBOOTSTRAP_AVAILABLE:
+                # Use the style from the ttkbootstrap window
+                style = self.root.style
+            elif TTKTHEMES_AVAILABLE:
+                # Get the style associated with the ThemedTk root
+                style = ttk.Style(self.root)
+            else:
+                # Basic Tk, configure manually
+                style = ttk.Style(self.root)
+                # Basic theme settings for Tk fallback
+                style.theme_use('clam') # Use a theme that allows more customization
+                style.configure('.', background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND, font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
+                style.configure("TFrame", background=DARK_BACKGROUND)
+                style.configure("TLabel", background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
+                style.configure("TButton", background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND)
+                style.map("TButton", background=[('active', PURPLE_HIGHLIGHT)])
+                style.configure("TNotebook", background=DARK_BACKGROUND, borderwidth=0)
+                style.configure("TNotebook.Tab", background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND, padding=[10, 5], borderwidth=0)
+                style.map("TNotebook.Tab", background=[('selected', PURPLE_HIGHLIGHT)])
+                style.configure("TLabelframe", background=DARK_BACKGROUND, bordercolor=PURPLE_PRIMARY)
+                style.configure("TLabelframe.Label", background=DARK_BACKGROUND, foreground=PURPLE_HIGHLIGHT)
+                style.configure("TScrollbar", background=DARK_BACKGROUND, troughcolor=PURPLE_PRIMARY, bordercolor=PURPLE_PRIMARY, arrowcolor=LIGHT_FOREGROUND)
+                style.configure("TCombobox", fieldbackground=DARK_BACKGROUND, background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND)
+                style.configure("TEntry", fieldbackground=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND, insertcolor=LIGHT_FOREGROUND)
+                style.configure("Horizontal.TScale", background=DARK_BACKGROUND, troughcolor=PURPLE_PRIMARY)
+
+            # --- Custom Progress Bar Styles (Purple Theme) ---
+            # Default progress bar (primary purple)
+            style.configure(
+                "GPU.Horizontal.TProgressbar", 
+                thickness=PROGRESSBAR_THICKNESS,
+                troughcolor=DARK_BACKGROUND, # Use dark background for trough
+                background=PURPLE_PRIMARY
+            )
             
-        # Configure progressbar style
-        style.configure(
-            "GPU.Horizontal.TProgressbar", 
-            thickness=PROGRESSBAR_THICKNESS,
-            troughcolor=DEFAULT_CHART_BG,
-            background="#00FF00"
-        )
-        
-        # Configure blue progressbar variant
-        style.configure(
-            "GPUBlue.Horizontal.TProgressbar", 
-            thickness=PROGRESSBAR_THICKNESS,
-            troughcolor=DEFAULT_CHART_BG,
-            background="#0078D7"
-        )
-        
-        # Configure red progressbar variant
-        style.configure(
-            "GPURed.Horizontal.TProgressbar", 
-            thickness=PROGRESSBAR_THICKNESS,
-            troughcolor=DEFAULT_CHART_BG,
-            background="#E81123"
-        )
-        
-        # Configure orange progressbar variant
-        style.configure(
-            "GPUOrange.Horizontal.TProgressbar", 
-            thickness=PROGRESSBAR_THICKNESS,
-            troughcolor=DEFAULT_CHART_BG,
-            background="#FF8C00"
-        )
-        
-        # Configure notebook style
-        style.configure(
-            "TNotebook", 
-            background=DEFAULT_CHART_BG if not TTKBOOTSTRAP_AVAILABLE else None
-        )
-        style.configure(
-            "TNotebook.Tab", 
-            padding=[12, 6],
-            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE)
-        )
-        
-        # Configure frame style
-        style.configure(
-            "TFrame", 
-            background=DEFAULT_CHART_BG if not TTKBOOTSTRAP_AVAILABLE else None
-        )
-        
-        # Configure label style
-        style.configure(
-            "TLabel", 
-            background=DEFAULT_CHART_BG if not TTKBOOTSTRAP_AVAILABLE else None,
-            foreground=DEFAULT_CHART_FG if not TTKBOOTSTRAP_AVAILABLE else None
-        )
+            # Highlight purple variant
+            style.configure(
+                "GPUPurpleHighlight.Horizontal.TProgressbar", 
+                thickness=PROGRESSBAR_THICKNESS,
+                troughcolor=DARK_BACKGROUND,
+                background=PURPLE_HIGHLIGHT
+            )
+            
+            # Pink accent variant
+            style.configure(
+                "GPUPink.Horizontal.TProgressbar", 
+                thickness=PROGRESSBAR_THICKNESS,
+                troughcolor=DARK_BACKGROUND,
+                background=PINK_ACCENT
+            )
+            
+            # Cyan accent variant
+            style.configure(
+                "GPUCyan.Horizontal.TProgressbar", 
+                thickness=PROGRESSBAR_THICKNESS,
+                troughcolor=DARK_BACKGROUND,
+                background=CYAN_ACCENT
+            )
+            
+            # Orange accent / Warning variant
+            style.configure(
+                "GPUOrange.Horizontal.TProgressbar", 
+                thickness=PROGRESSBAR_THICKNESS,
+                troughcolor=DARK_BACKGROUND,
+                background=ORANGE_ACCENT # Use warning color for this
+            )
+
+            # --- Notebook Style (Subtle adjustments if using ttkbootstrap/ttkthemes) ---
+            if TTKBOOTSTRAP_AVAILABLE or TTKTHEMES_AVAILABLE:
+                style.configure(
+                    "TNotebook.Tab", 
+                    padding=[12, 6], # Slightly larger padding
+                    font=(DEFAULT_FONT, DEFAULT_FONT_SIZE)
+                )
+                # Potentially customize tab colors further if needed for specific themes
+                # style.map("TNotebook.Tab", background=[('selected', PURPLE_HIGHLIGHT)])
+            
+            # --- Frame and Label styles (ensure consistency if not using bootstrap/themes) ---
+            if not (TTKBOOTSTRAP_AVAILABLE or TTKTHEMES_AVAILABLE):
+                 # Already configured above in the manual styling section
+                 pass
+            else:
+                # Ensure frames have transparent background to match theme
+                style.configure("TFrame", background="") 
+                # Labels should inherit background/foreground from theme
+                style.configure("TLabel", background="", foreground="")
+
+            # --- Settings Tab Specific Styles ---
+            # Style for the 'Danger Zone' in settings
+            style.configure(
+                "Danger.TLabelframe", 
+                bordercolor=WARNING_COLOR, # Use defined warning color
+                borderwidth=2
+            )
+            style.configure(
+                "Danger.TLabelframe.Label", 
+                foreground=WARNING_COLOR # Use defined warning color
+            )
+
+            self.logger.debug("Custom ttk styles configured for purple theme.")
+
+        except tk.TclError as e:
+            self.logger.error(f"Failed to configure ttk styles: {e}")
+        except Exception as e:
+            self.logger.error(f"Unexpected error during style configuration: {e}", exc_info=True)
     
     def _register_event_handlers(self):
         """Register event handlers for various application events."""
@@ -301,24 +357,31 @@ class DualGpuApp:
     
     def _handle_config_change(self, config_data: Dict[str, Any]):
         """Handle configuration change event."""
-        # Push to message queue for thread-safe UI updates
-        self.message_queue.put(("config_change", config_data))
+        key = config_data.get("key")
+        # If theme changed via config, prompt restart
+        if key == "ui.theme":
+             self._prompt_restart_for_theme()
+        else:
+            self.message_queue.put(("config_change", config_data))
     
     def _handle_theme_change(self, theme_data: Dict[str, Any]):
         """Handle theme change event."""
-        # Get new theme name
         new_theme = theme_data.get("theme")
         if not new_theme:
             return
-            
-        # Update configuration
+        self.logger.info(f"Theme change requested to: {new_theme}")
+        # Save the new theme to config
         self.config.set("ui.theme", new_theme)
         self.config.save()
-        
-        # Inform user about restart requirement
+        # Inform user about restart
+        self._prompt_restart_for_theme()
+    
+    def _prompt_restart_for_theme(self):
+        """Shows a message box informing the user to restart for theme changes."""
         messagebox.showinfo(
             "Theme Changed", 
-            "The theme has been changed. Please restart the application for the changes to take effect."
+            "Theme settings have been updated. Please restart the application for the changes to take full effect.",
+            parent=self.root
         )
     
     def _handle_command_generated(self, command_data: Dict[str, Any]):
@@ -357,7 +420,7 @@ class DualGpuApp:
             
             # Only show INFO level or higher in status bar
             if level in ["INFO", "WARNING", "ERROR"]:
-                self.status_var.set(message)
+                self.status_var.set(message[:150] + ('...' if len(message) > 150 else ''))
     
     def handle_error(self, error: Exception, context: str = None):
         """Global error handler for unexpected errors."""
@@ -387,7 +450,9 @@ class DualGpuApp:
                 if message_type == "telemetry" and hasattr(self, "dashboard"):
                     self.dashboard.update_telemetry(data)
                 elif message_type == "config_change" and hasattr(self, "settings_tab"):
-                    self.settings_tab.refresh_config()
+                    # Only refresh if not a theme change (handled separately)
+                    if data.get("key") != "ui.theme":
+                        self.settings_tab.refresh_config()
                 elif message_type == "command_generated" and hasattr(self, "launcher_tab"):
                     self.launcher_tab.update_command(data.get("command", ""))
                 elif message_type == "command_executed" and hasattr(self, "launcher_tab"):
@@ -452,7 +517,6 @@ class DualGpuApp:
         
         # Create version label
         # Import version here to avoid circular import
-        from dualgpuopt import VERSION
         self.version_label = ttk.Label(
             self.status_frame,
             text=f"v{VERSION}",

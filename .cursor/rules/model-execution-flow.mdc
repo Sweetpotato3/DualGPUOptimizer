@@ -1,58 +1,55 @@
 ---
-description: Specification for model execution flows, command generation, and GPU resource allocation across llama.cpp and vLLM frameworks
-globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/launcher.py
+description: Documents how LLM model execution is orchestrated across GPUs including command generation and resource management
+globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The core model execution flow consists of several key components:
+Key components of the model execution flow:
 
-## Command Generation System
-- Generates specific execution commands for different ML frameworks:
-  - llama.cpp commands with GPU split configurations and context size parameters
-  - vLLM commands with tensor parallelism and resource allocation settings
-- Handles environment variable generation for GPU configurations including CUDA device visibility and NCCL settings
-
-## Framework-Specific Execution
-- llama.cpp execution:
-  - Dynamic GPU memory split calculation based on available VRAM
-  - Tensor fraction computation for optimal layer distribution
-  - Context size validation against GPU memory constraints
-
-- vLLM execution:
-  - Asynchronous batch processing with smart scheduling
-  - Length-aware inference queuing system
-  - Automatic retry logic for OOM conditions
-
-## Resource Management
-- GPU memory allocation flow:
-  1. Calculate maximum safe context length based on model parameters
-  2. Determine optimal GPU split ratios
-  3. Configure tensor parallelism settings
-  4. Apply resource constraints to command generation
-
-## Model Launch Control
-- Framework selection logic between llama.cpp and vLLM
-- Dynamic command construction based on:
-  - Selected framework requirements
+## Command Generation
+- `llama_command()` generates execution commands for llama.cpp models with:
+  - GPU memory split configuration
+  - Context size settings
   - Model path and parameters
-  - GPU resource availability
-- Process management for model execution with log capture
 
-## Batch Processing System
-- Smart batching logic based on sequence lengths
-- Bucket policies for request grouping:
-  - Power-of-two bucketing
-  - Token-ratio based grouping
-- Back-pressure mechanisms for queue depth control
+- `vllm_command()` generates commands for vLLM server execution with:
+  - Tensor parallel configuration 
+  - GPU device mapping
 
-Relevant files:
-- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- `dual_gpu_optimizer/dualgpuopt/runner.py`
-- `dual_gpu_optimizer/dualgpuopt/gpu_commands.py`
-- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
-- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
+## Batch Processing
+The SmartBatcher handles asynchronous inference scheduling:
+- Groups requests by sequence length into buckets
+- Implements back-pressure via queue depth limits
+- Handles OOM errors by clearing GPU cache and retrying
+- Supports configurable bucketing policies (power-of-2, token ratio)
+
+## Layer Distribution
+Adaptive layer distribution across GPUs:
+- Profiles layer execution times
+- Redistributes layers based on latency metrics
+- Generates device mapping JSON for layer placement
+- Handles mixed precision policies per layer
+
+## GPU Resource Management
+- Calculates tensor fractions based on available GPU memory
+- Creates environment configurations for CUDA/NCCL
+- Provides mock GPU mode for testing
+- Monitors GPU metrics during execution
+
+## Command Pattern Implementation
+Commands for GPU operations:
+- ApplyOverclockCommand: Manages GPU overclocking settings
+- EnableMockGpuCommand: Controls mock GPU mode
+- Command history and undo/redo support
+- Event publishing for command execution results
+
+Key files:
+- `optimizer.py`: Command generation and resource allocation
+- `batch/smart_batch.py`: Batch processing implementation
+- `commands/gpu_commands.py`: GPU operation commands
+- `layer_balance.py`: Layer distribution logic
 
 $END$

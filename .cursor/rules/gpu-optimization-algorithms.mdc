@@ -1,6 +1,6 @@
 ---
-description: GPU optimization algorithms for memory distribution, tensor parallel splits and allocation strategies
-globs: **/gpu_info.py,**/optimizer.py,**/ctx_size.py,**/layer_balance.py
+description: Defines GPU memory management, tensor splitting, and optimization algorithms for dual GPU model execution
+globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
 alwaysApply: false
 ---
 
@@ -8,47 +8,43 @@ alwaysApply: false
 # gpu-optimization-algorithms
 
 ### GPU Memory Distribution
-The optimizer implements specialized algorithms for distributing model layers and memory across multiple GPUs:
+`optimizer.py`:
+- Calculates optimal memory splits between GPUs based on total VRAM
+- Determines tensor parallel fractions for model layer distribution
+- Generates environment configurations for CUDA/NCCL memory allocation
+- Importance: 95
 
-1. **Split Calculation**  
-- Calculates optimal memory splits between GPUs based on total VRAM and model requirements
-- Generates comma-separated allocation strings used to configure GPU memory distribution
-- Accounts for GPU memory asymmetry when devices have different VRAM capacities
+### Context Size Management
+`ctx_size.py`:
+- Computes maximum safe context length for models
+- Adjusts context windows based on:
+  - Available GPU memory
+  - Model parameter count
+  - Precision settings (FP16/BF16)
+- Importance: 90
 
-2. **Tensor Parallel Splits** 
-- Calculates fractional memory allocation relative to highest capacity GPU
-- Optimizes tensor parallelism distribution based on available GPU memory ratios
-- Handles dynamic redistribution when GPU memory availability changes
+### Layer Balancing
+`layer_balance.py`:
+- Redistributes model layers across dual GPUs based on:
+  - Layer execution latency
+  - Memory requirements
+  - Communication overhead
+- Generates device mapping for optimal layer placement
+- Importance: 85
 
-3. **Layer Balancing**
-- Profiles latency of model layers to identify fastest/slowest components
-- Redistributes layers across GPUs based on latency profiles and VRAM availability  
-- Optimizes layer placement to minimize cross-GPU communication
+### Memory Allocation Strategy 
+`gpu_info.py`:
+- Probes GPU memory allocation patterns
+- Tracks memory fragmentation and usage
+- Implements parallel GPU memory scanning
+- Provides mock GPU data generation for testing
+- Importance: 80
 
-4. **Context Length Optimization**
-- Implements heuristics for maximum safe context length calculation
-- Considers model parameters, precision bits, MOE factors
-- Reserves memory buffers to prevent OOM conditions
-
-### Memory Allocation Strategy
-The system employs smart allocation policies:
-
-1. **Dynamic Memory Management**
-- Tracks real-time GPU memory utilization
-- Implements automatic retry logic for OOM errors
-- Clears GPU caches strategically to recover memory
-
-2. **Batch Processing**
-- Length-aware inference scheduling based on sequence lengths
-- Pluggable bucket policies for request grouping
-- Back-pressure mechanisms to limit queue depth
-
-File paths:
-```
-dual_gpu_optimizer/dualgpuopt/optimizer.py
-dual_gpu_optimizer/dualgpuopt/gpu_info.py 
-dual_gpu_optimizer/dualgpuopt/ctx_size.py
-dual_gpu_optimizer/dualgpuopt/layer_balance.py
-```
+### Key Integration Points
+- Memory distribution algorithms interface with NVML for real-time GPU metrics
+- Layer balancing coordinates with model frameworks for tensor redistribution
+- Context size calculations integrate with model loaders
+- Memory allocation interfaces with CUDA memory management
+- Importance: 75
 
 $END$

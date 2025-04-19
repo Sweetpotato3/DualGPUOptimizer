@@ -1,54 +1,56 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and metrics visualization system
-globs: **/telemetry.py,**/metrics.py,**/dashboard.py,**/event_dashboard.py,**/tray.py
+description: Resource monitoring system for tracking GPU telemetry, metrics collection, and alert mechanisms
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gui/dashboard.py,**/gui/event_dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### Telemetry Collection System
-The telemetry system implements comprehensive GPU resource monitoring through:
+### GPU Telemetry Collection
+- Collects detailed GPU metrics including:
+  - Utilization percentage
+  - Memory usage and availability
+  - Temperature readings
+  - Power consumption 
+  - Fan speeds
+  - Clock speeds
+- Implements middleware pipeline pattern for processing telemetry data
+- Publishes metrics to event bus for real-time dashboard updates
 
-- Real-time metrics collection for GPU utilization, memory usage, temperature, power consumption, fan speed, and clock speeds
-- Middleware pipeline architecture for telemetry processing with:
-  - EventBusMiddleware for publishing metrics to event bus
-  - LoggingMiddleware for debug logging
-- Idle detection mechanism that monitors GPU utilization and triggers notifications after 5 minutes of inactivity
+### Idle Detection System
+- Monitors GPU utilization patterns
+- Triggers notifications when GPUs are idle for 5+ minutes
+- Configurable idle thresholds and alert settings
+- System tray integration for status visibility
 
-### Metrics Visualization 
-Dashboard components provide real-time visualization through:
+### Metrics Dashboard
+- Real-time visualization of GPU metrics
+- Historical utilization graphs with configurable time windows
+- Per-GPU metrics display including:
+  - Temperature monitoring with warning thresholds
+  - Power usage tracking
+  - Memory allocation visualization
+  - PCIe bandwidth usage
 
-- Dynamic GPU metrics display showing utilization, memory, PCIe throughput, temperature, power usage
-- Historical utilization graph with:
-  - Fading effect for timeline visualization
-  - Smooth curve interpolation for trend analysis 
-  - Per-GPU color coding
-- Bandwidth formatting with automatic unit scaling (KB/s to GB/s)
+### Event-Driven Architecture
+- High-priority subscription to GPUMetricsEvent
+- Maintains history of GPU utilization data
+- Dynamic UI updates based on detected GPUs
+- Real-time metrics refresh for active monitoring
 
-### Event-Driven Updates
-The monitoring system implements:
+### Prometheus Integration
+- Optional metrics export to Prometheus
+- Custom GPU metric collectors
+- Fallback to internal tracking when Prometheus unavailable
+- Configuration options for metric export intervals
 
-- High-priority subscription to GPUMetricsEvent for dashboard updates
-- Dynamic UI component initialization based on GPU detection
-- Real-time metrics refresh every 3 seconds
-- 60-sample rolling history for trend analysis
-
-### Status Notifications
-System tray integration provides:
-
-- GPU idle state monitoring
-- User notifications for extended idle periods
-- Quick access to GPU utilization status
-- Configuration options for notification preferences
-
-Relevant Files:
-```
-dual_gpu_optimizer/dualgpuopt/telemetry.py
-dual_gpu_optimizer/dualgpuopt/metrics.py
-dual_gpu_optimizer/dualgpuopt/gui/dashboard.py
-dual_gpu_optimizer/dualgpuopt/gui/event_dashboard.py
-dual_gpu_optimizer/dualgpuopt/tray.py
-```
+### Alert System
+- Configurable alert thresholds for:
+  - Temperature limits
+  - Memory usage caps
+  - Extended idle periods
+  - Power consumption warnings
+- Alert delivery through system tray notifications
 
 $END$

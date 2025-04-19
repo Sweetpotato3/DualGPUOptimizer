@@ -83,3 +83,78 @@ The system uses an event-driven architecture to coordinate between components, w
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION
+---
+
+description: Create high-level technical documentation focused on GPU optimization, monitoring, and control logic, particularly for dual GPU systems with complex business workflows
+globs: *.py
+alwaysApply: false
+---
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+## Core Business Logic
+
+### GPU Optimization Engine
+
+Key system for optimizing dual GPU performance through:
+
+- Adaptive layer redistribution between GPUs based on performance profiles
+- Context size calculation considering GPU memory and model parameters
+- Dynamic mixed precision policies for optimized GPU memory usage
+- Telemetry collection pipeline for real-time GPU metrics
+
+### GPU Control and Management
+
+Central system components:
+
+- Overclocking control with safety checks and configuration persistence
+- Fan speed management with automatic and manual control modes
+- Power limit adjustments with validation
+- Temperature monitoring and throttling protection
+
+### Event-Driven Monitoring
+
+Real-time monitoring architecture:
+
+- GPU metrics collection including utilization, memory, temperature, power
+- Historical data tracking for performance analysis
+- Priority-based event dispatch system
+- Idle detection and notification system
+
+### Model Execution Optimization
+
+Specialized logic for model deployment:
+
+- Smart batch processing with length-aware scheduling
+- GPU memory split calculations for optimal model distribution
+- Framework-specific command generation (llama.cpp, vLLM)
+- Environment configuration generation
+
+### Dashboard System
+
+Real-time visualization components:
+
+- Multi-GPU metrics display with color-coded indicators
+- Performance history graphs with trend analysis
+- PCIe bandwidth monitoring and formatting
+- Temperature and power threshold management
+
+Critical Paths:
+
+- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- `dual_gpu_optimizer/dualgpuopt/layer_balance.py`
+- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
+- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+
+$END$
+END SPECIFICATION
