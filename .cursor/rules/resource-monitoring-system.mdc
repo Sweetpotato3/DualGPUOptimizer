@@ -1,49 +1,78 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and metrics tracking subsystem
-globs: **/telemetry.py,**/metrics.py,**/tray.py,**/dashboard.py
+description: Analyzing GPU telemetry, metrics collection, monitoring systems, and alert mechanisms for the resource monitoring system
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/monitoring/*.py,**/dualgpuopt/services/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and visualization with these core components:
+The resource monitoring system implements specialized GPU telemetry collection and performance tracking with the following key components:
 
-1. GPU Telemetry Collection (telemetry.py)
-- Real-time monitoring of critical GPU metrics:
-  * Memory utilization (used/total/free)
-  * Temperature with threshold alerts (70°C warning, 80°C critical)
-  * Power consumption relative to TDP
-  * Core/Memory clock speeds
-  * PCIe bandwidth utilization
-  * Fan speeds with auto/manual control
-- Custom middleware pipeline for metrics processing
-- Mock data generation for testing with realistic correlations
-- Thread-safe metrics buffer with 60-sample rolling window
+## GPU Telemetry Engine (telemetry.py)
+Importance Score: 95
 
-2. Metrics Dashboard (dashboard.py)
-- Multi-GPU visualization system with:
-  * Color-coded indicators per GPU
-  * Dynamic scaling for utilization graphs
-  * Temperature-based warning indicators
-  * Real-time update system (100ms throttling)
-- Performance history plotting with:
-  * 60-point historical data window
-  * Auto-adjusting axes and scales
-  * GPU-specific color coding
-  * Customizable metric thresholds
+Core telemetry collection system that gathers critical GPU metrics:
+- GPU utilization percentage tracking
+- Memory usage monitoring
+- Temperature thresholds (warning at 80°C, critical at 90°C)  
+- Power consumption tracking
+- PCIe bandwidth monitoring (TX/RX rates)
+- Clock speeds (graphics and memory)
+- Fan speed monitoring
 
-3. System Tray Integration (tray.py)
-- Quick-access GPU metrics from system tray
-- Critical threshold notifications
-- GPU utilization indicators
-- Memory warning system
+Uses event-driven middleware pipeline for metrics processing with configurable sampling rates:
+- Critical metrics: 500ms
+- Standard metrics: 1000ms
+- Non-critical: 2000ms
 
-Importance Scores:
-- GPU Telemetry Collection: 95 (core monitoring functionality)
-- Metrics Dashboard: 85 (critical visualization)
-- System Tray Integration: 65 (supporting monitoring interface)
+## Monitoring Rules Engine (metrics.py)
+Importance Score: 85
 
-The implementation focuses specifically on dual-GPU setups with framework-specific optimizations for monitoring ML workloads and model inference processes.
+Implements domain-specific monitoring rules:
+
+- Idle Detection System:
+  - Default 30% utilization threshold
+  - 5-minute idle time window
+  - Configurable alerts for sustained low utilization
+
+- Memory Management:
+  - 256MB minimum VRAM reclamation target
+  - Dynamic memory quota tracking
+  - Alert triggers for low memory conditions
+
+- Power Management:
+  - Scaled monitoring based on GPU-specific power limits
+  - Power draw percentage calculations
+  - Over-limit alerts
+
+## Alert Mechanism (tray.py)
+Importance Score: 80
+
+Implements GPU-specific alert handlers:
+- Temperature threshold notifications
+- Memory exhaustion warnings
+- Power limit alerts 
+- Utilization anomaly detection
+
+Alert priorities:
+- CRITICAL: Temperature/Power limits exceeded
+- HIGH: Memory exhaustion risk
+- MEDIUM: Sustained high utilization
+- LOW: Idle state detection
+
+## Multi-GPU Coordination System
+Importance Score: 90
+
+Specialized handling for dual GPU monitoring:
+- Synchronized metrics collection across GPUs
+- Cross-GPU performance correlation
+- Load balancing detection
+- Unified status visualization
+
+File Locations:
+- dual_gpu_optimizer/dualgpuopt/telemetry.py
+- dual_gpu_optimizer/dualgpuopt/metrics.py
+- dual_gpu_optimizer/dualgpuopt/tray.py
 
 $END$

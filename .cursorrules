@@ -229,8 +229,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level documentation for projects focused on GPU optimization and management, particularly for dual-GPU setups running large language models. Apply when documenting systems that handle GPU resource allocation, model deployment, and hardware monitoring.
-globs: dual_gpu_optimizer/**,integrated_app/**,dualgpuopt/**
+description: Create high-level documentation overviews for GPU optimization and monitoring systems, particularly those involving dual GPU configurations and ML model execution management.
+globs: *.py
 alwaysApply: false
 ---
 
@@ -246,52 +246,59 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for large language models across dual GPU configurations. The system consists of three core business domains:
+The DualGPUOptimizer implements specialized optimization and monitoring systems for dual GPU configurations, focusing on large language model execution.
 
-1. GPU Resource Management
-- Context size calculation with model-specific parameters
-- Memory split optimization between GPUs
-- Layer balancing across devices
-- Tensor parallelism configuration
-- Power and thermal monitoring
+Core Business Components:
 
-Key files:
-- dualgpuopt/ctx_size.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/optimizer.py
+1. GPU Optimization Engine (75/100)
+Path: dual_gpu_optimizer/dualgpuopt/optimizer.py
+- Memory split calculation for multi-GPU deployment
+- Framework-specific command generation (llama.cpp, vLLM)
+- Dynamic tensor parallelism configuration
+- Context size optimization with model-specific parameters
 
-2. Model Deployment Optimization
-- Framework-specific command generation
-- Batch size optimization
-- Idle detection and resource reallocation
-- Mixed precision policies
-- Memory safety margins
+2. Layer Balancing System (85/100)
+Path: dual_gpu_optimizer/dualgpuopt/layer_balance.py
+- Adaptive layer distribution across GPUs
+- Weighted performance profiling (20% short/80% long sequences)
+- Memory quota management with configurable reserves
+- Layer-to-GPU mapping based on execution duration
 
-Key files:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/mpolicy.py
-- dualgpuopt/commands/gpu_commands.py
-
-3. Telemetry and Monitoring
-- Real-time GPU metrics collection
-- Performance visualization
-- Temperature threshold monitoring
+3. GPU Telemetry Service (80/100)
+Path: dual_gpu_optimizer/dualgpuopt/telemetry.py
+- Real-time GPU metrics collection (utilization, memory, temperature)
+- PCIe bandwidth monitoring
 - Power usage tracking
-- Memory utilization analysis
+- Event-driven metrics distribution
 
-Key files:
-- dualgpuopt/telemetry.py
-- dualgpuopt/gui/dashboard.py
-- dualgpuopt/metrics.py
+4. Smart Batch Management (70/100)
+Path: dualgpuopt/batch/smart_batch.py
+- Length-aware sequence batching
+- Dynamic batch size optimization
+- Memory-aware workload distribution
+- Threshold-based batch splitting
 
-The system implements specialized handling for:
-- Model-specific memory requirements (Mixtral, Llama 2, Mistral)
-- Framework-specific optimizations (llama.cpp, vLLM)  
-- GPU safety constraints and thermal limits
-- Resource allocation strategies
-- Fault tolerance and recovery
+Key Integration Points:
 
-Business value centers on optimizing large language model deployment across heterogeneous GPU configurations while maintaining system stability and performance.
+1. Model Configuration Management
+- Framework-specific parameter tuning
+- GPU memory split optimization
+- Context size calculations considering model architecture
+- Tensor parallel size determination
+
+2. Resource Allocation
+- Memory reservation system (20% overhead)
+- Safety margin calculations (10%)
+- Dynamic GPU capability detection
+- Framework-specific resource distribution
+
+3. GPU State Management
+- Overclock profile management
+- Idle detection system
+- Temperature threshold monitoring
+- Power limit enforcement
+
+The system orchestrates these components to provide automated optimization of large language model execution across dual GPU configurations, with particular emphasis on memory management, workload distribution, and real-time performance monitoring.
 
 $END$
 END SPECIFICATION

@@ -1,49 +1,57 @@
 ---
-description: Documents GPU optimization algorithms, memory management, tensor parallelism, and resource allocation for dual-GPU systems
-globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
+description: Documentation of GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies for model optimization.
+globs: **/gpu_info.py,**/optimizer.py,**/layer_balance.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Management
+Core algorithms for GPU memory optimization and workload distribution:
 
-The system implements specialized GPU memory optimization algorithms with business logic focused on dual-GPU workload distribution:
+1. Context Size Calculator (ctx_size.py)
+- Custom formula for maximum safe context length:
+  MAX_CTX = (available_memory * safety_margin) / (layers * kv_heads * dim * precision)
+- Model-specific architecture factors:
+  - Mixtral: 1.05x memory multiplier for MoE overhead
+  - Llama-2: Base memory calculation
+  - Mistral: Adjusted for smaller head dimensions
+- Memory reservation logic:
+  - System: 2GB base reservation
+  - KV Cache: 2x multiplier for bi-directional context
+  - Safety margin: 10% overhead buffer
 
-1. Context Size Optimization
-- Calculates maximum safe context length based on model parameters:
-  - Layers, KV heads, dimensions 
-  - Available GPU memory with configurable safety margins
-  - Mixture of Experts (MoE) factor for models like Mixtral
-- Implements model-specific parameter mapping for common LLMs
-- Uses heuristic memory calculation incorporating:
-  - 20% tensor parallelism overhead
-  - 2GB system overhead allowance
-  - 10% safety margin
+2. Layer Balancing Algorithm (layer_balance.py)
+- Dual-phase layer distribution system:
+  - Short sequence test (64 tokens) weighted at 20%
+  - Long sequence test (1024 tokens) weighted at 80%
+- Memory quota enforcement per GPU with configurable reserve ratio
+- Layer mapping optimization prioritizes fastest GPU within memory constraints
 
-2. Layer Distribution Algorithm
-- Balances model layers across GPUs using weighted profiling:
-  - 20% weight for short sequences (64 tokens)
-  - 80% weight for long sequences (1024 tokens)
-- Prioritizes performance-critical layers on faster GPU
-- Respects per-GPU memory quotas
-- Handles tensor parallelism overhead
+3. GPU Split Calculator (optimizer.py)
+- Memory split ratio generation for multi-GPU setups:
+  - Base split on relative VRAM capacities
+  - 20% overhead allocation for tensor parallelism
+  - Dynamic adjustment based on model architecture
+- Framework-specific command generation:
+  - llama.cpp: --gpu-split parameter optimization
+  - vLLM: tensor-parallel-size configuration
 
-3. Memory Split Optimization
-- Calculates optimal tensor parallel fractions based on relative GPU sizes
-- Implements KV cache estimation with 2.0x overhead factor
-- Generates framework-specific configurations for:
-  - llama.cpp GPU split ratios
-  - vLLM tensor parallel deployment
-  - Environmental configurations
+4. Memory Policy Engine (mpolicy.py)
+- FP32 preservation for critical operations:
+  - LayerNorm computations
+  - Softmax calculations
+  - Residual additions
+- Dynamic precision switching based on operation type
+- Safety thresholds for memory-intensive operations
 
-Relevant Files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py 
-- dualgpuopt/ctx_size.py
+Critical Paths:
+/dualgpuopt/ctx_size.py
+/dualgpuopt/layer_balance.py  
+/dualgpuopt/optimizer.py
+/dualgpuopt/mpolicy.py
 
-Business Impact Score: 95
-The algorithms directly impact model performance and resource utilization across dual-GPU setups, representing core optimization capabilities.
+Importance Score: 95
+The algorithms represent core optimization logic for GPU memory management and workload distribution in ML model execution.
 
 $END$

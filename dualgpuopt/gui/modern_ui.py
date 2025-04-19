@@ -12,6 +12,7 @@ from pathlib import Path
 import queue, threading
 import time, random
 import logging
+import os
 
 try:
     from sseclient import SSEClient
@@ -42,6 +43,8 @@ except ImportError:
             print(f"Toast: {self.title} - {self.message}")
 
 from dualgpuopt.ui.widgets import GradientProgress, NeonButton
+# Import gpu_info to access GPU-related functions
+import dualgpuopt.gpu_info as gpu_info
 
 CFG_FILE = Path.home() / ".dualgpuopt" / "ui.json"
 
@@ -104,6 +107,19 @@ class ModernApp(ttk.Window):
             self.style.theme_use(cfg["theme"])
         if "win" in cfg:
             self.geometry(cfg["win"])
+        
+        # Default to real GPU mode
+        self.mock_mode = False
+        
+        # If environment variable is set, respect it (mainly for backwards compatibility)
+        if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":
+            self.mock_mode = True
+            logger.info("Mock GPU mode enabled via environment variable")
+            
+        # Clear the mock mode environment variable if it exists and we're not in mock mode
+        if not self.mock_mode and "DGPUOPT_MOCK_GPUS" in os.environ:
+            del os.environ["DGPUOPT_MOCK_GPUS"]
+            logger.info("Disabled mock GPU mode (environment variable cleared)")
 
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.bind_all("<Control-q>", lambda *_: self.on_close())
@@ -118,6 +134,9 @@ class ModernApp(ttk.Window):
         self._build_tabs(nb)
         self.after(100, self._marquee)  # status reset marquee
         self.after(40, self._poll_queue)
+        
+        # Initialize GPU info immediately
+        self.after(500, self._refresh_gpu_info)
 
     # ---------------- Tabs -----------------
     def _build_tabs(self, nb):
@@ -162,12 +181,35 @@ class ModernApp(ttk.Window):
         # Settings
         st = ttk.Frame(nb, padding=12)
         nb.add(st, text="Settings")
-        # Create a custom dark mode switch since Switch widget might not be available
+        
+        # Create a settings frame for organization
+        settings_frame = ttk.Labelframe(st, text="Display Settings", padding=10)
+        settings_frame.pack(fill="x", pady=5)
+        
+        # Create a custom dark mode switch
         self.dark_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(st, text="Dark mode", variable=self.dark_var, 
+        ttk.Checkbutton(settings_frame, text="Dark mode", variable=self.dark_var, 
                        command=self._toggle_theme, bootstyle="round-toggle").pack(anchor="w", pady=4)
         if self.style.theme.name != "flatly":
             self.dark_var.set(True)
+            
+        # Create GPU settings frame
+        gpu_frame = ttk.Labelframe(st, text="GPU Settings", padding=10)
+        gpu_frame.pack(fill="x", pady=5)
+        
+        # Add mock mode toggle
+        self.mock_var = tk.BooleanVar(value=self.mock_mode)
+        ttk.Checkbutton(gpu_frame, text="Enable Mock GPU Mode", variable=self.mock_var, 
+                      command=self._toggle_mock_mode, bootstyle="round-toggle").pack(anchor="w", pady=4)
+        
+        # Add mock mode description
+        ttk.Label(gpu_frame, text="Mock mode simulates GPU hardware for testing\nwhen no physical GPUs are available.", 
+                 font=("Segoe UI", 9), foreground="gray").pack(anchor="w", pady=4)
+                 
+        # Add refresh button for real GPU detection
+        refresh_button = ttk.Button(gpu_frame, text="Refresh GPU Information", 
+                                  command=self._refresh_gpu_info, bootstyle="info-outline")
+        refresh_button.pack(anchor="w", pady=8)
 
         # Chat
         chat = ttk.Frame(nb, padding=6)
@@ -188,6 +230,86 @@ class ModernApp(ttk.Window):
     def _toggle_theme(self):
         new = "flatly" if self.dark_var.get() else "superhero"
         self.style.theme_use(new)
+        
+    def _toggle_mock_mode(self):
+        """Toggle mock GPU mode on/off based on checkbox state."""
+        if self.mock_var.get():
+            self._enable_mock_mode()
+        else:
+            self._disable_mock_mode()
+            
+    def _enable_mock_mode(self, notify=True):
+        """Enable mock GPU mode."""
+        os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+        self.mock_mode = True
+        if notify:
+            self.status("Mock GPU mode enabled")
+            self.q.put(("toast", "Mock GPU mode enabled"))
+            self._refresh_gpu_info()
+            
+    def _disable_mock_mode(self):
+        """Disable mock GPU mode and use real GPUs if available."""
+        # Attempt to check if real GPUs are available before disabling mock mode
+        try:
+            # Temporarily disable mock mode to check for real GPUs
+            if "DGPUOPT_MOCK_GPUS" in os.environ:
+                del os.environ["DGPUOPT_MOCK_GPUS"]
+                
+            # Try to probe for real GPUs
+            gpus = gpu_info.probe_gpus()
+            if gpus:
+                self.mock_mode = False
+                self.status(f"Using real GPU hardware: {', '.join(gpu.short_name for gpu in gpus)}")
+                self.q.put(("toast", "Real GPU mode enabled"))
+                self._refresh_gpu_info()
+            else:
+                raise RuntimeError("No GPUs detected")
+        except Exception as e:
+            # If no real GPUs are available, keep mock mode on and inform the user
+            os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+            self.mock_var.set(True)  # Reset the checkbox
+            self.mock_mode = True
+            error_msg = f"No real GPUs detected: {e}. Using mock mode."
+            self.status(error_msg)
+            self.q.put(("toast", error_msg))
+            logger.warning(f"Failed to disable mock mode: {e}")
+            
+    def _refresh_gpu_info(self):
+        """Refresh GPU information."""
+        self.status("Refreshing GPU information...")
+        self.pool.submit(self._get_gpu_info)
+        
+    def _get_gpu_info(self):
+        """Get real GPU information or mock data."""
+        try:
+            # Test if we have real GPUs
+            if not self.mock_mode:
+                gpus = gpu_info.probe_gpus()
+                self.q.put(("status", f"Using real GPUs: {', '.join(gpu.short_name for gpu in gpus)}"))
+                if gpus:
+                    # Update UI with real GPU data
+                    self.q.put(("util", gpus[0].gpu_utilization))
+                    self.q.put(("vram", gpus[0].mem_used_percent))
+                    return
+            
+            # If we get here, either mock mode is enabled or real GPU detection failed
+            if not self.mock_mode:
+                # If we were trying to use real GPUs but failed, enable mock mode
+                self.mock_mode = True
+                self.q.put(("toast", "Failed to detect real GPUs. Using mock mode."))
+                # Update checkbox on main thread
+                self.after_idle(lambda: self.mock_var.set(True))
+                os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+                
+            # Use mock data
+            gpus = gpu_info._mock_gpus()
+            self.q.put(("status", f"Using mock GPUs: {', '.join(gpu.short_name for gpu in gpus)}"))
+            self.q.put(("util", gpus[0].gpu_utilization))
+            self.q.put(("vram", gpus[0].mem_used_percent))
+            
+        except Exception as e:
+            self.q.put(("status", f"Error refreshing GPU info: {e}"))
+            logger.error(f"Error getting GPU info: {e}")
 
     def _start_vllm(self):
         self.status("Launching vLLM …")
@@ -251,6 +373,10 @@ class ModernApp(ttk.Window):
                     except Exception as e:
                         logger.error(f"Toast notification error: {e}")
                         print(f"Toast notification error: {e}")
+                elif kind == "util":
+                    self.util_bar.set(val)
+                elif kind == "vram":
+                    self.vram_bar.set(val)
         except queue.Empty:
             pass
         self.after(50, self._poll_queue)
@@ -268,6 +394,7 @@ class ModernApp(ttk.Window):
         cfg = {
             "theme": self.style.theme.name,
             "win": self.geometry(),
+            "mock_mode": self.mock_mode,  # Save mock mode setting
         }
         _save_cfg(cfg)
         self.pool.shutdown(cancel_futures=True)

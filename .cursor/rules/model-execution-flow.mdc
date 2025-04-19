@@ -1,52 +1,83 @@
 ---
-description: Documents LLM execution workflows, command generation, and GPU resource allocation patterns
-globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/layer_balance.py
+description: Defines execution workflow and command generation for LLM models across multiple GPU configurations
+globs: **/*.py,**/commands/*,**/batch/*,**/services/*
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Execution Flow Components:
+Core LLM Execution Components:
 
-1. Framework-Specific Command Generation
-- Generates optimized execution commands for:
-  * llama.cpp with GPU split parameters and context size settings 
-  * vLLM with tensor parallel configurations
-  * Memory allocation specifications for each framework
-- File: dualgpuopt/optimizer.py
+1. Command Generation Engine
+File: dual_gpu_optimizer/dualgpuopt/commands/command_base.py
+Importance: 95
 
-2. Layer Distribution Logic 
-- Implements weighted profiling approach for layer assignment:
-  * 20% weight for short sequences (64 tokens)
-  * 80% weight for long sequences (1024 tokens)
-- Balances layers across GPUs based on:
-  * Individual layer latency profiles
-  * Available GPU memory quotas
-  * Performance characteristics
-- File: dualgpuopt/layer_balance.py
+- Framework-specific command construction:
+```python
+llama_command = f"--model {model_path} --gpu-split {split} --n-gpu-layers 999"
+vllm_command = f"--model {model_path} --tensor-parallel-size {tp_size}"
+```
 
-3. GPU Resource Allocation
-- Calculates optimal memory splits:
-  * Core tensor parallelism overhead (20%)
-  * System overhead reservation (2GB)
-  * KV cache estimation (2.0x factor)
-  * Global safety margin (10%)
-- File: dualgpuopt/optimizer.py
+- Dynamic parameter injection based on:
+  - Available GPU memory ratios
+  - Model architecture type
+  - Context window requirements
+  - Framework compatibility
 
-4. Model Execution Management
-- Non-blocking subprocess management for LLM workloads
-- Coordinates resource allocation between frameworks
-- Implements startup/shutdown sequences
-- Handles graceful process termination
-- File: dualgpuopt/runner.py
+2. Layer Distribution System
+File: dual_gpu_optimizer/dualgpuopt/layer_balance.py 
+Importance: 90
 
-The system prioritizes efficient distribution of LLM workloads across dual GPU setups while maintaining framework-specific optimizations and safety constraints.
+- Adaptive layer allocation across GPUs using:
+  - Hardware capability profiling
+  - Memory availability tracking
+  - Layer performance scoring
+- Weighted sequence testing:
+  - 20% weight for short sequences (64 tokens)
+  - 80% weight for long sequences (1024 tokens)
 
-Importance Scores:
-- Command Generation: 95 (Core execution logic)
-- Layer Distribution: 90 (Critical optimization)
-- Resource Allocation: 85 (Key infrastructure)
-- Execution Management: 80 (Essential orchestration)
+3. Memory Management Pipeline
+File: dual_gpu_optimizer/dualgpuopt/optimizer.py
+Importance: 85
+
+Key allocation rules:
+- System memory reserve: 2GB
+- KV cache multiplier: 2x
+- Tensor parallel overhead: 20%
+- Safety margin: 10%
+
+4. Batch Processing Workflow
+File: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
+Importance: 80
+
+- Length-aware sequence batching
+- Dynamic batch size calculation using:
+  - Available GPU memory
+  - Model architecture parameters
+  - Sequence length distribution
+- Back-pressure management with configurable queue depths
+
+5. GPU State Coordination
+File: dual_gpu_optimizer/dualgpuopt/services/state_service.py
+Importance: 75
+
+- Manages execution state across GPUs:
+  - Active model tracking
+  - Resource allocation state
+  - GPU assignment mapping
+  - Idle state detection
+
+6. Telemetry Integration
+File: dual_gpu_optimizer/dualgpuopt/telemetry.py
+Importance: 70
+
+- Real-time execution metrics:
+  - GPU utilization monitoring
+  - Memory usage tracking
+  - Temperature thresholds
+  - Power consumption limits
+
+The system orchestrates LLM execution across multiple GPUs by managing command generation, layer distribution, memory allocation, and batch processing while maintaining real-time performance monitoring.
 
 $END$

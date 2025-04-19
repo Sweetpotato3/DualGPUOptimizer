@@ -1,50 +1,66 @@
 ---
-description: Specification for analyzing data flow and component interactions in GPU optimization systems and ML model deployments
-globs: *.py,dual_gpu_optimizer/**/*,integrated_app/**/*
+description: Documents data flow and communication between components in GPU optimization systems
+globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py,**/*service*.py,**/*event*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Primary Data Flow Components:
+Core Data Flow Components:
 
-1. GPU Metrics Collection Pipeline
-- `dualgpuopt/telemetry.py` implements core metrics collection:
-  * Usage, memory, temperature, power metrics flow from NVML
-  * PCIe bandwidth and clock speeds collected at configured intervals
-  * Metrics dispatched through event bus to visualization components
-  * Mock data generation for testing/development scenarios
+1. GPU Metrics Flow (80/100)
+- Telemetry Service streams real-time GPU metrics:
+  - Utilization, memory, temperature, power data
+  - PCIe bandwidth monitoring 
+  - Clock speeds and fan metrics
+- Event Bus distributes metrics through priority-based channels
+- Dashboard visualizes metrics through rolling 60-sample windows
+File: dual_gpu_optimizer/dualgpuopt/telemetry.py
 
-2. Model Parameter Flow
-- `dualgpuopt/ctx_size.py` and `dualgpuopt/layer_balance.py` handle model configuration:
-  * Model architecture parameters (layers, heads, dimensions) flow into context size calculator
-  * Memory requirements flow to layer balancing system
-  * Optimization parameters flow to command generators
-  * Framework-specific configurations generated for deployment
+2. Optimization Pipeline (95/100)
+- Layer Balance Service calculates optimal layer distribution
+- GPU Split Service determines memory allocation ratios
+- Context Size Calculator generates safe context lengths
+- Command Generator produces framework-specific launch commands
+Files:
+- dualgpuopt/layer_balance.py
+- dualgpuopt/optimizer.py
 
-3. GPU Resource Management Flow
-- `dualgpuopt/optimizer.py` coordinates resource allocation:
-  * Memory availability flows from GPU info service
-  * Split ratios calculated based on relative GPU capabilities 
-  * Tensor parallel configurations flow to framework adapters
-  * Launch parameters flow to command generators
+3. Configuration Flow (75/100)
+- Config Service maintains per-GPU settings:
+  - Overclock profiles
+  - Fan curves
+  - Power limits
+  - Safety thresholds
+- Settings persist across GPU switches
+- State Service tracks active configurations
+File: dual_gpu_optimizer/dualgpuopt/services/config_service.py
 
-4. Event Propagation System
-- `dualgpuopt/services/event_bus.py` manages metric distribution:
-  * GPU events flow through prioritized channels
-  * Telemetry updates propagate to visualization components
-  * Error events trigger recovery workflows
-  * State changes notify optimization components
+4. Event Distribution System (85/100)
+- Priority-based event routing:
+  - CRITICAL: Safety-related events
+  - HIGH: Performance metrics
+  - NORMAL: Status updates
+  - LOW: Background telemetry
+- Event Bus implements publish/subscribe pattern for GPU metrics
+- Event Service coordinates metric distribution to UI components
+File: dual_gpu_optimizer/dualgpuopt/services/event_service.py
 
-Key Data Flow Paths:
+5. Batch Processing Pipeline (90/100)
+- Smart Batcher manages sequence distribution:
+  - Length-aware grouping
+  - Memory-quota tracking
+  - Load balancing between GPUs
+- Resource monitoring feedback loop adjusts batch sizes
+File: dualgpuopt/batch/smart_batch.py
 
-```
-GPU Hardware -> Telemetry -> Event Bus -> Dashboard
-Model Config -> Context Calculator -> Layer Balancer -> Command Generator
-GPU Resources -> Optimizer -> Framework Adapter -> Launch System
-```
+Domain-Specific Data Models:
+- GPUMetrics: Comprehensive GPU state representation
+- OptimizationEvent: GPU resource allocation events
+- LayerProfile: Layer-specific performance metrics
+- BatchGroup: Sequence batch configuration
 
-The architecture emphasizes real-time metric flow for GPU optimization while maintaining separate paths for model configuration and resource management.
+The architecture implements specialized data flows for dual GPU optimization, focusing on real-time metric distribution, resource allocation, and workload balancing across multiple GPUs.
 
 $END$

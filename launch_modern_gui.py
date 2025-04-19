@@ -3,7 +3,7 @@
 Launch script for the Modern DualGPUOptimizer UI.
 
 This script checks for the icon file, copies it if needed, 
-and then launches the modern UI.
+and then launches the modern UI with real GPU detection.
 """
 import os
 import sys
@@ -59,8 +59,13 @@ def main():
     # Ensure icon exists
     ensure_icon_exists()
     
-    # Launch the modern UI
-    print("Launching DualGPUOptimizer Modern UI...")
+    # Clear any mock GPU environment variable if set
+    if "DGPUOPT_MOCK_GPUS" in os.environ:
+        print("Removing mock GPU mode to use real hardware")
+        del os.environ["DGPUOPT_MOCK_GPUS"]
+    
+    # Launch the modern UI with real GPU detection
+    print("Launching DualGPUOptimizer Modern UI with real GPU detection...")
     try:
         subprocess.run([sys.executable, "run_modern_ui.py"])
     except Exception as e:
