@@ -161,8 +161,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Apply this overview documentation rule when summarizing core business logic and domain-specific implementations in GPU optimization systems, particularly focusing on dual-GPU workload management and machine learning model deployment scenarios.
-globs: *.py,*.md,*.code-workspace
+description: Apply this overview when documenting high-level system architecture and business logic organization for dual GPU optimization software, particularly focusing on GPU resource management, telemetry collection, and optimization algorithms.
+globs: *.py,*.spec,*.json
 alwaysApply: false
 ---
 
@@ -178,50 +178,39 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning workloads:
+The DualGPUOptimizer system provides real-time GPU optimization and monitoring for dual-GPU setups. The core business logic is organized into these key areas:
 
-Core Components:
+### GPU Resource Management
+- Optimizes workload distribution between two GPUs using tensor splitting and layer balancing
+- Dynamically adjusts context sizes based on available GPU memory and model parameters
+- Generates optimized commands for different ML frameworks (llama.cpp, vLLM) based on GPU configurations
 
-1. GPU Optimization Engine (dualgpuopt/optimizer.py)
-- Calculates optimal GPU memory splits between available GPUs
-- Generates tensor fractions for multi-GPU load balancing 
-- Produces framework-specific commands for LLM deployment
+### Telemetry and Monitoring
+- Collects real-time GPU metrics through NVML including utilization, memory, temperature, power usage
+- Processes telemetry through a middleware pipeline with event bus publishing and logging
+- Maintains historical performance data for optimization decisions
 
-2. Mixed Precision Policy (dualgpuopt/mpolicy.py)
-- Manages precision policies for LLM inference
-- Handles datatype casting while preserving FP32 for critical operations
-- Configures specialized GradScaler for training cases
+### Layer Balance and Context Optimization
+- Implements adaptive latency-aware layer redistribution across GPUs
+- Profiles layer execution times to determine optimal distribution patterns 
+- Calculates safe context sizes based on model parameters and memory availability
 
-3. Context Size Management (dualgpuopt/ctx_size.py)
-- Calculates maximum safe context length based on:
-  - Model parameters (layers, heads, dimensions)
-  - Available GPU memory
-  - MoE overhead considerations
-- Specialized handling for different model architectures
+### Overclocking Management
+- Provides GPU-specific overclocking controls including core/memory clocks and power limits
+- Maintains command history for overclocking operations with undo capability
+- Implements safety checks and validation for overclocking parameters
 
-4. Layer Balance Optimization (dualgpuopt/layer_balance.py) 
-- Implements adaptive layer distribution across GPUs
-- Uses weighted profiling combining short/long sequences
-- Balances distribution while respecting VRAM quotas
+### Event-Driven Architecture
+- Centralized state management with event publishing for state changes
+- Priority-based event dispatch system for handling GPU telemetry updates
+- Supports both synchronous and asynchronous event handlers
 
-5. Telemetry System (dualgpuopt/telemetry.py)
-- Collects GPU metrics:
-  - Memory utilization 
-  - PCIe bandwidth
-  - Temperature/power/clocks
-  - Load distribution
-- Implements middleware for metric processing
-
-6. Batch Processing (dualgpuopt/batch/smart_batch.py)
-- Length-aware sequence batching
-- Dynamic batch size calculation
-- Memory-aware scheduling with OOM protection
-
-Integration Architecture:
-- Event-driven communication between components
-- State management focused on GPU configurations
-- Framework-specific command generation (llama.cpp, vLLM)
-- Real-time monitoring and optimization feedback loop
+Key Files:
+- `dualgpuopt/optimizer.py`: Core optimization logic
+- `dualgpuopt/layer_balance.py`: Layer distribution algorithms  
+- `dualgpuopt/telemetry.py`: GPU metrics collection
+- `dualgpuopt/services/state_service.py`: Application state management
+- `dualgpuopt/services/event_bus.py`: Event dispatch system
 
 $END$
 END SPECIFICATION

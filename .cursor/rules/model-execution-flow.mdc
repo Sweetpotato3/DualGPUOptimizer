@@ -1,69 +1,46 @@
 ---
-description: Documents LLM execution workflows, command generation, and GPU resource management for dual GPU optimization
-globs: **/dualgpuopt/runner.py,**/dualgpuopt/optimizer.py,**/commands/**,**/batch/**
+description: Defines how AI models are executed, optimized and balanced across multiple GPUs including command generation and resource allocation.
+globs: **/optimizer.py,**/runner.py,**/layer_balance.py,**/ctx_size.py,**/mpolicy.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized handling of LLM workloads across dual GPU configurations:
+The model execution flow consists of several key components that work together to optimize and execute AI models across multiple GPUs:
 
-Core Execution Components (Importance: 95):
+### GPU Layer Distribution (Importance: 95)
+Located in `dual_gpu_optimizer/dualgpuopt/layer_balance.py`:
+- Implements adaptive latency-aware layer redistribution algorithm
+- Profiles layer execution times to identify fast/slow layers
+- Generates device maps for optimal layer placement across GPUs
+- Balances layers based on execution speed and available VRAM
 
-1. Command Generation Pipeline
-- Produces optimized commands for llama.cpp:
-  ```
-  --gpu-split <ratio> --n-gpu-layers <count> --ctx-size <window>
-  ```
-- Generates vLLM tensor parallelism settings:
-  ```
-  tensor_parallel_size=<n> max_context_len=<size>
-  ```
-- Dynamically calculates memory splits based on available GPU VRAM
+### Context Size Management (Importance: 90)
+Located in `dual_gpu_optimizer/dualgpuopt/ctx_size.py`:
+- Calculates maximum safe context length based on GPU memory and model parameters
+- Dynamically adjusts context sizes to optimize memory usage
+- Estimates model parameters from model names for automated configuration
+- Supports models including Mixtral, Llama 2, and Mistral
 
-2. Batch Processing Workflow (Importance: 90)
-- Length-aware sequence batching with 20% memory reserve
-- Token limit management (max 8192 tokens default)
-- Dynamic batch size scaling based on:
-  - Available GPU memory
-  - Model parameter count
-  - Sequence length distribution
-  - Memory overhead estimations
+### Command Generation (Importance: 85)
+Located in `dual_gpu_optimizer/dualgpuopt/optimizer.py`:
+- Generates framework-specific commands for llama.cpp and vLLM
+- Calculates optimal GPU split strings and tensor parallel sizes
+- Creates environment files with CUDA device configurations
+- Determines tensor fractions based on available GPU memory
 
-3. GPU Resource Allocation Flow (Importance: 85)
-- Real-time GPU utilization monitoring
-- Memory distribution across GPUs:
-  - Primary allocation based on VRAM ratios
-  - Secondary fine-tuning based on utilization
-  - Temperature-aware load balancing
-  - PCIe bandwidth optimization
+### Mixed Precision Execution (Importance: 80)
+Located in `dual_gpu_optimizer/dualgpuopt/mpolicy.py`:
+- Manages mixed precision inference with automatic fallback to FP32
+- Provides context managers for autocast operations
+- Handles GradScaler integration for mixed precision training
 
-4. Model Context Management (Importance: 80)
-- Automatic context size calculation based on:
-  - Layer count and dimensions
-  - KV head configuration 
-  - Precision settings (4/8/16-bit)
-  - MoE scaling factors
-- Dynamic adjustment based on memory availability
-
-Execution Paths:
-1. Pre-execution:
-   - GPU capability detection
-   - Memory availability checks
-   - Command parameter generation
-   
-2. Runtime:
-   - Batch queue management
-   - Memory utilization monitoring
-   - Temperature-based throttling
-   - Load rebalancing
-
-3. Error Recovery:
-   - OOM handling with cache purge
-   - Batch size reduction
-   - Automatic retries with reduced parameters
-
-The system prioritizes stable execution while maximizing GPU utilization through intelligent resource allocation and dynamic batch management.
+### Model Runner (Importance: 75)
+Located in `dual_gpu_optimizer/dualgpuopt/runner.py`:
+- Executes model inference across distributed GPU setup
+- Handles tensor parallel synchronization
+- Manages model loading and unloading
+- Provides error recovery for OOM conditions
 
 $END$

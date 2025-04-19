@@ -1,56 +1,69 @@
 ---
-description: Rules and guidelines for documenting data flow patterns between components in GPU optimization systems
-globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/commands/**/*.py
+description: Specifications for data flow and communication patterns between GPU optimization components
+globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Paths:
+The data flow architecture centers around GPU optimization, telemetry collection, and resource distribution across dual GPU systems.
 
-1. GPU Telemetry Collection Pipeline
-- Source: telemetry.py → event_bus.py → metrics.py
-- Raw GPU metrics flow from NVML interfaces through middleware processors
-- Normalized metrics published to application event bus
-- Performance data routed to Prometheus collectors
+## Core Data Flow Components
 
-2. Optimization Parameter Flow
-- Source: optimizer.py → mpolicy.py → gpu_commands.py
-- GPU memory splits calculated based on available VRAM
-- Mixed precision policies generated for inference
-- Command parameters propagated to framework-specific launchers
+### Telemetry Pipeline
+- GPU metrics flow from NVML through `telemetry.py` to event subscribers
+- Metrics include memory usage, utilization, temperature, power draw
+- Middleware processes telemetry before dispatching to visualization components
+- Data flows through EventBus using typed events for type safety
 
-3. Resource Monitoring Chain
-- Source: gpu_info.py → telemetry.py → dashboard.py
-- Real-time GPU utilization metrics
-- Temperature/power/clock data streams
-- PCIe bandwidth monitoring flow
+### Optimization Data Flow
+- GPU memory split calculations flow from `optimizer.py` to command generators
+- Tensor fraction data moves from detection to distribution algorithms
+- Layer balancing data flows from profiling to device mapping 
+- Command strings flow to launcher components for execution
 
-4. Configuration Distribution
-- Source: config_service.py → state_service.py → optimizer.py
-- GPU overclock profiles
-- Idle detection thresholds
-- Model context sizes
-- Framework-specific parameters
+### State Management Flow
+- Configuration changes flow through StateService to subscribed components
+- GPU settings flow from UI through command system to NVML
+- Errors flow through ErrorService to logging and UI components
+- Events flow through EventBus with priority-based routing
 
-Key Integration Points:
+### Resource Management Flow 
+- GPU resource data flows from probing to optimization algorithms
+- Context size data flows from calculation to command generation
+- Memory policy data flows from configuration to runtime execution
+- Layer distribution data flows from balancing to execution
 
-1. Metrics Collection Hub (metrics.py)
-- Centralizes GPU performance data
-- Distributes to monitoring systems
-- Feeds optimization decision engine
+## Key Data Flow Paths
 
-2. Event Distribution System (event_bus.py)
-- Routes GPU state changes
-- Propagates optimization decisions
-- Handles telemetry broadcasts
+```
+NVML -> Telemetry -> EventBus -> Dashboard
+Config -> StateService -> Optimizer -> Commands
+GPU Info -> LayerBalance -> DeviceMap -> Execution
+Metrics -> TelemetryMiddleware -> Visualization
+```
 
-3. Command Generation Pipeline (gpu_commands.py)
-- Receives optimization parameters
-- Generates framework commands
-- Routes to execution services
+## Critical Data Exchange Points
 
-The data flow architecture emphasizes real-time GPU metric collection and distribution, with optimization parameters flowing from analysis components to execution services through a centralized event bus system.
+1. GPU Detection to Optimization
+- File: `dualgpuopt/gpu_info.py` -> `dualgpuopt/optimizer.py`
+- Detected GPU capabilities flow to optimization algorithms
+- Memory allocation data flows to split calculations
+
+2. Telemetry to Visualization 
+- File: `dualgpuopt/telemetry.py` -> `dualgpuopt/gui/dashboard.py`
+- Real-time metrics flow through event system
+- Historical data maintained for trending
+
+3. Configuration to Execution
+- File: `dualgpuopt/configio.py` -> `dualgpuopt/runner.py`  
+- Settings flow through state management
+- Commands generated based on configuration
+
+4. Layer Balance to Distribution
+- File: `dualgpuopt/layer_balance.py` -> `dualgpuopt/optimizer.py`
+- Layer profiling data flows to distribution algorithms
+- Device mapping optimized based on layer characteristics
 
 $END$

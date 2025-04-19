@@ -1,61 +1,44 @@
 ---
-description: Monitors dual GPU performance metrics, utilization, and resource allocation for optimization
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py
+description: Specification for GPU resource monitoring, telemetry collection, and performance tracking systems
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core telemetry system components:
+### Telemetry Collection System
+- **GPU Metrics Pipeline** (`telemetry.py`):
+  - Collects real-time GPU metrics including utilization, memory usage, temperature, power draw
+  - Processes metrics through middleware pipeline for event bus publishing and logging
+  - Maintains telemetry history for trend analysis and visualization
+  - Handles NVML initialization and shutdown gracefully
 
-1. GPU Metrics Collection (telemetry.py):
-- Comprehensive GPU performance monitoring metrics:
-  - Memory utilization and bandwidth 
-  - PCIe RX/TX traffic
-  - Temperature, power, clock metrics
-  - Fan speeds and load percentages
-- Real-time middleware pipeline for metric processing/distribution
-- Non-blocking telemetry collection with failover to mock mode
-- Event-based metric publishing to application monitoring bus
+### Resource Monitoring Service 
+- **Metrics Processing** (`metrics.py`):
+  - Calculates rolling averages and peak values for GPU metrics
+  - Tracks PCIe bandwidth utilization between GPUs
+  - Monitors memory fragmentation and cache hit rates
+  - Generates resource usage reports for optimization analysis
 
-2. Idle Resource Detection (tray.py):
-- GPU idle state monitoring with configurable thresholds:
-  - Utilization below 30% trigger point
-  - 5-minute minimum idle duration
-  - Per-GPU idle tracking
-- Resource optimization recommendations generation
-- Notification system for underutilized GPU resources
+### Alert System
+- **Idle Detection** (`tray.py`):
+  - Monitors GPU utilization patterns to detect extended idle periods
+  - Triggers notifications after 5 minutes of low GPU usage
+  - Suggests resource cleanup actions to users
+  - Maintains alert history and suppression logic
 
-3. Performance Analysis (metrics.py):
-- Batch latency tracking for end-to-end processing
-- Queue depth monitoring for request handling
-- Prometheus integration for metrics collection
-- Rolling 60-second history window for trend analysis
+### GPU Information Service
+- **Hardware Probing** (`gpu_info.py`):
+  - Detects available GPUs and their capabilities
+  - Monitors thermal throttling events and power state changes
+  - Tracks memory allocation/deallocation patterns
+  - Reports GPU clock speeds and performance states
 
-4. Hardware Info Collection (gpu_info.py):
-- Architecture-specific CUDA core detection
-- Memory capacity and bandwidth profiling
-- Temperature threshold monitoring:
-  - Warning level: 80°C
-  - Critical level: 90°C
-- Multi-GPU synchronization and correlation
-
-Key monitoring thresholds:
-```python
-UTIL_LOW = 30%      # Idle detection trigger
-UTIL_MEDIUM = 60%   # Normal operation range  
-UTIL_HIGH = 90%     # High load warning
-TEMP_WARNING = 80°C
-TEMP_CRITICAL = 90°C
-```
-
-The system maintains continuous monitoring of dual GPU setups with emphasis on:
-- Resource utilization efficiency
-- Thermal management
-- Memory allocation optimization
-- Performance bottleneck detection
-
-All metrics are processed through a priority-based event pipeline enabling real-time optimization decisions and resource reallocation.
+Importance Scores:
+- Telemetry Collection: 95 (Core monitoring functionality)
+- Resource Monitoring: 90 (Critical performance tracking)
+- Alert System: 85 (Important user notification system)
+- GPU Information: 80 (Key hardware integration)
 
 $END$
