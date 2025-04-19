@@ -161,7 +161,7 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Generate high-level documentation overviews for GPU optimization systems, particularly those dealing with multi-GPU management, model distribution, and hardware resource optimization
+description: Generate high-level overview documentation focused on core business logic and domain-specific implementations in GPU optimization and monitoring systems
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -178,42 +178,40 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU optimization logic for machine learning workloads, organized into three core domains:
+The DualGPUOptimizer implements specialized logic for optimizing dual GPU setups in machine learning environments through several key components:
 
-## GPU Resource Management (Importance: 95)
-- Intelligent distribution of model layers across multiple GPUs
-- Dynamic memory split calculations based on GPU capabilities
-- Real-time monitoring of GPU metrics including temperature, power, memory usage
-- Hardware-aware tensor splitting and parallelism configuration
+### Core GPU Optimization Logic
+- GPU split calculation for workload distribution across multiple GPUs
+- Dynamic tensor fraction calculations based on available GPU memory 
+- Environment configuration generation for optimal GPU utilization
+- Custom command generation for model runners (llama.cpp, vLLM)
 
-Key files:
-- dual_gpu_optimizer/dualgpuopt/optimizer.py
-- dual_gpu_optimizer/dualgpuopt/layer_balance.py
-- dual_gpu_optimizer/dualgpuopt/gpu_info.py
+### Real-time GPU Telemetry 
+- Continuous collection of GPU metrics (utilization, memory, temperature, power)
+- Middleware pipeline for telemetry processing and event distribution
+- Priority-based event dispatching system for metrics updates
+- Historical GPU usage tracking and visualization
 
-## Model Deployment Optimization (Importance: 90)
-- Framework-specific deployment strategies for llama.cpp and vLLM
-- Context size optimization based on model parameters
-- Smart batching system with length-aware inference scheduling
-- Automatic tensor parallelism configuration
+### Optimization Dashboard
+- Dynamic GPU metrics visualization with real-time updates
+- Interactive controls for overclocking and fan speed management
+- Model preset management for quick configuration
+- Command generation interface for model deployment
 
-Key files:
-- dual_gpu_optimizer/dualgpuopt/ctx_size.py
-- dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
-- dual_gpu_optimizer/dualgpuopt/batch/heuristics.py
+### State Management and Configuration
+- Centralized state service with event notifications
+- Configuration persistence with automatic defaults
+- Error handling specialized for GPU operations
+- Mock GPU mode for testing and demonstration
 
-## GPU State Management (Importance: 85)
-- Overclocking control with safety limits and rollback capability
-- Idle detection and notification system
-- Event-driven GPU metrics tracking
-- Multi-GPU telemetry collection and analysis
+Key Implementation Files:
+- `dualgpuopt/optimizer.py`: Core GPU optimization algorithms
+- `dualgpuopt/telemetry.py`: GPU metrics collection and processing
+- `dualgpuopt/services/event_bus.py`: Event distribution system
+- `dualgpuopt/gui/dashboard.py`: Real-time metrics visualization
+- `dualgpuopt/commands/gpu_commands.py`: GPU control operations
 
-Key files:
-- dual_gpu_optimizer/dualgpuopt/services/state_service.py
-- dual_gpu_optimizer/dualgpuopt/services/event_bus.py
-- dual_gpu_optimizer/dualgpuopt/telemetry.py
-
-The system implements a dual-mode architecture supporting both real and mock GPU environments, enabling development and testing without physical GPU hardware while maintaining production functionality with real GPU systems.
+The system uses an event-driven architecture where GPU telemetry data flows through a processing pipeline, triggering UI updates and optimization decisions. The optimization logic focuses on workload distribution and resource utilization across multiple GPUs, while providing real-time monitoring and control capabilities.
 
 $END$
 END SPECIFICATION

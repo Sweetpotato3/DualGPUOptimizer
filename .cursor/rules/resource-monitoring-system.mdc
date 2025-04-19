@@ -1,45 +1,48 @@
 ---
-description: Resource monitoring system for tracking GPU metrics, utilization, and alerting mechanisms.
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py,**/event_dashboard.py
+description: Specification for GPU resource monitoring, telemetry collection, and metric visualization systems
+globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/dashboard.py,**/event_dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements comprehensive GPU telemetry collection and alert mechanisms:
-
-GPU Metrics Collection (Importance: 95)
-- Tracks critical GPU performance indicators:
-  - Utilization percentage 
-  - Memory usage/allocation
-  - Temperature monitoring
-  - Power consumption tracking
+### GPU Telemetry Collection Engine
+- Collects comprehensive real-time GPU metrics through NVML including:
+  - Memory usage and utilization percentages
+  - Temperature and power consumption
   - Fan speeds and clock rates
-  - PCIe bandwidth (RX/TX)
-- Maintains 60-point sliding window history
-- Default 1-second telemetry collection interval
+  - PCIe throughput
+- Implements parallel GPU probing using thread pools for efficient data collection
+- Supports mock GPU data generation for testing environments
 
-Utilization Alert System (Importance: 85)
-- GPU idle detection with configurable thresholds:
-  - Default 30% utilization threshold
-  - 5-minute idle time window
-- Notification triggers for underutilized resources
-- Thread-safe updates using RLock mechanism
+### Real-Time Metric Processing Pipeline
+- Event-driven middleware architecture processes raw telemetry data:
+  - EventBusMiddleware publishes metrics to subscribers
+  - LoggingMiddleware maintains metric history
+  - PrometheusMiddleware exports metrics (optional)
+- Maintains rolling history of utilization metrics for trending
+- Supports pluggable metric transformers for data normalization
 
-Event-Driven Architecture (Importance: 90)
-- Priority-based event processing system:
-  - CRITICAL: Hardware safety events
-  - HIGH: Resource allocation events
-  - NORMAL: Standard telemetry
-  - LOW: Background metrics
-- Real-time metrics distribution via event bus
-- Dynamic GPU detection/removal handling
+### Resource Alert System
+- Monitors GPU idle states and triggers notifications after 5 minutes of inactivity
+- Tracks memory usage thresholds and alerts on potential OOM conditions
+- Supports custom alert rules based on temperature and power thresholds
 
-Relevant Files:
-- dual_gpu_optimizer/dualgpuopt/telemetry.py
-- dual_gpu_optimizer/dualgpuopt/tray.py
-- dual_gpu_optimizer/dualgpuopt/metrics.py
-- dual_gpu_optimizer/dualgpuopt/gui/event_dashboard.py
+### Visualization Components
+- Real-time GPU metrics dashboard showing:
+  - Utilization graphs with historical data
+  - Memory usage breakdowns
+  - Temperature and power readings
+  - Clock speed monitoring
+- Color-coded status indicators for different resource states
+- Dynamic GPU discovery and display adaptation
+
+### Key Files
+- `telemetry.py`: Core telemetry collection and processing
+- `metrics.py`: Metric definitions and Prometheus integration
+- `gpu_info.py`: GPU data structure and mock implementations
+- `dashboard.py`: Main visualization components
+- `event_dashboard.py`: Event-driven metric display updates
 
 $END$

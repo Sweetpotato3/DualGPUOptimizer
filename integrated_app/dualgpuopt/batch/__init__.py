@@ -1,1 +1,1 @@
-"""Batch processing utilities for DualGPUOptimizer.""" 
+"""Batch processing module for optimized model inference.""" 

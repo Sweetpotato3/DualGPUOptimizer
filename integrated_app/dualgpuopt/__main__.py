@@ -24,6 +24,8 @@ from dualgpuopt.gui_constants import (
 from dualgpuopt.gpu_info import probe_gpus
 from dualgpuopt.telemetry import start_stream, register_middleware, LoggingMiddleware
 from dualgpuopt.gui.dashboard import GPUDashboard
+from dualgpuopt.gui.optimizer_tab import OptimizerTab
+from dualgpuopt.services.state_service import app_state
 
 
 class MainApplication:
@@ -34,6 +36,10 @@ class MainApplication:
         self.args = args
         self.logger = logging.getLogger("dualgpuopt.main")
         self.telemetry_queue = None
+        
+        # Probe GPUs
+        self.gpus = probe_gpus()
+        self.logger.info(f"Detected {len(self.gpus)} GPUs")
         
         # Create the root window
         self.root = tk.Tk()
@@ -50,6 +56,9 @@ class MainApplication:
         
         # Start telemetry collection
         self.start_telemetry()
+        
+        # Load application state
+        self.load_state()
     
     def setup_style(self) -> None:
         """Set up the application style."""
@@ -73,6 +82,16 @@ class MainApplication:
                         foreground=LIGHT_FOREGROUND,
                         padding=[10, 2],
                         font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
+        style.configure("TLabelframe", 
+                        background=DARK_BACKGROUND,
+                        foreground=LIGHT_FOREGROUND)
+        style.configure("TLabelframe.Label", 
+                        background=DARK_BACKGROUND,
+                        foreground=PURPLE_PRIMARY,
+                        font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
+        style.configure("TEntry", 
+                        fieldbackground=DARK_BACKGROUND,
+                        foreground=LIGHT_FOREGROUND)
         
         # Map styles for different states
         style.map("TNotebook.Tab",
@@ -122,9 +141,25 @@ class MainApplication:
         self.dashboard = GPUDashboard(self.dashboard_frame)
         self.dashboard.pack(fill=tk.BOTH, expand=True)
         
+        # Create optimizer tab
+        self.optimizer_frame = ttk.Frame(self.notebook)
+        self.notebook.add(self.optimizer_frame, text="Optimizer")
+        
+        # Add optimizer component
+        self.optimizer = OptimizerTab(self.optimizer_frame, self.gpus)
+        self.optimizer.pack(fill=tk.BOTH, expand=True)
+        
         # Create footer
         self.footer_frame = ttk.Frame(self.main_frame)
         self.footer_frame.pack(fill=tk.X, padx=PAD, pady=PAD)
+        
+        # Add save state button
+        self.save_button = ttk.Button(
+            self.footer_frame,
+            text="Save Settings",
+            command=self.save_state
+        )
+        self.save_button.pack(side=tk.LEFT)
         
         # Add exit button
         self.exit_button = ttk.Button(
@@ -148,9 +183,26 @@ class MainApplication:
         except Exception as e:
             self.logger.error(f"Failed to start telemetry: {e}")
     
+    def save_state(self) -> None:
+        """Save application state to disk."""
+        try:
+            app_state.save_to_disk()
+            self.logger.info("Application state saved")
+        except Exception as e:
+            self.logger.error(f"Failed to save application state: {e}")
+    
+    def load_state(self) -> None:
+        """Load application state from disk."""
+        try:
+            app_state.load_from_disk()
+            self.logger.info("Application state loaded")
+        except Exception as e:
+            self.logger.error(f"Failed to load application state: {e}")
+    
     def on_exit(self) -> None:
         """Handle application exit."""
         self.logger.info("Application shutting down")
+        self.save_state()
         self.root.destroy()
     
     def run(self) -> None:

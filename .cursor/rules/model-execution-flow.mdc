@@ -1,74 +1,66 @@
 ---
-description: Defines the execution workflow and orchestration of LLM models across multiple GPUs and frameworks
-globs: **/*.py,**/model/**,**/execution/**,**/runner/**
+description: Manages model execution workflows, command generation, and GPU resource allocation for LLM inference optimization
+globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/telemetry.py,**/batch/*.py,**/commands/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Model Execution Components (Importance: 95)
+## Core Execution Components
 
-1. Framework-Specific Model Deployment
-- Specialized command generation for llama.cpp and vLLM frameworks
-- Dynamic tensor parallelism configuration for vLLM
-- GPU layer splitting logic for llama.cpp
-- Environment variable orchestration based on GPU configuration
+### Command Generation
+- Generates optimized execution commands for different model frameworks:
+  ```python
+  llama_command(model_path, ctx_size, gpu_split)  # For llama.cpp models
+  vllm_command(model_path, tensor_parallel)       # For vLLM models
+  ```
+- Calculates optimal GPU splits based on available memory and model requirements
+- Handles environment variable configuration for multi-GPU setups
 
-Files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/runner.py
+### Batch Processing Engine
+Located in `batch/smart_batch.py`:
+- Implements length-aware dynamic batching for inference requests
+- Uses configurable bucket policies (power-of-2, token ratio) for sequence batching
+- Manages backlog limits to prevent memory overflow
+- Handles GPU OOM errors with automatic retries
 
-## Smart Batching System (Importance: 90)
+### GPU Resource Management
+Located in `gpu_info.py`:
+- Collects real-time GPU metrics (memory, utilization, temperature)
+- Calculates tensor fractions for optimal model distribution
+- Generates environment configurations for GPU visibility and communication
 
-1. Dynamic Batch Scheduling
-- Length-aware inference queue management
-- Token count based batch optimization
-- OOM recovery with cache clearing mechanism
-- Two specialized bucketing strategies:
-  - Power-of-two sequence grouping
-  - Token ratio maintenance between buckets
+### Telemetry Pipeline
+Located in `telemetry.py`:
+- Streams real-time GPU performance metrics
+- Implements middleware pattern for metrics processing
+- Publishes metrics events for monitoring and optimization
 
-Files:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/batch/heuristics.py
+### Model Execution Control
+Located in `runner.py`:
+- Manages model lifecycle (load, execute, unload)
+- Handles framework-specific execution flows
+- Coordinates GPU resource allocation
+- Implements execution error recovery
 
-## Layer Distribution Engine (Importance: 85)
+## File Paths Summary
+```
+dual_gpu_optimizer/dualgpuopt/
+  ├── optimizer.py      # Core optimization logic
+  ├── runner.py        # Model execution management  
+  ├── gpu_info.py      # GPU resource monitoring
+  ├── telemetry.py     # Metrics collection
+  └── batch/
+      ├── smart_batch.py    # Request batching
+      └── heuristics.py     # Batching policies
+```
 
-1. Adaptive Layer Balancing 
-- Latency-aware neural network layer distribution
-- Dual sequence length profiling (64/1024 tokens)
-- 90% memory reservation quota enforcement
-- Dynamic workload distribution based on execution time
-
-Files:
-- dualgpuopt/layer_balance.py
-
-## Context Management (Importance: 80)
-
-1. Model Context Calculation
-- Maximum safe context length determination
-- Model-specific parameter handling:
-  - Layer count
-  - KV heads configuration  
-  - Head dimensions
-  - Precision bits
-  - MoE factor handling
-- Multi-GPU memory buffer allocation
-
-Files:
-- dualgpuopt/ctx_size.py
-
-## Execution State Management (Importance: 75)
-
-1. Model Process Lifecycle
-- Resource allocation orchestration
-- Process state transitions
-- GPU configuration state tracking
-- Framework initialization sequencing
-
-Files:
-- dualgpuopt/gui/launcher.py
-- dualgpuopt/services/state_service.py
+Importance Scores:
+- Command Generation: 95 (Core business logic for model execution)
+- Batch Processing: 90 (Critical for inference optimization)
+- GPU Resource Management: 85 (Key for multi-GPU coordination)
+- Telemetry Pipeline: 75 (Important for optimization decisions)
+- Model Execution Control: 85 (Essential workflow management)
 
 $END$

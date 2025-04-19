@@ -1,76 +1,80 @@
 ---
-description: Definition of data flows, component interactions, and information pathways for the dual GPU optimization system
-globs: *.py,dualgpuopt/**/*.py
+description: Specification for GPU optimization data flow architecture, telemetry collection, and metrics processing across system components
+globs: **/services/*.py,**/gui/*.py,**/metrics.py,**/telemetry.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Primary Data Flow Paths:
+### Core Data Flow Components
 
-1. GPU Metrics Pipeline
-- Source: GPU hardware via NVML/CUDA libraries 
-- Flow: Hardware -> Telemetry Service -> Event Bus -> Dashboard/Visualization
-- Key metrics:
-  * Utilization rates
-  * Memory usage
-  * Temperature/Power data
-  * Clock speeds
-- Update frequencies:
-  * Critical metrics: 500ms
-  * Standard metrics: 1000ms
-  * Background metrics: 2000ms
+1. GPU Telemetry Pipeline
+- GPUs → GPU Info Collection (`gpu_info.py`) → Telemetry Service (`telemetry.py`) → Event Bus → Dashboard/UI
+- Collects real-time metrics: utilization, memory, temperature, power usage
+- Data processed through middleware pipeline with EventBus and Logging handlers
+- Metrics published to subscribers using priority-based event dispatch
 
-2. Optimization Parameter Flow
-- Source: GPU Memory Analysis
-- Flow: Optimizer -> Command Generator -> Runner Service -> GPU Hardware
-- Parameters:
-  * Tensor split ratios
-  * Layer distribution configs
-  * Memory allocation maps
-  * Context size calculations
+2. Configuration Flow
+- Config Service → Event Bus → UI Components
+- Manages GPU optimization settings, overclocking profiles
+- Configuration changes trigger `config_changed` events
+- Settings automatically propagated to dependent components
 
-3. Configuration Data Flow
-- Source: Settings Service
-- Flow: Config Service -> State Manager -> GPU Commands -> Hardware
-- Settings:
-  * Overclock profiles
-  * Fan curves
-  * Power limits
-  * Idle thresholds
+3. State Management Flow
+- State Service → Event Bus → UI/Command Components 
+- Centralized state updates for GPU status and optimization parameters
+- State changes trigger typed events with specific keys
+- Components subscribe to relevant state changes
 
-4. Event Communication Architecture
-- Central Event Bus with priority levels:
-  * CRITICAL: GPU error conditions
-  * HIGH: Resource allocation changes
-  * NORMAL: Metric updates
-  * LOW: Background tasks
+4. Optimization Data Flow
+- GPU Commands → Event Bus → State Service → UI
+- Overclocking and optimization commands generate result events
+- Results update application state and trigger UI refresh
+- Command history tracked for undo/redo operations
 
-Key Integration Points:
+5. Metrics Collection Pipeline
+- GPU Metrics → Prometheus Collectors → External Monitoring
+- Optional integration with Prometheus for metrics export
+- Histograms for batch latency and queue depth
+- Fallback collectors when Prometheus unavailable
 
-1. GPU Resource Management
-File: dualgpuopt/services/state_service.py
-- Manages bidirectional flow of GPU state data
-- Coordinates resource allocation across components
-- Importance Score: 95
+### Key Data Structures
 
-2. Metrics Distribution System
-File: dualgpuopt/telemetry.py
-- Collects and distributes real-time GPU metrics
-- Routes performance data to visualization components
-- Importance Score: 85
+1. GPU Telemetry Data
+```python
+{
+  'utilization': float,
+  'memory_used': int,
+  'temperature': int,
+  'power_usage': float,
+  'clock_speed': int
+}
+```
 
-3. Command Pipeline
-File: dualgpuopt/commands/gpu_commands.py
-- Handles GPU configuration command flow
-- Manages parameter validation and execution
-- Importance Score: 80
+2. Configuration Data
+```python
+{
+  'gpu_settings': dict,
+  'optimization_params': dict,
+  'monitoring_config': dict
+}
+```
 
-4. Event Communication
-File: dualgpuopt/services/event_bus.py
-- Routes system events between components
-- Manages priority-based message distribution
-- Importance Score: 75
+3. State Data
+```python
+{
+  'gpu_status': dict,
+  'active_profile': str,
+  'command_history': list
+}
+```
+
+### File Paths for Core Components
+- Telemetry: `dualgpuopt/telemetry.py`
+- Event Bus: `dualgpuopt/services/event_bus.py` 
+- State Service: `dualgpuopt/services/state_service.py`
+- Config Service: `dualgpuopt/services/config_service.py`
+- Metrics: `dualgpuopt/metrics.py`
 
 $END$
