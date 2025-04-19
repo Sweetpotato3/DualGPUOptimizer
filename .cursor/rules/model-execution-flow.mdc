@@ -1,48 +1,54 @@
 ---
-description: Defines execution workflows for LLM models including command generation, GPU allocation and runtime optimization
-globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
+description: Defines the execution flow and resource allocation for running LLM models across dual GPUs
+globs: **/optimizer.py,**/runner.py,**/commands/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Command Generation
-The optimizer generates framework-specific commands for model execution:
+### Core Execution Components
 
-- llama.cpp commands include GPU memory split configuration and context size parameters
-- vLLM commands specify tensor parallel size and GPU allocation settings
-- Environment configuration files are generated with CUDA and NCCL settings
+1. **Command Generation and Optimization**
+- Generates optimized command strings for llama.cpp and vLLM execution
+- Calculates GPU memory splits and tensor fractions based on available GPU memory
+- Creates environment files with CUDA device mappings and runtime parameters
 
-## Layer Distribution
-Implements latency-aware layer redistribution across GPUs:
-- Profiles layer execution times
-- Balances GPU memory usage while minimizing latency impact 
-- Generates device mapping JSON for layer assignments
-- Considers factors like number of layers, KV heads, head dimensions
+2. **Asynchronous Batch Processing**
+The SmartBatcher handles inference request queueing and execution:
+- Groups requests into buckets based on input sequence length
+- Implements back-pressure via queue depth limits
+- Retries inference on OOM errors after cache clearing
+- Uses pluggable heuristics for bucket sizing
 
-## Batch Processing
-SmartBatcher provides asynchronous request batching:
-- Groups inference requests by input length using bucketing policies
-- Implements back-pressure to prevent memory overflow
-- Handles GPU OOM errors with automatic retry after cache clearing
+3. **Layer Distribution System**
+- Profiles layer execution times to identify fast/slow layers
+- Redistributes layers across GPUs based on memory quotas and latency
+- Saves device maps as JSON for model inference
 
-## Command Pattern Implementation
-Commands handle GPU operations with undo support:
-- ApplyOverclockCommand manages GPU overclocking settings
-- EnableMockGpuCommand toggles mock GPU mode
-- Command results publish to event bus for monitoring
+4. **Context Size Management**
+- Calculates safe maximum context length based on:
+  - Available GPU memory
+  - Model parameters (layers, heads, dimensions)
+  - MOE factors
+  - Precision requirements
+  
+5. **Command Pattern for GPU Operations**
+- Encapsulates GPU operations in command objects
+- Tracks command history for undo/redo
+- Publishes execution events for monitoring
+- Handles overclocking and mock GPU mode commands
 
-## Key File Paths
-- `dualgpuopt/optimizer.py`: Command generation and optimization
-- `dualgpuopt/batch/smart_batch.py`: Batching implementation
-- `dualgpuopt/commands/gpu_commands.py`: GPU operation commands
-- `dualgpuopt/layer_balance.py`: Layer distribution logic
-
-Importance Scores:
-- Command Generation: 95 - Core execution workflow
-- Layer Distribution: 90 - Critical for multi-GPU performance
-- Batch Processing: 85 - Key inference optimization
-- Command Pattern: 75 - Important operational control
+### Key File Paths:
+```
+dual_gpu_optimizer/dualgpuopt/
+├── optimizer.py         # Core optimization logic
+├── runner.py           # Model execution
+├── commands/
+│   ├── gpu_commands.py # GPU operation commands
+└── batch/
+    ├── smart_batch.py  # Batching system
+    └── heuristics.py   # Batching policies
+```
 
 $END$

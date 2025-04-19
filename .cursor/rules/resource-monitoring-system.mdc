@@ -1,61 +1,55 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and alert systems
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py,**/gpu_info.py
+description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and generating alerts
+globs: **/telemetry.py,**/tray.py,**/dashboard.py,**/event_dashboard.py,**/metrics.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### GPU Telemetry Collection
-Middleware-based telemetry system that collects comprehensive GPU metrics:
-- Utilization rates across processing, memory, encoder and decoder
-- Memory allocation and free space tracking
-- Temperature monitoring with thermal alerts
-- Power consumption tracking
-- Fan speed monitoring
+## Core Telemetry Collection
+The telemetry system continuously collects and processes GPU metrics including:
+- Utilization rates for compute and memory
+- Temperature readings
+- Power consumption levels
+- Clock speeds (core and memory)
 - PCIe bandwidth utilization
-- Clock speeds for graphics and memory
+- Memory allocation and usage
 
-Implementation Score: 95 - Core business logic for GPU monitoring
+## Real-time Monitoring Pipeline 
+- Telemetry collector runs on configurable intervals (default 1s)
+- Implements middleware pattern for metric processing:
+  - Raw data collection from NVML
+  - Metric normalization and formatting
+  - Event bus publishing for UI updates
+  - History tracking for graphs
 
-### Real-time Metrics Processing Pipeline
-Multi-stage pipeline for processing GPU telemetry:
-- EventBusMiddleware publishes metrics to event subscribers
-- LoggingMiddleware records metric history
-- Configurable sampling intervals for different metrics
-- Buffered metric history for trend analysis
+## GPU Idle Detection
+- Monitors GPU utilization patterns over time
+- Triggers alerts when GPUs remain below threshold for 5+ minutes
+- Suggests freeing resources through system tray notifications
+- Customizable idle thresholds and monitoring periods
 
-Implementation Score: 85 - Critical data processing workflow
+## Metrics Dashboard
+- Live utilization graphs with 60-point history
+- Per-GPU metrics display with color coding
+- Automatic scaling for bandwidth values (KB/s to GB/s)
+- Dynamic UI updates based on detected GPUs
 
-### Alert Management System
-Proactive monitoring system with configurable alerts:
-- GPU idle detection after 5 minutes of low utilization
-- Temperature threshold monitoring
-- Memory utilization warnings
-- Power consumption alerts
-- System tray notifications for critical events
+## Alert System
+- Threshold-based alerting for:
+  - High temperature conditions
+  - Sustained high utilization
+  - Memory bottlenecks
+  - Power limit warnings
+- Alerts published through event bus
+- System tray integration for notifications
 
-Implementation Score: 80 - Important user notification system
-
-### Dashboard Visualization
-Real-time visualization of GPU metrics:
-- GPU utilization history graphs
-- Memory usage tracking
-- Temperature and power monitoring
-- PCIe bandwidth visualization
-- Distinct color coding per GPU
-- Auto-scaling axis for different metrics
-
-Implementation Score: 75 - Key data presentation
-
-### Mock GPU Support
-Testing infrastructure for GPU monitoring:
-- Simulated GPU metrics generation
-- Configurable mock GPU specifications
-- Reproducible testing scenarios
-- Event simulation for alerts
-
-Implementation Score: 65 - Supporting development functionality
+Importance Scores:
+- Telemetry Collection: 95 (Core monitoring functionality)
+- Real-time Pipeline: 85 (Critical data flow)
+- Idle Detection: 75 (Resource optimization)
+- Metrics Dashboard: 70 (Visualization)
+- Alert System: 80 (System health monitoring)
 
 $END$

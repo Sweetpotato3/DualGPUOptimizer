@@ -1,60 +1,58 @@
 ---
-description: Analyzes data flow patterns between components for GPU resource optimization and monitoring
-globs: **/services/*.py,**/gui/*.py,**/dualgpuopt/*.py
+description: Use for analyzing data flow patterns between GPU optimization components and services
+globs: **/services/**,**/gpu_info.py,**/telemetry.py,**/event_bus.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Key data flows in the DualGPUOptimizer system:
+The data flow architecture consists of several key flows:
 
-### Core Event Bus Data Flow (Importance: 95)
-- Event bus handles typed events with priority-based dispatch
-- Critical data paths:
-  1. GPU telemetry data → Event bus → Dashboard components
-  2. Configuration changes → Event bus → Service components
-  3. Error events → Error service → UI notifications
-- File: `services/event_bus.py`
+## Core Data Flows
 
-### GPU Telemetry Pipeline (Importance: 90)
-- Telemetry collection generates metrics data:
-  - Memory usage, utilization, temperature, power
-  - PCIe bandwidth metrics
-  - Clock speeds and fan data
-- Data flows through middleware pipeline:
-  1. Raw GPU metrics → Telemetry middleware → Event bus
-  2. Event bus → Dashboard visualizations
-- Files: `telemetry.py`, `gui/dashboard.py`
+1. GPU Telemetry Flow
+- GPU metrics flow from NVML through gpu_info.py to telemetry service
+- Telemetry service broadcasts metrics via event bus to dashboard and optimizer
+- Metrics include: utilization, memory, temperature, power, clocks
+- Dashboard renders realtime visualizations of metrics
 
-### Configuration Data Flow (Importance: 85)
-- Config service manages bidirectional data flow:
-  1. Default configs → Load/validation → Active settings
-  2. User changes → Config validation → Storage
-  3. Config updates → Event notifications → UI components
-- File: `services/config_service.py`
+2. Configuration Flow
+- Config service manages application settings and GPU parameters
+- Changes propagate through event bus to relevant components  
+- Overclocking settings flow from UI through command pattern to GPU
+- Preset configs load from JSON and apply to optimizer
 
-### State Management Flow (Importance: 80)
-- Centralized state service handles:
-  1. GPU state changes → State updates → UI components
-  2. User actions → Command execution → State mutations
-  3. State changes → Event propagation → Dependent components
-- File: `services/state_service.py`
+3. Optimization Flow  
+- Layer balance data flows from profiler to optimizer
+- Context size calculator determines memory splits
+- Device maps flow to model runners
+- Optimization parameters broadcast via events
 
-### Optimization Data Flow (Importance: 85)
-1. GPU Discovery:
-   - NVML detection → GPU capabilities → Memory splits
-2. Model Configuration:
-   - Model parameters → Context size calculation → GPU assignment
-3. Command Generation:
-   - GPU splits + Model config → Framework commands
-- Files: `optimizer.py`, `gpu_info.py`
+4. Event Flow System
+- Central event bus handles typed events with priorities
+- GPU state changes trigger config/telemetry updates
+- Error events flow to centralized error service
+- UI components subscribe to relevant event types
 
-### Batch Processing Pipeline (Importance: 75)
-- Smart batching data flow:
-  1. Inference requests → Length-based bucketing
-  2. Batched requests → GPU assignment
-  3. Execution results → Response aggregation
-- File: `batch/smart_batch.py`
+## Key Integration Points
+
+1. GPU Resource Data
+- gpu_info.py → telemetry service → event bus → dashboard
+- Memory/utilization stats drive optimization decisions
+
+2. Optimization Parameters  
+- optimizer.py → command generators → runners
+- Device maps and memory splits coordinate GPU usage
+
+3. Monitoring Metrics
+- telemetry.py → event bus → dashboard/UI
+- Error metrics flow through error service
+
+4. Configuration State
+- config_service.py → event bus → components
+- Settings changes trigger component updates
+
+The architecture emphasizes loose coupling through event-based communication while maintaining consistent data flow patterns for GPU resources, configuration, and monitoring data.
 
 $END$

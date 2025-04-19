@@ -1,57 +1,50 @@
 ---
-description: Handles GPU memory optimization, tensor parallelism, and memory allocation strategies
-globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
+description: GPU memory optimization, tensor parallel splits calculation, and memory allocation strategies
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm
-The optimizer implements GPU memory distribution through tensor parallelism calculation and split ratios:
+The GPU optimization logic implements several key algorithms for memory distribution and parallel model execution:
 
-```python
-- Memory split calculation based on total available VRAM across GPUs
-- Tensor parallel size determination using GPU count and model requirements  
-- Dynamic allocation balancing based on GPU capabilities
-```
+### GPU Memory Distribution
+- Calculates optimal memory splits across GPUs based on total VRAM capacity and model size
+- Determines tensor parallel ratios per GPU using heuristic bucketing based on layer memory requirements
+- Implements adaptive memory quotas that reserve space for activation memory and tensors
+- File: `gpu_info.py`
 
-File: dual_gpu_optimizer/dualgpuopt/optimizer.py
+### Layer Distribution Algorithm
+- Profiles execution time of model layers to identify compute-heavy vs memory-heavy components
+- Uses latency-aware mapping to distribute layers across GPUs while respecting memory constraints
+- Generates a JSON device map specifying optimal layer placement
+- File: `layer_balance.py`
 
-## Layer Distribution System 
-Implements latency-aware layer redistribution:
+### Context Size Calculation
+- Implements heuristic formula for safe context length based on:
+  - Available GPU memory
+  - Number of model layers and parameters
+  - KV cache requirements
+  - Precision bits
+  - MOE routing factor
+- Reserves memory buffer to prevent OOM errors
+- File: `ctx_size.py`
 
-- Profiles execution time per layer across available GPUs
-- Redistributes layers based on memory usage and latency metrics
-- Generates device mapping JSON for layer assignments
-- Adapts distribution based on real-time GPU telemetry
-
-File: dual_gpu_optimizer/dualgpuopt/layer_balance.py
-
-## Context Size Calculator
-Calculates maximum safe context length:
-
-- Analyzes available GPU memory across devices
-- Considers model parameters (layers, heads, dimensions)
-- Accounts for mixed precision and optimization settings
-- Provides recommended context size per GPU configuration
-
-File: dual_gpu_optimizer/dualgpuopt/ctx_size.py
-
-## GPU Memory Monitoring
-Real-time GPU memory tracking and optimization:
-
-- Collects detailed metrics on memory usage and allocation
-- Monitors VRAM fragmentation and utilization 
-- Provides memory availability stats for optimization decisions
-- Tracks PCIe bandwidth usage between GPUs
-
-File: dual_gpu_optimizer/dualgpuopt/gpu_info.py
+### Telemetry-Based Optimization
+- Collects real-time GPU metrics:
+  - Memory usage
+  - Utilization rates  
+  - PCIe bandwidth
+  - Temperature
+- Uses metrics to dynamically adjust memory splits
+- Enables reactive optimization based on actual GPU load
+- File: `optimizer.py`
 
 Importance Scores:
-- Memory Distribution Algorithm: 95 (Core optimization logic)
-- Layer Distribution System: 90 (Critical for multi-GPU performance)
-- Context Size Calculator: 85 (Key for memory management)
-- GPU Memory Monitoring: 80 (Essential telemetry for optimization)
+- GPU Memory Distribution: 95 (Core distribution logic)
+- Layer Distribution: 90 (Critical for model performance)
+- Context Size Calculation: 85 (Key for preventing OOM)
+- Telemetry Optimization: 75 (Important but supplementary)
 
 $END$
