@@ -42,13 +42,13 @@ from dualgpuopt.services.state_service import app_state
 from dualgpuopt.services.config_service import config_service
 from dualgpuopt.services.error_service import error_service
 
-# Global layout constants
-PAD = 16  # Double padding from original 8
-PROGRESSBAR_THICKNESS = 14
-
 
 class DualGpuApp(ttk.Frame):
     """Main application class for the DualGPUOptimizer."""
+    
+    # Global layout constants
+    PAD = 16  # Double padding from original 8
+    PROGRESSBAR_THICKNESS = 14
     
     def __init__(self, master: tk.Tk) -> None:
         """
@@ -136,7 +136,7 @@ class DualGpuApp(ttk.Frame):
                 style.master = root
                 
             # Configure progressbar thickness
-            style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
+            style.configure("TProgressbar", thickness=self.PROGRESSBAR_THICKNESS)
             
             # Configure custom styles
             style.configure("Secondary.TFrame", background=style.colors.secondary)
@@ -167,13 +167,13 @@ class DualGpuApp(ttk.Frame):
                     
                     # Configure style
                     style = ttk.Style()
-                    style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
+                    style.configure("TProgressbar", thickness=self.PROGRESSBAR_THICKNESS)
                 except Exception as e:
                     self.logger.warning(f"Failed to set ThemedTk theme: {e}")
         else:
             # Basic styling when no theming library is available
             style = ttk.Style()
-            style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
+            style.configure("TProgressbar", thickness=self.PROGRESSBAR_THICKNESS)
     
     def _register_event_handlers(self) -> None:
         """Register handlers for application events."""
@@ -274,7 +274,7 @@ class DualGpuApp(ttk.Frame):
         """Initialize the user interface."""
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.pack(fill="both", expand=True, padx=PAD, pady=PAD)
+        self.pack(fill="both", expand=True, padx=self.PAD, pady=self.PAD)
         
         # Use notebook for tabs
         self.notebook = ttk.Notebook(self)
@@ -310,7 +310,7 @@ class DualGpuApp(ttk.Frame):
         
         self.status_var = tk.StringVar(value="Ready")
         status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor="e")
-        status_label.grid(row=0, column=0, sticky="e", padx=PAD, pady=PAD/2)
+        status_label.grid(row=0, column=0, sticky="e", padx=self.PAD, pady=self.PAD/2)
         
         # Sync model_var with state
         self.model_var.trace_add("write", self._model_var_changed)

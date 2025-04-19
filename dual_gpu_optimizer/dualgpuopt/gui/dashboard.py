@@ -15,7 +15,6 @@ try:
 except ImportError:
     TOOLTIP_AVAILABLE = False
 
-from dualgpuopt.gui.app import PAD
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.telemetry import Telemetry
 
@@ -31,10 +30,18 @@ class GpuDashboard(ttk.Frame):
             parent: Parent frame
             gpu_colors: List of colors for GPU visualization
         """
+        # Get PAD value from parent class if available or set default
+        try:
+            from dualgpuopt.gui.app import DualGpuApp
+            PAD = DualGpuApp.PAD
+        except (ImportError, AttributeError):
+            PAD = 16  # Default padding
+        
         super().__init__(parent, padding=PAD)
         self.parent = parent
         self.gpu_colors = gpu_colors
         self.columnconfigure(0, weight=1)
+        self.PAD = PAD  # Store locally for use in other methods
         
         # Canvas for GPU usage history
         history_frame = ttk.LabelFrame(self, text="GPU Usage History")
@@ -113,26 +120,26 @@ class GpuDashboard(ttk.Frame):
         for i, gpu in enumerate(gpus):
             # Create a container frame for this GPU
             gpu_frame = ttk.LabelFrame(metrics_frame, text=f"GPU {gpu.index}: {gpu.short_name}")
-            gpu_frame.grid(row=i, column=0, columnspan=3, sticky="ew", padx=PAD/2, pady=PAD/2)
+            gpu_frame.grid(row=i, column=0, columnspan=3, sticky="ew", padx=self.PAD/2, pady=self.PAD/2)
             gpu_frame.columnconfigure(1, weight=1)
             
             # GPU utilization
-            ttk.Label(gpu_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(gpu_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             gpu_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
-            gpu_prog.grid(row=0, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            gpu_prog.grid(row=0, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             gpu_label = ttk.Label(gpu_frame, text="0%", width=8)
-            gpu_label.grid(row=0, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            gpu_label.grid(row=0, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip to GPU utilization bar
             if TOOLTIP_AVAILABLE:
                 ToolTip(gpu_prog, f"GPU {gpu.index} Utilization: {gpu.name}")
             
             # Memory utilization
-            ttk.Label(gpu_frame, text="Memory:").grid(row=1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(gpu_frame, text="Memory:").grid(row=1, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             mem_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
-            mem_prog.grid(row=1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            mem_prog.grid(row=1, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             mem_label = ttk.Label(gpu_frame, text="0%", width=8)
-            mem_label.grid(row=1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            mem_label.grid(row=1, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip to memory utilization bar
             if TOOLTIP_AVAILABLE:
@@ -150,14 +157,14 @@ class GpuDashboard(ttk.Frame):
         
         for i, gpu in enumerate(gpus):
             # RX throughput
-            ttk.Label(pcie_frame, text=f"GPU {gpu.index} RX:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(pcie_frame, text=f"GPU {gpu.index} RX:").grid(row=i*2, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             rx_label = ttk.Label(pcie_frame, text="0 KB/s")
-            rx_label.grid(row=i*2, column=1, sticky="w", padx=PAD/2, pady=PAD/4)
+            rx_label.grid(row=i*2, column=1, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             
             # TX throughput
-            ttk.Label(pcie_frame, text=f"GPU {gpu.index} TX:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(pcie_frame, text=f"GPU {gpu.index} TX:").grid(row=i*2+1, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             tx_label = ttk.Label(pcie_frame, text="0 KB/s")
-            tx_label.grid(row=i*2+1, column=1, sticky="w", padx=PAD/2, pady=PAD/4)
+            tx_label.grid(row=i*2+1, column=1, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltips
             if TOOLTIP_AVAILABLE:
@@ -173,22 +180,22 @@ class GpuDashboard(ttk.Frame):
         
         for i, gpu in enumerate(gpus):
             # Temperature
-            ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Temp:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Temp:").grid(row=i*2, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             temp_prog = ttk.Progressbar(temp_power_frame, mode="determinate", maximum=100)
-            temp_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            temp_prog.grid(row=i*2, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             temp_label = ttk.Label(temp_power_frame, text="0°C")
-            temp_label.grid(row=i*2, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            temp_label.grid(row=i*2, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip to temperature bar
             if TOOLTIP_AVAILABLE:
                 ToolTip(temp_prog, f"GPU {gpu.index} Temperature (°C)")
             
             # Power usage
-            ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Power:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Power:").grid(row=i*2+1, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             power_prog = ttk.Progressbar(temp_power_frame, mode="determinate", maximum=100)
-            power_prog.grid(row=i*2+1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            power_prog.grid(row=i*2+1, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             power_label = ttk.Label(temp_power_frame, text="0W")
-            power_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            power_label.grid(row=i*2+1, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip to power bar
             if TOOLTIP_AVAILABLE:
@@ -205,22 +212,22 @@ class GpuDashboard(ttk.Frame):
         
         for i, gpu in enumerate(gpus):
             # Graphics clock
-            ttk.Label(clock_frame, text=f"GPU {gpu.index} Graphics:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(clock_frame, text=f"GPU {gpu.index} Graphics:").grid(row=i*2, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             graphics_prog = ttk.Progressbar(clock_frame, mode="determinate", maximum=2500)  # Max reasonable clock
-            graphics_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            graphics_prog.grid(row=i*2, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             graphics_label = ttk.Label(clock_frame, text="0 MHz")
-            graphics_label.grid(row=i*2, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            graphics_label.grid(row=i*2, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip
             if TOOLTIP_AVAILABLE:
                 ToolTip(graphics_prog, f"GPU {gpu.index} Graphics Clock Speed (MHz)")
             
             # Memory clock
-            ttk.Label(clock_frame, text=f"GPU {gpu.index} Memory:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
+            ttk.Label(clock_frame, text=f"GPU {gpu.index} Memory:").grid(row=i*2+1, column=0, sticky="w", padx=self.PAD/2, pady=self.PAD/4)
             memory_prog = ttk.Progressbar(clock_frame, mode="determinate", maximum=12000)  # Max reasonable memory clock
-            memory_prog.grid(row=i*2+1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
+            memory_prog.grid(row=i*2+1, column=1, sticky="ew", padx=self.PAD/2, pady=self.PAD/4)
             memory_label = ttk.Label(clock_frame, text="0 MHz")
-            memory_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
+            memory_label.grid(row=i*2+1, column=2, sticky="e", padx=self.PAD/2, pady=self.PAD/4)
             
             # Add tooltip
             if TOOLTIP_AVAILABLE:
