@@ -1,5 +1,5 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and idle detection system
+description: Handles GPU resource monitoring, telemetry collection, and utilization alerts for dual GPU optimization scenarios
 globs: **/telemetry.py,**/tray.py,**/gpu_info.py
 alwaysApply: false
 ---
@@ -7,29 +7,29 @@ alwaysApply: false
 
 # resource-monitoring-system
 
-### Telemetry Collection (Importance: 85)
-- Continuous polling of GPU metrics via NVML interface
-- Collects utilization, memory usage, and PCIe throughput data
-- Packages metrics into structured Telemetry dataclass
-- Maintains telemetry stream through daemon thread
-- Implements configurable collection intervals
+The GPU resource monitoring system consists of three core components:
 
-### Idle Detection System (Importance: 80)
-- Monitors telemetry stream for low GPU utilization patterns
-- Triggers resource release recommendations after 5 minutes of idle time
-- Implements notification system for resource optimization
-- Tracks multiple GPU devices simultaneously
+## Telemetry Collection (Importance: 85)
+`dualgpuopt/telemetry.py`
+- Real-time GPU metrics collection including load, memory usage, and PCIe throughput
+- Continuous telemetry stream implementation with configurable polling intervals
+- Aggregation of multi-GPU performance data into unified telemetry records
 
-### GPU Information Management (Importance: 75)
-- Direct NVML integration for hardware-level GPU detection
-- Memory usage and device name retrieval
-- Fallback mock data system for testing/demo scenarios
-- Real-time GPU state monitoring capabilities
+## GPU Information Retrieval (Importance: 90)
+`dualgpuopt/gpu_info.py`
+- NVML integration for detecting and retrieving GPU device information
+- Mock GPU data generation system for testing environments
+- Dynamic GPU state tracking including memory allocation and device names
 
-### Alert Mechanism (Importance: 70)
-- Threshold-based alert generation for GPU metrics
-- User-configurable alert parameters
-- Integration with system notification framework
-- Alert priority management based on resource utilization levels
+## Utilization Monitoring and Alerts (Importance: 80)
+`dualgpuopt/tray.py`
+- Idle GPU detection system monitoring load patterns across devices
+- Alert mechanism for GPUs remaining below utilization thresholds
+- Notification system for suggesting resource release after 5-minute idle periods
+
+## Integration Points (Importance: 75)
+- Telemetry data feeds into real-time GPU utilization charts
+- Alert thresholds and durations configurable through UI
+- Mock GPU mode activation through environment variables for testing scenarios
 
 $END$

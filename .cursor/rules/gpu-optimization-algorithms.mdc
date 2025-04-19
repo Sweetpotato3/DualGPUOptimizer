@@ -1,38 +1,41 @@
 ---
-description: Technical documentation for GPU memory optimization algorithms, tensor splits and allocation strategies
-globs: **/optimizer.py,**/gpu_info.py
+description: GPU memory distribution and tensor parallel optimization for large language models across multiple GPUs
+globs: **/optimizer.py,**/gpu_info.py,**/*gpu*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Distribution (Importance: 95)
-`optimizer.py` implements the critical GPU memory splitting logic:
+### GPU Memory Distribution (Importance: 95)
+Located in `optimizer.py`, the core GPU memory distribution logic:
+- Calculates optimal memory splits across detected GPUs for model distribution
+- Determines tensor parallel fractions based on available VRAM
+- Generates configuration strings for CUDA device visibility and memory allocation
 
-- Calculates optimal tensor parallel splits across available GPUs based on relative memory capacities
-- Generates normalized memory fractions for balanced workload distribution
-- Produces environment configurations for NCCL and OMP settings to enable efficient multi-GPU operation
+### GPU Detection System (Importance: 90)
+Implemented in `gpu_info.py`:
+- Probes NVIDIA Management Library (NVML) for GPU hardware information
+- Retrieves per-device memory capacity and utilization metrics
+- Supports mock GPU data generation for testing environments via `DGPUOPT_MOCK_GPUS`
 
-## GPU Resource Detection (Importance: 85)
-`gpu_info.py` handles GPU resource discovery and management:
+### Tensor Parallel Split Calculator (Importance: 85)
+Core algorithm in `optimizer.py`:
+- Computes optimal tensor parallel splits for model layers
+- Adjusts split ratios based on available GPU memory
+- Generates split configuration strings for model runners
 
-- Detects available NVIDIA GPUs using NVML interface 
-- Retrieves real-time memory usage and device capabilities
-- Provides mock GPU data capability for testing scenarios
+### Memory Allocation Strategy (Importance: 80)
+Memory management system in `optimizer.py`:
+- Allocates model weights across multiple GPUs
+- Handles CUDA visible devices configuration
+- Manages P2P communication settings between GPUs
+- Generates environment variables for GPU memory configuration
 
-## Memory Allocation Strategy (Importance: 90)
-Memory allocation algorithms in `optimizer.py`:
-
-- Split string generation algorithm maps total available GPU memory to allocation ratios
-- Tensor fraction calculator normalizes memory distribution across asymmetric GPU configurations
-- Command generation system produces optimized launch parameters for llama.cpp and vLLM based on calculated splits
-
-## GPU Workload Optimization (Importance: 80)
-Core optimization logic:
-
-- Dynamically adjusts tensor parallel size based on detected GPU configurations
-- Calculates optimal context sizes for model execution
-- Generates environment settings for cross-GPU communication optimization
+### Model Execution Command Generation (Importance: 75)
+Command generation logic in `optimizer.py`:
+- Creates optimized commands for llama.cpp and vLLM implementations
+- Incorporates GPU splits and tensor fractions into command parameters
+- Handles different model architectures and context size requirements
 
 $END$

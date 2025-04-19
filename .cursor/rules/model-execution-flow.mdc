@@ -1,47 +1,45 @@
 ---
-description: Manages the execution flow and orchestration of LLM models across GPU resources using llama.cpp and vLLM
-globs: **/*optimizer.py,**/*runner.py,**/*gpu_info.py
+description: Documents the flow of LLM model execution, GPU allocation, and command generation for llama.cpp and vLLM.
+globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/gui.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-### Command Generation (Importance: 95)
-- `/dualgpuopt/optimizer.py`
-  - Generates executable commands for both llama.cpp and vLLM runtimes
-  - Constructs GPU split configurations based on available memory
-  - Sets environment variables for optimal tensor parallel execution
-  - Configures CUDA device visibility and NCCL parameters
+## Core Model Execution Components
 
-### GPU Resource Allocation (Importance: 90)
-- `/dualgpuopt/optimizer.py`
-  - Calculates tensor fractions for memory distribution across GPUs
-  - Determines optimal GPU splits based on model requirements
-  - Maps model parameters to available GPU resources
+### Command Generation Engine (Importance: 95)
+`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- Generates execution commands for llama.cpp and vLLM based on detected GPUs
+- Creates environment files with GPU-specific configurations (CUDA_VISIBLE_DEVICES, NCCL_P2P_DISABLE)
+- Calculates tensor fractions and GPU splits for optimal multi-GPU model distribution
 
-### Execution Environment Setup (Importance: 85)
-- `/dualgpuopt/optimizer.py`
-  - Creates environment files with GPU-specific configurations
-  - Sets up CUDA device mappings
-  - Configures OpenMP and NCCL parameters for multi-GPU execution
+### GPU Resource Management (Importance: 90)
+`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
+- Detects available NVIDIA GPUs using NVML interface
+- Monitors real-time GPU memory usage and device status
+- Provides mock GPU data capability for testing environments
 
-### Model Runtime Flow (Importance: 80)
-- `/dualgpuopt/runner.py`
-  - Orchestrates model execution across selected GPUs
-  - Manages context size allocation
-  - Handles runtime switching between llama.cpp and vLLM backends
+### Model Runner System (Importance: 85)
+`dual_gpu_optimizer/dualgpuopt/runner.py`
+- Controls background execution of model commands
+- Manages real-time log output streaming
+- Handles start/stop functionality for model processes
 
-### Resource Monitoring (Importance: 75)
-- `/dualgpuopt/telemetry.py`
-  - Tracks GPU utilization during model execution
-  - Monitors memory allocation and PCIe throughput
-  - Provides real-time execution metrics
+## Supporting Components
 
-### Resource State Management (Importance: 70)
-- `/dualgpuopt/gpu_info.py`
-  - Maintains current GPU allocation state
-  - Tracks available memory across devices
-  - Provides device capability information for execution planning
+### Execution UI Controller (Importance: 75)
+`dual_gpu_optimizer/dualgpuopt/gui.py`
+- Manages model path and preset selection
+- Provides context size adjustment interface
+- Updates real-time GPU utilization charts
+- Implements alert system for low GPU utilization
+
+### Command Line Workflow (Importance: 70)
+`dual_gpu_optimizer/dualgpuopt/__main__.py`
+- Processes CLI arguments for model execution
+- Generates optimization configurations
+- Creates environment files for execution
 
 $END$

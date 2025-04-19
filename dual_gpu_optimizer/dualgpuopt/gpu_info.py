@@ -44,7 +44,7 @@ def _query_gpu(index: int) -> GPU:
     handle = pynvml.nvmlDeviceGetHandleByIndex(index)
     
     # Get device name (decode from bytes)
-    name = pynvml.nvmlDeviceGetName(handle).decode("utf-8")
+    name = pynvml.nvmlDeviceGetName(handle)
     
     # Get memory info
     mem = pynvml.nvmlDeviceGetMemoryInfo(handle)
