@@ -1,50 +1,58 @@
 ---
-description: Defines LLM execution workflows, command generation, and GPU resource allocation patterns
-globs: **/runner.py,**/optimizer.py,**/gpu_commands.py,**/layer_balance.py,**/launcher.py
+description: Specification for model execution flows, command generation, and GPU resource allocation across llama.cpp and vLLM frameworks
+globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/launcher.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core LLM Execution Components
+The core model execution flow consists of several key components:
 
-### Model Launch Orchestration (Importance: 95)
-- Framework-specific command generation for llama.cpp and vLLM
-- Dynamic GPU split calculation and tensor parallelism sizing
-- Process lifecycle management with configurable context windows (default 65536 tokens)
-- Files: `dualgpuopt/gui/launcher.py`
+## Command Generation System
+- Generates specific execution commands for different ML frameworks:
+  - llama.cpp commands with GPU split configurations and context size parameters
+  - vLLM commands with tensor parallelism and resource allocation settings
+- Handles environment variable generation for GPU configurations including CUDA device visibility and NCCL settings
 
-### Layer Distribution System (Importance: 90)
-- Latency-aware layer balancing across GPUs using dual sequence profiling (64/1024 tokens)
-- Weighted profiling with 20% short sequences, 80% long sequences
-- Quota-based load distribution respecting GPU memory constraints
-- Files: `dualgpuopt/layer_balance.py`
+## Framework-Specific Execution
+- llama.cpp execution:
+  - Dynamic GPU memory split calculation based on available VRAM
+  - Tensor fraction computation for optimal layer distribution
+  - Context size validation against GPU memory constraints
 
-### Memory Split Optimization (Importance: 85) 
-- Calculates optimal memory distribution across GPUs for LLM workloads
-- Generates tensor fractions based on relative GPU capacities
-- Produces specialized configs for llama.cpp and vLLM frameworks
-- Files: `dualgpuopt/optimizer.py`
+- vLLM execution:
+  - Asynchronous batch processing with smart scheduling
+  - Length-aware inference queuing system
+  - Automatic retry logic for OOM conditions
 
-### Smart Batching Engine (Importance: 80)
-- Dynamic token-based batching with size limits
-- Back-pressure mechanism for RAM overflow prevention
-- OOM recovery with cache clearing and retry logic
-- Files: `dualgpuopt/batch/smart_batch.py`
+## Resource Management
+- GPU memory allocation flow:
+  1. Calculate maximum safe context length based on model parameters
+  2. Determine optimal GPU split ratios
+  3. Configure tensor parallelism settings
+  4. Apply resource constraints to command generation
 
-### Context Size Management (Importance: 75)
-- Heuristic algorithm for safe context length calculation
-- Considers layers, KV heads, dimensions, precision bits
-- Dynamically adjusts for MoE models and memory buffers
-- Files: `dualgpuopt/ctx_size.py`
+## Model Launch Control
+- Framework selection logic between llama.cpp and vLLM
+- Dynamic command construction based on:
+  - Selected framework requirements
+  - Model path and parameters
+  - GPU resource availability
+- Process management for model execution with log capture
 
-## Execution Flow
-1. GPU capability detection and validation
-2. Memory split calculation based on GPU capabilities
-3. Layer distribution profiling and optimization
-4. Framework-specific command generation
-5. Process launch with optimized parameters
-6. Runtime batching and context management
+## Batch Processing System
+- Smart batching logic based on sequence lengths
+- Bucket policies for request grouping:
+  - Power-of-two bucketing
+  - Token-ratio based grouping
+- Back-pressure mechanisms for queue depth control
+
+Relevant files:
+- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- `dual_gpu_optimizer/dualgpuopt/runner.py`
+- `dual_gpu_optimizer/dualgpuopt/gpu_commands.py`
+- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
+- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
 
 $END$

@@ -27,11 +27,22 @@ from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES
 from dualgpuopt.commands.command_base import command_manager
 from dualgpuopt.commands.gpu_commands import ApplyOverclockCommand
 
+# Try to import ttkbootstrap Tooltip
+try:
+    from ttkbootstrap.tooltip import ToolTip
+    TOOLTIP_AVAILABLE = True
+except ImportError:
+    TOOLTIP_AVAILABLE = False
+
+# Import constants from shared module
+from dualgpuopt.gui.constants import PAD
+from dualgpuopt.services.state_service import StateService
+
 
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
     
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service) -> None:
+    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service, state_service: StateService, danger_style: str = "danger") -> None:
         """
         Initialize the settings tab.
         
@@ -39,6 +50,8 @@ class SettingsTab(ttk.Frame):
             parent: Parent frame
             gpus: List of GPU objects
             config_service: Application configuration service
+            state_service: State service for loading/saving settings
+            danger_style: Style name for danger elements
         """
         # Get PAD value from parent class if available or set default
         try:
@@ -51,6 +64,7 @@ class SettingsTab(ttk.Frame):
         self.parent = parent
         self.gpus = gpus
         self.config_service = config_service
+        self.state_service = state_service
         self.PAD = PAD  # Store locally
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)  # Content area takes all available space

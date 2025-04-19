@@ -1,11 +1,11 @@
 
-START SPECIFICATION:
+START SPECIFICATION
 ---
-description: Apply this documentation for high-level technical overviews of dual GPU optimization systems focused on machine learning model deployment and monitoring. Use when documenting systems that manage GPU resource allocation, model inference optimization, and real-time performance tracking.
+
+description: Generate high-level overview documentation for GPU optimization and model inference systems, focusing on core business logic organizing GPU resource management, model execution, and telemetry collection
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
-
 
 # main-overview
 
@@ -17,47 +17,69 @@ alwaysApply: false
 - Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
+The DualGPUOptimizer system implements specialized GPU optimization and model inference capabilities through several key business components:
 
-The DualGPUOptimizer system consists of three core business domains:
+## Core GPU Management (Importance: 95)
 
-1. GPU Resource Optimization (Importance: 95)
-- Intelligent memory splitting calculation for multi-GPU deployments
-- Dynamic tensor distribution based on GPU capabilities
-- Framework-specific configuration generation for llama.cpp and vLLM
-- Adaptive layer balancing with quota-based workload distribution
-
-Key files:
-- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- `dual_gpu_optimizer/dualgpuopt/layer_balance.py`
-
-2. GPU Performance Monitoring (Importance: 85)
-- Real-time telemetry collection across multiple GPUs
-- Comprehensive metrics tracking: utilization, memory, temperature, power
-- Rolling 60-sample history window for trend analysis
-- Event-driven metric distribution system
+- GPU discovery and configuration management for dual GPU setups
+- Intelligent memory split calculations between GPUs
+- GPU telemetry collection and monitoring system
+- Mock GPU mode for testing/development
+- Advanced error handling for GPU-specific failures
 
 Key files:
-- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
-- `dual_gpu_optimizer/dualgpuopt/metrics.py`
 
-3. Model Deployment Management (Importance: 80)
-- Context length optimization using GPU-aware heuristics
-- Smart batching system with OOM recovery
-- Overclocking management with safety constraints
-- Framework-specific launch orchestration
+- `dualgpuopt/gpu_info.py`
+- `dualgpuopt/telemetry.py`
+
+## Model Optimization Engine (Importance: 90)
+
+- Context size optimization based on GPU memory
+- Layer balancing across multiple GPUs
+- Dynamic tensor distribution
+- Mixed precision policy management
+- Smart batching with length-aware scheduling
 
 Key files:
-- `dual_gpu_optimizer/dualgpuopt/ctx_size.py`
-- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
 
-The system implements specialized optimization logic for large language model inference across dual GPU setups, with particular focus on:
-- Memory allocation optimization
-- Workload distribution
-- Performance monitoring
-- Resource utilization
-- Safe overclocking management
+- `dualgpuopt/optimizer.py`
+- `dualgpuopt/batch/smart_batch.py`
 
-Integration points between components are handled through an event bus system that coordinates GPU metric collection, optimization decisions, and deployment configurations.
+## Command System (Importance: 85)
+
+- GPU-specific command generation for model execution
+- Framework-specific optimizations for llama.cpp and vLLM
+- Environment configuration generation
+- Command history with undo capabilities
+
+Key files:
+
+- `dualgpuopt/commands/gpu_commands.py`
+
+## Monitoring Dashboard (Importance: 80)
+
+- Real-time GPU metrics visualization
+- Historical utilization tracking
+- Event-driven updates for GPU status
+- Temperature and power monitoring
+
+Key files:
+
+- `dualgpuopt/gui/dashboard.py`
+- `dualgpuopt/gui/event_dashboard.py`
+
+## State Management (Importance: 75)
+
+- Centralized configuration storage
+- Event-driven state updates
+- GPU settings persistence
+- Theme and UI state management
+
+Key files:
+
+- `dualgpuopt/services/state_service.py`
+
+The system uses an event-driven architecture to coordinate between components, with specialized services handling configuration, errors, and state management. The GUI provides multiple specialized views including an optimizer tab, launcher interface, and GPU monitoring dashboard.
 
 $END$
 END SPECIFICATION
