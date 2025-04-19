@@ -1,0 +1,55 @@
+
+START SPECIFICATION:
+---
+description: Use for high-level documentation of GPU optimization systems focused on LLM model execution across multiple GPUs, specifically when analyzing resource allocation and tensor parallelism implementations
+globs: *.py,*.cpp
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+The DualGPUOptimizer system orchestrates GPU resource allocation for large language model inference across multiple GPUs, with specialized support for llama.cpp and vLLM implementations.
+
+Key Components:
+
+## GPU Resource Management (Importance: 95)
+`dualgpuopt/optimizer.py`, `dualgpuopt/gpu_info.py`
+- Calculates optimal tensor parallel splits for multi-GPU setups
+- Generates memory split configurations for llama.cpp
+- Determines tensor fractions based on available GPU memory
+- Enforces NCCL peer-to-peer communication requirements
+
+## Model Execution Control (Importance: 90)
+`dualgpuopt/optimizer.py`
+- Creates specialized command configurations for:
+  - llama.cpp GPU layer splitting
+  - vLLM tensor parallelism settings
+- Manages context size parameters
+- Controls thread optimization for CPU utilization
+
+## Resource Monitoring (Importance: 75)
+`dualgpuopt/telemetry.py`
+- Collects GPU utilization metrics
+- Tracks memory usage patterns
+- Monitors PCIe bandwidth statistics
+
+## Utilization Alerts (Importance: 70)
+`dualgpuopt/tray.py`
+- Detects underutilized GPU resources
+- Triggers optimization alerts
+- Provides resource efficiency recommendations
+
+The system primarily focuses on optimizing expensive GPU resources for LLM inference, automatically generating configurations to maximize resource utilization across multiple GPUs while maintaining optimal performance characteristics.
+
+$END$
+END SPECIFICATION

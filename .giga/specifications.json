@@ -1,0 +1,22 @@
+[
+  {
+    "fileName": "main-overview.mdc",
+    "description": "Complete system overview focusing on GPU optimization architecture, component interactions, and core optimization strategies"
+  },
+  {
+    "fileName": "gpu-optimization-algorithms.mdc",
+    "description": "Detailed documentation of GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies from optimizer.py and gpu_info.py"
+  },
+  {
+    "fileName": "model-execution-flow.mdc",
+    "description": "Comprehensive documentation of LLM execution workflows, including command generation for llama.cpp and vLLM, configuration parameters, and GPU resource allocation flow"
+  },
+  {
+    "fileName": "resource-monitoring-system.mdc",
+    "description": "Technical details of the telemetry system, including GPU metrics collection, utilization tracking, and alert mechanism implementation from telemetry.py and tray.py"
+  },
+  {
+    "fileName": "data-flow-architecture.mdc",
+    "description": "Documentation of data flow between components, including GPU resource data, optimization parameters, and monitoring metrics across the system"
+  }
+]

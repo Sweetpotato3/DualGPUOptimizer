@@ -1,0 +1,41 @@
+---
+description: Specifications for GPU memory distribution and tensor parallel optimization algorithms for LLM inference
+globs: **/gpu_info.py,**/optimizer.py
+alwaysApply: false
+---
+
+
+# gpu-optimization-algorithms
+
+The GPU optimization system implements specialized algorithms for distributing large language model workloads across multiple GPUs:
+
+## Memory Distribution Algorithm (Importance: 95)
+Located in: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- Calculates optimal memory splits based on available GPU resources
+- Generates memory split configuration strings for llama.cpp
+- Computes relative tensor fractions against highest memory GPU
+- Enforces memory allocation constraints based on model requirements
+
+## Tensor Parallel Optimization (Importance: 90)
+Located in: `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
+- Implements tensor parallel splitting calculations
+- Determines optimal layer distribution across available GPUs
+- Generates GPU-specific configuration parameters:
+  - Memory allocation strategies
+  - Layer placement decisions
+  - NCCL peer-to-peer communication settings
+
+## Command Generation Logic (Importance: 85)
+- Produces specialized runtime configurations:
+  - llama.cpp: GPU layer splitting with context parameters
+  - vLLM: Tensor parallelism and memory utilization settings
+
+## Resource Requirements Engine (Importance: 80)
+- Validates multi-GPU environment compatibility:
+  - GPU memory threshold verification
+  - NCCL communication path validation
+  - Thread optimization parameters
+
+The algorithms focus on maximizing GPU resource utilization while maintaining model inference performance through intelligent workload distribution and memory management strategies.
+
+$END$

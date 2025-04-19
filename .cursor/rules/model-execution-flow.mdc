@@ -1,0 +1,57 @@
+---
+description: Defines how LLM models are executed across GPUs, including command generation and resource allocation
+globs: **/optimizer.py,**/gpu_info.py,**/runner.py
+alwaysApply: false
+---
+
+
+# model-execution-flow
+
+The model execution workflow consists of two primary execution paths optimized for different LLM implementations:
+
+## LLama.cpp Execution Flow
+`dualgpuopt/optimizer.py`
+Importance Score: 95
+
+1. GPU Layer Distribution
+- Calculates memory splits across available GPUs
+- Generates GPU-specific layer assignments
+- Creates llama.cpp compatible memory split strings
+
+2. Command Generation
+- Constructs execution commands with:
+  - Layer distribution parameters
+  - Context size configurations
+  - GPU-specific memory allocations
+
+## vLLM Execution Path
+`dualgpuopt/optimizer.py`
+Importance Score: 90
+
+1. Tensor Parallelism Setup
+- Configures tensor parallel splits
+- Allocates GPU memory fractions
+- Sets NCCL communication parameters
+
+2. Resource Distribution
+- Assigns GPU devices for model sharding
+- Configures memory utilization per device
+- Establishes inter-GPU communication paths
+
+## Runtime Optimization
+`dualgpuopt/runner.py`
+Importance Score: 85
+
+1. Execution Environment
+- Enforces GPU peer-to-peer requirements
+- Manages thread allocation
+- Handles context initialization
+
+2. Resource Management
+- Implements dynamic memory allocation
+- Controls GPU device assignments
+- Manages execution queues
+
+The workflow ensures optimal resource utilization across multiple GPUs while maintaining model execution efficiency through specialized command generation and resource allocation strategies.
+
+$END$

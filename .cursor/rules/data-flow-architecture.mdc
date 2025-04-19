@@ -1,0 +1,50 @@
+---
+description: Analysis of data flows, data pipelines, and information exchange patterns between system components in GPU optimization systems.
+globs: **/gpu_info.py,**/optimizer.py,**/telemetry.py,**/configio.py
+alwaysApply: false
+---
+
+
+# data-flow-architecture
+
+Primary Data Flows:
+
+1. GPU Resource Data Pipeline (Importance: 95)
+- `gpu_info.py` collects hardware capabilities and constraints
+- Data flows to `optimizer.py` for memory allocation decisions
+- Optimization parameters transmitted to model execution components
+- Critical metrics include:
+  * Memory capacity per GPU
+  * Tensor parallel split ratios
+  * VRAM distribution patterns
+
+2. Optimization Parameter Flow (Importance: 90)
+- `optimizer.py` generates configuration parameters
+- Memory split configurations flow to LLM runtime systems
+- Command configurations transmitted for:
+  * llama.cpp GPU layer splitting
+  * vLLM tensor parallelism settings
+- Resource allocation decisions propagate to execution environment
+
+3. Telemetry Data Stream (Importance: 85)
+- `telemetry.py` captures continuous performance metrics
+- Real-time data flows to monitoring subsystems:
+  * GPU utilization metrics
+  * Memory consumption patterns
+  * PCIe bandwidth metrics
+- Alert triggers flow to notification components
+
+4. Configuration Data Flow (Importance: 75)
+- `configio.py` manages persistent settings
+- Runtime parameters flow between components:
+  * GPU optimization preferences
+  * Model execution parameters
+  * Resource monitoring thresholds
+
+Integration Points:
+- GPU resource data → Optimization engine
+- Optimization parameters → Model execution
+- Telemetry metrics → Resource monitoring
+- Alert conditions → User notification system
+
+$END$

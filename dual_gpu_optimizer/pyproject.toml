@@ -1,0 +1,19 @@
+[project]
+name = "dual-gpu-optimizer"
+version = "0.2.0"
+requires-python = ">=3.12"
+description = "Tkinter GUI that auto‑optimises dual‑GPU LLM setups"
+authors = [{name = "Your Name"}]
+dependencies = [
+  "pynvml>=11.5",
+  "pystray>=0.20",
+  "pillow>=10.3",
+  "tomli-w>=1.0"
+]
+
+[tool.black]
+line-length = 88
+
+[tool.ruff]
+select = ["E", "F"]
+line-length = 88 

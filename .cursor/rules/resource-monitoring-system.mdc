@@ -1,0 +1,37 @@
+---
+description: Technical details for monitoring GPU resource utilization and providing efficiency alerts
+globs: **/telemetry.py,**/tray.py
+alwaysApply: false
+---
+
+
+# resource-monitoring-system
+
+The resource monitoring system consists of two primary components that work together to track GPU utilization and alert users of inefficient resource usage:
+
+## Telemetry Collection (telemetry.py)
+Importance Score: 85
+
+Core telemetry metrics captured:
+- GPU utilization percentage tracking
+- Memory usage monitoring
+- PCIe bandwidth metrics (RX/TX throughput)
+- Real-time resource utilization data collection
+
+## Resource Efficiency Alerts (tray.py)
+Importance Score: 75
+
+Alert generation logic:
+- Monitors continuous GPU utilization patterns 
+- Detects underutilized GPU states (< 30% load)
+- Time-based triggering (5+ minute thresholds)
+- Resource optimization suggestions when inefficiencies detected
+
+Integration points:
+- Direct connection to telemetry data streams
+- System tray notifications for resource alerts
+- Optimization recommendation delivery
+
+The monitoring system provides critical business value by ensuring expensive GPU resources are efficiently utilized for LLM inference operations, with proactive detection of suboptimal resource allocation.
+
+$END$
