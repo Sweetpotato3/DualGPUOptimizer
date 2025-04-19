@@ -1,72 +1,61 @@
 ---
-description: Defines data flow paths and exchange patterns between GPU optimization components and resource monitoring systems
-globs: **/dualgpuopt/**/*.py,**/*gpu*.py,**/services/*.py
+description: Guidelines for analyzing data flow between GPU optimization components, resource monitoring, and model deployment services
+globs: **/*.py,**/gpu_*.py,**/optimizer/*.py,**/services/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Data Flow Architecture: GPU Resource Optimization System
+Primary Data Flow Paths:
 
-Primary Data Flows:
+1. GPU Telemetry Pipeline
+- Collection Layer:
+  - GPU metrics gathered via NVML interface (dualgpuopt/telemetry.py)
+  - Real-time metrics: utilization, memory, temperature, power, clocks
+- Processing Layer:
+  - EventBusMiddleware transforms raw metrics into structured events
+  - LoggingMiddleware handles debug telemetry
+- Distribution Layer:
+  - Event bus propagates metrics to dashboard and optimizer components
+  - Priority-based event routing (LOW to CRITICAL)
 
-1. GPU Resource Telemetry Pipeline (Importance: 95)
-```
-GPU Hardware -> Telemetry Service -> Event Bus -> Dashboard/Optimizer
-```
-- Continuous polling of GPU metrics (utilization, temperature, power, memory)
-- Middleware-based metric normalization and aggregation
-- Event-driven updates to visualization and optimization components
-- File: dualgpuopt/telemetry.py
+2. Model Deployment Flow
+- Parameters Flow:
+  - Context size calculator determines safe window sizes (ctx_size.py)
+  - Layer balancer distributes model across GPUs (layer_balance.py)
+  - Memory policy handler sets precision rules (mpolicy.py)
+- Command Generation:
+  - Optimizer generates framework-specific commands
+  - Environment variables configured for tensor parallelism
+  - Resource limits applied based on GPU capabilities
 
-2. Model Parameter Distribution (Importance: 90)
-```
-Optimizer -> Layer Balancer -> Command Generator -> Runner
-```
-- Model architecture parameters (layers, heads, dimensions)
-- Memory allocation calculations per GPU
-- Tensor split configurations
-- Framework-specific command generation
-- Files: dualgpuopt/optimizer.py, dualgpuopt/layer_balance.py
+3. Resource Management Pipeline
+- Memory Management:
+  - VRAM monitoring with 256MB warning threshold
+  - Reclamation system tracks memory deltas
+  - Automatic cleanup triggers at thresholds
+- GPU Load Distribution:
+  - Layer quotas calculated from performance ratios
+  - Tensor parallel splits based on memory capacity
+  - Workload routing through performance-optimized paths
 
-3. GPU State Management Pipeline (Importance: 85)
-```
-State Service -> Event Bus -> Services -> UI Components
-```
-- GPU configuration state (overclock, fans, power limits)
-- Model execution context parameters
-- Idle detection thresholds
-- Resource allocation state
-- File: dualgpuopt/services/state_service.py
-
-4. Smart Batching Data Flow (Importance: 80)
-```
-Model Input -> Length Analyzer -> Batch Optimizer -> GPU Executor
-```
-- Sequence length-based grouping
-- Memory-aware batch size calculations
-- GPU-specific workload distribution
-- File: dualgpuopt/batch/smart_batch.py
+4. Configuration Flow
+- Settings Distribution:
+  - GPU profiles propagate through config service
+  - Overclocking parameters validated against safety limits
+  - Idle detection thresholds synchronized across components
+- State Management:
+  - GPU state changes trigger event cascades
+  - Profile changes propagate through event bus
+  - Command history maintained for operation rollback
 
 Key Integration Points:
+- dualgpuopt/telemetry.py: Metrics collection and distribution
+- dualgpuopt/optimizer.py: Resource allocation and command generation
+- dualgpuopt/services/event_bus.py: Event routing and state propagation
+- dualgpuopt/layer_balance.py: Workload distribution logic
 
-1. GPU Hardware Interface Layer (Importance: 95)
-- Direct hardware metric collection
-- NVML integration for GPU control
-- Memory management operations
-- File: dualgpuopt/gpu_info.py
-
-2. Framework Integration Layer (Importance: 85)
-- llama.cpp parameter routing
-- vLLM tensor configuration flow
-- Model-specific optimization paths
-- Files: dualgpuopt/gui/launcher.py, dualgpuopt/commands/gpu_commands.py
-
-Core Data Exchange Patterns:
-- Event-driven GPU metric updates (100ms minimum interval)
-- Batch-oriented model parameter processing
-- State-based configuration management
-- Real-time monitoring data streams
+The architecture emphasizes real-time metric flow, safe resource distribution, and coordinated state management across dual GPU configurations.
 
 $END$

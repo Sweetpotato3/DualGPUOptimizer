@@ -1,77 +1,44 @@
 ---
-description: Specification for analyzing GPU memory optimization, distribution algorithms, and computation scheduling for multi-GPU LLM inference.
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/batch/*.py,**/telemetry.py
+description: Applies to GPU optimization algorithms, memory management, and workload distribution across multiple GPUs
+globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Distribution Components
+## Memory Distribution Algorithm
+Score: 95
+- Calculates optimal memory splits between GPUs based on relative VRAM capacity
+- Reserves system overhead (2GB base + 20% tensor parallel overhead)
+- Implements KV cache memory tracking with 2.0x multiplier 
+- Maintains 10% safety margin for dynamic allocations
 
-### Layer Distribution Algorithm
-dualgpuopt/layer_balance.py:
-```python
-class LayerBalancer:
-    # Weighted profiling using short (64 tokens) and long (1024 tokens) sequences
-    # 20% weight for short sequences, 80% for long to optimize attention scaling
-    # Assigns computationally expensive layers to faster GPU within memory quota
-```
+## Layer Balancing System
+Score: 90
+- Optimizes layer distribution across GPUs using weighted execution profiles
+- Profiles layer performance at sequence lengths 64 and 1024
+- Prioritizes faster GPU for computationally intensive layers
+- Allocates layers based on relative GPU memory quotas and capabilities
 
-### Context Size Calculator 
-dualgpuopt/ctx_size.py:
-- Model-specific memory calculations for maximum context windows
-- Per-token memory requirements based on:
-  - KV heads configuration
-  - Layer count and dimensions
-  - MoE (Mixture of Experts) factors
-- Memory overhead factors:
-  - KV cache: 2.0x overhead
-  - Tensor parallelism: 20% overhead
-  - Safety margin: 10% buffer
+## Tensor Split Calculation
+Score: 85
+- Determines optimal tensor parallel splits for asymmetric GPU configurations 
+- Adapts split ratios based on available VRAM per device
+- Handles specialized MoE model factors (1.05x memory overhead)
+- Calculates safe context lengths for different model architectures
 
-### Smart Batching System
-dualgpuopt/batch/smart_batch.py:
-- Groups sequences by length similarity for throughput optimization
-- Dynamic batch size calculation using:
-  - 5% model size per sequence estimation
-  - 1-64 sequence batch size range
-  - 20% memory overhead reservation
+## Context Size Optimization
+Score: 80
+- Calculates maximum safe context window based on:
+  - Transformer architecture parameters (layers, heads, dimensions) 
+  - Available GPU memory across devices
+  - Model-specific MoE factors
+- Contains preset parameters for LLaMA-2, Mistral, Mixtral models
 
-### Memory Split Optimizer
-dualgpuopt/optimizer.py:
-- Proportional memory splitting based on available GPU resources
-- Tensor parallel fraction calculations
-- Framework-specific command generation:
-  - llama.cpp: GPU layer distribution
-  - vLLM: Tensor parallelism configuration
-
-## Monitoring and Telemetry
-
-dualgpuopt/telemetry.py:
-- Real-time GPU metrics collection:
-  - Memory utilization
-  - PCIe bandwidth (RX/TX)
-  - Temperature thresholds
-  - Power consumption
-  - Fan speed curves
-  - Clock speed tracking
-
-## Business Rules
-
-1. Memory Allocation:
-- 2GB system overhead reservation
-- 10% safety margin policy
-- Context length rounds to nearest 128 tokens
-
-2. Layer Distribution:
-- Computationally expensive layers prioritized to faster GPU
-- Memory quota compliance maintained
-- Weighted profiling (20% short/80% long sequences)
-
-3. Batch Processing:
-- No mixing of short/long sequences above threshold
-- Dynamic batch size based on available memory
-- Length-based sequence grouping for throughput
+Key files implementing core logic:
+- dualgpuopt/optimizer.py: Memory distribution and tensor splits
+- dualgpuopt/layer_balance.py: Layer distribution algorithms
+- dualgpuopt/ctx_size.py: Context size calculation
 
 $END$

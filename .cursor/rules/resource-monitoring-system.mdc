@@ -1,62 +1,54 @@
 ---
-description: Specification for GPU resource monitoring and telemetry collection systems in dual GPU optimization scenarios
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py,**/mpolicy.py,**/gpu_commands.py
+description: Specifications for GPU resource monitoring and telemetry system implementation for multi-GPU optimization
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core Resource Monitoring Components:
+The resource monitoring system consists of three key components:
 
-1. Real-time GPU Telemetry Collection (telemetry.py)
+1. GPU Telemetry Collection (telemetry.py)
 Importance Score: 95
-- GPU state monitoring with specialized metrics:
-  - Core and memory utilization percentages
-  - Temperature thresholds with graduated warnings (70°C, 80°C, 90°C)
-  - Power consumption tracking (0-400W range)
-  - PCIe bandwidth monitoring (RX/TX rates)
-  - Fan speed and clock frequencies
-- Implements middleware pattern for metrics processing pipeline
-- Custom mock data generation for testing with realistic GPU behavior profiles
+- Real-time GPU metrics collection through NVML interface:
+  - Memory utilization tracking (used/total/free)
+  - Compute utilization percentage
+  - Power consumption against power limits
+  - Temperature monitoring with thresholds
+  - PCIe bandwidth measurement (TX/RX)
+  - Clock speeds (graphics/memory)
+  - Fan speed percentages
+- Custom idle detection with configurable thresholds
+- Middleware pipeline for metrics processing and distribution
+- Mock data generation for testing/failure scenarios
 
-2. Performance Metrics Processing (metrics.py)
+2. Metrics Processing Pipeline (metrics.py)
 Importance Score: 85
-- Batch latency tracking for LLM operations
-- Queue depth monitoring for inference loads
-- PCIe bandwidth conversion and normalization
-- Memory reclamation tracking with delta calculations
+- Domain-specific GPU metrics aggregation:
+  - Rolling history buffer (60 data points)
+  - Automatic unit conversion (mW to W, bytes to MB/GB)
+  - Temperature-based alert generation
+  - Utilization pattern analysis
+- Event-driven metric distribution system
+- Custom thresholding logic for resource alerts
 
-3. Resource Warning System (tray.py)
+3. Dashboard Integration (dashboard.py)
 Importance Score: 80
-- Idle GPU detection based on:
-  - Utilization thresholds (configurable percentage)
-  - Time-based thresholds (minutes)
-  - Custom alert policies per GPU
-- Memory usage warnings with thresholds:
-  - Critical: >95% VRAM usage
-  - Warning: >85% VRAM usage
-  - Advisory: >75% VRAM usage
-
-4. Dashboard Integration (dashboard.py)
-Importance Score: 75
-- Real-time visualization of GPU metrics:
-  - 60-point rolling window for historical data
-  - Color-coded status indicators based on thresholds
-  - Per-GPU performance graphs with automatic scaling
-  - Synchronized multi-GPU metric display
-
-5. Mixed Precision Policy (mpolicy.py)
-Importance Score: 70
-- Resource-aware precision management:
-  - FP32 enforcement for critical operations
-  - Dynamic precision adjustment based on memory pressure
-  - Hardware-specific optimization paths
+- Multi-GPU visualization system with:
+  - Per-GPU color coding
+  - Dynamic metric scaling
+  - Automatic grid adjustment
+  - Alert indicator overlays
+- Resource utilization history graphing
+- Critical threshold visualization
+- Power draw normalization (400W baseline)
 
 Key File Paths:
-- dual_gpu_optimizer/dualgpuopt/telemetry.py
-- dual_gpu_optimizer/dualgpuopt/metrics.py
-- dual_gpu_optimizer/dualgpuopt/tray.py
-- dual_gpu_optimizer/dualgpuopt/mpolicy.py
+- dualgpuopt/telemetry.py
+- dualgpuopt/metrics.py
+- dualgpuopt/gui/dashboard.py
+
+The system specializes in dual-GPU monitoring with emphasis on ML workload optimization and resource utilization tracking. Implementation includes specialized handling of GPU-specific metrics and intelligent aggregation for performance analysis.
 
 $END$

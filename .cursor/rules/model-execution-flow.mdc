@@ -1,80 +1,49 @@
 ---
-description: Defines execution flows and command generation for AI model deployment across multiple GPUs
-globs: 
+description: Guidelines for implementing model execution workflows, command generation, and GPU resource management
+globs: **/optimizer.py,**/runner.py,**/layer_balance.py,**/ctx_size.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-MODEL EXECUTION WORKFLOW SYSTEM
-Importance Score: 95
+Model Execution Workflows:
 
-Core Components:
+1. Framework-Specific Command Generation (Importance: 95)
+- Two primary execution paths:
+  * llama.cpp: GPU layer distribution and split configuration
+  * vLLM: Tensor parallel GPU allocation and batch optimization
+- Dynamic environment configuration based on GPU configuration
+- Adaptive command generation based on model architecture and GPU memory
 
-1. Context Length Management
-File: `dualgpuopt/ctx_size.py`
+2. Layer Distribution System (Importance: 90)
+- Intelligent layer placement across GPUs based on:
+  * Per-layer latency profiling (64 and 1024 token sequences)
+  * Memory quota allocation per GPU
+  * Layer performance characteristics
+- Weighted scoring (20% short sequences, 80% long sequences)
+- Priority assignment for performance-critical layers
 
-- Dynamic context window calculation based on model architecture:
-  - Number of layers
-  - KV heads configuration
-  - Head dimensions 
-  - MoE factor adjustments
-- Model-specific parameter lookups for:
-  - Mixtral, Llama-2, Mistral, Phi-2
-  - Configuration presets with optimized defaults
+3. Context Size Management (Importance: 85)
+- Model-specific token window calculations considering:
+  * Transformer architecture parameters
+  * Available GPU memory distribution
+  * MoE factor requirements
+  * KV cache overhead
+- Built-in parameters for common architectures (LLaMA-2, Mistral, Mixtral)
 
-2. Layer Distribution Engine
-File: `dualgpuopt/layer_balance.py`
+4. Memory Optimization (Importance: 85)
+- Token-based memory allocation with:
+  * System overhead (2GB base)
+  * KV cache multiplier (2.0x)
+  * Tensor parallelism overhead (20%)
+  * Safety margin buffer (10%)
+- Dynamic split ratio calculation for available GPU memory
 
-- Layer allocation across GPUs using weighted profiling:
-  - Short sequence profiling (64 tokens, 20% weight)
-  - Long sequence profiling (1024 tokens, 80% weight)
-- Memory quota enforcement with reserve ratios
-- Layer rebalancing based on runtime performance metrics
-
-3. Command Generation System
-File: `dualgpuopt/optimizer.py`
-
-- Framework-specific command synthesis:
-  - llama.cpp: GPU split parameters, context sizing
-  - vLLM: Tensor parallel configuration
-- Environment variable generation for GPU allocations
-- Split ratio calculation based on available memory
-
-4. Batch Processing Manager 
-File: `dualgpuopt/batch/smart_batch.py`
-
-- Length-aware sequence batching:
-  - Groups similar length sequences
-  - Manages memory overhead (20% reserve)
-  - Dynamic batch size bounds (1-64 sequences)
-  - Prevents mixing of short/long sequences beyond threshold
-
-5. Memory Policy System
-File: `dualgpuopt/mpolicy.py`
-
-- Mixed precision management:
-  - FP32 for critical ops (LayerNorm, softmax, residuals)
-  - Lower precision for bulk compute
-  - Dynamic dtype selection based on operation type
-
-Key Workflows:
-
-1. Model Launch Sequence
-- Context size calculation
-- Layer distribution optimization
-- Command generation with framework detection
-- Environment configuration
-
-2. Runtime Optimization
-- Batch size adjustment
-- Memory policy enforcement
-- Layer rebalancing based on metrics
-
-3. Resource Management
-- GPU memory splitting
-- Tensor parallel sizing
-- Overhead reservation
+Key Implementation Components:
+- dualgpuopt/optimizer.py: Command generation and resource allocation
+- dualgpuopt/layer_balance.py: Layer distribution algorithms
+- dualgpuopt/ctx_size.py: Context window optimization
+- dualgpuopt/gpu_info.py: GPU capability detection and monitoring
 
 $END$

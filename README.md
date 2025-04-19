@@ -57,6 +57,34 @@ pip install pyinstaller
 pyinstaller --name=DualGPUOptimizer --windowed run_optimizer.py
 ```
 
+## Architecture Overview
+
+The DualGPUOptimizer consists of several key components:
+
+### GPU Management and Monitoring
+- Probes and validates GPU configurations through NVML integration
+- Collects real-time telemetry including memory, utilization, and power usage
+- Provides mock GPU mode for testing without hardware
+
+### Model Optimization Engine
+- Calculates optimal memory splits between GPUs based on model requirements
+- Implements layer distribution algorithms for transformer models
+- Supports framework-specific command generation for llama.cpp and vLLM
+
+### Execution Management
+- Controls model execution across multiple GPUs
+- Provides real-time resource monitoring through an interactive dashboard
+- Implements idle detection and optimization alerts
+
+## PyTorch Compatibility
+
+The application requires PyTorch with CUDA support:
+
+- Python 3.12+: PyTorch 2.5.1 with CUDA 12.1
+- Python 3.11 or earlier: PyTorch 2.3.1 with CUDA 12.2
+
+If PyTorch is not detected, the application will attempt to install the appropriate version automatically.
+
 ## License
 
 MIT
