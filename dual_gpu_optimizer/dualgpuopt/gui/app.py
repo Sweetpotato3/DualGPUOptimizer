@@ -11,6 +11,17 @@ import sys
 import os
 from typing import Dict, List, Optional, Any
 
+# Import ttkbootstrap for modern UI
+try:
+    import ttkbootstrap as ttk
+    from ttkbootstrap.constants import *
+    from ttkbootstrap import Style
+    TTKBOOTSTRAP_AVAILABLE = True
+except ImportError:
+    import tkinter.ttk as ttk
+    TTKBOOTSTRAP_AVAILABLE = False
+    
+# Legacy theme support as fallback
 try:
     from ttkthemes import ThemedTk
     TTKTHEMES_AVAILABLE = True
@@ -30,6 +41,10 @@ from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.state_service import app_state
 from dualgpuopt.services.config_service import config_service
 from dualgpuopt.services.error_service import error_service
+
+# Global layout constants
+PAD = 16  # Double padding from original 8
+PROGRESSBAR_THICKNESS = 14
 
 
 class DualGpuApp(ttk.Frame):
@@ -51,28 +66,8 @@ class DualGpuApp(ttk.Frame):
         # Register event handlers
         self._register_event_handlers()
         
-        # Convert root window to ThemedTk if available
-        if TTKTHEMES_AVAILABLE and not isinstance(master, ThemedTk):
-            try:
-                # Store attributes from current master
-                geometry = master.geometry()
-                title = master.title()
-                
-                # Create new ThemedTk window
-                new_master = ThemedTk(theme=config_service.get("ttk_theme", "equilux"))
-                new_master.geometry(geometry)
-                new_master.title(title)
-                
-                # Replace master
-                master.destroy()
-                master = new_master
-                
-                # Update root in error service
-                error_service.set_root(master)
-            except Exception as e:
-                # Fall back to regular Tk if conversion fails
-                error_service.handle_error(e, level="WARNING", title="Theme Error",
-                                          context={"operation": "initialize ThemedTk"})
+        # Setup ttk style
+        self._setup_style(master)
         
         # Initialize frame
         super().__init__(master)
@@ -80,9 +75,6 @@ class DualGpuApp(ttk.Frame):
         self.logger = logging.getLogger("dualgpuopt.gui.app")
         
         try:
-            # Apply theme to root window before creating widgets
-            self._apply_theme(master)
-            
             # Use config/state for variables instead of instance variables
             self.model_var = tk.StringVar(value=app_state.get("model_path", ""))
             self.ctx_var = tk.IntVar(value=config_service.get("context_size", 65536))
@@ -105,8 +97,12 @@ class DualGpuApp(ttk.Frame):
                 os.environ["DGPUOPT_MOCK_GPUS"] = "1"
                 self.gpus = gpu_info.probe_gpus()
             
-            # Generate colors for GPU visualization
-            self.gpu_colors = generate_colors(len(self.gpus))
+            # Generate colors for GPU visualization - use lime for GPU-0, cyan for GPU-1
+            self.gpu_colors = ["#33ff55", "#00ffff"]  # Lime and Cyan
+            if len(self.gpus) > 2:
+                # Add more colors if needed
+                additional_colors = generate_colors(len(self.gpus) - 2)
+                self.gpu_colors.extend(additional_colors)
 
             # Initialize UI
             self.init_ui()
@@ -127,6 +123,57 @@ class DualGpuApp(ttk.Frame):
         except Exception as err:
             error_service.handle_error(err, level="CRITICAL", title="Initialization Error",
                                       context={"operation": "app_initialization"})
+    
+    def _setup_style(self, root: tk.Tk) -> None:
+        """Setup ttkbootstrap style or fallback to legacy theme"""
+        if TTKBOOTSTRAP_AVAILABLE:
+            # If this is already a ttkbootstrap Style root, just configure it
+            if hasattr(root, 'style'):
+                style = root.style
+            else:
+                # Create a new style
+                style = Style('darkly')
+                style.master = root
+                
+            # Configure progressbar thickness
+            style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
+            
+            # Configure custom styles
+            style.configure("Secondary.TFrame", background=style.colors.secondary)
+            style.configure("Danger.TFrame", bordercolor=style.colors.danger, 
+                           borderwidth=2, relief="solid")
+            
+            self.logger.info("ttkbootstrap style 'darkly' applied")
+        elif TTKTHEMES_AVAILABLE:
+            # Fallback to legacy theming
+            self.logger.warning("ttkbootstrap not available, using legacy themed tk")
+            if not isinstance(root, ThemedTk):
+                try:
+                    # Store attributes from current master
+                    geometry = root.geometry()
+                    title = root.title()
+                    
+                    # Create new ThemedTk window
+                    new_master = ThemedTk(theme=config_service.get("ttk_theme", "equilux"))
+                    new_master.geometry(geometry)
+                    new_master.title(title)
+                    
+                    # Replace master
+                    root.destroy()
+                    root = new_master
+                    
+                    # Update root in error service
+                    error_service.set_root(root)
+                    
+                    # Configure style
+                    style = ttk.Style()
+                    style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
+                except Exception as e:
+                    self.logger.warning(f"Failed to set ThemedTk theme: {e}")
+        else:
+            # Basic styling when no theming library is available
+            style = ttk.Style()
+            style.configure("TProgressbar", thickness=PROGRESSBAR_THICKNESS)
     
     def _register_event_handlers(self) -> None:
         """Register handlers for application events."""
@@ -162,7 +209,13 @@ class DualGpuApp(ttk.Frame):
         # Try to initialize with mock GPUs
         try:
             self.gpus = gpu_info.probe_gpus()
-            self.gpu_colors = generate_colors(len(self.gpus))
+            # Use lime for GPU-0, cyan for GPU-1
+            self.gpu_colors = ["#33ff55", "#00ffff"]  # Lime and Cyan
+            if len(self.gpus) > 2:
+                # Add more colors if needed
+                additional_colors = generate_colors(len(self.gpus) - 2)
+                self.gpu_colors.extend(additional_colors)
+                
             self.init_ui()
             
             # Setup telemetry again
@@ -184,19 +237,6 @@ class DualGpuApp(ttk.Frame):
         if hasattr(self, "status_var"):
             self.status_var.set(f"Warning: {message}")
 
-    def _apply_theme(self, root: tk.Tk) -> None:
-        """
-        Apply selected theme to the application.
-        
-        Args:
-            root: The root Tk window
-        """
-        theme_name = config_service.get("theme", "dark")
-        
-        # Apply theme
-        self.active_theme = apply_theme(root, theme_name, self.logger)
-        self.chart_bg = self.active_theme.get("chart_bg", "#202020")
-    
     def _theme_changed(self, theme_name: str) -> None:
         """
         Handle theme change.
@@ -204,6 +244,13 @@ class DualGpuApp(ttk.Frame):
         Args:
             theme_name: New theme name
         """
+        if TTKBOOTSTRAP_AVAILABLE:
+            # If using ttkbootstrap, we'd need to recreate the application
+            # For now, just log that theme changes require restart with ttkbootstrap
+            self.logger.info("Theme changes with ttkbootstrap require application restart")
+            return
+            
+        # Legacy theme handling (for backwards compatibility)
         # Get ttk theme from config
         ttk_theme = config_service.get("ttk_theme", "")
         
@@ -227,7 +274,7 @@ class DualGpuApp(ttk.Frame):
         """Initialize the user interface."""
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)
-        self.pack(fill="both", expand=True, padx=2, pady=2)
+        self.pack(fill="both", expand=True, padx=PAD, pady=PAD)
         
         # Use notebook for tabs
         self.notebook = ttk.Notebook(self)
@@ -263,7 +310,7 @@ class DualGpuApp(ttk.Frame):
         
         self.status_var = tk.StringVar(value="Ready")
         status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor="e")
-        status_label.grid(row=0, column=0, sticky="e", padx=8, pady=4)
+        status_label.grid(row=0, column=0, sticky="e", padx=PAD, pady=PAD/2)
         
         # Sync model_var with state
         self.model_var.trace_add("write", self._model_var_changed)
@@ -314,16 +361,36 @@ class DualGpuApp(ttk.Frame):
 
 def run_app() -> None:
     """Run the DualGPUOptimizer application."""
-    root = tk.Tk() if not TTKTHEMES_AVAILABLE else ThemedTk()
-    root.title("DualGPUOptimizer")
-    root.geometry("800x600")
-    
-    # Increase font size slightly on high-DPI displays
-    if hasattr(root, "winfo_fpixels"):
-        dpi = root.winfo_fpixels('1i') / 72.0
-        if dpi > 1.5:  # High-DPI display
-            default_font = ("Segoe UI", int(9 * dpi)) if sys.platform == "win32" else ("Helvetica", int(10 * dpi))
-            root.option_add("*Font", default_font)
+    # Use ttkbootstrap if available, otherwise fall back to standard or ThemedTk
+    if TTKBOOTSTRAP_AVAILABLE:
+        # Create the ttkbootstrap root with the darkly theme
+        root = ttk.Window(
+            title="DualGPUOptimizer",
+            themename="darkly",
+            size=(800, 600),
+            resizable=(True, True),
+            iconphoto="",  # Will be set by the application
+        )
+        
+        # Increase base font size to Segoe UI 11
+        default_font = ("Segoe UI", 11) if sys.platform == "win32" else ("Helvetica", 11)
+        root.option_add("*Font", default_font)
+    elif TTKTHEMES_AVAILABLE:
+        root = ThemedTk()
+        root.title("DualGPUOptimizer")
+        root.geometry("800x600")
+        
+        # Increase font size
+        default_font = ("Segoe UI", 11) if sys.platform == "win32" else ("Helvetica", 11)
+        root.option_add("*Font", default_font)
+    else:
+        root = tk.Tk()
+        root.title("DualGPUOptimizer")
+        root.geometry("800x600")
+        
+        # Increase font size
+        default_font = ("Segoe UI", 11) if sys.platform == "win32" else ("Helvetica", 11)
+        root.option_add("*Font", default_font)
     
     app = DualGpuApp(root)
     root.protocol("WM_DELETE_WINDOW", lambda: on_close(root, app))

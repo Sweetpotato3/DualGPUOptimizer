@@ -10,6 +10,16 @@ import pathlib
 import logging
 from typing import Dict, List, Callable, Any, Optional
 
+# Try to import ttkbootstrap components
+try:
+    import ttkbootstrap as ttk
+    from ttkbootstrap.constants import *
+    TTKBOOTSTRAP_AVAILABLE = True
+except ImportError:
+    import tkinter.ttk as ttk
+    TTKBOOTSTRAP_AVAILABLE = False
+
+from dualgpuopt.gui.app import PAD
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.config_service import config_service
@@ -31,19 +41,26 @@ class SettingsTab(ttk.Frame):
             gpus: List of GPU objects
             config_service: Application configuration service
         """
-        super().__init__(parent, padding=8)
+        super().__init__(parent, padding=PAD)
         self.parent = parent
         self.gpus = gpus
         self.config_service = config_service
         self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)  # Content area takes all available space
+        self.rowconfigure(1, weight=0)  # Footer bar is fixed height
         self.logger = logging.getLogger("dualgpuopt.gui.settings")
         
         # Register event handlers
         self._register_event_handlers()
         
         # Create a scrollable canvas to contain all settings
-        canvas = tk.Canvas(self)
-        scrollbar = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
+        canvas_frame = ttk.Frame(self)
+        canvas_frame.grid(row=0, column=0, sticky="nsew")
+        canvas_frame.columnconfigure(0, weight=1)
+        canvas_frame.rowconfigure(0, weight=1)
+        
+        canvas = tk.Canvas(canvas_frame)
+        scrollbar = ttk.Scrollbar(canvas_frame, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas)
         
         scrollable_frame.bind(
@@ -54,20 +71,20 @@ class SettingsTab(ttk.Frame):
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
         
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
+        canvas.grid(row=0, column=0, sticky="nsew")
+        scrollbar.grid(row=0, column=1, sticky="ns")
         
         # Make the scrollable frame take the full width
         scrollable_frame.columnconfigure(0, weight=1)
         
         # ------ Appearance Section ------
         appearance_frame = ttk.LabelFrame(scrollable_frame, text="Appearance")
-        appearance_frame.grid(sticky="ew", pady=(0, 8), padx=8)
+        appearance_frame.grid(sticky="ew", pady=(0, PAD), padx=PAD, row=0)
         appearance_frame.columnconfigure(1, weight=1)
         
         # Theme selection
         self.theme_var = tk.StringVar(value=config_service.get("theme", "dark"))
-        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=PAD, pady=5)
         theme_combo = ttk.Combobox(
             appearance_frame, 
             textvariable=self.theme_var,
@@ -75,12 +92,12 @@ class SettingsTab(ttk.Frame):
             width=10,
             state="readonly"
         )
-        theme_combo.grid(row=0, column=1, sticky="w", padx=8, pady=5)
+        theme_combo.grid(row=0, column=1, sticky="w", padx=PAD, pady=5)
         
         # Add TTK theme selection if ttkthemes is available
         self.ttk_theme_var = tk.StringVar(value=config_service.get("ttk_theme", ""))
         if AVAILABLE_TTK_THEMES:
-            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=8, pady=5)
+            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=PAD, pady=5)
             ttk_theme_combo = ttk.Combobox(
                 appearance_frame,
                 textvariable=self.ttk_theme_var,
@@ -88,21 +105,31 @@ class SettingsTab(ttk.Frame):
                 width=10,
                 state="readonly"
             )
-            ttk_theme_combo.grid(row=1, column=1, sticky="w", padx=8, pady=5)
+            ttk_theme_combo.grid(row=1, column=1, sticky="w", padx=PAD, pady=5)
         
         ttk.Button(
             appearance_frame, 
             text="Apply Theme", 
             command=self._apply_theme_change
-        ).grid(row=0, column=2, padx=8, pady=5)
+        ).grid(row=0, column=2, padx=PAD, pady=5)
         
         # ------ GPU Overclocking Section ------
         overclocking_frame = ttk.LabelFrame(scrollable_frame, text="GPU Overclocking")
-        overclocking_frame.grid(sticky="ew", pady=(0, 8), padx=8, row=1)
+        overclocking_frame.grid(sticky="ew", pady=(0, PAD), padx=PAD, row=1)
         overclocking_frame.columnconfigure(1, weight=1)
         
+        # Create danger zone styling for overclocking section
+        if TTKBOOTSTRAP_AVAILABLE:
+            overclocking_frame.configure(bootstyle="danger")
+        else:
+            # Apply custom styling for non-ttkbootstrap
+            style = ttk.Style()
+            style.configure("Danger.TLabelframe", bordercolor="#c0392b", borderwidth=2)
+            style.configure("Danger.TLabelframe.Label", foreground="#c0392b")
+            overclocking_frame.configure(style="Danger.TLabelframe")
+        
         # GPU selection for overclocking
-        ttk.Label(overclocking_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(overclocking_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=PAD, pady=5)
         self.oc_gpu_var = tk.StringVar()
         gpu_values = [f"GPU {i}: {gpu.short_name}" for i, gpu in enumerate(self.gpus)]
         self.oc_gpu_combo = ttk.Combobox(
@@ -114,12 +141,12 @@ class SettingsTab(ttk.Frame):
         )
         if gpu_values:
             self.oc_gpu_combo.current(0)
-        self.oc_gpu_combo.grid(row=0, column=1, sticky="w", padx=8, pady=5)
+        self.oc_gpu_combo.grid(row=0, column=1, sticky="w", padx=PAD, pady=5)
         self.oc_gpu_combo.bind("<<ComboboxSelected>>", self._update_oc_controls)
         
         # Create overclocking sliders frame
         oc_sliders_frame = ttk.Frame(overclocking_frame)
-        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=8, pady=5)
+        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=PAD, pady=5)
         oc_sliders_frame.columnconfigure(1, weight=1)
         
         # Core Clock Offset slider
@@ -182,19 +209,31 @@ class SettingsTab(ttk.Frame):
         self.fan_speed_label = ttk.Label(oc_sliders_frame, text="Auto", width=8)
         self.fan_speed_label.grid(row=3, column=2, padx=5, pady=2)
         
-        # Auto fan checkbox
+        # Auto fan checkbox or Switch (if ttkbootstrap available)
         self.auto_fan_var = tk.BooleanVar(value=True)
-        auto_fan_check = ttk.Checkbutton(
-            oc_sliders_frame,
-            text="Auto Fan",
-            variable=self.auto_fan_var,
-            command=self._toggle_fan_control
-        )
+        if TTKBOOTSTRAP_AVAILABLE:
+            from ttkbootstrap.widgets import ToggleButton
+            auto_fan_check = ToggleButton(
+                oc_sliders_frame,
+                text="Auto Fan",
+                variable=self.auto_fan_var,
+                onvalue=True,
+                offvalue=False,
+                bootstyle="success",
+                command=self._toggle_fan_control
+            )
+        else:
+            auto_fan_check = ttk.Checkbutton(
+                oc_sliders_frame,
+                text="Auto Fan",
+                variable=self.auto_fan_var,
+                command=self._toggle_fan_control
+            )
         auto_fan_check.grid(row=3, column=3, padx=5, pady=2)
         
         # Overclocking buttons
         oc_buttons_frame = ttk.Frame(overclocking_frame)
-        oc_buttons_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=8, pady=5)
+        oc_buttons_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=PAD, pady=5)
         
         ttk.Button(
             oc_buttons_frame,
@@ -217,7 +256,7 @@ class SettingsTab(ttk.Frame):
         
         # Note about overclocking
         warning_frame = ttk.Frame(overclocking_frame)
-        warning_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=8, pady=5)
+        warning_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=PAD, pady=5)
         
         warning_text = (
             "Warning: Overclocking may void warranty and can potentially damage hardware. "
@@ -233,67 +272,120 @@ class SettingsTab(ttk.Frame):
         
         # ------ Application Settings Section ------
         app_settings_frame = ttk.LabelFrame(scrollable_frame, text="Application Settings")
-        app_settings_frame.grid(sticky="ew", pady=(0, 8), padx=8, row=2)
+        app_settings_frame.grid(sticky="ew", pady=(0, PAD), padx=PAD, row=2)
         app_settings_frame.columnconfigure(1, weight=1)
         
+        # GPU idle detection settings frame
+        idle_settings_frame = ttk.Frame(app_settings_frame)
+        idle_settings_frame.grid(row=0, column=0, columnspan=2, sticky="ew", padx=PAD, pady=5)
+        idle_settings_frame.columnconfigure(1, weight=1)
+        
         # Startup behavior
-        ttk.Label(app_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(idle_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=PAD, pady=5)
         self.start_min_var = tk.BooleanVar(value=config_service.get("start_minimized", False))
-        start_min_check = ttk.Checkbutton(
-            app_settings_frame,
-            variable=self.start_min_var
-        )
-        start_min_check.grid(row=0, column=1, sticky="w", padx=8, pady=5)
+        
+        # Use Switch if ttkbootstrap available, otherwise checkbox
+        if TTKBOOTSTRAP_AVAILABLE:
+            from ttkbootstrap.widgets import Switch
+            start_min_check = Switch(
+                idle_settings_frame,
+                variable=self.start_min_var,
+                bootstyle="success"
+            )
+        else:
+            start_min_check = ttk.Checkbutton(
+                idle_settings_frame,
+                variable=self.start_min_var
+            )
+        start_min_check.grid(row=0, column=1, sticky="w", padx=PAD, pady=5)
         
         # GPU idle detection
-        ttk.Label(app_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(idle_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=PAD, pady=5)
         self.idle_alerts_var = tk.BooleanVar(value=config_service.get("idle_alerts", True))
-        idle_alerts_check = ttk.Checkbutton(
-            app_settings_frame,
-            variable=self.idle_alerts_var
-        )
-        idle_alerts_check.grid(row=1, column=1, sticky="w", padx=8, pady=5)
+        
+        # Use Switch if ttkbootstrap available, otherwise checkbox
+        if TTKBOOTSTRAP_AVAILABLE:
+            idle_alerts_check = Switch(
+                idle_settings_frame,
+                variable=self.idle_alerts_var,
+                bootstyle="success"
+            )
+        else:
+            idle_alerts_check = ttk.Checkbutton(
+                idle_settings_frame,
+                variable=self.idle_alerts_var
+            )
+        idle_alerts_check.grid(row=1, column=1, sticky="w", padx=PAD, pady=5)
         
         # Idle threshold
-        ttk.Label(app_settings_frame, text="Idle threshold (%):").grid(row=2, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(idle_settings_frame, text="Idle threshold (%):").grid(row=2, column=0, sticky="w", padx=PAD, pady=5)
         self.idle_threshold_var = tk.IntVar(value=config_service.get("idle_threshold", 30))
         idle_threshold_entry = ttk.Entry(
-            app_settings_frame,
+            idle_settings_frame,
             textvariable=self.idle_threshold_var,
             width=5
         )
-        idle_threshold_entry.grid(row=2, column=1, sticky="w", padx=8, pady=5)
+        idle_threshold_entry.grid(row=2, column=1, sticky="w", padx=PAD, pady=5)
         
         # Idle time
-        ttk.Label(app_settings_frame, text="Idle time (minutes):").grid(row=3, column=0, sticky="w", padx=8, pady=5)
+        ttk.Label(idle_settings_frame, text="Idle time (minutes):").grid(row=3, column=0, sticky="w", padx=PAD, pady=5)
         self.idle_time_var = tk.IntVar(value=config_service.get("idle_time", 5))
         idle_time_entry = ttk.Entry(
-            app_settings_frame,
+            idle_settings_frame,
             textvariable=self.idle_time_var,
             width=5
         )
-        idle_time_entry.grid(row=3, column=1, sticky="w", padx=8, pady=5)
-        
-        # ------ Save Button ------
-        save_frame = ttk.Frame(scrollable_frame)
-        save_frame.grid(row=3, column=0, sticky="ew", pady=8, padx=8)
-        
-        ttk.Button(
-            save_frame,
-            text="Save All Settings",
-            command=self._save_all_settings
-        ).pack(side="right")
+        idle_time_entry.grid(row=3, column=1, sticky="w", padx=PAD, pady=5)
         
         # Initialize the fan control state
         self._toggle_fan_control()
         
         # Reference to undo button
         self.undo_button = oc_buttons_frame.winfo_children()[2]
+        
+        # ------ Sticky Footer Bar ------
+        if TTKBOOTSTRAP_AVAILABLE:
+            footer_frame = ttk.Frame(self, bootstyle="secondary")
+        else:
+            footer_frame = ttk.Frame(self, style="Secondary.TFrame")
+        footer_frame.grid(row=1, column=0, sticky="ew", pady=(PAD/2, 0))
+        footer_frame.columnconfigure(0, weight=1)  # Status text expands
+        footer_frame.columnconfigure(1, weight=0)  # Buttons fixed width
+        
+        # Status label
+        self.status_var = tk.StringVar(value="Ready")
+        status_label = ttk.Label(footer_frame, textvariable=self.status_var)
+        status_label.grid(row=0, column=0, sticky="w", padx=PAD, pady=PAD/2)
+        
+        # Buttons frame
+        buttons_frame = ttk.Frame(footer_frame)
+        buttons_frame.grid(row=0, column=1, sticky="e", padx=PAD, pady=PAD/2)
+        
+        # Save button
+        ttk.Button(
+            buttons_frame,
+            text="Save Settings",
+            command=self._save_all_settings
+        ).pack(side="right", padx=5)
+        
+        # Reset button
+        ttk.Button(
+            buttons_frame,
+            text="Reset to Defaults",
+            command=self._reset_all_settings
+        ).pack(side="right", padx=5)
     
     def _register_event_handlers(self) -> None:
         """Register event handlers for events."""
         event_bus.subscribe("command_history_updated", self._update_command_history)
         event_bus.subscribe("command_executed:apply_overclock", self._handle_overclock_result)
+        event_bus.subscribe("settings_saved", self._update_status_saved)
+    
+    def _update_status_saved(self, *args) -> None:
+        """Update status bar to show settings were saved."""
+        self.status_var.set("Settings saved successfully")
+        # Reset after 3 seconds
+        self.after(3000, lambda: self.status_var.set("Ready"))
     
     def _update_command_history(self, data: Dict[str, Any]) -> None:
         """
@@ -316,6 +408,10 @@ class SettingsTab(ttk.Frame):
         success = data.get("success", False)
         
         if success:
+            self.status_var.set(f"Overclock applied to GPU {data.get('gpu_index', '?')}")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Ready"))
+            
             messagebox.showinfo(
                 "Overclock Applied", 
                 f"Overclocking settings applied to GPU {data.get('gpu_index', '?')}",
@@ -325,7 +421,11 @@ class SettingsTab(ttk.Frame):
     def _undo_last_command(self) -> None:
         """Undo the last command."""
         result = command_manager.undo()
-        if not result:
+        if result:
+            self.status_var.set("Last operation undone")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Ready"))
+        else:
             messagebox.showerror(
                 "Undo Failed", 
                 "Failed to undo the last operation",
@@ -380,6 +480,11 @@ class SettingsTab(ttk.Frame):
             # Update fan control
             self._toggle_fan_control()
             
+            # Update status
+            self.status_var.set(f"Loaded settings for GPU {gpu_idx}")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Ready"))
+            
         except (ValueError, IndexError) as e:
             error_service.handle_error(e, level="WARNING", title="GPU Selection Error",
                                      show_dialog=False,
@@ -406,6 +511,9 @@ class SettingsTab(ttk.Frame):
             command = ApplyOverclockCommand(
                 gpu_idx, core_offset, memory_offset, power_limit, fan_speed, auto_fan
             )
+            
+            # Update status
+            self.status_var.set(f"Applying overclock to GPU {gpu_idx}...")
             
             # Execute command
             command_manager.execute(command)
@@ -438,6 +546,11 @@ class SettingsTab(ttk.Frame):
                     
                     # Publish event that GPU overclock was reset
                     event_bus.publish("gpu_overclock_reset", {"gpu_index": gpu_idx})
+                    
+                    # Update status
+                    self.status_var.set(f"Reset overclock for GPU {gpu_idx}")
+                    # Reset status after 3 seconds
+                    self.after(3000, lambda: self.status_var.set("Ready"))
             except (ValueError, IndexError) as e:
                 error_service.handle_error(e, level="WARNING", title="Reset Error",
                                         show_dialog=False,
@@ -454,8 +567,36 @@ class SettingsTab(ttk.Frame):
             "ttk_theme": ttk_theme
         })
         
+        # Update status
+        self.status_var.set(f"Theme changed to {theme_name}")
+        # Reset status after 3 seconds
+        self.after(3000, lambda: self.status_var.set("Ready"))
+        
         # Notify about theme change
         event_bus.publish("config_changed:theme", theme_name)
+    
+    def _reset_all_settings(self) -> None:
+        """Reset all settings to defaults."""
+        if messagebox.askyesno("Reset Settings", 
+                             "Are you sure you want to reset all settings to defaults?",
+                             parent=self.winfo_toplevel()):
+            # Reset to defaults
+            self.start_min_var.set(False)
+            self.idle_alerts_var.set(True)
+            self.idle_threshold_var.set(30)
+            self.idle_time_var.set(5)
+            
+            # Apply default theme
+            self.theme_var.set("dark")
+            self.ttk_theme_var.set("")
+            
+            # Save changes
+            self._save_all_settings()
+            
+            # Update status
+            self.status_var.set("All settings reset to defaults")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Ready"))
     
     def _save_all_settings(self) -> None:
         """Save all settings to the configuration file."""
@@ -466,7 +607,14 @@ class SettingsTab(ttk.Frame):
                 "idle_alerts": self.idle_alerts_var.get(),
                 "idle_threshold": self.idle_threshold_var.get(),
                 "idle_time": self.idle_time_var.get(),
+                "theme": self.theme_var.get(),
+                "ttk_theme": self.ttk_theme_var.get()
             })
+            
+            # Update status
+            self.status_var.set("Settings saved successfully")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Ready"))
             
             # Notify about settings update
             event_bus.publish("settings_saved")

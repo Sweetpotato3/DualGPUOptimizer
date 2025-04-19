@@ -1,5 +1,5 @@
 ---
-description: Specifications for GPU resource monitoring, telemetry collection, and alert systems for multi-GPU optimization
+description: Specification for GPU resource monitoring, telemetry collection, and performance alerting system implementation
 globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py
 alwaysApply: false
 ---
@@ -7,58 +7,43 @@ alwaysApply: false
 
 # resource-monitoring-system
 
-## Core Telemetry System
-Importance Score: 95
+## Core Telemetry System (telemetry.py) [Score: 95]
 
-The telemetry system implements specialized GPU metric collection through:
+Real-time GPU metrics collection engine with specialized data points:
+- GPU utilization percentage tracking
+- Memory usage and availability monitoring 
+- Temperature sensor readings
+- Power draw measurements
+- PCIe bandwidth utilization (RX/TX)
+- Fan speed monitoring
 
-1. Real-time GPU Performance Metrics:
-- Load/utilization percentage
-- Memory usage tracking
-- PCIe bandwidth monitoring
-- Temperature sensors 
-- Power consumption
-- Fan speeds
-- Clock speeds (memory and core)
+Implements middleware pipeline for metric processing with:
+- Custom threshold detection for resource constraints
+- Rolling 60-sample history buffer for trend analysis
+- Normalized scaling of different metric types
+- Automatic unit conversion (KB/s to GB/s for bandwidth)
 
-2. Idle Detection System:
-- Continuous monitoring of GPU utilization
-- Triggers alerts when GPUs are under 30% utilization for 5+ minutes
-- Focuses on expensive GPU resource optimization
+## Alert System (tray.py) [Score: 85]
 
-## Resource History Management
-Importance Score: 85
+GPU resource management notification system:
+- Idle detection logic with configurable thresholds
+- 5-minute default idle window monitoring
+- Multi-GPU correlation for workload distribution alerts
+- Progressive notification stages based on utilization patterns
 
-1. Metric Buffer System:
-- Maintains 60-sample historical buffer for each GPU
-- Tracks performance metrics over time
-- Implements rolling window for performance trends
+## Metrics Collection (metrics.py, gpu_info.py) [Score: 90]
 
-2. Normalization Pipeline:
-- Temperature scaling (0-100°C to percentage)
-- Power usage normalization (against 400W baseline)
-- Memory usage conversion between MB/GB based on size
-- PCIe bandwidth with adaptive unit display
+Specialized GPU metric aggregation:
+- Architecture-specific CUDA core calculations
+- Memory bandwidth monitoring with hardware-specific thresholds
+- Thermal envelope tracking relative to TDP
+- Custom sampling rates for different metric categories
+- Mock GPU system support for testing environments
 
-## Alert Mechanism
-Importance Score: 80
-
-Implements multi-tiered alert system:
-- Resource underutilization detection
-- Temperature threshold monitoring
-- Power consumption warnings
-- Memory capacity alerts
-
-Key business rules:
-- 30% GPU utilization threshold for idle detection
-- 5-minute minimum idle duration for alerts
-- Temperature thresholds mapped to percentage visualization
-- Maximum power draw baseline of 400W
-
-Relevant files:
-- dual_gpu_optimizer/dualgpuopt/telemetry.py
-- dual_gpu_optimizer/dualgpuopt/gpu_info.py
-- dual_gpu_optimizer/dualgpuopt/metrics.py
-- dual_gpu_optimizer/dualgpuopt/tray.py
+The monitoring system maintains dedicated event channels for:
+- Critical resource warnings (OOM, thermal limits)
+- Performance degradation alerts
+- Idle resource notifications
+- Cross-GPU load balancing events
 
 $END$

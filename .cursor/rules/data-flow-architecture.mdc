@@ -1,80 +1,58 @@
 ---
-description: Documents data flow between components for multi-GPU optimization, resource tracking, and workload distribution
-globs: dual_gpu_optimizer/dualgpuopt/**/*.py
+description: Documents data flow between components for GPU resource management and optimization metrics in a dual-GPU system
+globs: **/services/**,**/gui/**,**/dualgpuopt/**
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core data flows in the dual GPU optimization system:
+Primary Data Flows:
 
-1. GPU Metrics Flow
-- Source: GPU hardware sensors via NVML
-- Path: telemetry.py -> event_bus.py -> event_dashboard.py
-- Metrics include:
-  * Utilization rates
-  * Memory usage
-  * Temperature
-  * Power consumption
-  * Fan speeds
-- 60-sample historical buffer maintained
+1. GPU Resource Metrics Flow (Importance: 95)
+- GPU telemetry service collects real-time metrics (utilization, memory, temperature, power)
+- Event bus distributes metrics to subscribers using priority-based routing (CRITICAL to LOW)
+- Dashboard components maintain 60-sample rolling history for visualization
+- Metrics flow through normalization pipeline for standardized presentation
 
-2. Optimization Parameter Flow
-- Source: optimizer.py, layer_balance.py
-- Path: optimizer.py -> state_service.py -> gpu_commands.py
-- Key parameters:
-  * Tensor split ratios
-  * Layer distribution weights
-  * Memory allocation quotas
-  * Clock speed offsets
+2. Optimization Parameter Flow (Importance: 90)
+- Layer balancing system distributes workload across GPUs based on:
+  - Layer performance profiles (64 and 1024 token sequences)
+  - Memory availability per GPU
+  - Latency measurements
+- Context size calculator sends configuration updates based on:
+  - Layer count and dimensions  
+  - Available GPU memory
+  - Model precision settings
 
-3. Model Configuration Flow
-- Source: configio.py, ctx_size.py
-- Path: configio.py -> launcher.py -> runner.py
-- Configurations include:
-  * Context size calculations
-  * Model architecture parameters
-  * Framework-specific settings (llama.cpp/vLLM)
+3. State Management Flow (Importance: 85)
+- GPU configuration state flows from settings to command executor:
+  - Overclocking parameters
+  - Fan control settings  
+  - Power limits
+- Model deployment state flows between optimizer and launcher:
+  - Tensor split ratios
+  - Framework-specific configurations
+  - Resource allocation mappings
 
-4. Resource Management Flow
-- Source: gpu_info.py, mpolicy.py
-- Path: gpu_info.py -> state_service.py -> smart_batch.py
-- Resources tracked:
-  * VRAM allocation
-  * Compute capacity
-  * Power limits
-  * Temperature thresholds
-
-5. Error Handling Flow
-- Source: error_service.py
-- Path: error_service.py -> event_bus.py -> state_service.py
-- Handles:
-  * GPU hardware errors
-  * Out of memory conditions
-  * Temperature warnings
-  * Power limit violations
+4. Error and Recovery Flow (Importance: 80)
+- Error service routes GPU-specific errors through severity-based handlers
+- Fallback flow activates mock GPU mode on detection failures
+- Recovery signals propagate through event system for state restoration
 
 Key Integration Points:
+- Telemetry service → Event bus → Dashboard components
+- Optimizer → Command executor → GPU drivers
+- State service → Configuration components → Model launcher
+- Error service → Recovery handlers → State restoration
 
-1. Hardware Interface Layer
-- File: gpu_info.py
-- Importance: 95
-- Bridges hardware metrics to optimization system
-
-2. Event Distribution System
-- File: event_bus.py
-- Importance: 85
-- Routes GPU events and metrics through system
-
-3. State Management
-- File: state_service.py
-- Importance: 90
-- Maintains optimization parameters and GPU configurations
-
-4. Resource Optimization
-- Files: optimizer.py, layer_balance.py
-- Importance: 95
-- Implements core balancing algorithms
+Relevant Files:
+```
+dual_gpu_optimizer/dualgpuopt/services/event_bus.py
+dual_gpu_optimizer/dualgpuopt/services/state_service.py
+dual_gpu_optimizer/dualgpuopt/telemetry.py
+dual_gpu_optimizer/dualgpuopt/optimizer.py
+dual_gpu_optimizer/dualgpuopt/gui/dashboard.py
+```
 
 $END$

@@ -94,6 +94,11 @@ def _pyi_cmd(exe_name: str, nvml_path: pathlib.Path, extras: List[pathlib.Path])
         "--hidden-import", "torch.autocast",
         "--hidden-import", "prometheus_client",
         "--hidden-import", "asyncio",
+        "--hidden-import", "ttkbootstrap",
+        "--hidden-import", "ttkbootstrap.style",
+        "--hidden-import", "ttkbootstrap.widgets",
+        "--hidden-import", "ttkbootstrap.tooltip",
+        "--collect-submodules", "ttkbootstrap",
         "--hidden-import",
         "pystray._win32" if platform.system() == "Windows" else "pystray._xorg",
     ]

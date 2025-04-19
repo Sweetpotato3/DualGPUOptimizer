@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Apply this overview documentation for dual GPU optimization systems that manage and coordinate machine learning model execution across multiple GPUs, including performance monitoring, resource allocation, and hardware state management.
-globs: *.py
+description: Apply this documentation for high-level technical overviews of dual GPU optimization systems focused on machine learning model deployment and monitoring. Use when documenting systems that manage GPU resource allocation, model inference optimization, and real-time performance tracking.
+globs: *.py,*.code-workspace
 alwaysApply: false
 ---
 
@@ -18,32 +18,46 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized GPU optimization for large language models through several key business components:
+The DualGPUOptimizer system consists of three core business domains:
 
-Core GPU Management:
-- Layer balancing engine that distributes model layers across GPUs based on latency profiles and VRAM constraints
-- Context size calculator that determines maximum safe sequence lengths considering model architecture and GPU memory
-- Memory policy manager implementing mixed precision strategies while maintaining stability
-- Overclocking management system with hardware-safe constraints and profile persistence
-
-Resource Optimization:
-- Smart batching system with length-aware scheduling and OOM recovery
-- Real-time GPU telemetry tracking power usage, temperatures, and memory utilization
-- Idle resource detection alerting on underutilized GPUs (threshold: 30% for 5+ minutes)
-
-Model Execution:
-- Framework-specific optimizers for llama.cpp and vLLM
-- Split ratio computation for tensor distribution across GPUs
-- Atomic overclocking operations with rollback capabilities
-- GPU-specific overclocking profiles and safety constraints
+1. GPU Resource Optimization (Importance: 95)
+- Intelligent memory splitting calculation for multi-GPU deployments
+- Dynamic tensor distribution based on GPU capabilities
+- Framework-specific configuration generation for llama.cpp and vLLM
+- Adaptive layer balancing with quota-based workload distribution
 
 Key files:
-- `dualgpuopt/layer_balance.py`: Core layer distribution logic
-- `dualgpuopt/ctx_size.py`: Context size calculation
-- `dualgpuopt/batch/smart_batch.py`: Batching optimization
-- `dualgpuopt/commands/gpu_commands.py`: GPU control operations
+- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- `dual_gpu_optimizer/dualgpuopt/layer_balance.py`
 
-The system prioritizes optimal resource utilization for dual-GPU machine learning workloads while maintaining hardware safety and operational stability through configurable thresholds and failover mechanisms.
+2. GPU Performance Monitoring (Importance: 85)
+- Real-time telemetry collection across multiple GPUs
+- Comprehensive metrics tracking: utilization, memory, temperature, power
+- Rolling 60-sample history window for trend analysis
+- Event-driven metric distribution system
+
+Key files:
+- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+- `dual_gpu_optimizer/dualgpuopt/metrics.py`
+
+3. Model Deployment Management (Importance: 80)
+- Context length optimization using GPU-aware heuristics
+- Smart batching system with OOM recovery
+- Overclocking management with safety constraints
+- Framework-specific launch orchestration
+
+Key files:
+- `dual_gpu_optimizer/dualgpuopt/ctx_size.py`
+- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
+
+The system implements specialized optimization logic for large language model inference across dual GPU setups, with particular focus on:
+- Memory allocation optimization
+- Workload distribution
+- Performance monitoring
+- Resource utilization
+- Safe overclocking management
+
+Integration points between components are handled through an event bus system that coordinates GPU metric collection, optimization decisions, and deployment configurations.
 
 $END$
 END SPECIFICATION
