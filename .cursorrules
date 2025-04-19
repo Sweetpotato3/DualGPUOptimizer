@@ -229,8 +229,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level documentation overviews for GPU optimization and monitoring systems, particularly those involving dual GPU configurations and ML model execution management.
-globs: *.py
+description: Use this rule for generating high-level documentation of GPU optimization systems focusing on multi-GPU configurations, model parameter management, and specialized LLM workload handling
+globs: *.py,**/*.py
 alwaysApply: false
 ---
 
@@ -246,59 +246,53 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized optimization and monitoring systems for dual GPU configurations, focusing on large language model execution.
+GPU Optimization System Core Architecture
+======================================
+
+The dual GPU optimization system implements specialized workload management for large language models across multiple GPUs.
 
 Core Business Components:
 
-1. GPU Optimization Engine (75/100)
-Path: dual_gpu_optimizer/dualgpuopt/optimizer.py
-- Memory split calculation for multi-GPU deployment
-- Framework-specific command generation (llama.cpp, vLLM)
-- Dynamic tensor parallelism configuration
-- Context size optimization with model-specific parameters
+1. GPU Resource Management (90/100)
+- Context size calculator for maximum safe token windows
+- Layer balancing across GPUs based on utilization profiles 
+- Memory splitting algorithms optimized for LLM workloads
+- Real-time GPU metrics monitoring with thermal safeguards
 
-2. Layer Balancing System (85/100)
-Path: dual_gpu_optimizer/dualgpuopt/layer_balance.py
-- Adaptive layer distribution across GPUs
-- Weighted performance profiling (20% short/80% long sequences)
-- Memory quota management with configurable reserves
-- Layer-to-GPU mapping based on execution duration
+Key files:
+- dualgpuopt/ctx_size.py 
+- dualgpuopt/layer_balance.py
+- dualgpuopt/telemetry.py
 
-3. GPU Telemetry Service (80/100)
-Path: dual_gpu_optimizer/dualgpuopt/telemetry.py
-- Real-time GPU metrics collection (utilization, memory, temperature)
+2. Model Parameter Optimization (85/100)
+- Specialized configurations for popular LLM architectures 
+- Dynamic batch size calculation based on sequence lengths
+- Token-based memory estimation for inference
+- Framework-specific command generation
+
+Key files:
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/commands/gpu_commands.py
+
+3. Hardware Monitoring & Control (80/100)
+- Real-time GPU metrics collection (temp, power, utilization)
+- Adaptive fan control with thermal thresholds
 - PCIe bandwidth monitoring
-- Power usage tracking
-- Event-driven metrics distribution
+- VRAM reclamation system
 
-4. Smart Batch Management (70/100)
-Path: dualgpuopt/batch/smart_batch.py
-- Length-aware sequence batching
-- Dynamic batch size optimization
-- Memory-aware workload distribution
-- Threshold-based batch splitting
+Key files:
+- dualgpuopt/gui/dashboard.py
+- dualgpuopt/vram_reset.py
 
-Key Integration Points:
+4. Mixed Precision Management (75/100)
+- Context-aware dtype selection
+- Layer-specific precision policies
+- Memory overhead calculations for different precisions
 
-1. Model Configuration Management
-- Framework-specific parameter tuning
-- GPU memory split optimization
-- Context size calculations considering model architecture
-- Tensor parallel size determination
+Key files:
+- dualgpuopt/mpolicy.py
 
-2. Resource Allocation
-- Memory reservation system (20% overhead)
-- Safety margin calculations (10%)
-- Dynamic GPU capability detection
-- Framework-specific resource distribution
-
-3. GPU State Management
-- Overclock profile management
-- Idle detection system
-- Temperature threshold monitoring
-- Power limit enforcement
-
-The system orchestrates these components to provide automated optimization of large language model execution across dual GPU configurations, with particular emphasis on memory management, workload distribution, and real-time performance monitoring.
+The system specializes in optimizing dual GPU configurations for LLM inference workloads through intelligent resource allocation, thermal management, and workload distribution.
 
 $END$
 END SPECIFICATION

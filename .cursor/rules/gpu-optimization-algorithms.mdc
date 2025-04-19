@@ -1,57 +1,77 @@
 ---
-description: Documentation of GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies for model optimization.
-globs: **/gpu_info.py,**/optimizer.py,**/layer_balance.py,**/ctx_size.py
+description: Specification for analyzing GPU memory optimization, distribution algorithms, and computation scheduling for multi-GPU LLM inference.
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/batch/*.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core algorithms for GPU memory optimization and workload distribution:
+## Core Memory Distribution Components
 
-1. Context Size Calculator (ctx_size.py)
-- Custom formula for maximum safe context length:
-  MAX_CTX = (available_memory * safety_margin) / (layers * kv_heads * dim * precision)
-- Model-specific architecture factors:
-  - Mixtral: 1.05x memory multiplier for MoE overhead
-  - Llama-2: Base memory calculation
-  - Mistral: Adjusted for smaller head dimensions
-- Memory reservation logic:
-  - System: 2GB base reservation
-  - KV Cache: 2x multiplier for bi-directional context
-  - Safety margin: 10% overhead buffer
+### Layer Distribution Algorithm
+dualgpuopt/layer_balance.py:
+```python
+class LayerBalancer:
+    # Weighted profiling using short (64 tokens) and long (1024 tokens) sequences
+    # 20% weight for short sequences, 80% for long to optimize attention scaling
+    # Assigns computationally expensive layers to faster GPU within memory quota
+```
 
-2. Layer Balancing Algorithm (layer_balance.py)
-- Dual-phase layer distribution system:
-  - Short sequence test (64 tokens) weighted at 20%
-  - Long sequence test (1024 tokens) weighted at 80%
-- Memory quota enforcement per GPU with configurable reserve ratio
-- Layer mapping optimization prioritizes fastest GPU within memory constraints
+### Context Size Calculator 
+dualgpuopt/ctx_size.py:
+- Model-specific memory calculations for maximum context windows
+- Per-token memory requirements based on:
+  - KV heads configuration
+  - Layer count and dimensions
+  - MoE (Mixture of Experts) factors
+- Memory overhead factors:
+  - KV cache: 2.0x overhead
+  - Tensor parallelism: 20% overhead
+  - Safety margin: 10% buffer
 
-3. GPU Split Calculator (optimizer.py)
-- Memory split ratio generation for multi-GPU setups:
-  - Base split on relative VRAM capacities
-  - 20% overhead allocation for tensor parallelism
-  - Dynamic adjustment based on model architecture
+### Smart Batching System
+dualgpuopt/batch/smart_batch.py:
+- Groups sequences by length similarity for throughput optimization
+- Dynamic batch size calculation using:
+  - 5% model size per sequence estimation
+  - 1-64 sequence batch size range
+  - 20% memory overhead reservation
+
+### Memory Split Optimizer
+dualgpuopt/optimizer.py:
+- Proportional memory splitting based on available GPU resources
+- Tensor parallel fraction calculations
 - Framework-specific command generation:
-  - llama.cpp: --gpu-split parameter optimization
-  - vLLM: tensor-parallel-size configuration
+  - llama.cpp: GPU layer distribution
+  - vLLM: Tensor parallelism configuration
 
-4. Memory Policy Engine (mpolicy.py)
-- FP32 preservation for critical operations:
-  - LayerNorm computations
-  - Softmax calculations
-  - Residual additions
-- Dynamic precision switching based on operation type
-- Safety thresholds for memory-intensive operations
+## Monitoring and Telemetry
 
-Critical Paths:
-/dualgpuopt/ctx_size.py
-/dualgpuopt/layer_balance.py  
-/dualgpuopt/optimizer.py
-/dualgpuopt/mpolicy.py
+dualgpuopt/telemetry.py:
+- Real-time GPU metrics collection:
+  - Memory utilization
+  - PCIe bandwidth (RX/TX)
+  - Temperature thresholds
+  - Power consumption
+  - Fan speed curves
+  - Clock speed tracking
 
-Importance Score: 95
-The algorithms represent core optimization logic for GPU memory management and workload distribution in ML model execution.
+## Business Rules
+
+1. Memory Allocation:
+- 2GB system overhead reservation
+- 10% safety margin policy
+- Context length rounds to nearest 128 tokens
+
+2. Layer Distribution:
+- Computationally expensive layers prioritized to faster GPU
+- Memory quota compliance maintained
+- Weighted profiling (20% short/80% long sequences)
+
+3. Batch Processing:
+- No mixing of short/long sequences above threshold
+- Dynamic batch size based on available memory
+- Length-based sequence grouping for throughput
 
 $END$

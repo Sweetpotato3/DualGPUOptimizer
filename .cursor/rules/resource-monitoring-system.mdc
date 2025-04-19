@@ -1,78 +1,62 @@
 ---
-description: Analyzing GPU telemetry, metrics collection, monitoring systems, and alert mechanisms for the resource monitoring system
-globs: **/telemetry.py,**/metrics.py,**/tray.py,**/monitoring/*.py,**/dualgpuopt/services/*.py
+description: Specification for GPU resource monitoring and telemetry collection systems in dual GPU optimization scenarios
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py,**/mpolicy.py,**/gpu_commands.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and performance tracking with the following key components:
+Core Resource Monitoring Components:
 
-## GPU Telemetry Engine (telemetry.py)
+1. Real-time GPU Telemetry Collection (telemetry.py)
 Importance Score: 95
+- GPU state monitoring with specialized metrics:
+  - Core and memory utilization percentages
+  - Temperature thresholds with graduated warnings (70°C, 80°C, 90°C)
+  - Power consumption tracking (0-400W range)
+  - PCIe bandwidth monitoring (RX/TX rates)
+  - Fan speed and clock frequencies
+- Implements middleware pattern for metrics processing pipeline
+- Custom mock data generation for testing with realistic GPU behavior profiles
 
-Core telemetry collection system that gathers critical GPU metrics:
-- GPU utilization percentage tracking
-- Memory usage monitoring
-- Temperature thresholds (warning at 80°C, critical at 90°C)  
-- Power consumption tracking
-- PCIe bandwidth monitoring (TX/RX rates)
-- Clock speeds (graphics and memory)
-- Fan speed monitoring
-
-Uses event-driven middleware pipeline for metrics processing with configurable sampling rates:
-- Critical metrics: 500ms
-- Standard metrics: 1000ms
-- Non-critical: 2000ms
-
-## Monitoring Rules Engine (metrics.py)
+2. Performance Metrics Processing (metrics.py)
 Importance Score: 85
+- Batch latency tracking for LLM operations
+- Queue depth monitoring for inference loads
+- PCIe bandwidth conversion and normalization
+- Memory reclamation tracking with delta calculations
 
-Implements domain-specific monitoring rules:
-
-- Idle Detection System:
-  - Default 30% utilization threshold
-  - 5-minute idle time window
-  - Configurable alerts for sustained low utilization
-
-- Memory Management:
-  - 256MB minimum VRAM reclamation target
-  - Dynamic memory quota tracking
-  - Alert triggers for low memory conditions
-
-- Power Management:
-  - Scaled monitoring based on GPU-specific power limits
-  - Power draw percentage calculations
-  - Over-limit alerts
-
-## Alert Mechanism (tray.py)
+3. Resource Warning System (tray.py)
 Importance Score: 80
+- Idle GPU detection based on:
+  - Utilization thresholds (configurable percentage)
+  - Time-based thresholds (minutes)
+  - Custom alert policies per GPU
+- Memory usage warnings with thresholds:
+  - Critical: >95% VRAM usage
+  - Warning: >85% VRAM usage
+  - Advisory: >75% VRAM usage
 
-Implements GPU-specific alert handlers:
-- Temperature threshold notifications
-- Memory exhaustion warnings
-- Power limit alerts 
-- Utilization anomaly detection
+4. Dashboard Integration (dashboard.py)
+Importance Score: 75
+- Real-time visualization of GPU metrics:
+  - 60-point rolling window for historical data
+  - Color-coded status indicators based on thresholds
+  - Per-GPU performance graphs with automatic scaling
+  - Synchronized multi-GPU metric display
 
-Alert priorities:
-- CRITICAL: Temperature/Power limits exceeded
-- HIGH: Memory exhaustion risk
-- MEDIUM: Sustained high utilization
-- LOW: Idle state detection
+5. Mixed Precision Policy (mpolicy.py)
+Importance Score: 70
+- Resource-aware precision management:
+  - FP32 enforcement for critical operations
+  - Dynamic precision adjustment based on memory pressure
+  - Hardware-specific optimization paths
 
-## Multi-GPU Coordination System
-Importance Score: 90
-
-Specialized handling for dual GPU monitoring:
-- Synchronized metrics collection across GPUs
-- Cross-GPU performance correlation
-- Load balancing detection
-- Unified status visualization
-
-File Locations:
+Key File Paths:
 - dual_gpu_optimizer/dualgpuopt/telemetry.py
 - dual_gpu_optimizer/dualgpuopt/metrics.py
 - dual_gpu_optimizer/dualgpuopt/tray.py
+- dual_gpu_optimizer/dualgpuopt/mpolicy.py
 
 $END$

@@ -14,7 +14,7 @@ import queue, threading
 import time, random
 import logging
 import os
-from typing import Dict, Optional # Add Optional
+from typing import Dict, Optional, Any # Add Optional, Any
 
 try:
     from sseclient import SSEClient
@@ -143,6 +143,8 @@ class ModernApp(ttk.Window):
         logger.info(f"Telemetry service started (mock_mode={self.mock_mode})")
 
         self.active_runner: Optional[Runner] = None # Track the active runner
+        self.gpu_widgets: Dict[int, Dict[str, Any]] = {} # Store dynamically created GPU widgets
+        self.dashboard_widgets_created = False # Flag for dynamic creation
 
         nb = ttk.Notebook(self, bootstyle="dark")
         nb.pack(fill="both", expand=True)
@@ -181,24 +183,32 @@ class ModernApp(ttk.Window):
         # Dashboard
         dash = ttk.Frame(nb, padding=12)
         nb.add(dash, text="GPU Dashboard")
-        ttk.Label(dash, text="GPU 0 util").grid(row=0, column=0, sticky="w")
-        self.util_bar = GradientProgress(dash); self.util_bar.grid(row=0, column=1, padx=6, sticky="ew")
-        ttk.Label(dash, text="GPU 0 VRAM").grid(row=1, column=0, sticky="w")
-        self.vram_bar = GradientProgress(dash); self.vram_bar.grid(row=1, column=1, padx=6, sticky="ew")
-        
-        # Try to create a Meter widget, with fallback to a label if it fails
+        dash.columnconfigure(0, weight=1) # Make GPU frame expand
+
+        # Container for GPU widgets - will be populated dynamically
+        self.dashboard_gpu_frame = ttk.Frame(dash)
+        self.dashboard_gpu_frame.grid(row=0, column=0, sticky="nsew")
+        # Make columns inside the dynamic frame configurable
+        self.dashboard_gpu_frame.columnconfigure(1, weight=1)
+        self.dashboard_gpu_frame.columnconfigure(3, weight=1)
+
+        # TPS Meter (stays outside the dynamic frame)
+        tps_frame = ttk.Frame(dash)
+        tps_frame.grid(row=0, column=1, sticky="ne", padx=(20, 0))
         try:
-            self.tps_meter = Meter(dash, subtext="toks/s", bootstyle="success")
-            self.tps_meter.grid(row=0, column=2, rowspan=2, padx=12)
+            self.tps_meter = Meter(tps_frame, metersize=120, amounttotal=100, 
+                                   subtext="toks/s", bootstyle="success")
+            self.tps_meter.pack()
             self._has_meter = True
         except Exception as e:
             logger.error(f"Could not create Meter widget: {e}")
             self.tps_var = tk.StringVar(value="0 toks/s")
-            self.tps_label = ttk.Label(dash, textvariable=self.tps_var)
-            self.tps_label.grid(row=0, column=2, rowspan=2, padx=12)
+            self.tps_label = ttk.Label(tps_frame, textvariable=self.tps_var)
+            self.tps_label.pack()
             self._has_meter = False
             
-        dash.columnconfigure(1, weight=1)
+        # Configure row/column weights for the main dash frame
+        dash.rowconfigure(0, weight=1)
 
         # Settings
         st = ttk.Frame(nb, padding=12)
@@ -335,23 +345,78 @@ class ModernApp(ttk.Window):
     def _update_dashboard(self, metrics: Dict[int, GPUMetrics]):
         """Callback function to update dashboard widgets with new telemetry."""
         if not metrics:
-            # No metrics received yet or an error occurred
-            self.util_bar.set(0)
-            self.vram_bar.set(0)
+            if not self.dashboard_widgets_created:
+                # Display waiting message if widgets not yet created
+                for widget in self.dashboard_gpu_frame.winfo_children():
+                    widget.destroy()
+                ttk.Label(self.dashboard_gpu_frame, text="Waiting for GPU data...").pack()
             return
 
-        # For now, display GPU 0's metrics
-        gpu0_metrics = metrics.get(0)
-        if gpu0_metrics:
-            self.util_bar.set(gpu0_metrics.utilization)
-            self.vram_bar.set(gpu0_metrics.memory_percent)
-            # Update status bar maybe?
-            # self.status(f"GPU 0: {gpu0_metrics.utilization}% Util, {gpu0_metrics.memory_percent:.1f}% VRAM")
-        else:
-            # Handle case where GPU 0 data isn't available
-            self.util_bar.set(0)
-            self.vram_bar.set(0)
-            logger.warning("Metrics received, but GPU 0 data missing.")
+        # --- Dynamic Widget Creation (First time only) ---
+        if not self.dashboard_widgets_created:
+            logger.info(f"Creating dashboard widgets for {len(metrics)} GPUs")
+            # Clear placeholder/waiting message
+            for widget in self.dashboard_gpu_frame.winfo_children():
+                widget.destroy()
+
+            self.gpu_widgets = {}
+            gpu_ids = sorted(metrics.keys())
+
+            for row_idx, gpu_id in enumerate(gpu_ids):
+                gpu_metrics = metrics[gpu_id]
+                gpu_frame = ttk.Labelframe(self.dashboard_gpu_frame, text=f" GPU {gpu_id}: {gpu_metrics.name} ", padding=10)
+                gpu_frame.grid(row=row_idx, column=0, columnspan=4, sticky="ew", pady=5, padx=5)
+                # Configure columns within the GPU frame (4 columns for label/widget pairs)
+                gpu_frame.columnconfigure(1, weight=1)
+                gpu_frame.columnconfigure(3, weight=1)
+
+                widgets = {}
+
+                # Row 0: Utilization and Temperature
+                ttk.Label(gpu_frame, text="Utilization:").grid(row=0, column=0, sticky="w", padx=5)
+                widgets['util_bar'] = GradientProgress(gpu_frame)
+                widgets['util_bar'].grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+
+                widgets['temp_var'] = tk.StringVar(value="--°C")
+                ttk.Label(gpu_frame, text="Temp:").grid(row=0, column=2, sticky="e", padx=(15, 5))
+                ttk.Label(gpu_frame, textvariable=widgets['temp_var']).grid(row=0, column=3, sticky="w", padx=5)
+
+                # Row 1: VRAM and Power
+                ttk.Label(gpu_frame, text="VRAM:").grid(row=1, column=0, sticky="w", padx=5)
+                widgets['vram_bar'] = GradientProgress(gpu_frame) # TODO: Add text label?
+                widgets['vram_bar'].grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+
+                widgets['power_var'] = tk.StringVar(value="-- W")
+                ttk.Label(gpu_frame, text="Power:").grid(row=1, column=2, sticky="e", padx=(15, 5))
+                ttk.Label(gpu_frame, textvariable=widgets['power_var']).grid(row=1, column=3, sticky="w", padx=5)
+
+                # Row 2: Clocks (Optional - add if needed)
+                # widgets['clocks_var'] = tk.StringVar(value="Clocks: --/-- MHz")
+                # ttk.Label(gpu_frame, textvariable=widgets['clocks_var']).grid(row=2, column=0, columnspan=4, sticky="w", padx=5)
+
+                # Row 3: PCIe (Optional - add if needed)
+                # widgets['pcie_var'] = tk.StringVar(value="PCIe: -- MB/s")
+                # ttk.Label(gpu_frame, textvariable=widgets['pcie_var']).grid(row=3, column=0, columnspan=4, sticky="w", padx=5)
+
+                self.gpu_widgets[gpu_id] = widgets
+
+            self.dashboard_widgets_created = True
+
+        # --- Update Existing Widgets ---
+        for gpu_id, gpu_metrics in metrics.items():
+            if gpu_id in self.gpu_widgets:
+                widgets = self.gpu_widgets[gpu_id]
+                widgets['util_bar'].set(gpu_metrics.utilization)
+                widgets['vram_bar'].set(gpu_metrics.memory_percent)
+                widgets['temp_var'].set(f"{gpu_metrics.temperature}°C")
+                widgets['power_var'].set(f"{gpu_metrics.power_usage:.1f} W")
+                # Optional: Update clocks/PCIe if widgets exist
+                # if 'clocks_var' in widgets:
+                #     widgets['clocks_var'].set(f"Clocks: {gpu_metrics.clock_sm}/{gpu_metrics.clock_memory} MHz")
+                # if 'pcie_var' in widgets:
+                #     widgets['pcie_var'].set(f"PCIe TX/RX: {gpu_metrics.pcie_tx/1024:.1f}/{gpu_metrics.pcie_rx/1024:.1f} MB/s")
+            else:
+                logger.warning(f"Received metrics for GPU {gpu_id}, but no widgets found.")
 
     def _start_framework(self, framework: str):
         """Start the selected framework (vLLM or llama.cpp)."""

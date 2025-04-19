@@ -1,83 +1,80 @@
 ---
-description: Defines execution workflow and command generation for LLM models across multiple GPU configurations
-globs: **/*.py,**/commands/*,**/batch/*,**/services/*
+description: Defines execution flows and command generation for AI model deployment across multiple GPUs
+globs: 
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core LLM Execution Components:
+MODEL EXECUTION WORKFLOW SYSTEM
+Importance Score: 95
 
-1. Command Generation Engine
-File: dual_gpu_optimizer/dualgpuopt/commands/command_base.py
-Importance: 95
+Core Components:
 
-- Framework-specific command construction:
-```python
-llama_command = f"--model {model_path} --gpu-split {split} --n-gpu-layers 999"
-vllm_command = f"--model {model_path} --tensor-parallel-size {tp_size}"
-```
+1. Context Length Management
+File: `dualgpuopt/ctx_size.py`
 
-- Dynamic parameter injection based on:
-  - Available GPU memory ratios
-  - Model architecture type
-  - Context window requirements
-  - Framework compatibility
+- Dynamic context window calculation based on model architecture:
+  - Number of layers
+  - KV heads configuration
+  - Head dimensions 
+  - MoE factor adjustments
+- Model-specific parameter lookups for:
+  - Mixtral, Llama-2, Mistral, Phi-2
+  - Configuration presets with optimized defaults
 
-2. Layer Distribution System
-File: dual_gpu_optimizer/dualgpuopt/layer_balance.py 
-Importance: 90
+2. Layer Distribution Engine
+File: `dualgpuopt/layer_balance.py`
 
-- Adaptive layer allocation across GPUs using:
-  - Hardware capability profiling
-  - Memory availability tracking
-  - Layer performance scoring
-- Weighted sequence testing:
-  - 20% weight for short sequences (64 tokens)
-  - 80% weight for long sequences (1024 tokens)
+- Layer allocation across GPUs using weighted profiling:
+  - Short sequence profiling (64 tokens, 20% weight)
+  - Long sequence profiling (1024 tokens, 80% weight)
+- Memory quota enforcement with reserve ratios
+- Layer rebalancing based on runtime performance metrics
 
-3. Memory Management Pipeline
-File: dual_gpu_optimizer/dualgpuopt/optimizer.py
-Importance: 85
+3. Command Generation System
+File: `dualgpuopt/optimizer.py`
 
-Key allocation rules:
-- System memory reserve: 2GB
-- KV cache multiplier: 2x
-- Tensor parallel overhead: 20%
-- Safety margin: 10%
+- Framework-specific command synthesis:
+  - llama.cpp: GPU split parameters, context sizing
+  - vLLM: Tensor parallel configuration
+- Environment variable generation for GPU allocations
+- Split ratio calculation based on available memory
 
-4. Batch Processing Workflow
-File: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
-Importance: 80
+4. Batch Processing Manager 
+File: `dualgpuopt/batch/smart_batch.py`
 
-- Length-aware sequence batching
-- Dynamic batch size calculation using:
-  - Available GPU memory
-  - Model architecture parameters
-  - Sequence length distribution
-- Back-pressure management with configurable queue depths
+- Length-aware sequence batching:
+  - Groups similar length sequences
+  - Manages memory overhead (20% reserve)
+  - Dynamic batch size bounds (1-64 sequences)
+  - Prevents mixing of short/long sequences beyond threshold
 
-5. GPU State Coordination
-File: dual_gpu_optimizer/dualgpuopt/services/state_service.py
-Importance: 75
+5. Memory Policy System
+File: `dualgpuopt/mpolicy.py`
 
-- Manages execution state across GPUs:
-  - Active model tracking
-  - Resource allocation state
-  - GPU assignment mapping
-  - Idle state detection
+- Mixed precision management:
+  - FP32 for critical ops (LayerNorm, softmax, residuals)
+  - Lower precision for bulk compute
+  - Dynamic dtype selection based on operation type
 
-6. Telemetry Integration
-File: dual_gpu_optimizer/dualgpuopt/telemetry.py
-Importance: 70
+Key Workflows:
 
-- Real-time execution metrics:
-  - GPU utilization monitoring
-  - Memory usage tracking
-  - Temperature thresholds
-  - Power consumption limits
+1. Model Launch Sequence
+- Context size calculation
+- Layer distribution optimization
+- Command generation with framework detection
+- Environment configuration
 
-The system orchestrates LLM execution across multiple GPUs by managing command generation, layer distribution, memory allocation, and batch processing while maintaining real-time performance monitoring.
+2. Runtime Optimization
+- Batch size adjustment
+- Memory policy enforcement
+- Layer rebalancing based on metrics
+
+3. Resource Management
+- GPU memory splitting
+- Tensor parallel sizing
+- Overhead reservation
 
 $END$
