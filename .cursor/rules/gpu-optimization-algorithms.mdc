@@ -1,43 +1,51 @@
 ---
-description: Analyzes GPU optimization algorithms and memory allocation strategies for multi-GPU model inference
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/batch/*.py
+description: GPU memory distribution algorithms, tensor parallel split calculations, and memory allocation strategies for optimizing dual GPU setups
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Optimization Components
+## Memory Distribution Algorithm
+- Split ratio calculation based on relative GPU capacities
+- Dynamic tensor parallel fraction computation:
+  ```python
+  split_ratio = gpu_memory[1] / gpu_memory[0]
+  tensor_fraction = min(1.0, split_ratio * 0.9)
+  ```
+- Memory reservation threshold of 10% for system overhead
+- Automatic rebalancing when memory pressure exceeds 90%
 
-### Memory Distribution (90)
-- Calculates optimal GPU memory splits based on total available VRAM
-- Generates tensor parallel fractions for each GPU to balance model layers
-- Dynamic adjustment of context sizes based on model architecture and GPU capabilities
-- Memory mapping strategies consider PCIe bandwidth and GPU interconnect speeds
+## Context Size Optimization 
+- Token memory requirement calculation:
+  ```python
+  bytes_per_token = n_layers * n_kv_heads * head_dim * (precision/8) * 2 * moe_factor
+  ```
+- Model-specific parameter mapping for Mixtral, Llama 2, Mistral
+- MoE factor adjustment (~1.05) for mixture-of-experts architectures
+- Minimum 2GB reserved memory buffer enforcement
 
-### Layer Balancing (95)
-- Adaptive latency-aware layer redistribution across multiple GPUs
-- Profiles layer execution times to identify fast vs slow layers
-- Dynamic device mapping adjusts layer assignments based on real-time performance
-- Handles asymmetric GPU configurations by rebalancing computational load
+## Layer Distribution Strategy
+- Latency-aware layer balancing across GPUs using:
+  - Short sequence profiling (64 tokens)
+  - Long sequence profiling (1024 tokens)
+  - 20/80 weighted average for final distribution
+- Memory quota enforcement per GPU based on capacity ratio
+- Real-time redistribution based on layer execution metrics
 
-### Batch Processing (85)
-- Length-aware inference scheduler groups similar sequence lengths
-- Implements bucket policies for optimal batch size determination
-- Automatic retry logic for GPU OOM errors with CUDA cache clearing
-- Dynamic adjustment of batch sizes based on GPU utilization metrics
+## GPU Memory Management
+Files: optimizer.py, gpu_info.py
+- Memory split strategies for multi-GPU configurations
+- Framework-specific deployment parameters:
+  - llama.cpp: GPU split ratios and context limits
+  - vLLM: Tensor parallel sizing and memory quotas
+- Precision-aware allocation for:
+  - FP16 base operations
+  - 8-bit QLoRA fine-tuning
+  - 4-bit GPTQ inference
 
-### Context Management (80)
-- Calculates maximum safe context lengths per GPU
-- Considers model parameters, head dimensions, and MoE factors
-- Dynamically adjusts context windows based on available VRAM
-- Handles model-specific requirements for Mixtral, Llama 2, and Mistral
-
-## Key Files
-- `optimizer.py`: Core optimization algorithms and command generation
-- `gpu_info.py`: GPU probing and memory analysis
-- `layer_balance.py`: Layer distribution and rebalancing logic
-- `ctx_size.py`: Context size calculations and adjustments
-- `batch/smart_batch.py`: Batch optimization and scheduling
+Importance Score: 95
+Rationale: Core GPU optimization algorithms directly impact model performance and hardware utilization
 
 $END$

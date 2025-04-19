@@ -1,0 +1,26 @@
+"""
+Custom hook for PyTorch 2.0+ compatibility with PyInstaller
+Last tested with: PyTorch 2.1.2, CUDA 12.1, PyInstaller 6.2.0
+
+Excludes problematic torch modules that break PyInstaller's static analysis
+while ensuring all required CUDA/MKL DLLs are included.
+"""
+from PyInstaller.utils.hooks import collect_submodules, collect_dynamic_libs
+
+# Include all submodules except the problematic ones
+hiddenimports = collect_submodules("torch")
+
+# Exclude modules that cause PyInstaller's analysis to crash
+excludedimports = [
+    "torch._dynamo",
+    "torch._inductor",
+    "torch._functorch.aot_autograd",
+    "torch.compiler",
+    "torch.testing",
+    "torch.distributed.fsdp",
+    "torch.distributed._tensor",
+    "torch.profiler.kineto",
+]
+
+# Copy CUDA/MKL DLLs shipped in wheel/.libs (Windows) or .so files (Linux)
+binaries = collect_dynamic_libs("torch") 

@@ -1,0 +1,22 @@
+# Custom hook that tames torch for PyInstaller
+import sys, types, logging
+from PyInstaller.utils.hooks import collect_submodules, collect_dynamic_libs
+
+log = logging.getLogger(__name__)
+
+# 1. Create *lazy* stubs so problematic packages never import
+for m in ("torch._dynamo", "torch._inductor"):
+    stub = types.ModuleType(m); stub.__spec__ = None; sys.modules[m] = stub
+    log.info("Injected lazy stub for %s", m)
+
+# 2. Collect every other torch sub-module (ignore failures)
+hiddenimports = collect_submodules("torch", on_error="ignore")
+
+# 3. But explicitly *exclude* the crashy packages from analysis graph
+excludedimports = ["torch._dynamo", "torch._inductor", "torch._functorch.aot_autograd"]
+
+# 4. Bundle only the GPU DLLs we need, not the whole CUDA tool-chain
+patterns = ("cudart*", "cublas*", "cudnn*")
+binaries = []
+for pat in patterns:
+    binaries += collect_dynamic_libs("torch", match=pat) 

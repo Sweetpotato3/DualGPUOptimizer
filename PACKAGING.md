@@ -6,92 +6,125 @@ This document describes how to package the DualGPUOptimizer application into a s
 
 - Python 3.13+
 - PyInstaller 6.13.0+
-- All required dependencies installed in your environment
+- All dependencies installed in your environment (see requirements.txt)
+
+## Quick Start
+
+The simplest way to build the application is:
+
+```powershell
+# Run the build and verification script
+.\build_and_verify.ps1
+```
+
+This will:
+1. Ensure dependencies are installed
+2. Build the application using our optimized spec file
+3. Run verification tests to ensure the build works correctly
+
+The built application will be in `dist/DualGPUOptimizer/`.
 
 ## Known Issues and Solutions
 
-The packaging process encounters two main issues:
+The packaging process addresses three main issues:
 
-1. **PyInstaller + PyTorch integration**: PyInstaller's analysis phase has issues with torch modules, especially the `torch._inductor` and `torch._dynamo` modules which generate code on-the-fly or require CUDA tools during import.
+1. **PyInstaller + PyTorch integration**: PyInstaller's analysis phase has issues with torch modules, especially `torch._inductor` and `torch._dynamo` modules which generate code on-the-fly or require CUDA tools during import.
 
-2. **Missing Module Error**: When running with the `--mock` flag, there was an import error for the `dualgpuopt.gui.constants` module.
+2. **Missing Module Error**: The GUI constants module needs to be explicitly included in the build.
 
-## Solution
+3. **Missing DLLs**: CUDA/MKL libraries from the torch wheel's internal .libs directory need to be manually copied.
 
-The `build_no_hook.py` script bypasses the built-in PyInstaller hooks for torch and creates a custom minimal hook that:
+## How Our Solution Works
 
-1. Avoids collecting problematic torch modules like `torch._inductor` and `torch._dynamo`.
-2. Includes only the essential torch modules needed by the application.
-3. Manually copies required torch DLLs to the distribution directory.
-4. Includes all GUI constants and assets.
+Our build system uses a custom approach that:
 
-## Build Steps
+1. **Custom Hook for PyTorch**: A specialized hook in `hooks/hook-torch.py` that excludes problematic modules while still collecting all required functionality.
 
-1. Make sure all dependencies are installed:
-    ```
-    pip install -r requirements.txt
-    ```
+2. **Package Data Collection**: The build.spec file uses `collect_data_files('dualgpuopt.gui')` to ensure constants.py and other data files are included.
 
-2. Run the build script:
-    ```
-    python build_no_hook.py
-    ```
+3. **Binary Collection**: We use `collect_dynamic_libs("torch")` to find and include all necessary CUDA/MKL DLLs.
 
-3. The executable and all required files will be created in the `dist/DualGPUOptimizer` directory.
+4. **Defensive Programming**: We've added fail-fast error handling that provides clear error messages if anything is missing.
+
+5. **Build Verification**: A test script checks the build for common issues before distribution.
+
+## Build Types
+
+### Directory Build (Default)
+
+The default build produces a directory containing the executable and all required files. This is more reliable for large applications with many dependencies like DualGPUOptimizer:
+
+```powershell
+pyinstaller build.spec
+```
+
+### Single-File Build (Optional)
+
+If you need a single executable file, you can use:
+
+```powershell
+pyinstaller build.spec --onefile --add-data "%TORCH_HOME%;torch.libs" --collect-submodules torch
+```
+
+Note that this produces a larger file and may take longer to start up.
 
 ## Testing the Build
 
-To test the built application with mock GPU data:
-```
-dist\DualGPUOptimizer\DualGPUOptimizer.exe --mock
-```
+You can test the built application in several ways:
 
-To run the built application with real GPU data:
-```
-dist\DualGPUOptimizer\DualGPUOptimizer.exe
-```
+1. **Mock Mode**: Run without real GPU detection
+   ```powershell
+   .\dist\DualGPUOptimizer\DualGPUOptimizer.exe --mock
+   ```
 
-## Advanced: How It Works
+2. **Real Mode**: Run with actual GPU detection
+   ```powershell
+   .\dist\DualGPUOptimizer\DualGPUOptimizer.exe
+   ```
 
-The build script performs the following key steps:
-
-1. Creates a temporary directory with custom hooks that override the built-in hooks.
-2. Uses PyInstaller to build the application with these custom hooks.
-3. Manually copies necessary torch DLLs to the distribution directory.
-4. Includes all necessary assets and presets folders.
-
-### Custom Hooks
-The custom hook for torch:
-```python
-# Minimal torch hook
-hiddenimports = [
-    'torch', 
-    'torch.cuda',
-]
-excludedimports = [
-    'torch._dynamo',
-    'torch._inductor',
-    'torch._functorch',
-    'torch.distributed',
-    'torch.testing',
-    'torch.utils.tensorboard',
-]
-```
+3. **CLI Mode**: Run in command-line mode
+   ```powershell
+   .\dist\DualGPUOptimizer\DualGPUOptimizer.exe --cli
+   ```
 
 ## Troubleshooting
 
-If you encounter issues with the build:
+If you encounter issues:
 
-1. **Missing DLLs**: Make sure your environment has all necessary dependencies installed.
-2. **Path Issues**: Verify that all paths in the build script are correct for your environment.
-3. **CUDA Issues**: If you need CUDA functionality, you may need to manually copy additional CUDA DLLs.
+1. **Build Failures**: Look for specific error messages mentioning missing modules or files.
+
+2. **Runtime Errors**: Run with the `--verbose` flag to see detailed logging:
+   ```powershell
+   .\dist\DualGPUOptimizer\DualGPUOptimizer.exe --verbose
+   ```
+
+3. **Missing GUI**: Check that all GUI constants and assets are properly collected in the build.
+
+4. **Missing DLLs**: Ensure PyInstaller is collecting all necessary DLLs, especially for CUDA support.
 
 ## Distribution
 
-The built application is a directory containing:
-- `DualGPUOptimizer.exe` - The main executable
-- `_internal/` - Directory containing Python modules and resources
-- `torch/lib/` - Directory containing torch DLLs
+Once built and verified, you can distribute the application in several ways:
+
+1. **Directory**: Zip the entire `dist/DualGPUOptimizer/` directory.
+
+2. **Installer**: Use NSIS or Inno Setup to create a Windows installer.
+
+## Advanced: Technical Details
+
+Our solution works through these key elements:
+
+1. **Exclusion Pattern**: We identify and exclude torch modules that cause PyInstaller to crash.
+
+2. **Recursive Import Prevention**: The custom hook avoids recursive imports that lead to stack overflows.
+
+3. **Dynamic Library Collection**: We ensure all required DLLs are included, not just Python modules.
+
+4. **Package Structure Preservation**: We maintain the package structure so imports work correctly.
+
+5. **Import Guards**: Early detection of missing modules prevents confusing errors deep in the call stack.
+
+This approach produces a reliable, reproducible build that works across different development environments.
 
 ## Prerequisites
 

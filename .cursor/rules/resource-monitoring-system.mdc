@@ -1,44 +1,62 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and performance tracking systems
-globs: **/telemetry.py,**/metrics.py,**/tray.py,**/gpu_info.py
+description: Specification for GPU resource monitoring, telemetry collection, and metrics visualization systems
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### Telemetry Collection System
-- **GPU Metrics Pipeline** (`telemetry.py`):
-  - Collects real-time GPU metrics including utilization, memory usage, temperature, power draw
-  - Processes metrics through middleware pipeline for event bus publishing and logging
-  - Maintains telemetry history for trend analysis and visualization
-  - Handles NVML initialization and shutdown gracefully
+## GPU Telemetry Collection (telemetry.py)
+Importance: 95
+- Real-time GPU metrics collection pipeline tracking:
+  - Memory utilization and allocation
+  - PCIe bandwidth (RX/TX rates) 
+  - Temperature and thermal thresholds
+  - Power consumption and limits
+  - Clock speeds (core/memory)
+  - Fan speeds and control states
+- Event-based telemetry distribution system with middleware processing
+- Automatic idle GPU detection with configurable thresholds
+- Hardware error detection with mock data fallback
 
-### Resource Monitoring Service 
-- **Metrics Processing** (`metrics.py`):
-  - Calculates rolling averages and peak values for GPU metrics
-  - Tracks PCIe bandwidth utilization between GPUs
-  - Monitors memory fragmentation and cache hit rates
-  - Generates resource usage reports for optimization analysis
+## Metrics Dashboard (dashboard.py) 
+Importance: 85
+- 60-second rolling history window for GPU performance metrics
+- Color-coded visualization system:
+  - Primary GPU: Purple theme
+  - Secondary GPU: Blue theme
+  - Memory metrics: Pink accents
+  - Temperature: Orange warning scale
+  - Power usage: Cyan indicators
+- Critical threshold monitoring:
+  - Temperature warning: 80°C
+  - Temperature danger: 90°C
+  - Memory warning: 256MB free
+  - Utilization bands: 30%/60%/90%
 
-### Alert System
-- **Idle Detection** (`tray.py`):
-  - Monitors GPU utilization patterns to detect extended idle periods
-  - Triggers notifications after 5 minutes of low GPU usage
-  - Suggests resource cleanup actions to users
-  - Maintains alert history and suppression logic
+## GPU Information Service (gpu_info.py)
+Importance: 80
+- Comprehensive GPU state tracking:
+  - Model and architecture details
+  - Memory capacity and usage
+  - Current performance states
+  - Power and thermal limits
+  - Driver and CUDA versions
+- Multi-GPU ratio calculations for load balancing
+- Hardware capability detection
+- Error state monitoring and reporting
 
-### GPU Information Service
-- **Hardware Probing** (`gpu_info.py`):
-  - Detects available GPUs and their capabilities
-  - Monitors thermal throttling events and power state changes
-  - Tracks memory allocation/deallocation patterns
-  - Reports GPU clock speeds and performance states
+## Update Intervals
+- Critical metrics: 500ms refresh
+- Standard metrics: 1000ms refresh 
+- Background metrics: 2000ms refresh
 
-Importance Scores:
-- Telemetry Collection: 95 (Core monitoring functionality)
-- Resource Monitoring: 90 (Critical performance tracking)
-- Alert System: 85 (Important user notification system)
-- GPU Information: 80 (Key hardware integration)
+## Tray Integration (tray.py)
+Importance: 75
+- System tray monitoring widget
+- Quick-access GPU metrics
+- Status icon state management
+- Alert notifications for threshold violations
 
 $END$

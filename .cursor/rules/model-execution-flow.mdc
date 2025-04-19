@@ -1,46 +1,64 @@
 ---
-description: Defines how AI models are executed, optimized and balanced across multiple GPUs including command generation and resource allocation.
-globs: **/optimizer.py,**/runner.py,**/layer_balance.py,**/ctx_size.py,**/mpolicy.py
+description: Documents the execution flow and orchestration of language models across multiple GPUs, including command generation and resource allocation
+globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow consists of several key components that work together to optimize and execute AI models across multiple GPUs:
+## Core Execution Components
 
-### GPU Layer Distribution (Importance: 95)
-Located in `dual_gpu_optimizer/dualgpuopt/layer_balance.py`:
-- Implements adaptive latency-aware layer redistribution algorithm
-- Profiles layer execution times to identify fast/slow layers
-- Generates device maps for optimal layer placement across GPUs
-- Balances layers based on execution speed and available VRAM
+### Command Generation System
+Located in `dualgpuopt/optimizer.py`:
+- Generates framework-specific deployment commands:
+  - llama.cpp: GPU split ratios and memory allocation parameters
+  - vLLM: Tensor parallelism configuration and GPU distribution
+- Implements dynamic parameter calculation based on available GPU memory
+- Handles model-specific configuration (context size, layer distribution)
 
-### Context Size Management (Importance: 90)
-Located in `dual_gpu_optimizer/dualgpuopt/ctx_size.py`:
-- Calculates maximum safe context length based on GPU memory and model parameters
-- Dynamically adjusts context sizes to optimize memory usage
-- Estimates model parameters from model names for automated configuration
-- Supports models including Mixtral, Llama 2, and Mistral
+### Batch Processing Pipeline 
+Located in `dualgpuopt/batch/smart_batch.py`:
+- Length-aware sequence batching with dynamic sizing
+- Implements backpressure mechanism for memory management
+- Automatic retry logic for OOM conditions
+- Token-based batch composition with configurable limits
 
-### Command Generation (Importance: 85)
-Located in `dual_gpu_optimizer/dualgpuopt/optimizer.py`:
-- Generates framework-specific commands for llama.cpp and vLLM
-- Calculates optimal GPU split strings and tensor parallel sizes
-- Creates environment files with CUDA device configurations
-- Determines tensor fractions based on available GPU memory
+### Model Runner Orchestration
+Located in `dualgpuopt/runner.py`:
+- Controls model lifecycle across multiple GPUs
+- Manages process execution and monitoring
+- Handles framework-specific launch configurations:
+  - Memory splits for llama.cpp
+  - Tensor parallel sizes for vLLM
+- Real-time output monitoring with non-blocking queues
 
-### Mixed Precision Execution (Importance: 80)
-Located in `dual_gpu_optimizer/dualgpuopt/mpolicy.py`:
-- Manages mixed precision inference with automatic fallback to FP32
-- Provides context managers for autocast operations
-- Handles GradScaler integration for mixed precision training
+### Resource Allocation Flow
+Located in `dualgpuopt/layer_balance.py`:
+- Adaptive layer distribution based on GPU capabilities
+- Dual-length profiling (64/1024 tokens) for balanced optimization
+- Memory quota management with configurable reserve ratios
+- Dynamic redistribution based on performance metrics
 
-### Model Runner (Importance: 75)
-Located in `dual_gpu_optimizer/dualgpuopt/runner.py`:
-- Executes model inference across distributed GPU setup
-- Handles tensor parallel synchronization
-- Manages model loading and unloading
-- Provides error recovery for OOM conditions
+### GPU Command Pipeline
+Located in `dualgpuopt/commands/gpu_commands.py`:
+- Framework-specific command string generation
+- Environment configuration for multi-GPU setups
+- Tensor parallelism parameter calculation
+- Model preset handling for common configurations
+
+### Execution Safety Controls
+- Minimum 2 GPU requirement enforcement
+- 90% memory utilization cap for stability
+- Automatic failover for hardware errors
+- GPU capability validation before execution
+
+Importance Scores:
+- Command Generation: 95 (core optimization logic)
+- Batch Processing: 90 (critical for execution efficiency)
+- Runner Orchestration: 85 (key execution control)
+- Resource Allocation: 90 (essential optimization)
+- GPU Command Pipeline: 80 (framework integration)
+- Safety Controls: 75 (operational stability)
 
 $END$
