@@ -1,45 +1,54 @@
 ---
-description: Specification for GPU memory optimization algorithms and tensor parallel calculations for dual-GPU LLM inference
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/smart_batch.py
+description: Specification for GPU memory management, tensor splitting, and optimization algorithms for dual GPU setups.
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-GPU Memory Distribution Algorithm (optimizer.py):
-- Tensor split calculation based on relative GPU memory capacities
-- Dynamic memory fraction allocation: tensor_fraction = gpu_memory / max_gpu_memory
-- GPU-specific command generation for llama.cpp and vLLM frameworks
-- Automatic tensor parallelism degree calculation
+## Core GPU Memory Distribution (Importance: 95)
+Location: dual_gpu_optimizer/dualgpuopt/optimizer.py
 
-Layer Balancing System (layer_balance.py):
-Importance Score: 95
-- Adaptive latency-based layer distribution across GPUs
-- Dual sequence length profiling (64/1024 tokens) with weighted scoring
-- Layer placement optimization using 0.2 * short_seq + 0.8 * long_seq formula
-- VRAM quota enforcement during distribution
+The GPU memory distribution system implements specialized algorithms for:
+- Dynamic tensor splitting across dual GPUs based on memory capacity ratios
+- Automatic rebalancing when memory pressure exceeds thresholds
+- Safety reserve calculation that maintains 10% free memory per GPU
+- Adaptive split ratio adjustments based on model layer distributions
 
-Context Size Calculator (ctx_size.py):
-Importance Score: 90
-- Maximum safe context length calculation considering:
-  - n_layers, n_kv_heads, head_dim parameters
-  - Precision type adjustments (16-bit, 8-bit QLoRA, 4-bit GPTQ)
-  - MoE factor handling for Mixtral-type models
-  - Dynamic safety margin calculation
+## Layer Balancing Algorithm (Importance: 90)
+Location: dual_gpu_optimizer/dualgpuopt/layer_balance.py
 
-Smart Batching Algorithm (smart_batch.py):
-Importance Score: 85
-- Length-aware GPU inference scheduling
-- Token-based dynamic batch size optimization
-- Automatic OOM recovery with cache clearing
-- Power-of-two bucketing strategy for sequence grouping
-- Token ratio maintenance between buckets (1.5x sizing)
+Implements intelligent layer distribution across GPUs:
+- Weighted profiling using dual sequence lengths (64/1024 tokens)
+- Layer assignment prioritization based on computational intensity
+- Memory quota enforcement while maximizing GPU utilization
+- Special handling for attention layers with varying sequence scaling
 
-File paths containing core algorithms:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/ctx_size.py
-- dualgpuopt/batch/smart_batch.py
+## Smart Batch Processing (Importance: 85)
+Location: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
+
+Specialized batching system for dual GPU inference:
+- Length-aware scheduling with token-based batch sizing
+- Back-pressure mechanisms preventing RAM overflow
+- Automatic OOM recovery with intelligent cache clearing
+- Bucket-based request grouping optimized for dual GPU setups
+
+## Memory Policy Management (Importance: 80)
+Location: dual_gpu_optimizer/dualgpuopt/mpolicy.py
+
+Implements mixed precision policies:
+- FP32 precision preservation for critical operations
+- Context-aware dtype selection for memory optimization
+- Safety guards for numerical stability in dual GPU scenarios
+
+## GPU Resource Monitoring (Importance: 75)
+Location: dual_gpu_optimizer/dualgpuopt/gpu_info.py
+
+Specialized monitoring system tracking:
+- Memory efficiency patterns across GPU pairs
+- Utilization imbalances between devices
+- Architecture-aware CUDA core calculations
+- PCIe bandwidth monitoring for inter-GPU transfer optimization
 
 $END$

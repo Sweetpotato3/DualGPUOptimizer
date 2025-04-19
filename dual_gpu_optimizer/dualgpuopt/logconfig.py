@@ -7,7 +7,7 @@ import logging
 import logging.handlers
 import pathlib
 import sys
-from typing import Optional
+from typing import Dict, Optional
 
 
 def setup_logging(verbose: bool = False, log_file: Optional[pathlib.Path] = None) -> logging.Logger:
@@ -55,4 +55,46 @@ def setup_logging(verbose: bool = False, log_file: Optional[pathlib.Path] = None
         file_handler.setFormatter(detailed_fmt)
         logger.addHandler(file_handler)
     
-    return logger 
+    # Configure module-specific log levels
+    configure_module_log_levels(verbose)
+    
+    return logger
+
+
+def configure_module_log_levels(verbose: bool = False) -> None:
+    """
+    Configure specific log levels for different modules.
+    
+    Args:
+        verbose: Whether debug mode is enabled globally
+    """
+    # Default level based on verbose flag
+    default_level = logging.DEBUG if verbose else logging.INFO
+    
+    # Module-specific log levels
+    module_levels: Dict[str, int] = {
+        # Set GPU module to a higher level to reduce polling noise
+        "dualgpuopt.gpu": logging.WARNING,
+        "dualgpuopt.telemetry": logging.WARNING,
+        "dualgpuopt.telemetry.middleware": logging.WARNING,
+        "dualgpuopt.telemetry.logging": logging.WARNING,
+        
+        # Keep critical modules at INFO level even in non-verbose mode
+        "dualgpuopt.services.error": logging.INFO,
+        "dualgpuopt.services.config": logging.INFO,
+        "dualgpuopt.services.state": logging.INFO,
+        
+        # Set other modules at default level
+        "dualgpuopt.optimizer": default_level,
+        "dualgpuopt.layer_balance": default_level,
+        "dualgpuopt.mpolicy": default_level
+    }
+    
+    # Override with DEBUG if verbose mode is enabled
+    if verbose:
+        for key in list(module_levels.keys()):
+            module_levels[key] = logging.DEBUG
+    
+    # Apply the log levels
+    for module, level in module_levels.items():
+        logging.getLogger(module).setLevel(level) 

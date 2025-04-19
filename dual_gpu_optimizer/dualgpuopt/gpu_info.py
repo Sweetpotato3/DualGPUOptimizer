@@ -279,7 +279,7 @@ def probe_gpus(max_workers: int = 4) -> List[GPU]:
     """
     # Check if mock mode is enabled
     if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":
-        logger.info("Using mock GPU data instead of real hardware")
+        logger.debug("Using mock GPU data instead of real hardware")
         return _mock_gpus()
     
     try:

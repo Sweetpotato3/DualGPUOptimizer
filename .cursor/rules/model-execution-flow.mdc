@@ -1,41 +1,54 @@
 ---
-description: Specification for implementing and documenting LLM model execution workflows across multiple GPUs
-globs: **/runner.py,**/optimizer.py,**/batch/*.py,**/layer_balance.py,**/mpolicy.py
+description: Handles model execution workflows for LLMs including command generation, resource allocation, and GPU optimization
+globs: **/dualgpuopt/services/*.py,**/dualgpuopt/gui/launcher.py,**/dualgpuopt/commands/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow consists of three main components:
+Core execution workflow components that manage LLM model deployments across dual GPU configurations:
 
-1. Model Deployment Orchestration (Importance: 95)
-- Generates framework-specific commands for llama.cpp and vLLM
-- Configures GPU split ratios based on available VRAM
-- Manages tensor parallelism settings for multi-GPU deployments 
-- Handles environment variable setup for memory allocation
+1. Framework-Specific Command Generation System (dualgpuopt/gui/launcher.py)
+- Generates optimized launch commands for:
+  * llama.cpp: GPU split configuration with memory ratios
+  * vLLM: Tensor parallel deployment with GPU count optimization
+- Dynamically adjusts parameters based on:
+  * Available GPU memory
+  * Model context size requirements 
+  * Framework-specific optimization constraints
 
-2. Layer Distribution System (Importance: 90)
-- Implements adaptive layer balancing across GPUs:
-  - Profiles layer performance with dual sequence testing (64/1024 tokens)
-  - Uses weighted scoring (0.2 * short_seq + 0.8 * long_seq)
-  - Distributes layers while respecting VRAM constraints
-  - Places highest-latency layers optimally
+Importance Score: 95 (Core model execution logic)
 
-3. Smart Batching Pipeline (Importance: 85)
-- Length-aware inference scheduling with queue depth control
-- Token-based batch size optimization 
-- Automatic OOM recovery with cache clearing
-- Power-of-two bucket grouping for sequences
-- Token ratio-based bucketing for balanced workloads
+2. GPU Resource Allocation Flow (dualgpuopt/services/state_service.py)
+- Manages tensor split ratios across available GPUs
+- Tracks per-GPU memory allocation states
+- Controls idle detection thresholds for reallocation
+- Handles dynamic memory rebalancing during execution
 
-Key File Paths:
-- dualgpuopt/optimizer.py: GPU split calculations and command generation
-- dualgpuopt/layer_balance.py: Layer distribution algorithms
-- dualgpuopt/batch/smart_batch.py: Batching system implementation
-- dualgpuopt/batch/heuristics.py: Batching strategies
-- dualgpuopt/mpolicy.py: Mixed precision policies
+Importance Score: 90 (Critical resource management)
 
-The execution flow emphasizes optimal resource utilization across dual GPU setups while maintaining safe memory constraints and efficient workload distribution.
+3. Model Execution Event Pipeline (dualgpuopt/services/event_bus.py)
+- Processes GPU-specific execution events:
+  * Optimization adjustments
+  * Memory utilization changes
+  * Temperature/power thresholds
+- Priority-based execution event handling
+
+Importance Score: 85 (Key execution monitoring)
+
+4. Smart Batching System (dualgpuopt/batch/smart_batch.py)
+- Length-aware inference scheduling
+- Token-based batch size management
+- Automatic OOM recovery mechanisms
+- Request grouping based on sequence lengths
+
+Importance Score: 80 (Execution optimization)
+
+Key Execution Rules:
+1. GPU memory splits must account for model-specific requirements
+2. Tensor parallelism configuration varies by framework
+3. Execution commands include safety limits for GPU resources
+4. Batch processing adjusts based on available GPU memory
 
 $END$

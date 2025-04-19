@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Use this overview documentation when examining a GPU optimization system for large language models that handles dual GPU configurations, memory management, and performance monitoring.
-globs: *.py,*.code-workspace
+description: Apply this overview documentation for dual GPU optimization systems that manage and coordinate machine learning model execution across multiple GPUs, including performance monitoring, resource allocation, and hardware state management.
+globs: *.py
 alwaysApply: false
 ---
 
@@ -18,48 +18,32 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The Dual GPU Optimizer implements specialized logic for running large language models across multiple GPUs with three core business areas:
+The DualGPUOptimizer system implements specialized GPU optimization for large language models through several key business components:
 
-1. GPU Memory and Resource Management (Importance: 95)
-- Calculates optimal tensor split ratios based on GPU memory capacities
-- Implements model-specific context size management considering:
-  - Layer counts, KV heads, and head dimensions
-  - Precision types (16-bit, 8-bit QLoRA, 4-bit GPTQ)
-  - MoE factors for specialized models
-- Handles real-time memory allocation and recovery
+Core GPU Management:
+- Layer balancing engine that distributes model layers across GPUs based on latency profiles and VRAM constraints
+- Context size calculator that determines maximum safe sequence lengths considering model architecture and GPU memory
+- Memory policy manager implementing mixed precision strategies while maintaining stability
+- Overclocking management system with hardware-safe constraints and profile persistence
 
-Key files:
-- dualgpuopt/ctx_size.py
-- dualgpuopt/optimizer.py
+Resource Optimization:
+- Smart batching system with length-aware scheduling and OOM recovery
+- Real-time GPU telemetry tracking power usage, temperatures, and memory utilization
+- Idle resource detection alerting on underutilized GPUs (threshold: 30% for 5+ minutes)
 
-2. GPU Performance Monitoring (Importance: 85)
-- Tracks critical GPU metrics:
-  - Utilization and memory usage
-  - Temperature and power draw
-  - PCIe bandwidth
-  - Clock speeds
-- Implements idle detection with configurable thresholds
-- Maintains 60-sample rolling window for performance trends
+Model Execution:
+- Framework-specific optimizers for llama.cpp and vLLM
+- Split ratio computation for tensor distribution across GPUs
+- Atomic overclocking operations with rollback capabilities
+- GPU-specific overclocking profiles and safety constraints
 
 Key files:
-- dualgpuopt/telemetry.py
-- dualgpuopt/gui/dashboard.py
+- `dualgpuopt/layer_balance.py`: Core layer distribution logic
+- `dualgpuopt/ctx_size.py`: Context size calculation
+- `dualgpuopt/batch/smart_batch.py`: Batching optimization
+- `dualgpuopt/commands/gpu_commands.py`: GPU control operations
 
-3. Layer Distribution System (Importance: 90)
-- Balances model layers across GPUs using:
-  - Dual sequence length testing (64/1024 tokens)
-  - Weighted scoring system for throughput optimization
-  - VRAM quota management
-- Implements specialized mixed precision strategies:
-  - FP32 for critical operations
-  - Automatic precision scaling
-  - Framework-specific optimizations for llama.cpp and vLLM
-
-Key files:
-- dualgpuopt/layer_balance.py
-- dualgpuopt/mpolicy.py
-
-The system integrates these components through an event-driven architecture that coordinates GPU resource allocation, monitors performance, and optimizes model deployment across multiple GPUs.
+The system prioritizes optimal resource utilization for dual-GPU machine learning workloads while maintaining hardware safety and operational stability through configurable thresholds and failover mechanisms.
 
 $END$
 END SPECIFICATION

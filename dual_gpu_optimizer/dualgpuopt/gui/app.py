@@ -112,8 +112,8 @@ class DualGpuApp(ttk.Frame):
             self.init_ui()
             
             # Setup telemetry
-            self.tele_q = telemetry.start_stream(1.0)
-            self.after(1000, self._tick_chart)
+            self.tele_q = telemetry.start_stream(3.0)
+            self.after(3000, self._tick_chart)
             
             # Setup tray
             init_tray(self)
@@ -166,8 +166,8 @@ class DualGpuApp(ttk.Frame):
             self.init_ui()
             
             # Setup telemetry again
-            self.tele_q = telemetry.start_stream(1.0)
-            self.after(1000, self._tick_chart)
+            self.tele_q = telemetry.start_stream(3.0)
+            self.after(3000, self._tick_chart)
             
             # Notify about mock mode
             event_bus.publish("mock_mode_enabled")
@@ -309,7 +309,7 @@ class DualGpuApp(ttk.Frame):
                                      context={"operation": "update_telemetry"})
         
         # Schedule the next update
-        self.after(1000, self._tick_chart)
+        self.after(3000, self._tick_chart)
 
 
 def run_app() -> None:
