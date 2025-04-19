@@ -222,6 +222,11 @@ class DualGpuApp(ttk.Frame):
         self._build_launch_tab(self.launch_frame)
         nb.add(self.launch_frame, text="Launch")
         
+        # Add GPU Dashboard tab
+        self.dashboard_frame = ttk.Frame(nb, padding=self.PAD)
+        self._build_dashboard_tab(self.dashboard_frame)
+        nb.add(self.dashboard_frame, text="GPU Dashboard")
+        
         # Add settings tab
         self.settings_frame = ttk.Frame(nb, padding=self.PAD)
         self._build_settings_tab(self.settings_frame)
@@ -469,6 +474,372 @@ class DualGpuApp(ttk.Frame):
         
         # Start log refreshing
         self.after(500, self._pump_log)
+
+    def _build_dashboard_tab(self, parent: ttk.Frame) -> None:
+        """Create the GPU Dashboard tab with detailed GPU information and visualizations."""
+        parent.columnconfigure(0, weight=1)
+        
+        # Create a frame for the dashboard
+        top_frame = ttk.Frame(parent)
+        top_frame.grid(row=0, column=0, sticky="ew")
+        
+        # Create GPU detail frames
+        self.gpu_detail_frames = []
+        for i, gpu in enumerate(self.gpus):
+            gpu_frame = ttk.LabelFrame(parent, text=f"GPU {gpu.index}: {gpu.short_name}")
+            gpu_frame.grid(row=i+1, column=0, sticky="ew", pady=(0, self.PAD))
+            gpu_frame.columnconfigure(1, weight=1)
+            
+            # Add hardware info section
+            hw_frame = ttk.Frame(gpu_frame)
+            hw_frame.grid(row=0, column=0, rowspan=4, sticky="ns", padx=self.PAD, pady=self.PAD)
+            
+            ttk.Label(hw_frame, text="Architecture:").grid(row=0, column=0, sticky="w", pady=2)
+            self.arch_label = ttk.Label(hw_frame, text=gpu.architecture)
+            self.arch_label.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=2)
+            
+            ttk.Label(hw_frame, text="CUDA Cores:").grid(row=1, column=0, sticky="w", pady=2)
+            self.cores_label = ttk.Label(hw_frame, text=str(gpu.cuda_cores))
+            self.cores_label.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=2)
+            
+            ttk.Label(hw_frame, text="Compute:").grid(row=2, column=0, sticky="w", pady=2)
+            self.compute_label = ttk.Label(hw_frame, text=gpu.compute_capability)
+            self.compute_label.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=2)
+            
+            ttk.Label(hw_frame, text="PCIe:").grid(row=3, column=0, sticky="w", pady=2)
+            self.pcie_label = ttk.Label(hw_frame, text=f"{gpu.pcie_gen} x{gpu.pcie_width}")
+            self.pcie_label.grid(row=3, column=1, sticky="w", padx=self.PAD, pady=2)
+            
+            # Memory usage bar
+            ttk.Label(gpu_frame, text="Memory:").grid(row=0, column=1, sticky="w", pady=2)
+            mem_frame = ttk.Frame(gpu_frame)
+            mem_frame.grid(row=0, column=2, sticky="ew", pady=2)
+            mem_frame.columnconfigure(0, weight=1)
+            
+            self.mem_bar = ttk.Progressbar(mem_frame, length=200, mode="determinate")
+            self.mem_bar["value"] = gpu.mem_used_percent
+            self.mem_bar.grid(row=0, column=0, sticky="ew")
+            
+            self.mem_text = ttk.Label(
+                mem_frame, 
+                text=f"{gpu.mem_used_gb:.1f} GB / {gpu.mem_total_gb:.1f} GB ({gpu.mem_used_percent:.1f}%)"
+            )
+            self.mem_text.grid(row=1, column=0, sticky="e")
+            
+            # Performance metrics
+            perf_frame = ttk.Frame(gpu_frame)
+            perf_frame.grid(row=1, column=1, columnspan=2, sticky="ew", pady=self.PAD)
+            perf_frame.columnconfigure(1, weight=1)
+            perf_frame.columnconfigure(3, weight=1)
+            
+            # GPU Utilization
+            ttk.Label(perf_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=(0, 5))
+            self.gpu_util_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
+            self.gpu_util_bar["value"] = gpu.gpu_utilization
+            self.gpu_util_bar.grid(row=0, column=1, sticky="ew", padx=5)
+            self.gpu_util_text = ttk.Label(perf_frame, text=f"{gpu.gpu_utilization}%")
+            self.gpu_util_text.grid(row=0, column=2, sticky="w", padx=5)
+            
+            # Temperature
+            ttk.Label(perf_frame, text="Temp:").grid(row=0, column=3, sticky="w", padx=(10, 5))
+            self.temp_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
+            self.temp_bar["maximum"] = 100  # Max reasonable temperature
+            self.temp_bar["value"] = gpu.temperature
+            
+            # Set color based on temperature
+            if gpu.temperature < 60:
+                style = ttk.Style()
+                style.configure("temp_cool.Horizontal.TProgressbar", background="green")
+                self.temp_bar.configure(style="temp_cool.Horizontal.TProgressbar")
+            elif gpu.temperature < 80:
+                style = ttk.Style()
+                style.configure("temp_warm.Horizontal.TProgressbar", background="orange")
+                self.temp_bar.configure(style="temp_warm.Horizontal.TProgressbar")
+            else:
+                style = ttk.Style()
+                style.configure("temp_hot.Horizontal.TProgressbar", background="red")
+                self.temp_bar.configure(style="temp_hot.Horizontal.TProgressbar")
+                
+            self.temp_bar.grid(row=0, column=4, sticky="ew", padx=5)
+            self.temp_text = ttk.Label(perf_frame, text=f"{gpu.temperature}°C")
+            self.temp_text.grid(row=0, column=5, sticky="w", padx=5)
+            
+            # Power and Fan
+            ttk.Label(perf_frame, text="Power:").grid(row=1, column=0, sticky="w", padx=(0, 5))
+            self.power_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
+            self.power_bar["value"] = gpu.power_usage_percent
+            self.power_bar.grid(row=1, column=1, sticky="ew", padx=5)
+            self.power_text = ttk.Label(
+                perf_frame, 
+                text=f"{gpu.power_usage:.1f}W / {gpu.power_limit:.1f}W"
+            )
+            self.power_text.grid(row=1, column=2, sticky="w", padx=5)
+            
+            ttk.Label(perf_frame, text="Fan:").grid(row=1, column=3, sticky="w", padx=(10, 5))
+            self.fan_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
+            self.fan_bar["value"] = gpu.fan_speed
+            self.fan_bar.grid(row=1, column=4, sticky="ew", padx=5)
+            self.fan_text = ttk.Label(perf_frame, text=f"{gpu.fan_speed}%")
+            self.fan_text.grid(row=1, column=5, sticky="w", padx=5)
+            
+            # Clock speeds
+            clock_frame = ttk.Frame(gpu_frame)
+            clock_frame.grid(row=2, column=1, columnspan=2, sticky="ew", pady=self.PAD)
+            
+            ttk.Label(clock_frame, text="GPU Clock:").grid(row=0, column=0, sticky="w")
+            self.gpu_clock = ttk.Label(clock_frame, text=f"{gpu.graphics_clock} MHz")
+            self.gpu_clock.grid(row=0, column=1, sticky="w", padx=self.PAD)
+            
+            ttk.Label(clock_frame, text="Memory Clock:").grid(row=0, column=2, sticky="w", padx=(20, 0))
+            self.mem_clock = ttk.Label(clock_frame, text=f"{gpu.memory_clock} MHz")
+            self.mem_clock.grid(row=0, column=3, sticky="w", padx=self.PAD)
+            
+            ttk.Label(clock_frame, text="Driver:").grid(row=0, column=4, sticky="w", padx=(20, 0))
+            self.driver_text = ttk.Label(clock_frame, text=gpu.driver_version)
+            self.driver_text.grid(row=0, column=5, sticky="w", padx=self.PAD)
+            
+            # Store references for updates
+            self.gpu_detail_frames.append({
+                "gpu_index": gpu.index,
+                "mem_bar": self.mem_bar,
+                "mem_text": self.mem_text,
+                "gpu_util_bar": self.gpu_util_bar,
+                "gpu_util_text": self.gpu_util_text,
+                "temp_bar": self.temp_bar,
+                "temp_text": self.temp_text,
+                "power_bar": self.power_bar,
+                "power_text": self.power_text,
+                "fan_bar": self.fan_bar,
+                "fan_text": self.fan_text,
+                "gpu_clock": self.gpu_clock,
+                "mem_clock": self.mem_clock
+            })
+        
+        # History graph frame
+        history_frame = ttk.LabelFrame(parent, text="Performance History")
+        history_frame.grid(row=len(self.gpus)+1, column=0, sticky="ew", pady=(0, self.PAD))
+        history_frame.columnconfigure(0, weight=1)
+        history_frame.rowconfigure(0, weight=1)
+        
+        # Create canvas for history graphs
+        self.history_canvas = tk.Canvas(history_frame, height=150, bg=self.chart_bg)
+        self.history_canvas.grid(row=0, column=0, sticky="nsew", padx=self.PAD, pady=self.PAD)
+        
+        # Start dashboard updating
+        self.after(1000, self._update_dashboard)
+    
+    def _update_dashboard(self) -> None:
+        """Update the GPU Dashboard with the latest telemetry data."""
+        try:
+            # Try to get telemetry data from the queue without blocking
+            try:
+                tele = self.tele_q.get_nowait()
+            except queue.Empty:
+                # If no data available, just reschedule the update and return
+                self.after(1000, self._update_dashboard)
+                return
+                
+            for frame in self.gpu_detail_frames:
+                idx = frame["gpu_index"]
+                
+                # Make sure we have data for this GPU
+                if idx < len(tele.load) and idx < len(tele.mem_used):
+                    # Update memory usage
+                    mem_used = tele.mem_used[idx]
+                    gpu = next((g for g in self.gpus if g.index == idx), None)
+                    if gpu:
+                        mem_total = gpu.mem_total
+                        mem_percent = (mem_used / mem_total) * 100 if mem_total else 0
+                        
+                        frame["mem_bar"]["value"] = mem_percent
+                        frame["mem_text"].config(
+                            text=f"{mem_used/1024:.1f} GB / {mem_total/1024:.1f} GB ({mem_percent:.1f}%)"
+                        )
+                        
+                        # Update GPU utilization
+                        frame["gpu_util_bar"]["value"] = tele.load[idx]
+                        frame["gpu_util_text"].config(text=f"{tele.load[idx]}%")
+                        
+                        # Update temperature if available
+                        if idx < len(tele.temperature):
+                            temp = tele.temperature[idx]
+                            frame["temp_bar"]["value"] = temp
+                            frame["temp_text"].config(text=f"{temp}°C")
+                            
+                            # Update color based on temperature
+                            style = ttk.Style()
+                            if temp < 60:
+                                style.configure("temp_cool.Horizontal.TProgressbar", background="green")
+                                frame["temp_bar"].configure(style="temp_cool.Horizontal.TProgressbar")
+                            elif temp < 80:
+                                style.configure("temp_warm.Horizontal.TProgressbar", background="orange")
+                                frame["temp_bar"].configure(style="temp_warm.Horizontal.TProgressbar")
+                            else:
+                                style.configure("temp_hot.Horizontal.TProgressbar", background="red")
+                                frame["temp_bar"].configure(style="temp_hot.Horizontal.TProgressbar")
+                        
+                        # Update power usage if available
+                        if idx < len(tele.power_usage):
+                            power = tele.power_usage[idx]
+                            if gpu.power_limit > 0:
+                                power_percent = (power / gpu.power_limit) * 100
+                                frame["power_bar"]["value"] = power_percent
+                            frame["power_text"].config(text=f"{power:.1f}W / {gpu.power_limit:.1f}W")
+                        
+                        # Update fan speed if available
+                        if idx < len(tele.fan_speed):
+                            fan = tele.fan_speed[idx]
+                            frame["fan_bar"]["value"] = fan
+                            frame["fan_text"].config(text=f"{fan}%")
+                        
+                        # Update clock speeds if available
+                        if idx < len(tele.graphics_clock):
+                            frame["gpu_clock"].config(text=f"{tele.graphics_clock[idx]} MHz")
+                        
+                        if idx < len(tele.memory_clock):
+                            frame["mem_clock"].config(text=f"{tele.memory_clock[idx]} MHz")
+            
+            # Render history graph
+            self._render_history_graph()
+            
+        except Exception as e:
+            # Log any errors but don't crash
+            self.logger.error(f"Error updating dashboard: {e}")
+            
+        # Schedule the next update
+        self.after(1000, self._update_dashboard)
+    
+    def _render_history_graph(self) -> None:
+        """Render the performance history graph on the history canvas."""
+        # Store telemetry history
+        if not hasattr(self, 'dashboard_history'):
+            # Initialize history if it doesn't exist
+            self.dashboard_history = {
+                'timestamps': [],
+                'gpu_util': [[] for _ in range(len(self.gpus))],
+                'mem_util': [[] for _ in range(len(self.gpus))],
+                'temp': [[] for _ in range(len(self.gpus))]
+            }
+        
+        # Add latest telemetry to history
+        try:
+            tele = self.tele_q.get_nowait()
+            
+            # Add timestamp
+            self.dashboard_history['timestamps'].append(tele.ts)
+            
+            # Limit history to 60 seconds (assuming 1 second interval)
+            max_history = 60
+            if len(self.dashboard_history['timestamps']) > max_history:
+                self.dashboard_history['timestamps'] = self.dashboard_history['timestamps'][-max_history:]
+                
+            # Add GPU utilization
+            for i, load in enumerate(tele.load):
+                if i < len(self.dashboard_history['gpu_util']):
+                    self.dashboard_history['gpu_util'][i].append(load)
+                    if len(self.dashboard_history['gpu_util'][i]) > max_history:
+                        self.dashboard_history['gpu_util'][i] = self.dashboard_history['gpu_util'][i][-max_history:]
+            
+            # Add memory utilization
+            for i, util in enumerate(tele.memory_util):
+                if i < len(self.dashboard_history['mem_util']):
+                    self.dashboard_history['mem_util'][i].append(util)
+                    if len(self.dashboard_history['mem_util'][i]) > max_history:
+                        self.dashboard_history['mem_util'][i] = self.dashboard_history['mem_util'][i][-max_history:]
+            
+            # Add temperature
+            for i, temp in enumerate(tele.temperature):
+                if i < len(self.dashboard_history['temp']):
+                    self.dashboard_history['temp'][i].append(temp)
+                    if len(self.dashboard_history['temp'][i]) > max_history:
+                        self.dashboard_history['temp'][i] = self.dashboard_history['temp'][i][-max_history:]
+            
+        except queue.Empty:
+            pass
+        
+        # Clear canvas
+        self.history_canvas.delete("all")
+        
+        # Draw background
+        w = self.history_canvas.winfo_width()
+        h = self.history_canvas.winfo_height()
+        
+        if w <= 1 or h <= 1:
+            # Canvas not properly initialized yet
+            return
+            
+        # Draw grid lines
+        for i in range(0, 101, 20):
+            y = h - (i * h / 100)
+            self.history_canvas.create_line(0, y, w, y, fill="#444444", dash=(1, 2))
+            self.history_canvas.create_text(5, y, text=f"{i}%", anchor="w", fill="#bbbbbb", font=("", 8))
+        
+        # Draw temperature scale on right side
+        for i in range(0, 101, 20):
+            y = h - (i * h / 100)
+            self.history_canvas.create_text(w-5, y, text=f"{i}°C", anchor="e", fill="#ff6600", font=("", 8))
+        
+        # Draw metrics
+        if len(self.dashboard_history['timestamps']) > 1:
+            time_span = self.dashboard_history['timestamps'][-1] - self.dashboard_history['timestamps'][0]
+            if time_span > 0:
+                # Draw GPU utilization
+                for i, gpu_util in enumerate(self.dashboard_history['gpu_util']):
+                    if len(gpu_util) > 1:
+                        points = []
+                        for j, util in enumerate(gpu_util):
+                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            y = h - (util * h / 100)
+                            points.extend([x, y])
+                        
+                        if points:
+                            self.history_canvas.create_line(points, fill=self.gpu_colors[i], width=2, smooth=True)
+                            
+                # Draw memory utilization as dashed lines
+                for i, mem_util in enumerate(self.dashboard_history['mem_util']):
+                    if len(mem_util) > 1:
+                        points = []
+                        for j, util in enumerate(mem_util):
+                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            y = h - (util * h / 100)
+                            points.extend([x, y])
+                        
+                        if points:
+                            self.history_canvas.create_line(points, fill=self.gpu_colors[i], width=1, dash=(4, 2))
+                
+                # Draw temperature as dotted lines
+                for i, temp in enumerate(self.dashboard_history['temp']):
+                    if len(temp) > 1:
+                        points = []
+                        for j, t in enumerate(temp):
+                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            y = h - (t * h / 100)
+                            points.extend([x, y])
+                        
+                        if points:
+                            self.history_canvas.create_line(points, fill="#ff6600", width=1, dash=(2, 4))
+                            
+        # Draw legend
+        legend_items = [
+            {"name": "GPU Util", "color": self.gpu_colors[0], "style": "solid"},
+            {"name": "Mem Util", "color": self.gpu_colors[0], "style": "dashed"},
+            {"name": "Temperature", "color": "#ff6600", "style": "dotted"}
+        ]
+        
+        legend_x = 10
+        legend_y = 10
+        for item in legend_items:
+            # Draw color sample
+            if item["style"] == "solid":
+                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=2)
+            elif item["style"] == "dashed":
+                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=1, dash=(4, 2))
+            else:  # dotted
+                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=1, dash=(2, 4))
+                
+            # Draw label
+            self.history_canvas.create_text(legend_x+25, legend_y, text=item["name"], fill="#ffffff", anchor="w")
+            legend_x += 100
 
     # ---------- callbacks ----------
     def _browse(self) -> None:
