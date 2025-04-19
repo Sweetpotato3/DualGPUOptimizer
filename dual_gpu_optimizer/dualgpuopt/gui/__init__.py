@@ -1,11 +1,10 @@
 """
 GUI module for the DualGPUOptimizer.
 
-This is a legacy module that redirects to the new refactored structure.
+This package contains all the GUI components and functionality.
 """
 from __future__ import annotations
 
 from dualgpuopt.gui.app import DualGpuApp, run_app
 
-# Re-export for backward compatibility
 __all__ = ["DualGpuApp", "run_app"] 
