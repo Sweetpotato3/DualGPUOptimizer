@@ -1,6 +1,7 @@
 ---
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 description: Documents the execution flow and orchestration of language models across multiple GPUs, including command generation and resource allocation
 globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
 =======
@@ -11,12 +12,17 @@ globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/launcher.py
 description: Documents the complete model execution workflow including GPU allocation, command generation, and runtime configuration
 globs: *.py,dual_gpu_optimizer/dualgpuopt/*.py
 >>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
+=======
+description: Used for analyzing and documenting LLM model execution workflows, command generation, and GPU resource management
+globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/launcher.py
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ## Core Execution Components
@@ -123,54 +129,49 @@ Relevant files:
 >>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 =======
 ## Core Execution Components
+=======
+The model execution flow consists of several key components that manage the LLM execution pipeline:
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
-### Model Launch Flow (Importance: 95)
-`dual_gpu_optimizer/dualgpuopt/__main__.py`
-- Probes available GPUs using gpu_info subsystem
-- Validates minimum requirement of 2 GPUs
-- Generates optimized GPU split configurations
-- Creates framework-specific launch commands for llama.cpp and vLLM
-- Sets up environment variables for multi-GPU execution
+### Command Generation (Importance: 95)
+- Generates optimized command strings for running models with llama.cpp and vLLM
+- Takes into account GPU memory splits and tensor fractions based on available GPU resources
+- Located in `dualgpuopt/optimizer.py`
 
-### Command Generation (Importance: 90)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- Calculates tensor fractions based on GPU memory distribution
-- Constructs environment files for GPU configurations
-- Generates specialized command-line arguments for ML frameworks
-- Handles memory splits and tensor parallel configurations
+### GPU Resource Allocation (Importance: 90)
+- Calculates optimal GPU memory splits based on detected GPU configurations
+- Generates environment files with CUDA and NCCL configurations specific to GPU setup
+- Dynamically adjusts tensor fractions based on available GPU memory
+- Located in `dualgpuopt/gpu_info.py`
 
-### Runtime GPU Management (Importance: 85)
-`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- Collects real-time GPU metrics via NVML interface
-- Manages memory utilization data
-- Provides mock GPU capabilities for testing
-- Monitors temperature, power usage, and clock speeds
+### Model Execution Pipeline (Importance: 85)
+- Handles model initialization and execution across multiple GPUs
+- Manages process logging and execution state
+- Enables starting/stopping model execution with selected frameworks
+- Located in `dualgpuopt/gui/launcher.py`
 
-### Telemetry Control (Importance: 80)
-`dual_gpu_optimizer/dualgpuopt/telemetry.py`
-- Implements polling mechanism for GPU metrics
-- Streams real-time performance data
-- Collects PCIe throughput measurements
-- Monitors utilization thresholds
+### Framework-Specific Workflows (Importance: 80)
+Two primary execution paths:
 
-## Launch Modes
+1. llama.cpp flow:
+   - Generates split configuration strings
+   - Sets up multi-GPU environment variables
+   - Configures memory and compute parameters
 
-### CLI Execution (Importance: 75)
-`simple_launcher.py`
-- Processes model path and context size inputs 
-- Calculates GPU memory split recommendations
-- Generates framework-specific execution commands
-- Provides command-line interface for optimization
+2. vLLM flow:
+   - Manages tensor parallel configurations
+   - Sets up GPU device mapping
+   - Configures framework-specific parameters
 
-### Standalone Runtime (Importance: 70)
-`run_standalone.py`
-- Manages dependency requirements
-- Enables mock GPU simulation mode
-- Handles error logging for execution issues
-- Controls application lifecycle
+Located in `dualgpuopt/runner.py`
 
-## System Integration
+### Telemetry Integration (Importance: 75)
+- Streams real-time GPU metrics during model execution
+- Monitors memory utilization and GPU load
+- Provides feedback for execution optimization
+- Located in `dualgpuopt/telemetry.py`
 
+<<<<<<< HEAD
 ### Resource Monitoring (Importance: 65)
 `dual_gpu_optimizer/dualgpuopt/tray.py`
 - Tracks GPU utilization thresholds
@@ -178,5 +179,12 @@ Relevant files:
 - Provides system tray controls
 - Handles notification triggers
 >>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
+=======
+### Mock Execution Mode (Importance: 65)
+- Simulates GPU presence for testing execution flows
+- Generates mock telemetry data
+- Enables workflow testing without physical GPUs
+- Located in `dualgpuopt/gpu_info.py`
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
 $END$

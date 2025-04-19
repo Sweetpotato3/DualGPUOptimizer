@@ -8,7 +8,11 @@ import logging
 import pathlib
 from typing import Dict, Any, Callable, List, Optional
 
+<<<<<<< HEAD
 from dualgpuopt.services.event_bus import event_bus
+=======
+from dualgpuopt.services.event_service import event_bus
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
 
 class AppState:
@@ -117,6 +121,7 @@ class AppState:
             self.logger.error(f"Error parsing state file {filepath}: {e}")
         except IOError as e:
             self.logger.error(f"Error reading state file {filepath}: {e}")
+<<<<<<< HEAD
     
     def save(self) -> None:
         """Save the current state to disk using the default path."""
@@ -199,3 +204,8 @@ class StateService:
 app_state = AppState()
 # Create a global state service instance
 state_service = StateService() 
+=======
+
+# Create a global state instance
+app_state = AppState() 
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)

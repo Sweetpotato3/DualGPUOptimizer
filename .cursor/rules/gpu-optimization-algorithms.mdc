@@ -1,6 +1,7 @@
 ---
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 description: GPU memory distribution algorithms, tensor parallel split calculations, and memory allocation strategies for optimizing dual GPU setups
 globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
 =======
@@ -11,12 +12,17 @@ globs: **/gpu_info.py,**/optimizer.py,**/ctx_size.py,**/layer_balance.py
 description: GPU memory distribution and optimization algorithms for ML model execution across multiple GPUs
 globs: **/gpu_info.py,**/optimizer.py,**/telemetry.py
 >>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
+=======
+description: Specialized GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies.
+globs: **/optimizer.py,**/gpu_info.py
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
 ## Memory Distribution Algorithm
@@ -107,24 +113,49 @@ dual_gpu_optimizer/dualgpuopt/layer_balance.py
 =======
 ## Memory Distribution Algorithm
 **Importance Score: 95**
+=======
+## Core GPU Memory Distribution System
+The optimizer implements advanced memory distribution algorithms for multi-GPU deep learning model execution. Key components:
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
-Core algorithm for distributing model memory across multiple GPUs:
+1. Memory Split Generation
+- Located in: `dualgpuopt/optimizer.py`
+- Calculates optimal GPU memory splits based on detected GPU configurations
+- Generates split strings used by model frameworks like llama.cpp and vLLM
+- Importance Score: 95
 
-1. GPU Memory Collection
-- Collects detailed GPU memory information using NVML
-- Tracks total memory, free memory, and utilization per GPU
-- File: `gpu_info.py`
+2. Tensor Parallel Fraction Calculator
+- Located in: `dualgpuopt/optimizer.py`  
+- Determines optimal tensor parallel fractions for model distribution
+- Accounts for varying GPU memory capacities
+- Calculates balanced memory allocation ratios
+- Importance Score: 90
 
-2. Tensor Parallel Split Calculation
-- Calculates optimal tensor fractions based on available GPU memory sizes
-- Generates memory split strings for model distribution
-- File: `optimizer.py`
+3. GPU Memory Probing
+- Located in: `dualgpuopt/gpu_info.py`
+- Collects detailed GPU memory metrics including:
+  - Available VRAM
+  - Current memory utilization
+  - Memory bandwidth capabilities
+- Utilizes parallel probing for enhanced detection
+- Importance Score: 85
 
-## Real-time GPU Telemetry
-**Importance Score: 85**
+4. Framework-Specific Command Generation 
+- Located in: `dualgpuopt/optimizer.py`
+- Generates optimized command strings for:
+  - llama.cpp tensor splits
+  - vLLM memory distribution
+  - Environment variable configurations
+- Incorporates calculated memory splits and tensor fractions
+- Importance Score: 80
 
-Telemetry collection system for runtime optimization:
+5. Mock GPU Memory Simulation
+- Located in: `dualgpuopt/gpu_info.py`
+- Simulates GPU memory configurations for testing
+- Generates realistic memory distribution scenarios
+- Importance Score: 45
 
+<<<<<<< HEAD
 1. Metrics Collection
 - Continuously polls GPU metrics including:
   - Memory usage
@@ -155,5 +186,8 @@ Optimization command generation for ML frameworks:
 - Configures tensor parallel parameters based on available GPU memory
 - File: `optimizer.py`
 >>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
+=======
+The system prioritizes balanced memory distribution while accounting for heterogeneous GPU configurations. Memory splits are calculated based on relative VRAM capacities and adjusted for optimal tensor parallel execution.
+>>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
 $END$
