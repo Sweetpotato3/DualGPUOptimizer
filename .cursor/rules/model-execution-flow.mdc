@@ -1,48 +1,52 @@
 ---
-description: Defines large language model execution flows including command generation, resource allocation, and GPU orchestration
-globs: **/*optimizer.py,**/*runner.py,**/*launcher.py,**/gpu_info.py,**/telemetry.py
+description: Documents LLM execution workflows, command generation, and GPU resource allocation patterns
+globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized handling for running large language models across multiple GPUs. Key components include:
+Core Execution Flow Components:
 
-1. Command Generation (optimizer.py, importance: 95)
-- Framework-specific command generation for llama.cpp and vLLM:
-  - Calculates optimal tensor parallel splits based on GPU memory ratios 
-  - Sets environment variables for CUDA memory configuration
-  - Configures NCCL communication parameters
+1. Framework-Specific Command Generation
+- Generates optimized execution commands for:
+  * llama.cpp with GPU split parameters and context size settings 
+  * vLLM with tensor parallel configurations
+  * Memory allocation specifications for each framework
+- File: dualgpuopt/optimizer.py
 
-2. Resource Allocation (gpu_info.py, importance: 90)
-- Dynamic GPU memory management:
-  - Calculates maximum safe context lengths per model architecture
-  - Reserves memory quotas for attention cache vs model weights
-  - Implements 20% overhead buffer for tensor parallel operations
-  - Enforces model-specific memory thresholds
+2. Layer Distribution Logic 
+- Implements weighted profiling approach for layer assignment:
+  * 20% weight for short sequences (64 tokens)
+  * 80% weight for long sequences (1024 tokens)
+- Balances layers across GPUs based on:
+  * Individual layer latency profiles
+  * Available GPU memory quotas
+  * Performance characteristics
+- File: dualgpuopt/layer_balance.py
 
-3. Layer Distribution (layer_balance.py, importance: 85)
-- Adaptive layer balancing across GPUs:
-  - Profiles layer execution times using 64/1024 token sequences
-  - Distributes layers based on relative GPU performance
-  - Maintains memory quotas during layer assignment
-  - Handles specialized MoE model architectures
+3. GPU Resource Allocation
+- Calculates optimal memory splits:
+  * Core tensor parallelism overhead (20%)
+  * System overhead reservation (2GB)
+  * KV cache estimation (2.0x factor)
+  * Global safety margin (10%)
+- File: dualgpuopt/optimizer.py
 
-4. Execution Pipeline (runner.py, importance: 80)
-- Model inference orchestration:
-  - Initializes model shards across designated GPUs
-  - Manages tensor parallel communication
-  - Handles KV cache allocation and clearing
-  - Provides fallback paths for OOM conditions
+4. Model Execution Management
+- Non-blocking subprocess management for LLM workloads
+- Coordinates resource allocation between frameworks
+- Implements startup/shutdown sequences
+- Handles graceful process termination
+- File: dualgpuopt/runner.py
 
-5. Telemetry Integration (telemetry.py, importance: 75)
-- Runtime performance monitoring:
-  - Tracks per-GPU memory utilization
-  - Monitors PCIe bandwidth consumption
-  - Detects execution bottlenecks
-  - Provides metrics for dynamic rebalancing
+The system prioritizes efficient distribution of LLM workloads across dual GPU setups while maintaining framework-specific optimizations and safety constraints.
 
-The system focuses on optimizing execution of large language models by intelligently managing GPU resources and model distribution. Core emphasis is on safe memory management, balanced workload distribution, and framework-specific optimizations.
+Importance Scores:
+- Command Generation: 95 (Core execution logic)
+- Layer Distribution: 90 (Critical optimization)
+- Resource Allocation: 85 (Key infrastructure)
+- Execution Management: 80 (Essential orchestration)
 
 $END$

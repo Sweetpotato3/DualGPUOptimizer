@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import queue, threading
 import time, random
+import logging
 
 try:
     from sseclient import SSEClient
@@ -43,7 +44,23 @@ except ImportError:
 from dualgpuopt.ui.widgets import GradientProgress, NeonButton
 
 CFG_FILE = Path.home() / ".dualgpuopt" / "ui.json"
-ICON_PATH = Path(__file__).parent.parent / "assets" / "app_64.png"
+
+# Check multiple possible locations for the icon
+ICON_PATH = Path("windowsicongpu.ico")  # Root directory
+if not ICON_PATH.exists():
+    # Check in dual_gpu_optimizer path
+    ICON_PATH = Path("dual_gpu_optimizer/dualgpuopt/assets/windowsicongpu.ico")
+    if not ICON_PATH.exists():
+        # Check in integrated_app path
+        ICON_PATH = Path("integrated_app/dualgpuopt/assets/windowsicongpu.ico")
+        if not ICON_PATH.exists():
+            # Check in assets directory
+            ICON_PATH = Path(__file__).parent.parent / "assets" / "windowsicongpu.ico"
+            if not ICON_PATH.exists():
+                # Fallback to the original icon
+                ICON_PATH = Path(__file__).parent.parent / "assets" / "app_64.png"
+
+logger = logging.getLogger("DualGPUOpt.GUI")
 
 # ---------------- persistence helpers ----------------
 def _load_cfg() -> dict:
@@ -64,7 +81,22 @@ class ModernApp(ttk.Window):
         """Initialize the Modern UI window."""
         super().__init__(themename="superhero")
         self.title("DualGPUOptimizer")
-        self.iconphoto(True, tk.PhotoImage(file=ICON_PATH))
+        
+        # Try to load the icon, but continue if it fails
+        try:
+            if ICON_PATH.exists():
+                if ICON_PATH.suffix.lower() == '.ico':
+                    # For .ico files, we need to use a different approach
+                    self.iconbitmap(str(ICON_PATH))
+                else:
+                    # For .png files, use PhotoImage
+                    icon = tk.PhotoImage(file=str(ICON_PATH))
+                    self.iconphoto(True, icon)
+            else:
+                logger.warning(f"Icon file not found: {ICON_PATH}")
+        except Exception as e:
+            logger.error(f"Failed to load icon: {e}")
+        
         self.style.configure(".", font=("Segoe UI", 10))
         
         cfg = _load_cfg()
@@ -112,7 +144,19 @@ class ModernApp(ttk.Window):
         self.util_bar = GradientProgress(dash); self.util_bar.grid(row=0, column=1, padx=6, sticky="ew")
         ttk.Label(dash, text="VRAM").grid(row=1, column=0, sticky="w")
         self.vram_bar = GradientProgress(dash); self.vram_bar.grid(row=1, column=1, padx=6, sticky="ew")
-        self.tps_meter = Meter(dash, subtext="toks/s", bootstyle="success"); self.tps_meter.grid(row=0, column=2, rowspan=2, padx=12)
+        
+        # Try to create a Meter widget, with fallback to a label if it fails
+        try:
+            self.tps_meter = Meter(dash, subtext="toks/s", bootstyle="success")
+            self.tps_meter.grid(row=0, column=2, rowspan=2, padx=12)
+            self._has_meter = True
+        except Exception as e:
+            logger.error(f"Could not create Meter widget: {e}")
+            self.tps_var = tk.StringVar(value="0 toks/s")
+            self.tps_label = ttk.Label(dash, textvariable=self.tps_var)
+            self.tps_label.grid(row=0, column=2, rowspan=2, padx=12)
+            self._has_meter = False
+            
         dash.columnconfigure(1, weight=1)
 
         # Settings
@@ -192,13 +236,20 @@ class ModernApp(ttk.Window):
         try:
             while True:
                 kind, val = self.q.get_nowait()
-                if kind == "tps":   self.tps_meter.configure(amountused=val)
-                elif kind == "chat": self._append_chat(val)
-                elif kind == "status": self.status(val)
+                if kind == "tps":
+                    if hasattr(self, '_has_meter') and self._has_meter:
+                        self.tps_meter.configure(amountused=val)
+                    elif hasattr(self, 'tps_var'):
+                        self.tps_var.set(f"{val} toks/s")
+                elif kind == "chat": 
+                    self._append_chat(val)
+                elif kind == "status": 
+                    self.status(val)
                 elif kind == "toast":
                     try:
                         ToastNotification(title="DualGPUOptimizer", message=val, duration=3000).show_toast()
                     except Exception as e:
+                        logger.error(f"Toast notification error: {e}")
                         print(f"Toast notification error: {e}")
         except queue.Empty:
             pass

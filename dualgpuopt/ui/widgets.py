@@ -29,46 +29,45 @@ def _rgb_to_hex(rgb_tuple):
     r, g, b = rgb_tuple
     return f'#{r:02x}{g:02x}{b:02x}'
 
-# ---------- Gradient progress bar (GPU util, VRAM) ----------
+# ---------- Simple progress bar for compatibility ----------
 class GradientProgress(ttk.Frame):
-    """A custom gradient progress bar widget.
+    """A simple progress bar widget that avoids compatibility issues.
     
-    Implements an animated progress bar with custom gradient colors.
+    Implements a basic progress bar with text display.
     """
     def __init__(self, master, width=220, height=16, **kw):
-        super().__init__(master, **kw)
-        self._w, self._h = width, height
-        self._val, self._target = 0, 0
+        """Initialize a simple progress bar."""
+        super().__init__(master, width=width, height=height, **kw)
         
-        # Create gradient colors
-        self._start_color = (48, 255, 144)   # Green
-        self._end_color = (255, 64, 224)     # Purple
+        # Initialize variables
+        self._val = 0
+        self._target = 0
         
-        # Create canvas for drawing
-        self.canvas = tk.Canvas(self, width=width, height=height, 
-                              highlightthickness=0, bd=0)
-        self.canvas.pack(fill='both', expand=True)
+        # Create a label to display the percentage
+        self.label = ttk.Label(self, text="0%", anchor="center")
+        self.label.pack(fill="both", expand=True)
         
-        # Create rectangle for background
-        self.canvas.create_rectangle(0, 0, width, height, 
-                                   fill='#202020', outline='')
-        
-        # Create progress rectangle (initially width 1)
-        self._rect_id = self.canvas.create_rectangle(
-            0, 0, 1, height, fill=self._rgb_to_hex(self._start_color), outline='')
-        
+        # Start animation
         self._last = time.perf_counter()
-        self.after(16, self._tick)
-
+        self.after(50, self._tick)
+    
     def set(self, percent: float):
         """Set the progress value (0-100)."""
         self._target = max(0, min(percent, 100))
+    
+    def _update_display(self):
+        """Update the progress display."""
+        # Update the label text
+        self.label.configure(text=f"{int(self._val)}%")
         
-    def _rgb_to_hex(self, rgb_tuple):
-        """Convert RGB tuple to hex color string."""
-        r, g, b = rgb_tuple
-        return f'#{r:02x}{g:02x}{b:02x}'
-
+        # Update the label color based on value
+        if self._val < 30:
+            self.label.configure(foreground="green")
+        elif self._val < 70:
+            self.label.configure(foreground="orange")
+        else:
+            self.label.configure(foreground="red")
+            
     def _tick(self):
         """Update animation tick."""
         now = time.perf_counter()
@@ -78,20 +77,9 @@ class GradientProgress(ttk.Frame):
         if abs(self._val - self._target) > 0.5:
             # Smoothly animate toward target
             self._val += math.copysign(dt * 100, self._target - self._val)
-            new_w = int(self._w * self._val / 100)
-            
-            # Update rectangle width and color
-            self.canvas.coords(self._rect_id, 0, 0, new_w, self._h)
-            
-            # Calculate color based on percentage
-            if new_w > 1:
-                factor = self._val / 100
-                r = int(self._start_color[0] + factor * (self._end_color[0] - self._start_color[0]))
-                g = int(self._start_color[1] + factor * (self._end_color[1] - self._start_color[1]))
-                b = int(self._start_color[2] + factor * (self._end_color[2] - self._start_color[2]))
-                self.canvas.itemconfig(self._rect_id, fill=self._rgb_to_hex((r, g, b)))
+            self._update_display()
         
-        self.after(16, self._tick)
+        self.after(50, self._tick)
 
 # ---------- Hover‑glow button ----------
 class NeonButton(ttk.Button):

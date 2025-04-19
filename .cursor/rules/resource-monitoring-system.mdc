@@ -1,65 +1,49 @@
 ---
-description: Specifications for GPU resource monitoring, telemetry collection, and memory utilization tracking systems
-globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/tray.py,**/dashboard.py
+description: Specification for GPU resource monitoring, telemetry collection, and metrics tracking subsystem
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements GPU-specific telemetry collection and visualization with several key components:
+The resource monitoring system implements specialized GPU telemetry collection and visualization with these core components:
 
-1. GPU Metrics Collection (dualgpuopt/telemetry.py)
-Importance: 95
-- Real-time monitoring of critical GPU parameters:
-  - Memory utilization tracking (used/total/free)
-  - Power consumption with limit enforcement
-  - Temperature monitoring with threshold alerts
-  - Clock speeds (graphics/memory)
-  - PCIe bandwidth measurement (RX/TX rates)
-- Intelligent mock data generation for testing:
-  - Simulates correlated metrics (utilization impacts temperature/power)
-  - Maintains realistic relationships between measurements
-  - Different profiles for high/mid-range GPUs
+1. GPU Telemetry Collection (telemetry.py)
+- Real-time monitoring of critical GPU metrics:
+  * Memory utilization (used/total/free)
+  * Temperature with threshold alerts (70°C warning, 80°C critical)
+  * Power consumption relative to TDP
+  * Core/Memory clock speeds
+  * PCIe bandwidth utilization
+  * Fan speeds with auto/manual control
+- Custom middleware pipeline for metrics processing
+- Mock data generation for testing with realistic correlations
+- Thread-safe metrics buffer with 60-sample rolling window
 
-2. Metrics Visualization (dualgpuopt/gui/dashboard.py) 
-Importance: 85
-- Historical utilization tracking with 60-sample moving window
-- Dynamic color-coded temperature alerts:
-  - Green: <70°C
-  - Orange: 70-80°C  
-  - Red: >80°C
-- Real-time bandwidth monitoring with adaptive units (KB/s to GB/s)
-- Synchronized multi-GPU metric display
-- Custom grid scaling based on sample count
+2. Metrics Dashboard (dashboard.py)
+- Multi-GPU visualization system with:
+  * Color-coded indicators per GPU
+  * Dynamic scaling for utilization graphs
+  * Temperature-based warning indicators
+  * Real-time update system (100ms throttling)
+- Performance history plotting with:
+  * 60-point historical data window
+  * Auto-adjusting axes and scales
+  * GPU-specific color coding
+  * Customizable metric thresholds
 
-3. Memory Management (dualgpuopt/vram_reset.py)
-Importance: 90
-- Multi-stage GPU memory reclamation:
-  - Initial state capture
-  - CUDA cache clearing
-  - Clock reset sequence
-  - Recovery verification
-- Delta calculation for confirmed memory recovery
-- Separate device-specific vs global reset handling
+3. System Tray Integration (tray.py)
+- Quick-access GPU metrics from system tray
+- Critical threshold notifications
+- GPU utilization indicators
+- Memory warning system
 
-4. Alert System (dualgpuopt/metrics.py)
-Importance: 80
-- Configurable thresholds for:
-  - Temperature warnings (80°C, 90°C danger)
-  - Memory utilization (>95% warning)
-  - Power limit approaches
-  - PCIe bandwidth saturation
-- Event-driven notification system
-- Priority-based alert handling (LOW to CRITICAL)
+Importance Scores:
+- GPU Telemetry Collection: 95 (core monitoring functionality)
+- Metrics Dashboard: 85 (critical visualization)
+- System Tray Integration: 65 (supporting monitoring interface)
 
-Core Business Rules:
-- Temperature thresholds trigger automatic fan speed adjustments
-- Memory reclamation only reports positive recovery amounts
-- Power usage constrained to 20-100% of GPU limit
-- Multi-GPU synchronization for aggregate monitoring
-- Telemetry updates rate-limited to 100ms minimum interval
-
-The system focuses specifically on professional GPU monitoring with emphasis on resource optimization and proactive issue detection for dual-GPU configurations.
+The implementation focuses specifically on dual-GPU setups with framework-specific optimizations for monitoring ML workloads and model inference processes.
 
 $END$

@@ -1,79 +1,49 @@
 ---
-description: Specification for GPU memory management, tensor parallel optimization, and hardware resource allocation algorithms
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/gpu_commands.py
+description: Documents GPU optimization algorithms, memory management, tensor parallelism, and resource allocation for dual-GPU systems
+globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm (optimizer.py, gpu_info.py)
+## Core GPU Memory Management
 
-The GPU memory distribution system implements specialized allocation strategies:
+The system implements specialized GPU memory optimization algorithms with business logic focused on dual-GPU workload distribution:
 
-1. Memory Split Calculation:
-- Dynamic ratio calculation based on relative GPU VRAM capacity 
-- Tensor parallel fraction computation with 20% overhead reservation
-- Safety margin maintenance of 10% free memory per GPU
-- KV cache estimation using 2.0x multiplier for transformer architectures
+1. Context Size Optimization
+- Calculates maximum safe context length based on model parameters:
+  - Layers, KV heads, dimensions 
+  - Available GPU memory with configurable safety margins
+  - Mixture of Experts (MoE) factor for models like Mixtral
+- Implements model-specific parameter mapping for common LLMs
+- Uses heuristic memory calculation incorporating:
+  - 20% tensor parallelism overhead
+  - 2GB system overhead allowance
+  - 10% safety margin
 
-2. Resource Allocation Strategy:
-- Model-specific hidden dimension analysis
-- Layer-count aware memory requirements calculation
-- PCIe bandwidth optimization for cross-GPU communication
-- Automatic fallback to single-GPU mode when memory constraints exceeded
+2. Layer Distribution Algorithm
+- Balances model layers across GPUs using weighted profiling:
+  - 20% weight for short sequences (64 tokens)
+  - 80% weight for long sequences (1024 tokens)
+- Prioritizes performance-critical layers on faster GPU
+- Respects per-GPU memory quotas
+- Handles tensor parallelism overhead
 
-Importance Score: 95
+3. Memory Split Optimization
+- Calculates optimal tensor parallel fractions based on relative GPU sizes
+- Implements KV cache estimation with 2.0x overhead factor
+- Generates framework-specific configurations for:
+  - llama.cpp GPU split ratios
+  - vLLM tensor parallel deployment
+  - Environmental configurations
 
-## Layer Balancing Algorithm (layer_balance.py)
+Relevant Files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py 
+- dualgpuopt/ctx_size.py
 
-Implements adaptive layer distribution across multiple GPUs:
-
-1. Performance Profiling:
-- Dual sequence length profiling (64 and 1024 tokens)
-- Weighted averaging (20% short / 80% long sequences)
-- Per-layer latency measurement and GPU assignment
-
-2. Distribution Logic:
-- Memory quota-based layer allocation
-- Performance-weighted GPU assignment
-- Dynamic redistribution based on real-time metrics
-- Automatic rebalancing on performance threshold violations
-
-Importance Score: 90
-
-## Context Size Optimization (ctx_size.py)
-
-Specialized context length calculator:
-
-1. Model-Specific Parameters:
-- Architecture-aware sizing (Mixtral, Llama, Mistral)
-- KV head count impact calculation
-- MoE factor overhead estimation
-- Precision bit depth considerations
-
-2. Safety Controls:
-- Dynamic margin calculation based on model size
-- Memory reservation for critical operations
-- Hardware-specific limit enforcement
-- Automatic context truncation when needed
-
-Importance Score: 85
-
-## Hardware Command Generation (gpu_commands.py)
-
-Framework-specific optimization command generator:
-
-1. llama.cpp Commands:
-- GPU split ratio translation
-- Memory allocation flag generation
-- Layer distribution parameter calculation
-
-2. vLLM Configuration:
-- Tensor parallel size optimization
-- Memory strand calculation
-- GPU device mapping generation
-
-Importance Score: 80
+Business Impact Score: 95
+The algorithms directly impact model performance and resource utilization across dual-GPU setups, representing core optimization capabilities.
 
 $END$

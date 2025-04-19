@@ -229,8 +229,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level architectural overview documentation for systems involving GPU optimization, ML model deployment, and specialized hardware resource management
-globs: *.py,*.cpp,*.h
+description: Create high-level documentation for projects focused on GPU optimization and management, particularly for dual-GPU setups running large language models. Apply when documenting systems that handle GPU resource allocation, model deployment, and hardware monitoring.
+globs: dual_gpu_optimizer/**,integrated_app/**,dualgpuopt/**
 alwaysApply: false
 ---
 
@@ -246,58 +246,52 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model deployment across multiple GPUs.
+The DualGPUOptimizer implements specialized GPU resource management and optimization for large language models across dual GPU configurations. The system consists of three core business domains:
 
-Core Architecture Components:
+1. GPU Resource Management
+- Context size calculation with model-specific parameters
+- Memory split optimization between GPUs
+- Layer balancing across devices
+- Tensor parallelism configuration
+- Power and thermal monitoring
 
-1. GPU Optimization Engine (dualgpuopt/optimizer.py)
-- Dynamic memory split calculation for multi-GPU deployments
-- Model-specific tensor parallelism optimization
-- Hardware-aware resource allocation with safety margins
-- Framework-specific command generation (llama.cpp, vLLM)
+Key files:
+- dualgpuopt/ctx_size.py
+- dualgpuopt/layer_balance.py
+- dualgpuopt/optimizer.py
 
-2. Layer Management System (dualgpuopt/layer_balance.py)
-- Adaptive layer distribution across GPUs based on performance profiling
-- Weighted workload assessment using dual sequence lengths
-- Memory-quota based layer allocation with device-specific optimizations
+2. Model Deployment Optimization
+- Framework-specific command generation
+- Batch size optimization
+- Idle detection and resource reallocation
+- Mixed precision policies
+- Memory safety margins
 
-3. Context Size Calculator (dualgpuopt/ctx_size.py)
-- Model-specific memory requirement calculations
-- Architecture-aware parameter mapping
-- Dynamic safety margins based on GPU constraints
-- Specialized handling for MoE models
+Key files:
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/mpolicy.py
+- dualgpuopt/commands/gpu_commands.py
 
-4. Telemetry Pipeline (dualgpuopt/telemetry.py)
-- Real-time GPU metrics collection and monitoring
-- Multi-device performance correlation
-- Memory utilization tracking
-- Temperature and power monitoring
+3. Telemetry and Monitoring
+- Real-time GPU metrics collection
+- Performance visualization
+- Temperature threshold monitoring
+- Power usage tracking
+- Memory utilization analysis
 
-5. Batch Processing System (dualgpuopt/batch/smart_batch.py)
-- Length-aware sequence batching
-- Memory-conscious workload distribution
-- Adaptive batch sizing for multi-GPU setups
-- Backpressure mechanisms for resource protection
+Key files:
+- dualgpuopt/telemetry.py
+- dualgpuopt/gui/dashboard.py
+- dualgpuopt/metrics.py
 
-Integration Architecture:
+The system implements specialized handling for:
+- Model-specific memory requirements (Mixtral, Llama 2, Mistral)
+- Framework-specific optimizations (llama.cpp, vLLM)  
+- GPU safety constraints and thermal limits
+- Resource allocation strategies
+- Fault tolerance and recovery
 
-1. Resource Management Layer
-- GPU memory allocation strategies
-- Device-specific optimization policies
-- Workload distribution algorithms
-
-2. Model Deployment Layer
-- Framework-specific launch configurations
-- Tensor parallel optimization
-- Memory split calculations
-
-3. Monitoring Layer
-- Real-time performance metrics
-- Resource utilization tracking
-- Temperature and power management
-- Multi-GPU correlation analysis
-
-The system specializes in optimizing large language model deployment across heterogeneous GPU configurations, with particular emphasis on memory management, layer distribution, and performance monitoring.
+Business value centers on optimizing large language model deployment across heterogeneous GPU configurations while maintaining system stability and performance.
 
 $END$
 END SPECIFICATION
