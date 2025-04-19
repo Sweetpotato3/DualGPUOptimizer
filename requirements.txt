@@ -4,5 +4,8 @@ torchaudio==2.5.1
 tk
 ttkthemes
 ttkwidgets
+ttkbootstrap>=1.0.0
 psutil
-numpy 
+numpy
+requests>=2.25.0
+sseclient-py>=1.7.2 

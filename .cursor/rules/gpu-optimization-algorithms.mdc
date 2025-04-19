@@ -1,47 +1,79 @@
 ---
-description: Specification for GPU optimization algorithms including memory distribution, tensor splits, and allocation strategies
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
+description: Specification for GPU memory management, tensor parallel optimization, and hardware resource allocation algorithms
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/gpu_commands.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Memory Distribution System:
-- Calculates optimal memory splits between multiple GPUs using configurable quotas
-- Implements dynamic tensor parallel fraction calculations based on available VRAM
-- Memory balancing considers device capabilities and power limits
+## Memory Distribution Algorithm (optimizer.py, gpu_info.py)
 
-Location: dualgpuopt/optimizer.py
-Importance: 95
+The GPU memory distribution system implements specialized allocation strategies:
 
-Memory Distribution Algorithm:
-- Distributes model layers across GPUs based on memory capacity and bandwidth
-- Uses weighted layer profiling (20% short sequences, 80% long sequences)
-- Dynamically adapts splits based on real-time GPU metrics and thermal constraints
-- Accounts for MoE factor adjustments in Mixtral-style architectures
+1. Memory Split Calculation:
+- Dynamic ratio calculation based on relative GPU VRAM capacity 
+- Tensor parallel fraction computation with 20% overhead reservation
+- Safety margin maintenance of 10% free memory per GPU
+- KV cache estimation using 2.0x multiplier for transformer architectures
 
-Location: dualgpuopt/layer_balance.py
-Importance: 90
+2. Resource Allocation Strategy:
+- Model-specific hidden dimension analysis
+- Layer-count aware memory requirements calculation
+- PCIe bandwidth optimization for cross-GPU communication
+- Automatic fallback to single-GPU mode when memory constraints exceeded
 
-Context Size Optimization:
-- Calculates maximum safe context length using:
-  - Model architecture parameters (layers, heads, dimensions)
-  - Available GPU memory across devices
-  - Precision requirements (FP16/INT8/INT4)
-  - Reserved memory buffer ratios
-- Adapts calculations for different model types (Llama, Mistral, Mixtral)
+Importance Score: 95
 
-Location: dualgpuopt/ctx_size.py 
-Importance: 85
+## Layer Balancing Algorithm (layer_balance.py)
 
-GPU Resource Management:
-- Monitors memory utilization ratios for dynamic load balancing
-- Tracks performance characteristics for optimal layer distribution
-- Implements thermal and power monitoring for workload optimization
-- Manages memory-aware GPU pairing and redistribution
+Implements adaptive layer distribution across multiple GPUs:
 
-Location: dualgpuopt/gpu_info.py
-Importance: 80
+1. Performance Profiling:
+- Dual sequence length profiling (64 and 1024 tokens)
+- Weighted averaging (20% short / 80% long sequences)
+- Per-layer latency measurement and GPU assignment
+
+2. Distribution Logic:
+- Memory quota-based layer allocation
+- Performance-weighted GPU assignment
+- Dynamic redistribution based on real-time metrics
+- Automatic rebalancing on performance threshold violations
+
+Importance Score: 90
+
+## Context Size Optimization (ctx_size.py)
+
+Specialized context length calculator:
+
+1. Model-Specific Parameters:
+- Architecture-aware sizing (Mixtral, Llama, Mistral)
+- KV head count impact calculation
+- MoE factor overhead estimation
+- Precision bit depth considerations
+
+2. Safety Controls:
+- Dynamic margin calculation based on model size
+- Memory reservation for critical operations
+- Hardware-specific limit enforcement
+- Automatic context truncation when needed
+
+Importance Score: 85
+
+## Hardware Command Generation (gpu_commands.py)
+
+Framework-specific optimization command generator:
+
+1. llama.cpp Commands:
+- GPU split ratio translation
+- Memory allocation flag generation
+- Layer distribution parameter calculation
+
+2. vLLM Configuration:
+- Tensor parallel size optimization
+- Memory strand calculation
+- GPU device mapping generation
+
+Importance Score: 80
 
 $END$

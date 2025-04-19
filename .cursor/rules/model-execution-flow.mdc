@@ -1,60 +1,48 @@
 ---
-description: Defines execution flow and coordination of LLM workloads across multiple GPUs, including memory management and hardware optimization
-globs: 
+description: Defines large language model execution flows including command generation, resource allocation, and GPU orchestration
+globs: **/*optimizer.py,**/*runner.py,**/*launcher.py,**/gpu_info.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements several key components for orchestrating LLM inference across multiple GPUs:
+The model execution flow implements specialized handling for running large language models across multiple GPUs. Key components include:
 
-## Command Generation (Importance: 95)
-Location: dualgpuopt/optimizer.py
+1. Command Generation (optimizer.py, importance: 95)
+- Framework-specific command generation for llama.cpp and vLLM:
+  - Calculates optimal tensor parallel splits based on GPU memory ratios 
+  - Sets environment variables for CUDA memory configuration
+  - Configures NCCL communication parameters
 
-Generates specialized command configurations for different LLM frameworks:
-- llama.cpp: GPU split parameters, memory allocation ratios
-- vLLM: Tensor parallelism degree, per-GPU memory quotas
+2. Resource Allocation (gpu_info.py, importance: 90)
+- Dynamic GPU memory management:
+  - Calculates maximum safe context lengths per model architecture
+  - Reserves memory quotas for attention cache vs model weights
+  - Implements 20% overhead buffer for tensor parallel operations
+  - Enforces model-specific memory thresholds
 
-Key parameters managed:
-- Context size allocation
-- GPU memory splits
-- Tensor parallel fractions
+3. Layer Distribution (layer_balance.py, importance: 85)
+- Adaptive layer balancing across GPUs:
+  - Profiles layer execution times using 64/1024 token sequences
+  - Distributes layers based on relative GPU performance
+  - Maintains memory quotas during layer assignment
+  - Handles specialized MoE model architectures
 
-## Mixed Precision Policy (Importance: 90)
-Location: dualgpuopt/mpolicy.py
+4. Execution Pipeline (runner.py, importance: 80)
+- Model inference orchestration:
+  - Initializes model shards across designated GPUs
+  - Manages tensor parallel communication
+  - Handles KV cache allocation and clearing
+  - Provides fallback paths for OOM conditions
 
-Manages precision for different operation types:
-- FP32: LayerNorm, Softmax, Residual adds
-- FP16/BF16: Matrix multiplications
-- INT8/FP4: Weight storage and lookup
-- Custom dtype mapping for PyTorch ops
+5. Telemetry Integration (telemetry.py, importance: 75)
+- Runtime performance monitoring:
+  - Tracks per-GPU memory utilization
+  - Monitors PCIe bandwidth consumption
+  - Detects execution bottlenecks
+  - Provides metrics for dynamic rebalancing
 
-## Batching System (Importance: 85)
-Location: dualgpuopt/batch/smart_batch.py
-
-Implements length-aware sequence batching:
-- Power-of-two bucketing strategy
-- Token ratio bucketing with size ratios
-- Back-pressure mechanism with configurable limits
-- Automatic retry after OOM with cache purging
-
-## Layer Distribution (Importance: 80) 
-Location: dualgpuopt/layer_balance.py
-
-Controls model layer placement:
-- Weighted profiling (20% short / 80% long sequences)
-- Memory quota enforcement
-- Latency-based distribution
-- MoE routing optimization
-
-## Command Execution (Importance: 75)
-Location: dualgpuopt/runner.py
-
-Manages model execution lifecycle:
-- Framework-specific launch sequences
-- GPU resource allocation/deallocation
-- Error handling and recovery
-- Metric collection and monitoring
+The system focuses on optimizing execution of large language models by intelligently managing GPU resources and model distribution. Core emphasis is on safe memory management, balanced workload distribution, and framework-specific optimizations.
 
 $END$

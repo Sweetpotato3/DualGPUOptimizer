@@ -229,8 +229,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Rules for documenting dual GPU optimization systems for ML workloads, covering GPU resource management, monitoring, and parallel execution strategies
-globs: *.py,*.code-workspace
+description: Create high-level architectural overview documentation for systems involving GPU optimization, ML model deployment, and specialized hardware resource management
+globs: *.py,*.cpp,*.h
 alwaysApply: false
 ---
 
@@ -246,43 +246,58 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer delivers intelligent GPU resource management and optimization for machine learning workloads across multiple GPUs.
+The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model deployment across multiple GPUs.
 
-Core Business Components:
+Core Architecture Components:
 
-1. GPU Resource Management
-- Memory splitting algorithms distribute model layers across GPUs
-- Adaptive tensor parallelism fractions based on GPU capabilities
-- Dynamic memory quotas with 90% allocation safety threshold
-- MoE-aware context sizing with 1.05x gating cache factor
+1. GPU Optimization Engine (dualgpuopt/optimizer.py)
+- Dynamic memory split calculation for multi-GPU deployments
+- Model-specific tensor parallelism optimization
+- Hardware-aware resource allocation with safety margins
+- Framework-specific command generation (llama.cpp, vLLM)
 
-2. Workload Optimization
-- Length-aware batch scheduling for inference optimization 
-- Power-of-two bucketing strategy similar to llama.cpp
-- Token ratio bucketing maintains configurable size ratios
-- Back-pressure system prevents GPU memory overflow
+2. Layer Management System (dualgpuopt/layer_balance.py)
+- Adaptive layer distribution across GPUs based on performance profiling
+- Weighted workload assessment using dual sequence lengths
+- Memory-quota based layer allocation with device-specific optimizations
 
-3. Hardware Monitoring
-- Real-time GPU metrics collection:
-  - Utilization percentages
-  - Memory allocation tracking 
-  - Temperature monitoring with 80°C warning threshold
-  - Power draw monitoring against 400W maximum
-- Rolling 60-sample performance history
+3. Context Size Calculator (dualgpuopt/ctx_size.py)
+- Model-specific memory requirement calculations
+- Architecture-aware parameter mapping
+- Dynamic safety margins based on GPU constraints
+- Specialized handling for MoE models
 
-4. Framework Integration
-- Framework-specific command generation:
-  - llama.cpp: GPU split parameters
-  - vLLM: Tensor parallelism configs
-- Mixed precision policies maintain FP32 for critical operations
+4. Telemetry Pipeline (dualgpuopt/telemetry.py)
+- Real-time GPU metrics collection and monitoring
+- Multi-device performance correlation
+- Memory utilization tracking
+- Temperature and power monitoring
 
-Critical Paths:
-- dualgpuopt/optimizer.py: Core optimization logic
-- dualgpuopt/layer_balance.py: Layer distribution system
-- dualgpuopt/telemetry.py: GPU metrics collection
-- dualgpuopt/mpolicy.py: Mixed precision management
+5. Batch Processing System (dualgpuopt/batch/smart_batch.py)
+- Length-aware sequence batching
+- Memory-conscious workload distribution
+- Adaptive batch sizing for multi-GPU setups
+- Backpressure mechanisms for resource protection
 
-The system focuses on maximizing GPU resource utilization while maintaining stability through careful memory management and workload distribution across multiple GPUs.
+Integration Architecture:
+
+1. Resource Management Layer
+- GPU memory allocation strategies
+- Device-specific optimization policies
+- Workload distribution algorithms
+
+2. Model Deployment Layer
+- Framework-specific launch configurations
+- Tensor parallel optimization
+- Memory split calculations
+
+3. Monitoring Layer
+- Real-time performance metrics
+- Resource utilization tracking
+- Temperature and power management
+- Multi-GPU correlation analysis
+
+The system specializes in optimizing large language model deployment across heterogeneous GPU configurations, with particular emphasis on memory management, layer distribution, and performance monitoring.
 
 $END$
 END SPECIFICATION

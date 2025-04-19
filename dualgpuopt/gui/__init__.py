@@ -23,18 +23,22 @@ except ImportError:
 from . import main_app  # Main application entry point
 from . import dashboard  # GPU monitoring dashboard
 from . import optimizer_tab  # GPU split optimizer interface
+from . import modern_ui  # Modern ttkbootstrap UI (2025 update)
 
 from dualgpuopt.gui.dashboard import DashboardView
 from dualgpuopt.gui.optimizer_tab import OptimizerTab
 from dualgpuopt.gui.launcher import LauncherTab
 from dualgpuopt.gui.main_app import MainApplication, run
+from dualgpuopt.gui.modern_ui import ModernApp, run_modern_app
 
 __all__ = [
     'DashboardView',
     'OptimizerTab',
     'LauncherTab',
     'MainApplication',
-    'run'
+    'ModernApp',
+    'run',
+    'run_modern_app'
 ]
 
 # Check for required modules to provide better error messages

@@ -1,60 +1,65 @@
 ---
-description: Technical specification for GPU resource monitoring and telemetry collection system including metrics tracking and alert mechanisms
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py
+description: Specifications for GPU resource monitoring, telemetry collection, and memory utilization tracking systems
+globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/tray.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and visualization with the following key components:
+The resource monitoring system implements GPU-specific telemetry collection and visualization with several key components:
 
-## GPU Metrics Collection (telemetry.py)
+1. GPU Metrics Collection (dualgpuopt/telemetry.py)
 Importance: 95
-- Collects comprehensive GPU performance metrics:
-  - Memory utilization and allocation tracking
-  - PCIe bandwidth monitoring (RX/TX rates) 
-  - Power consumption in watts
-  - Temperature readings with warning thresholds
-  - Clock speeds for both graphics and memory
-- Implements metric middleware pipeline for processing raw data
-- Manages real-time monitoring through configurable polling intervals
-- Fault tolerant collection with mock data fallback
+- Real-time monitoring of critical GPU parameters:
+  - Memory utilization tracking (used/total/free)
+  - Power consumption with limit enforcement
+  - Temperature monitoring with threshold alerts
+  - Clock speeds (graphics/memory)
+  - PCIe bandwidth measurement (RX/TX rates)
+- Intelligent mock data generation for testing:
+  - Simulates correlated metrics (utilization impacts temperature/power)
+  - Maintains realistic relationships between measurements
+  - Different profiles for high/mid-range GPUs
 
-## Dashboard Visualization (dashboard.py) 
+2. Metrics Visualization (dualgpuopt/gui/dashboard.py) 
 Importance: 85
-- Real-time multi-GPU monitoring panels with:
-  - 60-sample rolling history window
-  - Color-coded performance indicators for critical metrics
-  - Independent tracking per GPU device
-  - Automatic unit scaling for bandwidth/memory
-- Dynamic maximum value calculations per GPU model
-- Synchronized metric updates across detected GPUs
+- Historical utilization tracking with 60-sample moving window
+- Dynamic color-coded temperature alerts:
+  - Green: <70°C
+  - Orange: 70-80°C  
+  - Red: >80°C
+- Real-time bandwidth monitoring with adaptive units (KB/s to GB/s)
+- Synchronized multi-GPU metric display
+- Custom grid scaling based on sample count
 
-## Alert System (tray.py)
+3. Memory Management (dualgpuopt/vram_reset.py)
+Importance: 90
+- Multi-stage GPU memory reclamation:
+  - Initial state capture
+  - CUDA cache clearing
+  - Clock reset sequence
+  - Recovery verification
+- Delta calculation for confirmed memory recovery
+- Separate device-specific vs global reset handling
+
+4. Alert System (dualgpuopt/metrics.py)
 Importance: 80
-- Temperature threshold monitoring with alerts at:
-  - Warning level: 80°C
-  - Critical level: 90°C 
-- Memory utilization warnings at <256MB available
-- Custom status indicators for:
-  - GPU states (ok, warning, error)
-  - Idle detection
-  - Resource exhaustion
-- Three-tier update frequency:
-  - Critical metrics: 500ms
-  - Standard metrics: 1000ms
-  - Background metrics: 2000ms
+- Configurable thresholds for:
+  - Temperature warnings (80°C, 90°C danger)
+  - Memory utilization (>95% warning)
+  - Power limit approaches
+  - PCIe bandwidth saturation
+- Event-driven notification system
+- Priority-based alert handling (LOW to CRITICAL)
 
-## Metric Processing (metrics.py)
-Importance: 75
-- Specialized metric event system for GPU telemetry
-- Unit conversion and normalization:
-  - Power (mW to W)
-  - Memory (KB/MB/GB)
-  - Temperature scaling
-  - Bandwidth calculations
-- Integration with application state management
-- Event-driven distribution to visualization components
+Core Business Rules:
+- Temperature thresholds trigger automatic fan speed adjustments
+- Memory reclamation only reports positive recovery amounts
+- Power usage constrained to 20-100% of GPU limit
+- Multi-GPU synchronization for aggregate monitoring
+- Telemetry updates rate-limited to 100ms minimum interval
+
+The system focuses specifically on professional GPU monitoring with emphasis on resource optimization and proactive issue detection for dual-GPU configurations.
 
 $END$
