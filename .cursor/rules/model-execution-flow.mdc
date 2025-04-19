@@ -1,12 +1,18 @@
 ---
+<<<<<<< HEAD
 description: Documents the execution flow and orchestration of language models across multiple GPUs, including command generation and resource allocation
 globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
+=======
+description: Specification for model execution flows, command generation, and GPU resource allocation across llama.cpp and vLLM frameworks
+globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/launcher.py
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
+<<<<<<< HEAD
 ## Core Execution Components
 
 ### Command Generation System
@@ -60,5 +66,54 @@ Importance Scores:
 - Resource Allocation: 90 (essential optimization)
 - GPU Command Pipeline: 80 (framework integration)
 - Safety Controls: 75 (operational stability)
+=======
+The core model execution flow consists of several key components:
+
+## Command Generation System
+- Generates specific execution commands for different ML frameworks:
+  - llama.cpp commands with GPU split configurations and context size parameters
+  - vLLM commands with tensor parallelism and resource allocation settings
+- Handles environment variable generation for GPU configurations including CUDA device visibility and NCCL settings
+
+## Framework-Specific Execution
+- llama.cpp execution:
+  - Dynamic GPU memory split calculation based on available VRAM
+  - Tensor fraction computation for optimal layer distribution
+  - Context size validation against GPU memory constraints
+
+- vLLM execution:
+  - Asynchronous batch processing with smart scheduling
+  - Length-aware inference queuing system
+  - Automatic retry logic for OOM conditions
+
+## Resource Management
+- GPU memory allocation flow:
+  1. Calculate maximum safe context length based on model parameters
+  2. Determine optimal GPU split ratios
+  3. Configure tensor parallelism settings
+  4. Apply resource constraints to command generation
+
+## Model Launch Control
+- Framework selection logic between llama.cpp and vLLM
+- Dynamic command construction based on:
+  - Selected framework requirements
+  - Model path and parameters
+  - GPU resource availability
+- Process management for model execution with log capture
+
+## Batch Processing System
+- Smart batching logic based on sequence lengths
+- Bucket policies for request grouping:
+  - Power-of-two bucketing
+  - Token-ratio based grouping
+- Back-pressure mechanisms for queue depth control
+
+Relevant files:
+- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- `dual_gpu_optimizer/dualgpuopt/runner.py`
+- `dual_gpu_optimizer/dualgpuopt/gpu_commands.py`
+- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
+- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
 $END$

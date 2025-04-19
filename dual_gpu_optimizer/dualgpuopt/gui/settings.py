@@ -42,7 +42,11 @@ from dualgpuopt.services.state_service import StateService
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
     
+<<<<<<< HEAD
     def __init__(self, parent: ttk.Frame, gpus: List[GPU] = None, config_service = None, state_service: StateService = None, danger_style: str = "danger") -> None:
+=======
+    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service, state_service: StateService, danger_style: str = "danger") -> None:
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
         """
         Initialize the settings tab.
         

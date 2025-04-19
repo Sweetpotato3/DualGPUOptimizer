@@ -1,12 +1,18 @@
 ---
+<<<<<<< HEAD
 description: Documents data flow between components for GPU resource management and optimization systems
 globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/metrics/**/*.py
+=======
+description: Specifications for data flow between GPU optimization components, GPU monitoring, and performance metrics
+globs: **/services/**,**/gpu_info.py,**/metrics.py,**/telemetry.py,**/event_*.py
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
+<<<<<<< HEAD
 Primary Data Flow Components:
 
 1. GPU Telemetry Pipeline (telemetry.py -> event_bus.py)
@@ -63,5 +69,59 @@ OptimizationConfig {
   tensor_parallel: int
 }
 ```
+=======
+### Core Data Flows
+
+1. GPU Resource Data Flow
+- GPU metrics flow from telemetry collector through middleware pipeline to event bus
+- Event bus distributes GPU metrics to dashboard, optimizer, and monitoring components 
+- Real-time updates of utilization, memory, temperature delivered every 3 seconds
+- GPU state changes trigger reoptimization of memory splits and tensor fractions
+
+2. Optimization Parameter Flow  
+- Model configuration flows from launcher UI to optimizer service
+- Optimizer calculates GPU splits and generates framework-specific commands
+- Results flow back through event bus to UI components
+- Configuration changes trigger recalculation of optimization parameters
+
+3. Monitoring Metrics Flow
+- Prometheus metrics collector gathers batch latency and queue depth
+- Metrics flow through optional middleware to monitoring endpoints
+- GPU utilization history maintained for dashboard visualizations
+- Idle detection triggers system tray notifications after 5 minutes
+
+### Key Integration Points
+
+1. Event Bus Hub
+- Central event bus coordinates data flow between all components
+- Priority-based dispatch ensures critical updates processed first
+- Typed events provide structured data exchange
+- Support for both sync and async event handling
+
+2. State Management 
+- Centralized state service maintains application configuration
+- State changes broadcast via event bus to dependent components
+- Persistent storage of GPU configurations and optimization settings
+- Mock GPU mode toggles simulated data flow for testing
+
+3. Error Handling Flow
+- Errors flow through error service to logging and UI components
+- GPU errors trigger mock mode activation if needed
+- Critical errors force application restart
+- Warning notifications delivered through system tray
+
+4. Telemetry Pipeline
+- Raw GPU metrics collected via NVML interface
+- Middleware processes and enriches telemetry data
+- Event bus publishes metrics to subscribers
+- Dashboard maintains rolling 60-sample history
+
+### File Paths
+- `/services/event_bus.py`: Core event distribution
+- `/services/state_service.py`: State management
+- `/telemetry.py`: GPU metrics collection
+- `/gpu_info.py`: GPU resource monitoring
+- `/metrics.py`: Performance metrics
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
 $END$

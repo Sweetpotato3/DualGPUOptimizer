@@ -1,12 +1,18 @@
 ---
+<<<<<<< HEAD
 description: GPU memory distribution algorithms, tensor parallel split calculations, and memory allocation strategies for optimizing dual GPU setups
 globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
+=======
+description: GPU optimization algorithms for memory distribution, tensor parallel splits and allocation strategies
+globs: **/gpu_info.py,**/optimizer.py,**/ctx_size.py,**/layer_balance.py
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
+<<<<<<< HEAD
 ## Memory Distribution Algorithm
 - Split ratio calculation based on relative GPU capacities
 - Dynamic tensor parallel fraction computation:
@@ -47,5 +53,50 @@ Files: optimizer.py, gpu_info.py
 
 Importance Score: 95
 Rationale: Core GPU optimization algorithms directly impact model performance and hardware utilization
+=======
+### GPU Memory Distribution
+The optimizer implements specialized algorithms for distributing model layers and memory across multiple GPUs:
+
+1. **Split Calculation**  
+- Calculates optimal memory splits between GPUs based on total VRAM and model requirements
+- Generates comma-separated allocation strings used to configure GPU memory distribution
+- Accounts for GPU memory asymmetry when devices have different VRAM capacities
+
+2. **Tensor Parallel Splits** 
+- Calculates fractional memory allocation relative to highest capacity GPU
+- Optimizes tensor parallelism distribution based on available GPU memory ratios
+- Handles dynamic redistribution when GPU memory availability changes
+
+3. **Layer Balancing**
+- Profiles latency of model layers to identify fastest/slowest components
+- Redistributes layers across GPUs based on latency profiles and VRAM availability  
+- Optimizes layer placement to minimize cross-GPU communication
+
+4. **Context Length Optimization**
+- Implements heuristics for maximum safe context length calculation
+- Considers model parameters, precision bits, MOE factors
+- Reserves memory buffers to prevent OOM conditions
+
+### Memory Allocation Strategy
+The system employs smart allocation policies:
+
+1. **Dynamic Memory Management**
+- Tracks real-time GPU memory utilization
+- Implements automatic retry logic for OOM errors
+- Clears GPU caches strategically to recover memory
+
+2. **Batch Processing**
+- Length-aware inference scheduling based on sequence lengths
+- Pluggable bucket policies for request grouping
+- Back-pressure mechanisms to limit queue depth
+
+File paths:
+```
+dual_gpu_optimizer/dualgpuopt/optimizer.py
+dual_gpu_optimizer/dualgpuopt/gpu_info.py 
+dual_gpu_optimizer/dualgpuopt/ctx_size.py
+dual_gpu_optimizer/dualgpuopt/layer_balance.py
+```
+>>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
 $END$
