@@ -1,5 +1,5 @@
 ---
-description: Defines GPU memory management, tensor splitting, and optimization algorithms for dual GPU model execution
+description: Handles GPU memory optimization, tensor parallelism, and memory allocation strategies
 globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
 alwaysApply: false
 ---
@@ -7,44 +7,51 @@ alwaysApply: false
 
 # gpu-optimization-algorithms
 
-### GPU Memory Distribution
-`optimizer.py`:
-- Calculates optimal memory splits between GPUs based on total VRAM
-- Determines tensor parallel fractions for model layer distribution
-- Generates environment configurations for CUDA/NCCL memory allocation
-- Importance: 95
+## Memory Distribution Algorithm
+The optimizer implements GPU memory distribution through tensor parallelism calculation and split ratios:
 
-### Context Size Management
-`ctx_size.py`:
-- Computes maximum safe context length for models
-- Adjusts context windows based on:
-  - Available GPU memory
-  - Model parameter count
-  - Precision settings (FP16/BF16)
-- Importance: 90
+```python
+- Memory split calculation based on total available VRAM across GPUs
+- Tensor parallel size determination using GPU count and model requirements  
+- Dynamic allocation balancing based on GPU capabilities
+```
 
-### Layer Balancing
-`layer_balance.py`:
-- Redistributes model layers across dual GPUs based on:
-  - Layer execution latency
-  - Memory requirements
-  - Communication overhead
-- Generates device mapping for optimal layer placement
-- Importance: 85
+File: dual_gpu_optimizer/dualgpuopt/optimizer.py
 
-### Memory Allocation Strategy 
-`gpu_info.py`:
-- Probes GPU memory allocation patterns
-- Tracks memory fragmentation and usage
-- Implements parallel GPU memory scanning
-- Provides mock GPU data generation for testing
-- Importance: 80
+## Layer Distribution System 
+Implements latency-aware layer redistribution:
 
-### Key Integration Points
-- Memory distribution algorithms interface with NVML for real-time GPU metrics
-- Layer balancing coordinates with model frameworks for tensor redistribution
-- Context size calculations integrate with model loaders
-- Memory allocation interfaces with CUDA memory management
-- Importance: 75
+- Profiles execution time per layer across available GPUs
+- Redistributes layers based on memory usage and latency metrics
+- Generates device mapping JSON for layer assignments
+- Adapts distribution based on real-time GPU telemetry
+
+File: dual_gpu_optimizer/dualgpuopt/layer_balance.py
+
+## Context Size Calculator
+Calculates maximum safe context length:
+
+- Analyzes available GPU memory across devices
+- Considers model parameters (layers, heads, dimensions)
+- Accounts for mixed precision and optimization settings
+- Provides recommended context size per GPU configuration
+
+File: dual_gpu_optimizer/dualgpuopt/ctx_size.py
+
+## GPU Memory Monitoring
+Real-time GPU memory tracking and optimization:
+
+- Collects detailed metrics on memory usage and allocation
+- Monitors VRAM fragmentation and utilization 
+- Provides memory availability stats for optimization decisions
+- Tracks PCIe bandwidth usage between GPUs
+
+File: dual_gpu_optimizer/dualgpuopt/gpu_info.py
+
+Importance Scores:
+- Memory Distribution Algorithm: 95 (Core optimization logic)
+- Layer Distribution System: 90 (Critical for multi-GPU performance)
+- Context Size Calculator: 85 (Key for memory management)
+- GPU Memory Monitoring: 80 (Essential telemetry for optimization)
 
 $END$

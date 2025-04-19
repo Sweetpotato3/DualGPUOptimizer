@@ -1,50 +1,60 @@
 ---
-description: Documents core data flows between GPU optimization components, monitoring systems and state management
-globs: **/services/*,**/gpu_info.py,**/metrics.py,**/telemetry.py,**/event*.py
+description: Analyzes data flow patterns between components for GPU resource optimization and monitoring
+globs: **/services/*.py,**/gui/*.py,**/dualgpuopt/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The data flow architecture centers around several key pathways:
+Key data flows in the DualGPUOptimizer system:
 
-### Core Telemetry Flow
-- GPU metrics flow from `gpu_info.py` through telemetry collection middleware 
-- `telemetry.py` processes and enriches raw metrics
-- Metrics are published to event bus subscribers via `GPUMetricsEvent`
-- Dashboard and monitoring components consume metrics events
+### Core Event Bus Data Flow (Importance: 95)
+- Event bus handles typed events with priority-based dispatch
+- Critical data paths:
+  1. GPU telemetry data → Event bus → Dashboard components
+  2. Configuration changes → Event bus → Service components
+  3. Error events → Error service → UI notifications
+- File: `services/event_bus.py`
 
-### Configuration State Flow
-- `config_service.py` manages application settings
-- Changes trigger `config_changed` and `config_updated` events
-- State changes flow through `state_service.py` which publishes `state_changed` events
-- Components subscribe to relevant state/config events for updates
+### GPU Telemetry Pipeline (Importance: 90)
+- Telemetry collection generates metrics data:
+  - Memory usage, utilization, temperature, power
+  - PCIe bandwidth metrics
+  - Clock speeds and fan data
+- Data flows through middleware pipeline:
+  1. Raw GPU metrics → Telemetry middleware → Event bus
+  2. Event bus → Dashboard visualizations
+- Files: `telemetry.py`, `gui/dashboard.py`
 
-### Event Bus Architecture
-- Enhanced event bus (`event_bus.py`) handles typed events with priority dispatch
-- Events flow from producers through priority-based handler chains
-- Supports both sync and async event handlers
-- Security-critical events can be locked to specific subscribers
+### Configuration Data Flow (Importance: 85)
+- Config service manages bidirectional data flow:
+  1. Default configs → Load/validation → Active settings
+  2. User changes → Config validation → Storage
+  3. Config updates → Event notifications → UI components
+- File: `services/config_service.py`
 
-### Error Flow
-- Centralized error handling in `error_service.py`
-- GPU errors trigger special handling paths with mock mode options
-- Error events published to subscribers based on severity level
-- Error logging and UI notifications controlled by error service
+### State Management Flow (Importance: 80)
+- Centralized state service handles:
+  1. GPU state changes → State updates → UI components
+  2. User actions → Command execution → State mutations
+  3. State changes → Event propagation → Dependent components
+- File: `services/state_service.py`
 
-### Metrics Export Flow
-- Optional Prometheus metrics export pathway 
-- GPU telemetry data exported via configured endpoints
-- Fallback to no-op functions when Prometheus unavailable
-- Performance metrics collected and exported
+### Optimization Data Flow (Importance: 85)
+1. GPU Discovery:
+   - NVML detection → GPU capabilities → Memory splits
+2. Model Configuration:
+   - Model parameters → Context size calculation → GPU assignment
+3. Command Generation:
+   - GPU splits + Model config → Framework commands
+- Files: `optimizer.py`, `gpu_info.py`
 
-### Layer Distribution Flow
-- Layer execution profiling data collected
-- Redistribution decisions flow through optimization logic
-- Device mapping instructions published to execution components
-- Layer balance feedback flows back for refinement
-
-The architecture emphasizes event-driven communication between components with strong separation of data collection, processing and consumption pathways.
+### Batch Processing Pipeline (Importance: 75)
+- Smart batching data flow:
+  1. Inference requests → Length-based bucketing
+  2. Batched requests → GPU assignment
+  3. Execution results → Response aggregation
+- File: `batch/smart_batch.py`
 
 $END$

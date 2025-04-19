@@ -158,3 +158,57 @@ Critical Paths:
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION:
+---
+description: Use when documenting high-level structure of GPU optimization software focused on managing dual GPU configurations, generating optimization commands, handling telemetry, and providing real-time monitoring.
+globs: *.py,*.json
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+The DualGPUOptimizer implements specialized GPU optimization and monitoring capabilities across several core domains:
+
+## GPU Management and Optimization
+- GPU discovery and monitoring system collects detailed metrics including memory usage, utilization, power consumption, clock speeds
+- Dynamic memory split calculator determines optimal tensor distribution across GPUs
+- Latency-aware layer balancing system redistributes model layers for optimal performance
+- Custom mixed precision policies for handling GPU operations
+
+## Real-time Telemetry
+- Telemetry collection pipeline gathers GPU metrics through NVML integration
+- Event-driven dashboard displays live GPU utilization, memory usage, temperature data
+- Historical performance graphing with GPU-specific color coding
+- Idle detection system for monitoring GPU utilization patterns
+
+## Model Execution Optimization 
+- Framework-specific command generators for llama.cpp and vLLM
+- Smart batching system groups inference requests based on input length
+- Bucket policies for managing request queues based on token ratios
+- Automatic retry mechanism for handling GPU memory overflow
+
+## Configuration Management
+- GPU overclocking profiles with save/restore capability
+- Environment variable management for CUDA and NCCL configurations
+- Model preset system for quick configuration of common models
+- Theme and appearance customization with GPU-specific color schemes
+
+Key Files:
+- `dualgpuopt/optimizer.py`: Core GPU optimization logic
+- `dualgpuopt/telemetry.py`: Real-time GPU metrics collection
+- `dualgpuopt/batch/smart_batch.py`: Length-aware inference batching
+- `dualgpuopt/gui/dashboard.py`: Real-time monitoring interface
+
+$END$
+END SPECIFICATION

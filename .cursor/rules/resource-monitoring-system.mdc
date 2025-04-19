@@ -1,6 +1,6 @@
 ---
-description: Resource monitoring system for tracking GPU telemetry, metrics collection, and alert mechanisms
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gui/dashboard.py,**/gui/event_dashboard.py
+description: Specification for GPU resource monitoring, telemetry collection, and alert systems
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py,**/gpu_info.py
 alwaysApply: false
 ---
 
@@ -8,49 +8,54 @@ alwaysApply: false
 # resource-monitoring-system
 
 ### GPU Telemetry Collection
-- Collects detailed GPU metrics including:
-  - Utilization percentage
-  - Memory usage and availability
-  - Temperature readings
-  - Power consumption 
-  - Fan speeds
-  - Clock speeds
-- Implements middleware pipeline pattern for processing telemetry data
-- Publishes metrics to event bus for real-time dashboard updates
+Middleware-based telemetry system that collects comprehensive GPU metrics:
+- Utilization rates across processing, memory, encoder and decoder
+- Memory allocation and free space tracking
+- Temperature monitoring with thermal alerts
+- Power consumption tracking
+- Fan speed monitoring
+- PCIe bandwidth utilization
+- Clock speeds for graphics and memory
 
-### Idle Detection System
-- Monitors GPU utilization patterns
-- Triggers notifications when GPUs are idle for 5+ minutes
-- Configurable idle thresholds and alert settings
-- System tray integration for status visibility
+Implementation Score: 95 - Core business logic for GPU monitoring
 
-### Metrics Dashboard
-- Real-time visualization of GPU metrics
-- Historical utilization graphs with configurable time windows
-- Per-GPU metrics display including:
-  - Temperature monitoring with warning thresholds
-  - Power usage tracking
-  - Memory allocation visualization
-  - PCIe bandwidth usage
+### Real-time Metrics Processing Pipeline
+Multi-stage pipeline for processing GPU telemetry:
+- EventBusMiddleware publishes metrics to event subscribers
+- LoggingMiddleware records metric history
+- Configurable sampling intervals for different metrics
+- Buffered metric history for trend analysis
 
-### Event-Driven Architecture
-- High-priority subscription to GPUMetricsEvent
-- Maintains history of GPU utilization data
-- Dynamic UI updates based on detected GPUs
-- Real-time metrics refresh for active monitoring
+Implementation Score: 85 - Critical data processing workflow
 
-### Prometheus Integration
-- Optional metrics export to Prometheus
-- Custom GPU metric collectors
-- Fallback to internal tracking when Prometheus unavailable
-- Configuration options for metric export intervals
+### Alert Management System
+Proactive monitoring system with configurable alerts:
+- GPU idle detection after 5 minutes of low utilization
+- Temperature threshold monitoring
+- Memory utilization warnings
+- Power consumption alerts
+- System tray notifications for critical events
 
-### Alert System
-- Configurable alert thresholds for:
-  - Temperature limits
-  - Memory usage caps
-  - Extended idle periods
-  - Power consumption warnings
-- Alert delivery through system tray notifications
+Implementation Score: 80 - Important user notification system
+
+### Dashboard Visualization
+Real-time visualization of GPU metrics:
+- GPU utilization history graphs
+- Memory usage tracking
+- Temperature and power monitoring
+- PCIe bandwidth visualization
+- Distinct color coding per GPU
+- Auto-scaling axis for different metrics
+
+Implementation Score: 75 - Key data presentation
+
+### Mock GPU Support
+Testing infrastructure for GPU monitoring:
+- Simulated GPU metrics generation
+- Configurable mock GPU specifications
+- Reproducible testing scenarios
+- Event simulation for alerts
+
+Implementation Score: 65 - Supporting development functionality
 
 $END$

@@ -1,5 +1,5 @@
 ---
-description: Documents how LLM model execution is orchestrated across GPUs including command generation and resource management
+description: Defines execution workflows for LLM models including command generation, GPU allocation and runtime optimization
 globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
@@ -7,49 +7,42 @@ alwaysApply: false
 
 # model-execution-flow
 
-Key components of the model execution flow:
-
 ## Command Generation
-- `llama_command()` generates execution commands for llama.cpp models with:
-  - GPU memory split configuration
-  - Context size settings
-  - Model path and parameters
+The optimizer generates framework-specific commands for model execution:
 
-- `vllm_command()` generates commands for vLLM server execution with:
-  - Tensor parallel configuration 
-  - GPU device mapping
-
-## Batch Processing
-The SmartBatcher handles asynchronous inference scheduling:
-- Groups requests by sequence length into buckets
-- Implements back-pressure via queue depth limits
-- Handles OOM errors by clearing GPU cache and retrying
-- Supports configurable bucketing policies (power-of-2, token ratio)
+- llama.cpp commands include GPU memory split configuration and context size parameters
+- vLLM commands specify tensor parallel size and GPU allocation settings
+- Environment configuration files are generated with CUDA and NCCL settings
 
 ## Layer Distribution
-Adaptive layer distribution across GPUs:
+Implements latency-aware layer redistribution across GPUs:
 - Profiles layer execution times
-- Redistributes layers based on latency metrics
-- Generates device mapping JSON for layer placement
-- Handles mixed precision policies per layer
+- Balances GPU memory usage while minimizing latency impact 
+- Generates device mapping JSON for layer assignments
+- Considers factors like number of layers, KV heads, head dimensions
 
-## GPU Resource Management
-- Calculates tensor fractions based on available GPU memory
-- Creates environment configurations for CUDA/NCCL
-- Provides mock GPU mode for testing
-- Monitors GPU metrics during execution
+## Batch Processing
+SmartBatcher provides asynchronous request batching:
+- Groups inference requests by input length using bucketing policies
+- Implements back-pressure to prevent memory overflow
+- Handles GPU OOM errors with automatic retry after cache clearing
 
 ## Command Pattern Implementation
-Commands for GPU operations:
-- ApplyOverclockCommand: Manages GPU overclocking settings
-- EnableMockGpuCommand: Controls mock GPU mode
-- Command history and undo/redo support
-- Event publishing for command execution results
+Commands handle GPU operations with undo support:
+- ApplyOverclockCommand manages GPU overclocking settings
+- EnableMockGpuCommand toggles mock GPU mode
+- Command results publish to event bus for monitoring
 
-Key files:
-- `optimizer.py`: Command generation and resource allocation
-- `batch/smart_batch.py`: Batch processing implementation
-- `commands/gpu_commands.py`: GPU operation commands
-- `layer_balance.py`: Layer distribution logic
+## Key File Paths
+- `dualgpuopt/optimizer.py`: Command generation and optimization
+- `dualgpuopt/batch/smart_batch.py`: Batching implementation
+- `dualgpuopt/commands/gpu_commands.py`: GPU operation commands
+- `dualgpuopt/layer_balance.py`: Layer distribution logic
+
+Importance Scores:
+- Command Generation: 95 - Core execution workflow
+- Layer Distribution: 90 - Critical for multi-GPU performance
+- Batch Processing: 85 - Key inference optimization
+- Command Pattern: 75 - Important operational control
 
 $END$
