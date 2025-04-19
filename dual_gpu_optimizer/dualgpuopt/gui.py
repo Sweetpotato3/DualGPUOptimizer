@@ -10,6 +10,7 @@ import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 import colorsys
 import sys
+import logging
 
 from dualgpuopt import gpu_info, optimizer, configio
 from dualgpuopt.telemetry import start_stream
@@ -75,45 +76,93 @@ class DualGpuApp(ttk.Frame):
     PAD = 8
 
     def __init__(self, master: tk.Tk) -> None:
-        # Load config before initializing UI
-        self.cfg = configio.load_cfg()
+        super().__init__(master)
+        self.master = master
+        self.logger = logging.getLogger("dualgpuopt.gui")
         
-        # Apply theme to root window before creating widgets
-        self._apply_theme(master)
-        
-        super().__init__(master, padding=self.PAD)
-        self.model_var = tk.StringVar(value="dolphin‑2.5‑mixtral‑8x7b.Q3_K_M.gguf")
-        self.ctx_var = tk.IntVar(value=65536)
-        self.theme_var = tk.StringVar(value=self.cfg["theme"])
-        self.runner = None
-        self.tele_hist = []  # List of GPU load tuples
-
-        # Load presets
-        preset_path = pathlib.Path(__file__).parent / "presets" / "mixtral.json"
-        self.presets = json.load(preset_path.open())
-        
-        if self.cfg["last_model"]:
-            self.model_var.set(self.cfg["last_model"])
-
-        self.gpus = gpu_info.probe_gpus()
-        if len(self.gpus) < 2:
-            messagebox.showerror("Error", "Need ≥ 2 GPUs – aborting")
-            master.destroy()
-            return
+        try:
+            # Load config before initializing UI
+            self.cfg = configio.load_cfg()
             
-        # Generate colors for GPU visualization
-        self.gpu_colors = generate_colors(len(self.gpus))
+            # Apply theme to root window before creating widgets
+            self._apply_theme(master)
+            
+            self.model_var = tk.StringVar(value="dolphin‑2.5‑mixtral‑8x7b.Q3_K_M.gguf")
+            self.ctx_var = tk.IntVar(value=65536)
+            self.theme_var = tk.StringVar(value=self.cfg["theme"])
+            self.runner = None
+            self.tele_hist = []  # List of GPU load tuples
 
-        self._build_ui()
-        self._refresh_outputs()
-        
-        # Setup telemetry
-        self.tele_q = start_stream(1.0)
-        self.after(1000, self._tick_chart)
-        
-        # Setup tray
-        init_tray(self)
+            # Load presets
+            preset_path = pathlib.Path(__file__).parent / "presets" / "mixtral.json"
+            self.presets = json.load(preset_path.open())
+            
+            if self.cfg["last_model"]:
+                self.model_var.set(self.cfg["last_model"])
+
+            self.gpus = gpu_info.probe_gpus()
+            if len(self.gpus) < 2:
+                self.show_error("Need ≥ 2 GPUs – aborting")
+                master.destroy()
+                return
+            
+            # Generate colors for GPU visualization
+            self.gpu_colors = generate_colors(len(self.gpus))
+
+            self.init_ui()
+            self._refresh_outputs()
+            
+            # Setup telemetry
+            self.tele_q = start_stream(1.0)
+            self.after(1000, self._tick_chart)
+            
+            # Setup tray
+            init_tray(self)
+        except Exception as err:
+            self.show_error(f"Error initializing application: {err}")
     
+    def show_error(self, message, title="Error"):
+        """Show an error dialog and log the error."""
+        self.logger.error(message)
+        messagebox.showerror(title, message)
+        
+        # Add a simple interface with mock mode option if this is a GPU detection error
+        if "GPU detection failed" in message or "NVML" in message:
+            frame = ttk.Frame(self)
+            frame.pack(padx=20, pady=20, fill="both", expand=True)
+            
+            ttk.Label(frame, text="GPU detection failed. Would you like to:").pack(pady=10)
+            
+            # Mock mode button
+            mock_btn = ttk.Button(frame, text="Launch in Mock Mode", 
+                               command=self.enable_mock_mode)
+            mock_btn.pack(pady=10)
+            
+            # Exit button
+            exit_btn = ttk.Button(frame, text="Exit", 
+                               command=self.master.destroy)
+            exit_btn.pack(pady=10)
+            
+    def enable_mock_mode(self):
+        """Enable mock mode and restart the application."""
+        import os
+        import sys
+        
+        # Set environment variable for mock mode
+        os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+        
+        # Clear the current UI
+        for widget in self.winfo_children():
+            widget.destroy()
+            
+        # Try to initialize with mock GPUs
+        try:
+            self.gpus = gpu_info.probe_gpus()
+            self.init_ui()
+        except Exception as e:
+            self.show_error(f"Failed to initialize even in mock mode: {e}")
+            self.master.destroy()
+
     def _apply_theme(self, root: tk.Tk) -> None:
         """Apply selected theme to the application."""
         theme_name = self.cfg["theme"]
@@ -157,7 +206,7 @@ class DualGpuApp(ttk.Frame):
                 # Fall back to default theme if specified one not available
                 pass
 
-    def _build_ui(self) -> None:
+    def init_ui(self) -> None:
         self.columnconfigure(0, weight=1)
         
         # Use notebook for tabs
@@ -483,10 +532,20 @@ def run_app() -> None:
     root = tk.Tk()
     root.title("Dual‑GPU Optimiser")
     root.minsize(800, 480)
+    
     try:
-        ttk.Style().theme_use("clam")
-    except tk.TclError:
-        # Fall back to default theme if clam not available
-        pass
-    DualGpuApp(root).pack(fill="both", expand=True)
-    root.mainloop() 
+        # Set application icon if available
+        try:
+            icon_path = pathlib.Path(__file__).parent / "assets" / "app_icon.ico"
+            if icon_path.exists():
+                root.iconbitmap(icon_path)
+        except Exception as icon_err:
+            # Non-critical error, just log it
+            logging.getLogger("dualgpuopt.gui").warning(f"Could not load application icon: {icon_err}")
+        
+        app = DualGpuApp(root)
+        app.pack(fill="both", expand=True)
+        root.mainloop()
+    except Exception as e:
+        logging.getLogger("dualgpuopt.gui").error(f"Application error: {e}", exc_info=True)
+        messagebox.showerror("Error", f"An error occurred: {e}\n\nCheck the logs for more details.") 
