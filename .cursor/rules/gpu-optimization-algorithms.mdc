@@ -1,38 +1,60 @@
 ---
-description: GPU memory management and tensor parallelism optimization algorithms for multi-GPU LLM deployments
-globs: **/optimizer.py,**/gpu_info.py
+description: GPU memory distribution and optimization algorithms for ML model execution across multiple GPUs
+globs: **/gpu_info.py,**/optimizer.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm (Importance: 95)
-- Tensor fraction calculation based on relative GPU memory capacities
-- Each GPU's memory allocation weighted against highest capacity GPU
-- Automated tensor parallel size determination for vLLM deployments
-- Fixed 90% memory utilization policy for vLLM framework
+## Memory Distribution Algorithm
+**Importance Score: 95**
 
-```python
-def tensor_fractions(gpus):
-    top = max(g.mem_total for g in gpus)
-    return [round(g.mem_total / top, 3) for g in gpus]
-```
+Core algorithm for distributing model memory across multiple GPUs:
 
-## GPU Resource Validation (Importance: 85)
-- Enforces minimum 2-GPU requirement for optimization
-- Validates memory override values as integers
-- Supports dynamic GPU memory overrides through environment variables
-- Implements mock GPU mode with simulated 3090/3080 configurations
+1. GPU Memory Collection
+- Collects detailed GPU memory information using NVML
+- Tracks total memory, free memory, and utilization per GPU
+- File: `gpu_info.py`
 
-## Memory Split Optimization (Importance: 90)
-- Custom memory splitting algorithm for model distribution
-- Calculates optimal splits based on available VRAM across GPUs
-- Handles framework-specific memory requirements (llama.cpp vs vLLM)
-- Generates optimized deployment commands with memory parameters
+2. Tensor Parallel Split Calculation
+- Calculates optimal tensor fractions based on available GPU memory sizes
+- Generates memory split strings for model distribution
+- File: `optimizer.py`
 
-Key Files:
-- dual_gpu_optimizer/dualgpuopt/optimizer.py
-- dual_gpu_optimizer/dualgpuopt/gpu_info.py
+## Real-time GPU Telemetry
+**Importance Score: 85**
+
+Telemetry collection system for runtime optimization:
+
+1. Metrics Collection
+- Continuously polls GPU metrics including:
+  - Memory usage
+  - PCIe throughput
+  - Temperature
+  - Power consumption
+  - Clock speeds
+- File: `telemetry.py`
+
+2. Data Streaming
+- Implements queue-based streaming of telemetry data
+- Provides real-time GPU utilization data for optimization decisions
+- File: `telemetry.py`
+
+## Command Generation System
+**Importance Score: 90**
+
+Optimization command generation for ML frameworks:
+
+1. Framework-Specific Commands
+- Generates optimized commands for:
+  - llama.cpp with memory splits
+  - vLLM with tensor parallel sizes
+- File: `optimizer.py`
+
+2. Environment Configuration
+- Produces environment files with GPU-specific settings
+- Configures tensor parallel parameters based on available GPU memory
+- File: `optimizer.py`
 
 $END$

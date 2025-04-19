@@ -17,6 +17,19 @@ from dualgpuopt.telemetry import start_stream
 from dualgpuopt.runner import Runner
 from dualgpuopt.tray import init_tray
 
+# Import ttkthemes for better theme support
+try:
+    from ttkthemes import ThemedTk, ThemedStyle
+    TTKTHEMES_AVAILABLE = True
+except ImportError:
+    TTKTHEMES_AVAILABLE = False
+    
+# Import ttkwidgets for additional widgets if available
+try:
+    import ttkwidgets
+    TTKWIDGETS_AVAILABLE = True
+except ImportError:
+    TTKWIDGETS_AVAILABLE = False
 
 # Pre-defined colors for up to 8 GPUs
 GPU_COLORS = [
@@ -30,31 +43,60 @@ GPU_COLORS = [
     "#ffffff",  # White
 ]
 
-# Theme definitions
+# Modern theme definitions using Material Design palette
 THEMES = {
     "dark": {
-        "bg": "#2d2d2d",
-        "text": "#ffffff",
-        "chart_bg": "#202020",
-        "highlight": "#0078d7",
-        "button": "#3d3d3d",
-        "entry": "#3d3d3d",
-        "ttk_theme": "clam"
+        "bg": "#263238",  # Material Blue Grey 900
+        "text": "#eceff1",  # Material Blue Grey 50
+        "chart_bg": "#1a2327", # Darker shade for contrast
+        "highlight": "#42a5f5",  # Material Blue 400
+        "button": "#37474f",  # Material Blue Grey 800
+        "entry": "#37474f",  # Material Blue Grey 800
+        "border": "#546e7a",  # Material Blue Grey 600
+        "accent": "#64ffda",  # Material Teal A200
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
     },
     "light": {
-        "bg": "#f0f0f0",
-        "text": "#000000",
-        "chart_bg": "#e0e0e0",
-        "highlight": "#007acc",
-        "button": "#e0e0e0",
-        "entry": "#ffffff",
-        "ttk_theme": "clam"
+        "bg": "#eceff1",  # Material Blue Grey 50
+        "text": "#263238",  # Material Blue Grey 900
+        "chart_bg": "#cfd8dc",  # Material Blue Grey 100
+        "highlight": "#2196f3",  # Material Blue 500
+        "button": "#e0e0e0",  # Material Grey 300
+        "entry": "#ffffff",  # White
+        "border": "#b0bec5",  # Material Blue Grey 200
+        "accent": "#00bfa5",  # Material Teal A700
+        "ttk_theme": "arc" if TTKTHEMES_AVAILABLE else "clam"
     },
     "system": {
         # Will use system default theme
         "ttk_theme": None  # Use default
+    },
+    "green": {
+        "bg": "#1b5e20",  # Dark Green
+        "text": "#f1f8e9",  # Light Green 50
+        "chart_bg": "#143718",  # Darker Green
+        "highlight": "#66bb6a",  # Green 400
+        "button": "#2e7d32",  # Green 800
+        "entry": "#2e7d32",  # Green 800
+        "border": "#43a047",  # Green 600
+        "accent": "#b9f6ca",  # Green A100
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
+    },
+    "blue": {
+        "bg": "#0d47a1",  # Dark Blue
+        "text": "#e3f2fd",  # Light Blue 50
+        "chart_bg": "#0a3880",  # Darker Blue
+        "highlight": "#42a5f5",  # Blue 400
+        "button": "#1565c0",  # Blue 800
+        "entry": "#1565c0",  # Blue 800
+        "border": "#1976d2",  # Blue 700
+        "accent": "#80d8ff",  # Light Blue A100
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
     }
 }
+
+# Available ttk themes from ttkthemes
+AVAILABLE_TTK_THEMES = ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
 
 
 def generate_colors(count: int) -> list[str]:
@@ -76,20 +118,41 @@ class DualGpuApp(ttk.Frame):
     PAD = 8
 
     def __init__(self, master: tk.Tk) -> None:
+        # Load config before initializing UI
+        self.cfg = configio.load_cfg()
+        
+        # Convert root window to ThemedTk if available
+        if TTKTHEMES_AVAILABLE and not isinstance(master, ThemedTk):
+            try:
+                # Store attributes from current master
+                geometry = master.geometry()
+                title = master.title()
+                
+                # Create new ThemedTk window
+                new_master = ThemedTk(theme=self.cfg.get("ttk_theme", "equilux"))
+                new_master.geometry(geometry)
+                new_master.title(title)
+                
+                # Replace master
+                master.destroy()
+                master = new_master
+            except Exception as e:
+                # Fall back to regular Tk if conversion fails
+                print(f"Warning: Failed to initialize ThemedTk: {e}")
+        
+        # Initialize frame
         super().__init__(master)
         self.master = master
         self.logger = logging.getLogger("dualgpuopt.gui")
         
         try:
-            # Load config before initializing UI
-            self.cfg = configio.load_cfg()
-            
             # Apply theme to root window before creating widgets
             self._apply_theme(master)
             
             self.model_var = tk.StringVar(value="dolphin‑2.5‑mixtral‑8x7b.Q3_K_M.gguf")
             self.ctx_var = tk.IntVar(value=65536)
             self.theme_var = tk.StringVar(value=self.cfg["theme"])
+            self.ttk_theme_var = tk.StringVar(value=self.cfg.get("ttk_theme", ""))
             self.runner = None
             self.tele_hist = []  # List of GPU load tuples
 
@@ -184,26 +247,115 @@ class DualGpuApp(ttk.Frame):
             # Configure colors
             if "bg" in theme:
                 root.configure(bg=theme["bg"])
-                style = ttk.Style()
+                
+                # Create or get style
+                if TTKTHEMES_AVAILABLE and hasattr(root, "set_theme"):
+                    # For ThemedTk
+                    if ttk_theme in AVAILABLE_TTK_THEMES:
+                        try:
+                            root.set_theme(ttk_theme)
+                            style = root.style
+                        except Exception:
+                            style = ttk.Style()
+                    else:
+                        style = ttk.Style()
+                elif TTKTHEMES_AVAILABLE:
+                    # For regular Tk with ThemedStyle
+                    style = ThemedStyle(root)
+                    if ttk_theme in AVAILABLE_TTK_THEMES:
+                        try:
+                            style.set_theme(ttk_theme)
+                        except Exception:
+                            pass
+                else:
+                    # Regular Style
+                    style = ttk.Style()
+                
+                # Configure style for widgets
                 style.configure(".", background=theme["bg"], foreground=theme["text"])
-                style.configure("TButton", background=theme["button"])
-                style.configure("TEntry", fieldbackground=theme["entry"])
+                style.configure("TButton", 
+                                background=theme["button"], 
+                                foreground=theme["text"],
+                                bordercolor=theme.get("border", theme["button"]))
+                
+                style.map("TButton",
+                         background=[('active', theme.get("highlight"))],
+                         relief=[('pressed', 'sunken')])
+                
+                # Configure entry fields
+                style.configure("TEntry", 
+                               fieldbackground=theme["entry"],
+                               foreground=theme["text"],
+                               bordercolor=theme.get("border", theme["entry"]))
+                
+                # Configure other widget types
                 style.configure("TFrame", background=theme["bg"])
+                style.configure("TLabelframe", background=theme["bg"], foreground=theme["text"])
+                style.configure("TLabelframe.Label", background=theme["bg"], foreground=theme["text"])
                 style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
+                style.configure("TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0])
+                style.configure("TNotebook.Tab", background=theme["button"], 
+                               foreground=theme["text"], padding=[10, 2])
+                
+                # Map states for notebook tabs
+                style.map("TNotebook.Tab",
+                         background=[("selected", theme.get("highlight"))],
+                         foreground=[("selected", theme["bg"])])
+                
+                # Set progressbar colors
+                style.configure("Horizontal.TProgressbar", 
+                               background=theme.get("accent", theme.get("highlight")),
+                               troughcolor=theme.get("chart_bg", "#202020"))
+                
+                # Set canvas colors 
+                self.chart_bg = theme.get("chart_bg", "#202020")
                 
                 # Set text widget colors via root options
                 root.option_add("*Text.Background", theme["entry"])
                 root.option_add("*Text.Foreground", theme["text"])
+                root.option_add("*Text.selectBackground", theme.get("highlight"))
+                root.option_add("*Text.selectForeground", theme.get("bg"))
                 
-                # Set canvas colors
-                self.chart_bg = theme.get("chart_bg", "#202020")
+                # Set combobox colors
+                style.map('TCombobox', 
+                         fieldbackground=[('readonly', theme["entry"])],
+                         selectbackground=[('readonly', theme.get("highlight"))])
+                
+                # Update notebook styling for better appearance
+                notebook_style = ttk.Style()
+                notebook_style.layout("TNotebook", [
+                    ("TNotebook.client", {"sticky": "nswe"})
+                ])
+                notebook_style.layout("TNotebook.Tab", [
+                    ("TNotebook.tab", {
+                        "sticky": "nswe",
+                        "children": [
+                            ("TNotebook.padding", {
+                                "side": "top",
+                                "sticky": "nswe",
+                                "children": [
+                                    ("TNotebook.label", {"side": "top", "sticky": ""})
+                                ]
+                            })
+                        ]
+                    })
+                ])
         
         # Apply ttk theme if specified
-        if ttk_theme:
+        if ttk_theme and not TTKTHEMES_AVAILABLE:
             try:
                 ttk.Style().theme_use(ttk_theme)
             except tk.TclError:
                 # Fall back to default theme if specified one not available
+                pass
+                
+        # Apply font for better readability
+        default_font = ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
+        for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", "TCombobox"]:
+            try:
+                style = ttk.Style()
+                style.configure(widget, font=default_font)
+            except tk.TclError:
                 pass
 
     def init_ui(self) -> None:
@@ -263,16 +415,29 @@ class DualGpuApp(ttk.Frame):
         appearance_frame.columnconfigure(1, weight=1)
         
         # Theme selection
-        ttk.Label(appearance_frame, text="Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
         theme_combo = ttk.Combobox(
             appearance_frame, 
             textvariable=self.theme_var,
-            values=["dark", "light", "system"],
+            values=list(THEMES.keys()),
             width=10,
             state="readonly"
         )
         theme_combo.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
+        
+        # Add TTK theme selection if ttkthemes is available
+        if TTKTHEMES_AVAILABLE and AVAILABLE_TTK_THEMES:
+            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+            ttk_theme_combo = ttk.Combobox(
+                appearance_frame,
+                textvariable=self.ttk_theme_var,
+                values=AVAILABLE_TTK_THEMES,
+                width=10,
+                state="readonly"
+            )
+            ttk_theme_combo.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
+            ttk_theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
         
         ttk.Button(
             appearance_frame, 
@@ -391,7 +556,7 @@ class DualGpuApp(ttk.Frame):
         
         # ------ Monitoring Settings Section ------
         monitor_frame = ttk.LabelFrame(scrollable_frame, text="Monitoring")
-        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=2)
+        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=3)
         monitor_frame.columnconfigure(1, weight=1)
         
         self.interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
@@ -432,7 +597,7 @@ class DualGpuApp(ttk.Frame):
         
         # ------ Advanced Settings Section ------
         advanced_frame = ttk.LabelFrame(scrollable_frame, text="Advanced Settings")
-        advanced_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=3)
+        advanced_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=4)
         advanced_frame.columnconfigure(0, weight=1)
         
         # GPU Memory Override
@@ -466,7 +631,7 @@ class DualGpuApp(ttk.Frame):
         
         # ------ Save Settings Button ------
         save_frame = ttk.Frame(scrollable_frame)
-        save_frame.grid(row=4, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
+        save_frame.grid(row=5, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
         
         ttk.Button(
             save_frame,
@@ -490,6 +655,11 @@ class DualGpuApp(ttk.Frame):
         """Apply the selected theme immediately and save to config."""
         new_theme = self.theme_var.get()
         self.cfg["theme"] = new_theme
+        
+        # Save TTK theme if available
+        if TTKTHEMES_AVAILABLE and hasattr(self, 'ttk_theme_var'):
+            self.cfg["ttk_theme"] = self.ttk_theme_var.get()
+        
         configio.save_cfg(self.cfg)
         
         # Apply theme immediately instead of requiring restart
@@ -1296,23 +1466,37 @@ class DualGpuApp(ttk.Frame):
 
 
 def run_app() -> None:
-    root = tk.Tk()
-    root.title("Dual‑GPU Optimiser")
-    root.minsize(800, 480)
+    """Create and run the app."""
+    if TTKTHEMES_AVAILABLE:
+        root = ThemedTk(theme="equilux")
+        root.title("Dual GPU Optimizer")
+    else:
+        root = tk.Tk()
+        root.title("Dual GPU Optimizer")
     
+    # Set icon if available
     try:
-        # Set application icon if available
-        try:
-            icon_path = pathlib.Path(__file__).parent / "assets" / "app_icon.ico"
-            if icon_path.exists():
-                root.iconbitmap(icon_path)
-        except Exception as icon_err:
-            # Non-critical error, just log it
-            logging.getLogger("dualgpuopt.gui").warning(f"Could not load application icon: {icon_err}")
-        
-        app = DualGpuApp(root)
-        app.pack(fill="both", expand=True)
-        root.mainloop()
-    except Exception as e:
-        logging.getLogger("dualgpuopt.gui").error(f"Application error: {e}", exc_info=True)
-        messagebox.showerror("Error", f"An error occurred: {e}\n\nCheck the logs for more details.") 
+        icon_path = pathlib.Path(__file__).parent / "assets" / "app_icon.ico"
+        if icon_path.exists():
+            root.iconbitmap(icon_path)
+    except Exception:
+        pass  # Ignore icon errors
+    
+    # Set window size and position
+    root.geometry("800x600")
+    root.minsize(640, 480)
+    
+    # Center window on screen
+    screen_width = root.winfo_screenwidth()
+    screen_height = root.winfo_screenheight()
+    x = (screen_width - 800) // 2
+    y = (screen_height - 600) // 2
+    root.geometry(f"800x600+{x}+{y}")
+    
+    app = DualGpuApp(root)
+    app.pack(fill="both", expand=True)
+    
+    # Make it respond to window close
+    root.protocol("WM_DELETE_WINDOW", root.destroy)
+    
+    root.mainloop() 

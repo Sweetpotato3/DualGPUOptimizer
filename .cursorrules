@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Creates high-level overview documentation for GPU optimization systems focused on dual-GPU configurations and AI model deployment, specifically when dealing with GPU resource management and model deployment optimization
+description: Creates high-level documentation for dual GPU optimization systems focused on machine learning workload distribution and GPU resource management
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,49 +18,37 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for AI model deployment across multiple GPUs.
+The Dual GPU Optimizer manages GPU resources and optimizes workload distribution across multiple GPUs for machine learning applications. The system consists of several key business components:
 
-Core Domain Components:
+### Core GPU Management (Importance: 95)
+- Real-time GPU telemetry collection and monitoring
+- Automated detection of GPU specifications and capabilities
+- Dynamic workload distribution calculations based on GPU memory and utilization
+- Located in: `dual_gpu_optimizer/dualgpuopt/gpu_info.py`, `dual_gpu_optimizer/dualgpuopt/telemetry.py`
 
-1. GPU Resource Management (Importance: 95)
-- Multi-GPU visualization and monitoring system
-- Historical GPU load tracking in 2-minute windows
-- Dynamic GPU memory override capabilities
-- Minimum 2 GPU requirement with support for up to 8 GPUs
-- Real-time utilization monitoring with configurable thresholds
+### Optimization Engine (Importance: 90)
+- Calculates optimal tensor fractions for GPU memory distribution
+- Generates environment configurations for ML frameworks
+- Produces optimized command-line arguments for model execution
+- Located in: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-2. Model Deployment Optimization (Importance: 90)
-- Preset configurations for AI models (e.g., Mixtral)
-- Context size management and GPU split configurations
-- Dual framework support: llama.cpp and vLLM
-- Tensor parallelism calculations based on GPU memory ratios
-- Framework-specific command generation with memory splits
+### System Monitoring (Importance: 85)
+- GPU idle detection with configurable thresholds
+- System tray integration for real-time status monitoring 
+- Utilization alerts when GPUs remain underutilized
+- Located in: `dual_gpu_optimizer/dualgpuopt/tray.py`
 
-3. Performance Monitoring System (Importance: 85)
-- Real-time GPU metrics tracking via NVML
-- PCIe bandwidth monitoring (RX/TX)
-- Utilization alerts based on configurable thresholds
-- Idle detection logic for resource optimization
-- Continuous metric streaming system
+### ML Framework Integration (Importance: 80)
+- Specialized command generation for llama.cpp and vLLM
+- GPU memory split calculations for optimal model deployment
+- Dynamic tensor parallel size configuration
+- Located in: `simple_launcher.py`
 
-4. Resource Optimization Engine (Importance: 80)
-- Memory splitting algorithms for model distribution
-- GPU-specific environment configurations
-- Tensor fraction calculations for relative memory distribution
-- Alert system for underutilized resources
-- Custom parameter calculation for multi-GPU deployments
-
-Key Business Rules:
-- Dual GPU minimum requirement
-- Memory utilization policy at 90% for vLLM
-- Alert thresholds between 5-80%
-- Alert duration settings: 60-900 seconds
-- Idle detection threshold at 30% utilization
-
-Critical Files:
-- dual_gpu_optimizer/dualgpuopt/optimizer.py
-- dual_gpu_optimizer/dualgpuopt/gpu_info.py
-- dual_gpu_optimizer/dualgpuopt/telemetry.py
+### Application Control Flow (Importance: 75)
+- Dual-mode operation (CLI and GUI) for flexibility
+- GPU configuration validation and requirement checking
+- Environment variable management for framework compatibility
+- Located in: `dual_gpu_optimizer/dualgpuopt/__main__.py`
 
 $END$
 END SPECIFICATION

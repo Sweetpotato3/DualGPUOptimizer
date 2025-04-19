@@ -1,43 +1,66 @@
 ---
-description: Specification for LLM model execution workflows, GPU resource allocation, and command generation for llama.cpp and vLLM
-globs: **/optimizer.py,**/gpu_info.py,**/runner.py,**/simple_launcher.py
+description: Documents the complete model execution workflow including GPU allocation, command generation, and runtime configuration
+globs: *.py,dual_gpu_optimizer/dualgpuopt/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components:
+## Core Execution Components
 
-1. GPU Resource Allocation (Importance: 95)
-- Implements dual GPU memory splitting based on available VRAM ratios
-- Calculates tensor fractions for parallel model distribution
-- Supports dynamic GPU memory overrides through environment variables
-- Enforces 90% memory utilization policy for vLLM deployments
+### Model Launch Flow (Importance: 95)
+`dual_gpu_optimizer/dualgpuopt/__main__.py`
+- Probes available GPUs using gpu_info subsystem
+- Validates minimum requirement of 2 GPUs
+- Generates optimized GPU split configurations
+- Creates framework-specific launch commands for llama.cpp and vLLM
+- Sets up environment variables for multi-GPU execution
 
-2. Framework-Specific Command Generation (Importance: 90)
-- Generates optimized commands for llama.cpp and vLLM deployments
-- Calculates framework-specific parameters based on GPU configurations
-- Handles tensor parallel size determination for vLLM
-- Manages context size settings per model type
+### Command Generation (Importance: 90)
+`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- Calculates tensor fractions based on GPU memory distribution
+- Constructs environment files for GPU configurations
+- Generates specialized command-line arguments for ML frameworks
+- Handles memory splits and tensor parallel configurations
 
-3. Model Deployment Workflow (Importance: 85)
-- Validates minimum GPU requirements (2 GPUs required)
-- Implements automatic layer distribution across available GPUs
-- Manages preset model configurations for different AI models
-- Supports mock mode for development/testing scenarios
+### Runtime GPU Management (Importance: 85)
+`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
+- Collects real-time GPU metrics via NVML interface
+- Manages memory utilization data
+- Provides mock GPU capabilities for testing
+- Monitors temperature, power usage, and clock speeds
 
-Key Files:
-- dual_gpu_optimizer/dualgpuopt/optimizer.py - Core optimization logic
-- dual_gpu_optimizer/dualgpuopt/runner.py - Model execution handling
-- dual_gpu_optimizer/dualgpuopt/gpu_info.py - GPU resource management
-- simple_launcher.py - Framework command generation
+### Telemetry Control (Importance: 80)
+`dual_gpu_optimizer/dualgpuopt/telemetry.py`
+- Implements polling mechanism for GPU metrics
+- Streams real-time performance data
+- Collects PCIe throughput measurements
+- Monitors utilization thresholds
 
-Business Rules:
-- Minimum 2 GPU requirement for model execution
-- Memory splitting based on relative GPU capacities
-- Automatic tensor parallel size calculation
-- Framework-specific memory utilization policies
-- Support for up to 8 GPUs in parallel configuration
+## Launch Modes
+
+### CLI Execution (Importance: 75)
+`simple_launcher.py`
+- Processes model path and context size inputs 
+- Calculates GPU memory split recommendations
+- Generates framework-specific execution commands
+- Provides command-line interface for optimization
+
+### Standalone Runtime (Importance: 70)
+`run_standalone.py`
+- Manages dependency requirements
+- Enables mock GPU simulation mode
+- Handles error logging for execution issues
+- Controls application lifecycle
+
+## System Integration
+
+### Resource Monitoring (Importance: 65)
+`dual_gpu_optimizer/dualgpuopt/tray.py`
+- Tracks GPU utilization thresholds
+- Manages idle state detection
+- Provides system tray controls
+- Handles notification triggers
 
 $END$
