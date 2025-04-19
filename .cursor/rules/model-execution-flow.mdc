@@ -1,190 +1,65 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-description: Documents the execution flow and orchestration of language models across multiple GPUs, including command generation and resource allocation
-globs: **/optimizer.py,**/runner.py,**/commands/*.py,**/batch/*.py
-=======
-description: Specification for model execution flows, command generation, and GPU resource allocation across llama.cpp and vLLM frameworks
-globs: **/optimizer.py,**/runner.py,**/gpu_commands.py,**/launcher.py
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-=======
-description: Documents the complete model execution workflow including GPU allocation, command generation, and runtime configuration
-globs: *.py,dual_gpu_optimizer/dualgpuopt/*.py
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
-=======
-description: Used for analyzing and documenting LLM model execution workflows, command generation, and GPU resource management
-globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/launcher.py
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
+description: Defines how machine learning models are executed across multiple GPUs, including command generation, configuration and resource allocation
+globs: **/optimizer.py,**/runner.py,**/launcher.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-## Core Execution Components
+The model execution flow handles distributing and running machine learning models across multiple GPUs through several key components:
 
-### Command Generation System
-Located in `dualgpuopt/optimizer.py`:
-- Generates framework-specific deployment commands:
-  - llama.cpp: GPU split ratios and memory allocation parameters
-  - vLLM: Tensor parallelism configuration and GPU distribution
-- Implements dynamic parameter calculation based on available GPU memory
-- Handles model-specific configuration (context size, layer distribution)
+## Command Generation System (85)
+File: dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py
 
-### Batch Processing Pipeline 
-Located in `dualgpuopt/batch/smart_batch.py`:
-- Length-aware sequence batching with dynamic sizing
-- Implements backpressure mechanism for memory management
-- Automatic retry logic for OOM conditions
-- Token-based batch composition with configurable limits
+Generates framework-specific commands for model execution:
 
-### Model Runner Orchestration
-Located in `dualgpuopt/runner.py`:
-- Controls model lifecycle across multiple GPUs
-- Manages process execution and monitoring
-- Handles framework-specific launch configurations:
-  - Memory splits for llama.cpp
-  - Tensor parallel sizes for vLLM
-- Real-time output monitoring with non-blocking queues
+1. llama.cpp Mode:
+- Creates GPU split strings based on available memory ratios
+- Configures context window sizes per GPU
+- Sets thread count and batch size parameters
 
-### Resource Allocation Flow
-Located in `dualgpuopt/layer_balance.py`:
-- Adaptive layer distribution based on GPU capabilities
-- Dual-length profiling (64/1024 tokens) for balanced optimization
-- Memory quota management with configurable reserve ratios
-- Dynamic redistribution based on performance metrics
+2. vLLM Mode: 
+- Generates tensor parallel configurations
+- Calculates GPU memory fraction allocations
+- Sets environment variables for GPU visibility
 
-### GPU Command Pipeline
-Located in `dualgpuopt/commands/gpu_commands.py`:
-- Framework-specific command string generation
-- Environment configuration for multi-GPU setups
-- Tensor parallelism parameter calculation
-- Model preset handling for common configurations
+## Batch Processing Engine (90)
+File: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
 
-### Execution Safety Controls
-- Minimum 2 GPU requirement enforcement
-- 90% memory utilization cap for stability
-- Automatic failover for hardware errors
-- GPU capability validation before execution
+Implements intelligent batching logic:
+- Length-aware sequence bucketing using power-of-two strategy
+- Automatic batch size adjustment based on GPU memory constraints
+- Back-pressure handling with configurable queue depth limits
+- OOM recovery through cache purging and retry mechanisms
 
-Importance Scores:
-- Command Generation: 95 (core optimization logic)
-- Batch Processing: 90 (critical for execution efficiency)
-- Runner Orchestration: 85 (key execution control)
-- Resource Allocation: 90 (essential optimization)
-- GPU Command Pipeline: 80 (framework integration)
-- Safety Controls: 75 (operational stability)
-=======
-The core model execution flow consists of several key components:
+## Resource Allocation Controller (95)
+File: dual_gpu_optimizer/dualgpuopt/optimizer.py
 
-## Command Generation System
-- Generates specific execution commands for different ML frameworks:
-  - llama.cpp commands with GPU split configurations and context size parameters
-  - vLLM commands with tensor parallelism and resource allocation settings
-- Handles environment variable generation for GPU configurations including CUDA device visibility and NCCL settings
+Controls GPU resource distribution:
+- Dynamically splits model layers across available GPUs
+- Calculates optimal tensor parallel fractions
+- Manages GPU memory allocation ratios
+- Handles model-specific memory requirements
+- Generates environment configurations for each framework
 
-## Framework-Specific Execution
-- llama.cpp execution:
-  - Dynamic GPU memory split calculation based on available VRAM
-  - Tensor fraction computation for optimal layer distribution
-  - Context size validation against GPU memory constraints
+## Execution Flow Manager (85)
+File: dual_gpu_optimizer/dualgpuopt/runner.py
 
-- vLLM execution:
-  - Asynchronous batch processing with smart scheduling
-  - Length-aware inference queuing system
-  - Automatic retry logic for OOM conditions
+Coordinates model execution:
+- Initializes GPU contexts and CUDA streams
+- Manages model loading and weight distribution
+- Handles framework-specific execution paths
+- Monitors GPU utilization and adjusts splits
+- Provides graceful shutdown and cleanup
 
-## Resource Management
-- GPU memory allocation flow:
-  1. Calculate maximum safe context length based on model parameters
-  2. Determine optimal GPU split ratios
-  3. Configure tensor parallelism settings
-  4. Apply resource constraints to command generation
+## Memory Management (80)
+File: dual_gpu_optimizer/dualgpuopt/mpolicy.py
 
-## Model Launch Control
-- Framework selection logic between llama.cpp and vLLM
-- Dynamic command construction based on:
-  - Selected framework requirements
-  - Model path and parameters
-  - GPU resource availability
-- Process management for model execution with log capture
-
-## Batch Processing System
-- Smart batching logic based on sequence lengths
-- Bucket policies for request grouping:
-  - Power-of-two bucketing
-  - Token-ratio based grouping
-- Back-pressure mechanisms for queue depth control
-
-Relevant files:
-- `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- `dual_gpu_optimizer/dualgpuopt/runner.py`
-- `dual_gpu_optimizer/dualgpuopt/gpu_commands.py`
-- `dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py`
-- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-=======
-## Core Execution Components
-=======
-The model execution flow consists of several key components that manage the LLM execution pipeline:
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-
-### Command Generation (Importance: 95)
-- Generates optimized command strings for running models with llama.cpp and vLLM
-- Takes into account GPU memory splits and tensor fractions based on available GPU resources
-- Located in `dualgpuopt/optimizer.py`
-
-### GPU Resource Allocation (Importance: 90)
-- Calculates optimal GPU memory splits based on detected GPU configurations
-- Generates environment files with CUDA and NCCL configurations specific to GPU setup
-- Dynamically adjusts tensor fractions based on available GPU memory
-- Located in `dualgpuopt/gpu_info.py`
-
-### Model Execution Pipeline (Importance: 85)
-- Handles model initialization and execution across multiple GPUs
-- Manages process logging and execution state
-- Enables starting/stopping model execution with selected frameworks
-- Located in `dualgpuopt/gui/launcher.py`
-
-### Framework-Specific Workflows (Importance: 80)
-Two primary execution paths:
-
-1. llama.cpp flow:
-   - Generates split configuration strings
-   - Sets up multi-GPU environment variables
-   - Configures memory and compute parameters
-
-2. vLLM flow:
-   - Manages tensor parallel configurations
-   - Sets up GPU device mapping
-   - Configures framework-specific parameters
-
-Located in `dualgpuopt/runner.py`
-
-### Telemetry Integration (Importance: 75)
-- Streams real-time GPU metrics during model execution
-- Monitors memory utilization and GPU load
-- Provides feedback for execution optimization
-- Located in `dualgpuopt/telemetry.py`
-
-<<<<<<< HEAD
-### Resource Monitoring (Importance: 65)
-`dual_gpu_optimizer/dualgpuopt/tray.py`
-- Tracks GPU utilization thresholds
-- Manages idle state detection
-- Provides system tray controls
-- Handles notification triggers
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
-=======
-### Mock Execution Mode (Importance: 65)
-- Simulates GPU presence for testing execution flows
-- Generates mock telemetry data
-- Enables workflow testing without physical GPUs
-- Located in `dualgpuopt/gpu_info.py`
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
+Implements memory policies:
+- Mixed precision handling for different operations
+- Context size calculations based on model architecture
+- Memory safety buffers and threshold management
+- Automatic tensor offloading when memory constrained
 
 $END$

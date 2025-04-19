@@ -1,212 +1,86 @@
 ---
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-description: Documents data flow between components for GPU resource management and optimization systems
-globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/metrics/**/*.py
-=======
-description: Specifications for data flow between GPU optimization components, GPU monitoring, and performance metrics
-globs: **/services/**,**/gpu_info.py,**/metrics.py,**/telemetry.py,**/event_*.py
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-=======
-description: Documents data flows between system components including GPU telemetry, optimization parameters, and monitoring metrics
-globs: 'dual_gpu_optimizer/dualgpuopt/*.py'
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
-=======
-description: Defines data flow patterns for GPU resource management, optimization parameters, and monitoring metrics across the system
-globs: dual_gpu_optimizer/dualgpuopt/**/*.py
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
+description: Documents data flow patterns for GPU resource optimization, telemetry, and monitoring metrics across multi-GPU systems
+globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-Primary Data Flow Components:
+Core Data Flows:
 
-1. GPU Telemetry Pipeline (telemetry.py -> event_bus.py)
-- GPU metrics collection: utilization, memory, temperature, power, clocks
-- Metrics transformed into domain events through EventBusMiddleware
-- Real-time distribution to optimization and monitoring components
-- Importance: 95
+1. GPU Resource Metrics Flow
+- Source: GPU hardware telemetry (dualgpuopt/telemetry.py)
+- Flow: Hardware metrics -> Telemetry Service -> Event Bus -> Dashboard
+- Key metrics:
+  * GPU/Memory utilization 
+  * Temperature and power consumption
+  * Clock speeds and fan status
+  * PCIe bandwidth usage
 
-2. Optimization Data Flow (optimizer.py -> layer_balance.py)
-- Memory split ratios calculated from GPU capabilities
-- Layer distribution mapping based on latency profiles
-- Command generation for framework-specific deployments
-- Importance: 90
+2. Optimization Parameter Flow
+- Source: Optimizer configuration (dualgpuopt/optimizer.py)
+- Flow: User input -> Optimizer -> Command Generator -> Model Runner
+- Parameters:
+  * GPU memory split ratios
+  * Tensor parallel fractions
+  * Context size constraints
+  * Layer distribution weights
 
-3. Resource Monitoring Flow (gpu_info.py -> metrics.py)
-- Continuous GPU state tracking with 60-second history
-- Multi-level update intervals:
-  * Critical metrics: 500ms
-  * Standard metrics: 1000ms 
-  * Background metrics: 2000ms
-- Importance: 85
+3. GPU State Management Flow
+- Source: GPU hardware state (dualgpuopt/services/state_service.py)
+- Flow: GPU State -> Event Bus -> Services -> UI Components
+- States:
+  * Overclocking profiles
+  * Power/thermal limits
+  * Memory allocation status
+  * Idle detection flags
 
-4. Configuration Pipeline (config_service.py -> mpolicy.py)
-- GPU-specific settings persistence
-- Mixed precision policy distribution
-- Overclocking profile management
-- Importance: 80
-
-5. Command Generation Flow (commands/gpu_commands.py -> optimizer.py)
-- Framework-specific command construction
-- GPU split ratio application
-- Tensor parallelism configuration
-- Importance: 75
+4. Model Deployment Flow
+- Source: Model configuration (dualgpuopt/gui/launcher.py)
+- Flow: Model params -> Optimizer -> Framework-specific commands -> GPU execution
+- Configuration:
+  * Framework selection (llama.cpp/vLLM)
+  * GPU split configuration
+  * Memory allocation strategy
+  * Tensor parallel settings
 
 Key Integration Points:
-- Telemetry -> Optimizer: GPU capability data
-- Optimizer -> Commands: Framework configurations
-- Metrics -> Dashboard: Visualization data
-- Config -> GPU Services: Hardware settings
 
-Core Data Models:
+1. Telemetry Pipeline
 ```
-GPUMetrics {
-  utilization: float
-  memory_used: int
-  temperature: int
-  power_draw: float
-  clock_speeds: {core: int, memory: int}
-}
-
-OptimizationConfig {
-  memory_splits: float[]
-  layer_distribution: int[]
-  tensor_parallel: int
-}
-```
-=======
-### Core Data Flows
-
-1. GPU Resource Data Flow
-- GPU metrics flow from telemetry collector through middleware pipeline to event bus
-- Event bus distributes GPU metrics to dashboard, optimizer, and monitoring components 
-- Real-time updates of utilization, memory, temperature delivered every 3 seconds
-- GPU state changes trigger reoptimization of memory splits and tensor fractions
-
-2. Optimization Parameter Flow  
-- Model configuration flows from launcher UI to optimizer service
-- Optimizer calculates GPU splits and generates framework-specific commands
-- Results flow back through event bus to UI components
-- Configuration changes trigger recalculation of optimization parameters
-
-3. Monitoring Metrics Flow
-- Prometheus metrics collector gathers batch latency and queue depth
-- Metrics flow through optional middleware to monitoring endpoints
-- GPU utilization history maintained for dashboard visualizations
-- Idle detection triggers system tray notifications after 5 minutes
-
-### Key Integration Points
-
-1. Event Bus Hub
-- Central event bus coordinates data flow between all components
-- Priority-based dispatch ensures critical updates processed first
-- Typed events provide structured data exchange
-- Support for both sync and async event handling
-
-2. State Management 
-- Centralized state service maintains application configuration
-- State changes broadcast via event bus to dependent components
-- Persistent storage of GPU configurations and optimization settings
-- Mock GPU mode toggles simulated data flow for testing
-
-3. Error Handling Flow
-- Errors flow through error service to logging and UI components
-- GPU errors trigger mock mode activation if needed
-- Critical errors force application restart
-- Warning notifications delivered through system tray
-
-4. Telemetry Pipeline
-- Raw GPU metrics collected via NVML interface
-- Middleware processes and enriches telemetry data
-- Event bus publishes metrics to subscribers
-- Dashboard maintains rolling 60-sample history
-
-### File Paths
-- `/services/event_bus.py`: Core event distribution
-- `/services/state_service.py`: State management
-- `/telemetry.py`: GPU metrics collection
-- `/gpu_info.py`: GPU resource monitoring
-- `/metrics.py`: Performance metrics
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-=======
-### Primary Data Flows
-=======
-## Core Data Flows (Importance: 95)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-
-### GPU Telemetry Flow
-- GPU metrics collected via NVML interface in `gpu_info.py`
-- Telemetry stream generated in `telemetry.py` using background thread
-- Data queued to `tele_q` for dashboard consumption
-- Dashboard processes metrics every second from queue
-- Historical data maintained for 60 samples in dashboard graphs
-
-### Configuration Data Flow
-- GPU overclocking settings flow from GUI to persistent storage
-- Theme configurations propagate through widget hierarchy
-- Application settings persisted via `configio.py`
-- Mock GPU data injection flow when `DGPUOPT_MOCK_GPUS` enabled
-
-### Optimization Parameter Flow
-- Model configuration flows from JSON presets to optimizer
-- GPU memory splits calculated and propagated to command generation
-- Tensor fractions computed based on GPU memory distribution
-- Environment variables generated and saved to .env files
-- Framework-specific commands (llama.cpp, vLLM) generated from parameters
-
-## Component Communication (Importance: 85)
-
-### Dashboard Updates
-File: `dual_gpu_optimizer/dualgpuopt/gui/dashboard.py`
-- Telemetry queue -> Dashboard processor
-- Metrics update -> UI elements 
-- Historical data -> Graph renderer
-
-### Settings Propagation 
-File: `dual_gpu_optimizer/dualgpuopt/gui/settings.py`
-- GUI inputs -> Configuration storage
-- Stored settings -> GPU controls
-- Theme selection -> Widget styling
-
-### Optimizer Data Path
-File: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- GPU info -> Split calculator
-- Memory data -> Tensor fraction generator
-- Configuration -> Environment file writer
-- Parameters -> Command string builder
-
-<<<<<<< HEAD
-3. Monitoring Interface (Importance: 75)
-- `telemetry.py` -> `tray.py`
-- Queue-based metric streaming
-- Threshold-based notifications
-- System tray integration
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
-=======
-## Key Integration Points (Importance: 80)
-
-### GPU Resource Management
-Files:
-- `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
-```
-GPU Hardware <-> NVML Interface <-> Telemetry Collector <-> Application Logic
+GPU Hardware -> NVML Interface -> Telemetry Service -> Event Bus -> Monitoring Dashboard
 ```
 
-### Command Generation Pipeline
-Files:
-- `dual_gpu_optimizer/dualgpuopt/gui/optimizer_tab.py`
-- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
+2. Optimization Pipeline
 ```
-Model Selection -> GPU Split Calculation -> Environment Generation -> Command Construction
+User Input -> Optimizer -> Command Generator -> Framework Runner -> GPUs
 ```
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
+
+3. State Management Pipeline
+```
+GPU State Changes -> Event Bus -> State Service -> UI Components
+```
+
+Critical Data Structures:
+
+1. GPUMetrics
+- Utilization percentages
+- Memory usage stats
+- Temperature/power data
+- Clock/fan speeds
+- PCIe bandwidth metrics
+
+2. OptimizationParameters  
+- Memory split ratios
+- Tensor fractions
+- Context sizes
+- Layer distribution
+
+3. GPUState
+- Hardware settings
+- Power profiles
+- Memory allocation
+- Idle status
 
 $END$
