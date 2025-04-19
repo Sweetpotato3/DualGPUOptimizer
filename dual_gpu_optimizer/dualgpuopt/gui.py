@@ -238,8 +238,27 @@ class DualGpuApp(ttk.Frame):
         """Create enhanced settings UI with better organization."""
         parent.columnconfigure(0, weight=1)
         
+        # Create a scrollable canvas to contain all settings
+        canvas = tk.Canvas(parent)
+        scrollbar = ttk.Scrollbar(parent, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        canvas.pack(side="left", fill="both", expand=True)
+        scrollbar.pack(side="right", fill="y")
+        
+        # Make the scrollable frame take the full width
+        scrollable_frame.columnconfigure(0, weight=1)
+        
         # ------ Appearance Section ------
-        appearance_frame = ttk.LabelFrame(parent, text="Appearance")
+        appearance_frame = ttk.LabelFrame(scrollable_frame, text="Appearance")
         appearance_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD)
         appearance_frame.columnconfigure(1, weight=1)
         
@@ -261,9 +280,118 @@ class DualGpuApp(ttk.Frame):
             command=self._apply_theme_change
         ).grid(row=0, column=2, padx=self.PAD, pady=5)
         
+        # ------ Overclocking Section ------
+        self.overclocking_frame = ttk.LabelFrame(scrollable_frame, text="GPU Overclocking")
+        self.overclocking_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1)
+        self.overclocking_frame.columnconfigure(1, weight=1)
+        
+        # GPU selection for overclocking
+        ttk.Label(self.overclocking_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        self.oc_gpu_var = tk.StringVar()
+        gpu_values = [f"GPU {i}: {gpu.short_name}" for i, gpu in enumerate(self.gpus)]
+        self.oc_gpu_combo = ttk.Combobox(
+            self.overclocking_frame,
+            textvariable=self.oc_gpu_var,
+            values=gpu_values,
+            width=20,
+            state="readonly"
+        )
+        if gpu_values:
+            self.oc_gpu_combo.current(0)
+        self.oc_gpu_combo.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
+        self.oc_gpu_combo.bind("<<ComboboxSelected>>", self._update_oc_controls)
+        
+        # Create overclocking sliders frame
+        oc_sliders_frame = ttk.Frame(self.overclocking_frame)
+        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=self.PAD, pady=5)
+        oc_sliders_frame.columnconfigure(1, weight=1)
+        
+        # Core Clock Offset slider
+        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(row=0, column=0, sticky="w", pady=2)
+        self.core_clock_var = tk.IntVar(value=0)
+        self.core_clock_scale = ttk.Scale(
+            oc_sliders_frame, 
+            from_=-200, 
+            to=200, 
+            orient="horizontal",
+            variable=self.core_clock_var,
+            command=lambda v: self._update_oc_label(self.core_clock_label, f"{int(float(v))} MHz")
+        )
+        self.core_clock_scale.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
+        self.core_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
+        self.core_clock_label.grid(row=0, column=2, padx=5, pady=2)
+        
+        # Memory Clock Offset slider
+        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(row=1, column=0, sticky="w", pady=2)
+        self.memory_clock_var = tk.IntVar(value=0)
+        self.memory_clock_scale = ttk.Scale(
+            oc_sliders_frame, 
+            from_=-1000, 
+            to=1500, 
+            orient="horizontal",
+            variable=self.memory_clock_var,
+            command=lambda v: self._update_oc_label(self.memory_clock_label, f"{int(float(v))} MHz")
+        )
+        self.memory_clock_scale.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
+        self.memory_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
+        self.memory_clock_label.grid(row=1, column=2, padx=5, pady=2)
+        
+        # Power Limit slider 
+        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(row=2, column=0, sticky="w", pady=2)
+        self.power_limit_var = tk.IntVar(value=100)
+        self.power_limit_scale = ttk.Scale(
+            oc_sliders_frame, 
+            from_=70, 
+            to=120, 
+            orient="horizontal",
+            variable=self.power_limit_var,
+            command=lambda v: self._update_oc_label(self.power_limit_label, f"{int(float(v))}%")
+        )
+        self.power_limit_scale.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
+        self.power_limit_label = ttk.Label(oc_sliders_frame, text="100%", width=8)
+        self.power_limit_label.grid(row=2, column=2, padx=5, pady=2)
+        
+        # Fan Speed slider
+        ttk.Label(oc_sliders_frame, text="Fan Speed:").grid(row=3, column=0, sticky="w", pady=2)
+        self.fan_speed_var = tk.IntVar(value=0)  # 0 for auto
+        self.fan_speed_scale = ttk.Scale(
+            oc_sliders_frame, 
+            from_=0, 
+            to=100, 
+            orient="horizontal",
+            variable=self.fan_speed_var,
+            command=self._update_fan_label
+        )
+        self.fan_speed_scale.grid(row=3, column=1, sticky="ew", padx=5, pady=2)
+        self.fan_speed_label = ttk.Label(oc_sliders_frame, text="Auto", width=8)
+        self.fan_speed_label.grid(row=3, column=2, padx=5, pady=2)
+        
+        # Overclocking buttons
+        oc_button_frame = ttk.Frame(self.overclocking_frame)
+        oc_button_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=10)
+        oc_button_frame.columnconfigure((0, 1, 2), weight=1)
+        
+        ttk.Button(
+            oc_button_frame,
+            text="Apply",
+            command=self._apply_overclock
+        ).grid(row=0, column=0, padx=5)
+        
+        ttk.Button(
+            oc_button_frame,
+            text="Reset",
+            command=self._reset_overclock
+        ).grid(row=0, column=1, padx=5)
+        
+        ttk.Checkbutton(
+            oc_button_frame,
+            text="Apply at Startup",
+            variable=tk.BooleanVar(value=False)
+        ).grid(row=0, column=2, padx=5)
+        
         # ------ Monitoring Settings Section ------
-        monitor_frame = ttk.LabelFrame(parent, text="Monitoring")
-        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1)
+        monitor_frame = ttk.LabelFrame(scrollable_frame, text="Monitoring")
+        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=2)
         monitor_frame.columnconfigure(1, weight=1)
         
         self.interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
@@ -303,8 +431,8 @@ class DualGpuApp(ttk.Frame):
         duration_spin.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # ------ Advanced Settings Section ------
-        advanced_frame = ttk.LabelFrame(parent, text="Advanced Settings")
-        advanced_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=2)
+        advanced_frame = ttk.LabelFrame(scrollable_frame, text="Advanced Settings")
+        advanced_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=3)
         advanced_frame.columnconfigure(0, weight=1)
         
         # GPU Memory Override
@@ -337,8 +465,8 @@ class DualGpuApp(ttk.Frame):
         ).grid(row=2, column=0, sticky="w", padx=self.PAD, pady=5)
         
         # ------ Save Settings Button ------
-        save_frame = ttk.Frame(parent)
-        save_frame.grid(row=3, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
+        save_frame = ttk.Frame(scrollable_frame)
+        save_frame.grid(row=4, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
         
         ttk.Button(
             save_frame,
@@ -349,7 +477,7 @@ class DualGpuApp(ttk.Frame):
         # Explanation text
         ttk.Label(
             save_frame,
-            text="Memory overrides take effect after restart.",
+            text="Some settings require restart. Overclocking is applied immediately.",
             font=("", 8, "italic")
         ).pack(side="left")
     
@@ -966,6 +1094,168 @@ class DualGpuApp(ttk.Frame):
             print(f"Chart error: {e}")
             
         self.after(1000, self._tick_chart)
+
+    def _update_oc_label(self, label, text):
+        """Update the label for an overclocking control."""
+        label.configure(text=text)
+        
+    def _update_fan_label(self, value):
+        """Update the fan speed label, showing 'Auto' when at 0."""
+        int_value = int(float(value))
+        if int_value == 0:
+            self.fan_speed_label.configure(text="Auto")
+        else:
+            self.fan_speed_label.configure(text=f"{int_value}%")
+            
+    def _update_oc_controls(self, event=None):
+        """Update overclocking controls based on the selected GPU."""
+        if not self.gpus:
+            return
+            
+        # Get the selected GPU index
+        selected = self.oc_gpu_combo.current()
+        if selected < 0 or selected >= len(self.gpus):
+            return
+            
+        gpu = self.gpus[selected]
+        
+        # Reset controls to defaults or current settings
+        # This is where you could load saved overclocking profiles in the future
+        self.core_clock_var.set(0)
+        self.memory_clock_var.set(0)
+        self.power_limit_var.set(100)
+        self.fan_speed_var.set(0)
+        
+        # Update labels
+        self._update_oc_label(self.core_clock_label, "0 MHz")
+        self._update_oc_label(self.memory_clock_label, "0 MHz")
+        self._update_oc_label(self.power_limit_label, "100%")
+        self._update_fan_label(0)
+        
+    def _apply_overclock(self):
+        """Apply overclocking settings to the selected GPU."""
+        if not self.gpus:
+            return
+            
+        # Get the selected GPU index
+        selected = self.oc_gpu_combo.current()
+        if selected < 0 or selected >= len(self.gpus):
+            return
+            
+        gpu = self.gpus[selected]
+        
+        # Get the overclocking values
+        core_offset = self.core_clock_var.get()
+        memory_offset = self.memory_clock_var.get()
+        power_limit = self.power_limit_var.get()
+        fan_speed = self.fan_speed_var.get()
+        
+        try:
+            # Import NVML for direct access
+            import pynvml as nv
+            nv.nvmlInit()
+            
+            # Get the GPU handle
+            handle = nv.nvmlDeviceGetHandleByIndex(gpu.index)
+            
+            # Set power limit if changed from 100%
+            if power_limit != 100:
+                try:
+                    # Get the default power limit
+                    default_pl = nv.nvmlDeviceGetPowerManagementDefaultLimit(handle)
+                    # Calculate the new power limit
+                    new_pl = int(default_pl * power_limit / 100)
+                    # Set the power limit
+                    nv.nvmlDeviceSetPowerManagementLimit(handle, new_pl)
+                    self.logger.info(f"Set power limit to {power_limit}% for GPU {gpu.index}")
+                except Exception as e:
+                    self.logger.error(f"Failed to set power limit: {e}")
+                    messagebox.showerror("Error", f"Failed to set power limit: {e}")
+            
+            # Set fan speed if not on auto
+            if fan_speed > 0:
+                try:
+                    # Check if GPU supports fan control
+                    nv.nvmlDeviceSetFanSpeed(handle, fan_speed)
+                    self.logger.info(f"Set fan speed to {fan_speed}% for GPU {gpu.index}")
+                except Exception as e:
+                    self.logger.error(f"Failed to set fan speed (may not be supported): {e}")
+                    messagebox.showerror("Error", f"Failed to set fan speed: {e}")
+            
+            # Clock offsets require NVIDIA Settings or similar tools
+            # NVML doesn't directly support overclocking through Python
+            # We'll show a message to the user about this limitation
+            if core_offset != 0 or memory_offset != 0:
+                messagebox.showinfo(
+                    "Clock Offset Limitation", 
+                    "Setting clock offsets requires nvidia-settings or MSI Afterburner.\n\n"
+                    "NVML API doesn't support direct overclocking through Python.\n\n"
+                    "Use the values shown as guidance for external overclocking tools."
+                )
+                
+            nv.nvmlShutdown()
+            
+            messagebox.showinfo("Overclocking", "Settings applied successfully!")
+            
+        except Exception as e:
+            self.logger.error(f"Overclocking error: {e}")
+            messagebox.showerror("Error", f"Failed to apply overclocking settings: {e}")
+            
+    def _reset_overclock(self):
+        """Reset overclocking settings to defaults."""
+        if not self.gpus:
+            return
+            
+        # Reset UI controls
+        self.core_clock_var.set(0)
+        self.memory_clock_var.set(0)
+        self.power_limit_var.set(100)
+        self.fan_speed_var.set(0)
+        
+        # Update labels
+        self._update_oc_label(self.core_clock_label, "0 MHz")
+        self._update_oc_label(self.memory_clock_label, "0 MHz")
+        self._update_oc_label(self.power_limit_label, "100%")
+        self._update_fan_label(0)
+        
+        # Get the selected GPU index
+        selected = self.oc_gpu_combo.current()
+        if selected < 0 or selected >= len(self.gpus):
+            return
+            
+        gpu = self.gpus[selected]
+        
+        try:
+            # Import NVML for direct access
+            import pynvml as nv
+            nv.nvmlInit()
+            
+            # Get the GPU handle
+            handle = nv.nvmlDeviceGetHandleByIndex(gpu.index)
+            
+            # Reset power limit to default
+            try:
+                default_pl = nv.nvmlDeviceGetPowerManagementDefaultLimit(handle)
+                nv.nvmlDeviceSetPowerManagementLimit(handle, default_pl)
+                self.logger.info(f"Reset power limit to default for GPU {gpu.index}")
+            except Exception as e:
+                self.logger.error(f"Failed to reset power limit: {e}")
+            
+            # Reset fan to auto
+            try:
+                # -1 often means "auto" for fan control
+                nv.nvmlDeviceSetFanSpeed(handle, 0)
+                self.logger.info(f"Reset fan to auto for GPU {gpu.index}")
+            except Exception as e:
+                self.logger.error(f"Failed to reset fan (may not be supported): {e}")
+            
+            nv.nvmlShutdown()
+            
+            messagebox.showinfo("Overclocking", "Settings reset to defaults!")
+            
+        except Exception as e:
+            self.logger.error(f"Overclocking reset error: {e}")
+            messagebox.showerror("Error", f"Failed to reset overclocking settings: {e}")
 
     def _save_all_settings(self):
         """Save all settings from the settings tab to config."""
