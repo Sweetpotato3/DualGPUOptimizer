@@ -230,83 +230,123 @@ class DualGpuApp(ttk.Frame):
         nb.pack(fill="both", expand=True)
     
     def _build_settings_tab(self, parent: ttk.Frame) -> None:
-        """Create settings UI including theme selector."""
+        """Create enhanced settings UI with better organization."""
         parent.columnconfigure(0, weight=1)
         
-        # Theme selection
-        theme_frame = ttk.LabelFrame(parent, text="Appearance")
-        theme_frame.grid(sticky="ew", pady=(0, self.PAD))
+        # ------ Appearance Section ------
+        appearance_frame = ttk.LabelFrame(parent, text="Appearance")
+        appearance_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD)
+        appearance_frame.columnconfigure(1, weight=1)
         
-        ttk.Label(theme_frame, text="Theme:").pack(side="left", padx=self.PAD)
+        # Theme selection
+        ttk.Label(appearance_frame, text="Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
         theme_combo = ttk.Combobox(
-            theme_frame, 
+            appearance_frame, 
             textvariable=self.theme_var,
             values=["dark", "light", "system"],
             width=10,
             state="readonly"
         )
-        theme_combo.pack(side="left", padx=self.PAD)
+        theme_combo.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
         
         ttk.Button(
-            theme_frame, 
+            appearance_frame, 
             text="Apply", 
             command=self._apply_theme_change
-        ).pack(side="left", padx=self.PAD)
+        ).grid(row=0, column=2, padx=self.PAD, pady=5)
         
-        # Monitoring settings
+        # ------ Monitoring Settings Section ------
         monitor_frame = ttk.LabelFrame(parent, text="Monitoring")
-        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), row=1)
+        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1)
+        monitor_frame.columnconfigure(1, weight=1)
         
-        interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
+        self.interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
         ttk.Label(monitor_frame, text="Update interval (sec):").grid(row=0, column=0, padx=self.PAD, pady=5, sticky="w")
         interval_spin = ttk.Spinbox(
             monitor_frame,
             from_=0.5,
             to=10.0,
             increment=0.5,
-            textvariable=interval_var,
+            textvariable=self.interval_var,
             width=5
         )
-        interval_spin.grid(row=0, column=1, padx=self.PAD, pady=5, sticky="w")
+        interval_spin.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         
-        alert_threshold_var = tk.IntVar(value=self.cfg["alert_threshold"])
+        self.alert_threshold_var = tk.IntVar(value=self.cfg["alert_threshold"])
         ttk.Label(monitor_frame, text="Alert threshold (%):").grid(row=1, column=0, padx=self.PAD, pady=5, sticky="w")
         threshold_spin = ttk.Spinbox(
             monitor_frame,
             from_=5,
             to=80,
             increment=5,
-            textvariable=alert_threshold_var,
+            textvariable=self.alert_threshold_var,
             width=5
         )
-        threshold_spin.grid(row=1, column=1, padx=self.PAD, pady=5, sticky="w")
+        threshold_spin.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
         
-        alert_duration_var = tk.IntVar(value=self.cfg["alert_duration"])
+        self.alert_duration_var = tk.IntVar(value=self.cfg["alert_duration"])
         ttk.Label(monitor_frame, text="Alert after (sec):").grid(row=2, column=0, padx=self.PAD, pady=5, sticky="w")
         duration_spin = ttk.Spinbox(
             monitor_frame,
             from_=60,
             to=900,
             increment=60,
-            textvariable=alert_duration_var,
+            textvariable=self.alert_duration_var,
             width=5
         )
-        duration_spin.grid(row=2, column=1, padx=self.PAD, pady=5, sticky="w")
+        duration_spin.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=5)
         
-        # Save button for monitoring settings
-        def save_monitor_settings():
-            self.cfg["monitor_interval"] = interval_var.get()
-            self.cfg["alert_threshold"] = alert_threshold_var.get()
-            self.cfg["alert_duration"] = alert_duration_var.get()
-            configio.save_cfg(self.cfg)
-            messagebox.showinfo("Settings", "Monitoring settings saved.\nRestart application for changes to take effect.")
+        # ------ Advanced Settings Section ------
+        advanced_frame = ttk.LabelFrame(parent, text="Advanced Settings")
+        advanced_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=2)
+        advanced_frame.columnconfigure(0, weight=1)
+        
+        # GPU Memory Override
+        ttk.Label(advanced_frame, text="GPU Memory Overrides:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=(5,0))
+        
+        # Create a frame for GPU memory overrides with a scrollbar
+        override_frame = ttk.Frame(advanced_frame)
+        override_frame.grid(row=1, column=0, sticky="ew", padx=self.PAD, pady=5)
+        override_frame.columnconfigure(1, weight=1)
+        
+        # Create entry fields for each GPU's memory override
+        self.memory_override_vars = {}
+        for i, gpu in enumerate(self.gpus):
+            gpu_name = f"{gpu.name} (GPU {gpu.index})"
+            ttk.Label(override_frame, text=gpu_name).grid(row=i, column=0, sticky="w", pady=2)
+            
+            # Create variable and entry for memory override
+            override_var = tk.StringVar(value=self.cfg.get("env_overrides", {}).get(f"DGPUOPT_MEM_{gpu.index}", ""))
+            self.memory_override_vars[f"DGPUOPT_MEM_{gpu.index}"] = override_var
+            
+            ttk.Entry(override_frame, textvariable=override_var, width=8).grid(row=i, column=1, sticky="w", padx=(5,0), pady=2)
+            ttk.Label(override_frame, text="MiB").grid(row=i, column=2, sticky="w", pady=2)
+        
+        # Startup options
+        self.auto_check_updates = tk.BooleanVar(value=self.cfg.get("check_updates", True))
+        ttk.Checkbutton(
+            advanced_frame, 
+            text="Check for updates on startup", 
+            variable=self.auto_check_updates
+        ).grid(row=2, column=0, sticky="w", padx=self.PAD, pady=5)
+        
+        # ------ Save Settings Button ------
+        save_frame = ttk.Frame(parent)
+        save_frame.grid(row=3, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
         
         ttk.Button(
-            monitor_frame,
-            text="Save",
-            command=save_monitor_settings
-        ).grid(row=3, column=0, columnspan=2, pady=10)
+            save_frame,
+            text="Save All Settings",
+            command=self._save_all_settings
+        ).pack(side="right")
+        
+        # Explanation text
+        ttk.Label(
+            save_frame,
+            text="Memory overrides take effect after restart.",
+            font=("", 8, "italic")
+        ).pack(side="left")
     
     def _theme_changed(self, event=None) -> None:
         """Handle theme selection change."""
@@ -314,15 +354,44 @@ class DualGpuApp(ttk.Frame):
         pass
     
     def _apply_theme_change(self) -> None:
-        """Apply the selected theme and save to config."""
+        """Apply the selected theme immediately and save to config."""
         new_theme = self.theme_var.get()
         self.cfg["theme"] = new_theme
         configio.save_cfg(self.cfg)
         
+        # Apply theme immediately instead of requiring restart
+        self._apply_theme(self.master)
+        
+        # Force all widgets to update with new theme
+        self._update_widgets_theme(self)
+        
         messagebox.showinfo(
             "Theme Changed", 
-            "Theme will be applied after restarting the application."
+            "Theme has been applied successfully."
         )
+    
+    def _update_widgets_theme(self, parent):
+        """Recursively update theme for all widgets."""
+        for widget in parent.winfo_children():
+            # Skip text widgets that already have content to preserve it
+            if isinstance(widget, tk.Text) and widget.get("1.0", "end").strip():
+                continue
+                
+            # Apply theme to current widget based on its type
+            if isinstance(widget, ttk.Frame) or isinstance(widget, ttk.LabelFrame):
+                widget.configure(style="TFrame")
+            elif isinstance(widget, ttk.Label):
+                widget.configure(style="TLabel")
+            elif isinstance(widget, ttk.Button):
+                widget.configure(style="TButton")
+            elif isinstance(widget, ttk.Entry):
+                widget.configure(style="TEntry")
+            elif isinstance(widget, tk.Canvas) and hasattr(self, 'chart_bg'):
+                widget.configure(bg=self.chart_bg)
+            
+            # Recursively process child widgets
+            if widget.winfo_children():
+                self._update_widgets_theme(widget)
 
     # ---------- UI builders ----------
     def _build_optimizer_tab(self, parent: ttk.Frame) -> None:
@@ -526,6 +595,43 @@ class DualGpuApp(ttk.Frame):
             print(f"Chart error: {e}")
             
         self.after(1000, self._tick_chart)
+
+    def _save_all_settings(self):
+        """Save all settings from the settings tab to config."""
+        # Update monitoring settings
+        self.cfg["monitor_interval"] = self.interval_var.get()
+        self.cfg["alert_threshold"] = self.alert_threshold_var.get()
+        self.cfg["alert_duration"] = self.alert_duration_var.get()
+        
+        # Update advanced settings
+        self.cfg["check_updates"] = self.auto_check_updates.get()
+        
+        # Update memory overrides
+        if "env_overrides" not in self.cfg:
+            self.cfg["env_overrides"] = {}
+            
+        # Process memory overrides, removing empty ones
+        for key, var in self.memory_override_vars.items():
+            value = var.get().strip()
+            if value:
+                try:
+                    # Validate as integer
+                    int_value = int(value)
+                    self.cfg["env_overrides"][key] = str(int_value)
+                except ValueError:
+                    # Skip invalid values
+                    messagebox.showwarning("Invalid Value", f"Memory override for {key} must be a number. Ignoring.")
+            else:
+                # Remove empty overrides
+                if key in self.cfg["env_overrides"]:
+                    del self.cfg["env_overrides"][key]
+        
+        # Save the updated configuration
+        configio.save_cfg(self.cfg)
+        messagebox.showinfo("Settings Saved", "All settings have been saved successfully.\nSome changes may require a restart to take effect.")
+        
+        # Update monitoring settings immediately if possible
+        # (This would require modifications to the telemetry system)
 
 
 def run_app() -> None:

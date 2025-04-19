@@ -1,43 +1,50 @@
 ---
-description: Technical specifications for GPU resource monitoring, optimization parameters, and telemetry data flow between system components
-globs: dual_gpu_optimizer/dualgpuopt/*.py,*.py
+description: Guidelines for data flow and component interactions in the DualGPUOptimizer system
+globs: dual_gpu_optimizer/dualgpuopt/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core data flows in the DualGPUOptimizer system center around GPU resource management and optimization parameters:
+## Core Data Flows
 
-### GPU Resource Data Flow (Importance: 95)
-- NVML interface collects GPU data via `gpu_info.py`
-- Raw GPU metrics flow to telemetry collector in `telemetry.py`
-- Telemetry stream broadcasts to visualization components and idle detection
-- Mock GPU data can be injected via environment variables for testing
+### GPU Resource Information Flow
+- GPU detection via NVML produces device data (gpu_info.py)
+- Data flows to optimizer module for split calculations
+- Telemetry module consumes GPU data for real-time monitoring
+- GUI receives GPU data for visualization and alerts
 
-### Optimization Parameter Flow (Importance: 90)
-- Model configuration and context sizes flow from UI inputs to optimizer
-- `optimizer.py` transforms parameters into GPU split configurations
-- Split configurations generate environment variables and command strings
-- Command strings flow to runner for execution
+### Configuration Data Flow
+- configio.py manages persistent settings storage
+- Settings flow to GUI for display/modification
+- Optimizer receives config parameters for command generation
+- Runner module consumes configuration for process execution
 
-### Monitoring Data Pipeline (Importance: 85)
-- Real-time GPU utilization metrics flow from telemetry to visualization
-- Chart component maintains 2-minute history buffer of GPU loads
-- Alert thresholds and durations flow from configuration to monitoring system
-- Idle detection watches telemetry stream for triggering notifications
+### Monitoring Data Pipeline
+- Telemetry stream initiates from telemetry.py
+- Real-time GPU metrics flow to GUI for chart updates
+- System tray receives utilization data for idle detection
+- Logging system captures operational metrics
 
-### Configuration Data Flow (Importance: 75)
-- User preferences for themes and monitoring settings flow to persistent storage
-- Model paths and presets flow between UI and command generation
-- Alert configurations flow from UI to monitoring subsystem
-- Environment file parameters flow to shell script generation
+### Command Generation Pipeline
+- Model parameters flow from GUI to optimizer
+- Optimizer generates framework-specific commands
+- Commands flow to runner for execution
+- Execution output flows back to GUI log display
 
-Key data flow paths:
-```
-GPU Hardware -> NVML Interface -> Telemetry Collector -> Visualization/Monitoring
-User Input -> Optimizer -> Command Generator -> Runner
-Configuration -> Persistent Storage -> System Components
-```
+## Key Integration Points
+Importance Score: 85
+- GPU Info → Optimizer: Resource allocation decisions
+- Optimizer → Runner: Command execution flow
+- Telemetry → GUI: Real-time monitoring updates
+- Config → All Components: System-wide settings distribution
+
+## Data Models
+Importance Score: 90
+- GPU Resource Model: Memory, utilization, device capabilities
+- Optimization Parameters: Split configurations, tensor fractions
+- Monitoring Metrics: Load, memory usage, PCIe throughput
+- Framework Commands: llama.cpp and vLLM specific parameters
 
 $END$

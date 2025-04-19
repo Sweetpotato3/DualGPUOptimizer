@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Apply when documenting high-level architecture and business logic organization for GPU optimization and model execution systems, particularly those handling dual GPU configurations and LLM workloads
+description: Overview documentation for dual GPU optimizer application focused on optimizing Large Language Model workloads across multiple GPUs through automated detection, configuration, and monitoring
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,47 +18,39 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system orchestrates Large Language Model (LLM) workloads across multiple GPUs through several core business components:
+The DualGPUOptimizer is built around three core business capabilities:
 
-### GPU Management and Optimization (Importance: 95)
-- GPU detection and information retrieval using NVML
-- Mock GPU capabilities for testing and demonstration
-- Intelligent GPU split calculation for optimal resource distribution
-- Real-time GPU utilization monitoring and telemetry collection
+### GPU Resource Management (Importance: 95)
+Handles automated GPU detection and resource allocation through:
+- NVML integration for real-time GPU status monitoring
+- Dynamic GPU splitting algorithms for workload distribution
+- Mock GPU support for testing and demonstration purposes
+- Environment variable generation for GPU configuration
 
-### Model Execution Control (Importance: 90)
-- Command generation for both llama.cpp and vLLM implementations
-- Dynamic context size adjustment for GPU split optimization
-- Environment file generation for model execution
-- Background process management with real-time logging
+### ML Framework Integration (Importance: 90)
+Manages machine learning workload execution through:
+- Command generation for llama.cpp and vLLM frameworks
+- GPU tensor fraction calculations for optimal resource utilization
+- Model and context size management for different LLM configurations
+Key file: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-### Resource Monitoring and Alerting (Importance: 85)
-- Real-time GPU utilization visualization
-- Configurable alert thresholds for low GPU utilization
-- Continuous telemetry streaming for performance metrics
+### Monitoring and Telemetry (Importance: 85)
+Provides real-time monitoring and alerting:
+- GPU utilization tracking with stacked visualization
+- Idle GPU detection with system tray notifications
+- Telemetry streaming for continuous resource monitoring
+- Real-time process output logging
+Key files:
+- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+- `dual_gpu_optimizer/dualgpuopt/tray.py`
+
+### User Interface Components (Importance: 75)
+Offers multiple interaction modes:
+- GUI with theme management and settings persistence
+- CLI for automated/scripted operations
 - System tray integration for resource monitoring
-
-### Model Management (Importance: 80)
-- Model path and preset handling
-- Context size management for optimization
-- Command generation based on model characteristics
-- Integration with multiple model execution frameworks
-
-Core Files:
-```
-dual_gpu_optimizer/dualgpuopt/
-├── gpu_info.py      # GPU detection and information management
-├── optimizer.py     # GPU split optimization and command generation
-├── telemetry.py     # Real-time GPU monitoring
-└── runner.py        # Model execution management
-```
-
-The system implements a comprehensive workflow for LLM execution optimization:
-1. GPU detection and capability assessment
-2. Resource split calculation based on model requirements
-3. Command generation for optimal execution
-4. Real-time monitoring and alerting
-5. Automated resource management recommendations
+- Error handling with guided troubleshooting steps
+Key file: `dual_gpu_optimizer/dualgpuopt/gui.py`
 
 $END$
 END SPECIFICATION
