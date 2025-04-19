@@ -7,7 +7,11 @@ typer>=0.9.0
 colorama>=0.4.6
 rich>=13.7.0
 ttkthemes>=3.2.2
+<<<<<<< HEAD
 ttkwidgets>=0.13.0
 # Optional dependencies
 prometheus-client>=0.19.0
 torch>=2.2.0 
+=======
+ttkwidgets>=0.13.0 
+>>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)

@@ -2,8 +2,12 @@
 START SPECIFICATION
 <<<<<<< HEAD
 ---
+<<<<<<< HEAD
 
 description: Generate high-level overview documentation for GPU optimization and model inference systems, focusing on core business logic organizing GPU resource management, model execution, and telemetry collection
+=======
+description: Creates high-level documentation for dual GPU optimization systems focused on machine learning workload distribution and GPU resource management
+>>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -20,6 +24,7 @@ alwaysApply: false
 
 The DualGPUOptimizer system implements specialized GPU optimization and model inference capabilities through several key business components:
 
+<<<<<<< HEAD
 ## Core GPU Management (Importance: 95)
 
 - GPU discovery and configuration management for dual GPU setups
@@ -81,6 +86,39 @@ Key files:
 - `dualgpuopt/services/state_service.py`
 
 The system uses an event-driven architecture to coordinate between components, with specialized services handling configuration, errors, and state management. The GUI provides multiple specialized views including an optimizer tab, launcher interface, and GPU monitoring dashboard.
+=======
+The Dual GPU Optimizer manages GPU resources and optimizes workload distribution across multiple GPUs for machine learning applications. The system consists of several key business components:
+
+### Core GPU Management (Importance: 95)
+- Real-time GPU telemetry collection and monitoring
+- Automated detection of GPU specifications and capabilities
+- Dynamic workload distribution calculations based on GPU memory and utilization
+- Located in: `dual_gpu_optimizer/dualgpuopt/gpu_info.py`, `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+
+### Optimization Engine (Importance: 90)
+- Calculates optimal tensor fractions for GPU memory distribution
+- Generates environment configurations for ML frameworks
+- Produces optimized command-line arguments for model execution
+- Located in: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+
+### System Monitoring (Importance: 85)
+- GPU idle detection with configurable thresholds
+- System tray integration for real-time status monitoring 
+- Utilization alerts when GPUs remain underutilized
+- Located in: `dual_gpu_optimizer/dualgpuopt/tray.py`
+
+### ML Framework Integration (Importance: 80)
+- Specialized command generation for llama.cpp and vLLM
+- GPU memory split calculations for optimal model deployment
+- Dynamic tensor parallel size configuration
+- Located in: `simple_launcher.py`
+
+### Application Control Flow (Importance: 75)
+- Dual-mode operation (CLI and GUI) for flexibility
+- GPU configuration validation and requirement checking
+- Environment variable management for framework compatibility
+- Located in: `dual_gpu_optimizer/dualgpuopt/__main__.py`
+>>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)
 
 $END$
 END SPECIFICATION
