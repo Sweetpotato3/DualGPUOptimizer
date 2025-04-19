@@ -1,56 +1,71 @@
 ---
-description: Documents data flows between system components including GPU telemetry, optimization parameters, and monitoring metrics
-globs: 'dual_gpu_optimizer/dualgpuopt/*.py'
+description: Defines data flow patterns for GPU resource management, optimization parameters, and monitoring metrics across the system
+globs: dual_gpu_optimizer/dualgpuopt/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-### Primary Data Flows
+## Core Data Flows (Importance: 95)
 
-1. GPU Telemetry Collection Flow (Importance: 95)
-- `gpu_info.py` collects raw GPU data via NVML
-- Data streams to `telemetry.py` for real-time polling and metrics aggregation
-- Metrics flow to `optimizer.py` for workload distribution calculations
-- Flow includes: utilization, memory, PCIe throughput, temperature, power, clocks
+### GPU Telemetry Flow
+- GPU metrics collected via NVML interface in `gpu_info.py`
+- Telemetry stream generated in `telemetry.py` using background thread
+- Data queued to `tele_q` for dashboard consumption
+- Dashboard processes metrics every second from queue
+- Historical data maintained for 60 samples in dashboard graphs
 
-2. Optimization Parameter Flow (Importance: 90)
-- `optimizer.py` receives GPU capabilities from `gpu_info.py`
-- Calculates tensor fractions and memory splits
-- Generates environment configurations 
-- Outputs command-line arguments for ML frameworks
-- Parameters flow to execution environment via env files
+### Configuration Data Flow
+- GPU overclocking settings flow from GUI to persistent storage
+- Theme configurations propagate through widget hierarchy
+- Application settings persisted via `configio.py`
+- Mock GPU data injection flow when `DGPUOPT_MOCK_GPUS` enabled
 
-3. Monitoring Metrics Flow (Importance: 85)
-- `telemetry.py` streams metrics via queue system
-- `tray.py` receives utilization data for idle detection
-- Notification triggers based on 30% utilization threshold
-- Metrics logged for historical analysis
+### Optimization Parameter Flow
+- Model configuration flows from JSON presets to optimizer
+- GPU memory splits calculated and propagated to command generation
+- Tensor fractions computed based on GPU memory distribution
+- Environment variables generated and saved to .env files
+- Framework-specific commands (llama.cpp, vLLM) generated from parameters
 
-4. Configuration Data Flow (Importance: 80)
-- `configio.py` manages configuration parameter distribution
-- Settings flow to optimization components
-- Parameters include GPU splits, tensor parallel sizes
-- Configuration validated against GPU capabilities
+## Component Communication (Importance: 85)
 
-### Key Integration Points
+### Dashboard Updates
+File: `dual_gpu_optimizer/dualgpuopt/gui/dashboard.py`
+- Telemetry queue -> Dashboard processor
+- Metrics update -> UI elements 
+- Historical data -> Graph renderer
 
-1. GPU Data Collection Interface (Importance: 85)
-- `gpu_info.py` -> `telemetry.py`
-- Real GPU or mock data generation
-- Structured GPU objects with standardized metrics
+### Settings Propagation 
+File: `dual_gpu_optimizer/dualgpuopt/gui/settings.py`
+- GUI inputs -> Configuration storage
+- Stored settings -> GPU controls
+- Theme selection -> Widget styling
 
-2. Optimization Parameter Distribution (Importance: 80)
-- `optimizer.py` -> Framework command generation
-- Memory split calculations
-- Tensor fraction distribution
-- Environment variable generation
+### Optimizer Data Path
+File: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+- GPU info -> Split calculator
+- Memory data -> Tensor fraction generator
+- Configuration -> Environment file writer
+- Parameters -> Command string builder
 
-3. Monitoring Interface (Importance: 75)
-- `telemetry.py` -> `tray.py`
-- Queue-based metric streaming
-- Threshold-based notifications
-- System tray integration
+## Key Integration Points (Importance: 80)
+
+### GPU Resource Management
+Files:
+- `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
+- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+```
+GPU Hardware <-> NVML Interface <-> Telemetry Collector <-> Application Logic
+```
+
+### Command Generation Pipeline
+Files:
+- `dual_gpu_optimizer/dualgpuopt/gui/optimizer_tab.py`
+- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
+```
+Model Selection -> GPU Split Calculation -> Environment Generation -> Command Construction
+```
 
 $END$

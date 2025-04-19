@@ -7,33 +7,39 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import sys
 import pathlib
+import logging
 from typing import Dict, List, Callable, Any, Optional
 
 from dualgpuopt.gpu_info import GPU
-from dualgpuopt.configio import save_cfg
+from dualgpuopt.services.event_service import event_bus
+from dualgpuopt.services.config_service import config_service
+from dualgpuopt.services.error_service import error_service
 from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES
+from dualgpuopt.commands.command_base import command_manager
+from dualgpuopt.commands.gpu_commands import ApplyOverclockCommand
 
 
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
     
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config: Dict[str, Any],
-                 theme_change_callback: Callable[[str, str], None]) -> None:
+    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service) -> None:
         """
         Initialize the settings tab.
         
         Args:
             parent: Parent frame
             gpus: List of GPU objects
-            config: Application configuration dictionary
-            theme_change_callback: Callback for theme changes
+            config_service: Application configuration service
         """
         super().__init__(parent, padding=8)
         self.parent = parent
         self.gpus = gpus
-        self.config = config
-        self.theme_change_callback = theme_change_callback
+        self.config_service = config_service
         self.columnconfigure(0, weight=1)
+        self.logger = logging.getLogger("dualgpuopt.gui.settings")
+        
+        # Register event handlers
+        self._register_event_handlers()
         
         # Create a scrollable canvas to contain all settings
         canvas = tk.Canvas(self)
@@ -60,7 +66,7 @@ class SettingsTab(ttk.Frame):
         appearance_frame.columnconfigure(1, weight=1)
         
         # Theme selection
-        self.theme_var = tk.StringVar(value=config.get("theme", "dark"))
+        self.theme_var = tk.StringVar(value=config_service.get("theme", "dark"))
         ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
         theme_combo = ttk.Combobox(
             appearance_frame, 
@@ -72,7 +78,7 @@ class SettingsTab(ttk.Frame):
         theme_combo.grid(row=0, column=1, sticky="w", padx=8, pady=5)
         
         # Add TTK theme selection if ttkthemes is available
-        self.ttk_theme_var = tk.StringVar(value=config.get("ttk_theme", ""))
+        self.ttk_theme_var = tk.StringVar(value=config_service.get("ttk_theme", ""))
         if AVAILABLE_TTK_THEMES:
             ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=8, pady=5)
             ttk_theme_combo = ttk.Combobox(
@@ -202,6 +208,13 @@ class SettingsTab(ttk.Frame):
             command=self._reset_overclock
         ).grid(row=0, column=1, padx=5, pady=5)
         
+        ttk.Button(
+            oc_buttons_frame,
+            text="Undo",
+            command=self._undo_last_command,
+            state="disabled"  # Will be enabled when commands are available
+        ).grid(row=0, column=2, padx=5, pady=5)
+        
         # Note about overclocking
         warning_frame = ttk.Frame(overclocking_frame)
         warning_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=8, pady=5)
@@ -225,7 +238,7 @@ class SettingsTab(ttk.Frame):
         
         # Startup behavior
         ttk.Label(app_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
-        self.start_min_var = tk.BooleanVar(value=config.get("start_minimized", False))
+        self.start_min_var = tk.BooleanVar(value=config_service.get("start_minimized", False))
         start_min_check = ttk.Checkbutton(
             app_settings_frame,
             variable=self.start_min_var
@@ -234,7 +247,7 @@ class SettingsTab(ttk.Frame):
         
         # GPU idle detection
         ttk.Label(app_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=8, pady=5)
-        self.idle_alerts_var = tk.BooleanVar(value=config.get("idle_alerts", True))
+        self.idle_alerts_var = tk.BooleanVar(value=config_service.get("idle_alerts", True))
         idle_alerts_check = ttk.Checkbutton(
             app_settings_frame,
             variable=self.idle_alerts_var
@@ -243,7 +256,7 @@ class SettingsTab(ttk.Frame):
         
         # Idle threshold
         ttk.Label(app_settings_frame, text="Idle threshold (%):").grid(row=2, column=0, sticky="w", padx=8, pady=5)
-        self.idle_threshold_var = tk.IntVar(value=config.get("idle_threshold", 30))
+        self.idle_threshold_var = tk.IntVar(value=config_service.get("idle_threshold", 30))
         idle_threshold_entry = ttk.Entry(
             app_settings_frame,
             textvariable=self.idle_threshold_var,
@@ -253,7 +266,7 @@ class SettingsTab(ttk.Frame):
         
         # Idle time
         ttk.Label(app_settings_frame, text="Idle time (minutes):").grid(row=3, column=0, sticky="w", padx=8, pady=5)
-        self.idle_time_var = tk.IntVar(value=config.get("idle_time", 5))
+        self.idle_time_var = tk.IntVar(value=config_service.get("idle_time", 5))
         idle_time_entry = ttk.Entry(
             app_settings_frame,
             textvariable=self.idle_time_var,
@@ -273,6 +286,51 @@ class SettingsTab(ttk.Frame):
         
         # Initialize the fan control state
         self._toggle_fan_control()
+        
+        # Reference to undo button
+        self.undo_button = oc_buttons_frame.winfo_children()[2]
+    
+    def _register_event_handlers(self) -> None:
+        """Register event handlers for events."""
+        event_bus.subscribe("command_history_updated", self._update_command_history)
+        event_bus.subscribe("command_executed:apply_overclock", self._handle_overclock_result)
+    
+    def _update_command_history(self, data: Dict[str, Any]) -> None:
+        """
+        Update the command history UI.
+        
+        Args:
+            data: Command history data
+        """
+        # Enable/disable the undo button based on history
+        can_undo = data.get("can_undo", False)
+        self.undo_button["state"] = "normal" if can_undo else "disabled"
+    
+    def _handle_overclock_result(self, data: Dict[str, Any]) -> None:
+        """
+        Handle the result of an overclock command.
+        
+        Args:
+            data: Overclock result data
+        """
+        success = data.get("success", False)
+        
+        if success:
+            messagebox.showinfo(
+                "Overclock Applied", 
+                f"Overclocking settings applied to GPU {data.get('gpu_index', '?')}",
+                parent=self.winfo_toplevel()
+            )
+    
+    def _undo_last_command(self) -> None:
+        """Undo the last command."""
+        result = command_manager.undo()
+        if not result:
+            messagebox.showerror(
+                "Undo Failed", 
+                "Failed to undo the last operation",
+                parent=self.winfo_toplevel()
+            )
     
     def _update_label(self, label: ttk.Label, text: str) -> None:
         """
@@ -304,8 +362,8 @@ class SettingsTab(ttk.Frame):
         try:
             gpu_idx = int(selected.split(":")[0].replace("GPU", "").strip())
             
-            # Get saved overclock settings for this GPU from config if available
-            gpu_oc = self.config.get("gpu_overclock", {}).get(str(gpu_idx), {})
+            # Get saved overclock settings for this GPU from config
+            gpu_oc = self.config_service.get("gpu_overclock", {}).get(str(gpu_idx), {})
             
             # Update sliders with saved values
             self.core_clock_var.set(gpu_oc.get("core", 0))
@@ -322,8 +380,10 @@ class SettingsTab(ttk.Frame):
             # Update fan control
             self._toggle_fan_control()
             
-        except (ValueError, IndexError):
-            pass
+        except (ValueError, IndexError) as e:
+            error_service.handle_error(e, level="WARNING", title="GPU Selection Error",
+                                     show_dialog=False,
+                                     context={"operation": "update_oc_controls", "selection": selected})
     
     def _apply_overclock(self) -> None:
         """Apply overclocking settings to the selected GPU."""
@@ -342,36 +402,17 @@ class SettingsTab(ttk.Frame):
             fan_speed = self.fan_speed_var.get() if not self.auto_fan_var.get() else 0
             auto_fan = self.auto_fan_var.get()
             
-            # This is where we would apply settings to the actual GPU
-            # For now, we'll just show a message and save the settings
-            
-            message = (
-                f"Applying to GPU {gpu_idx}:\n"
-                f"Core: {core_offset} MHz\n"
-                f"Memory: {memory_offset} MHz\n"
-                f"Power: {power_limit}%\n"
-                f"Fan: {'Auto' if auto_fan else f'{fan_speed}%'}"
+            # Create overclocking command
+            command = ApplyOverclockCommand(
+                gpu_idx, core_offset, memory_offset, power_limit, fan_speed, auto_fan
             )
             
-            messagebox.showinfo("Overclock Settings", message)
-            
-            # Save to config for persistence
-            if "gpu_overclock" not in self.config:
-                self.config["gpu_overclock"] = {}
-                
-            self.config["gpu_overclock"][str(gpu_idx)] = {
-                "core": core_offset,
-                "memory": memory_offset,
-                "power": power_limit,
-                "fan": fan_speed,
-                "auto_fan": auto_fan
-            }
-            
-            # Save the config file
-            save_cfg(self.config)
+            # Execute command
+            command_manager.execute(command)
             
         except (ValueError, IndexError) as e:
-            messagebox.showerror("Error", f"Failed to apply settings: {e}")
+            error_service.handle_error(e, level="ERROR", title="Overclock Error",
+                                    context={"operation": "apply_overclock"})
     
     def _reset_overclock(self) -> None:
         """Reset overclocking settings to default values."""
@@ -388,14 +429,19 @@ class SettingsTab(ttk.Frame):
         
         # If a GPU is selected, also remove its saved overclock settings
         selected = self.oc_gpu_var.get()
-        if selected and "gpu_overclock" in self.config:
+        if selected and "gpu_overclock" in self.config_service.config:
             try:
                 gpu_idx = int(selected.split(":")[0].replace("GPU", "").strip())
-                if str(gpu_idx) in self.config["gpu_overclock"]:
-                    del self.config["gpu_overclock"][str(gpu_idx)]
-                    save_cfg(self.config)
-            except (ValueError, IndexError):
-                pass
+                if str(gpu_idx) in self.config_service.config["gpu_overclock"]:
+                    del self.config_service.config["gpu_overclock"][str(gpu_idx)]
+                    self.config_service.save()
+                    
+                    # Publish event that GPU overclock was reset
+                    event_bus.publish("gpu_overclock_reset", {"gpu_index": gpu_idx})
+            except (ValueError, IndexError) as e:
+                error_service.handle_error(e, level="WARNING", title="Reset Error",
+                                        show_dialog=False,
+                                        context={"operation": "reset_overclock"})
     
     def _apply_theme_change(self) -> None:
         """Apply theme change."""
@@ -403,24 +449,30 @@ class SettingsTab(ttk.Frame):
         ttk_theme = self.ttk_theme_var.get()
         
         # Update config
-        self.config["theme"] = theme_name
-        if ttk_theme:
-            self.config["ttk_theme"] = ttk_theme
-            
-        # Call the theme change callback
-        self.theme_change_callback(theme_name, ttk_theme)
+        self.config_service.update({
+            "theme": theme_name,
+            "ttk_theme": ttk_theme
+        })
+        
+        # Notify about theme change
+        event_bus.publish("config_changed:theme", theme_name)
     
     def _save_all_settings(self) -> None:
         """Save all settings to the configuration file."""
-        # Update config with current values
-        self.config["start_minimized"] = self.start_min_var.get()
-        self.config["idle_alerts"] = self.idle_alerts_var.get()
-        self.config["idle_threshold"] = self.idle_threshold_var.get()
-        self.config["idle_time"] = self.idle_time_var.get()
-        
-        # Save to file
         try:
-            save_cfg(self.config)
-            messagebox.showinfo("Settings", "Settings saved successfully")
+            # Update config with current values
+            self.config_service.update({
+                "start_minimized": self.start_min_var.get(),
+                "idle_alerts": self.idle_alerts_var.get(),
+                "idle_threshold": self.idle_threshold_var.get(),
+                "idle_time": self.idle_time_var.get(),
+            })
+            
+            # Notify about settings update
+            event_bus.publish("settings_saved")
+            
+            messagebox.showinfo("Settings", "Settings saved successfully",
+                              parent=self.winfo_toplevel())
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save settings: {e}") 
+            error_service.handle_error(e, level="ERROR", title="Settings Error",
+                                     context={"operation": "save_settings"}) 

@@ -7,10 +7,15 @@ import tkinter as tk
 from tkinter import ttk, filedialog
 import json
 import pathlib
+import logging
 from typing import Dict, List, Callable, Any, Optional
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt import optimizer
+from dualgpuopt.services.event_service import event_bus
+from dualgpuopt.services.state_service import app_state
+from dualgpuopt.services.config_service import config_service
+from dualgpuopt.services.error_service import error_service
 
 
 class OptimizerTab(ttk.Frame):
@@ -28,13 +33,17 @@ class OptimizerTab(ttk.Frame):
         self.parent = parent
         self.gpus = gpus
         self.columnconfigure(0, weight=1)
+        self.logger = logging.getLogger("dualgpuopt.gui.optimizer")
+        
+        # Register event handlers
+        self._register_event_handlers()
         
         # Model path selection
         model_frame = ttk.LabelFrame(self, text="Model Selection")
         model_frame.grid(row=0, column=0, sticky="ew", padx=8, pady=(0, 8))
         model_frame.columnconfigure(1, weight=1)
         
-        self.model_var = tk.StringVar()
+        self.model_var = tk.StringVar(value=app_state.get("model_path", ""))
         ttk.Label(model_frame, text="Model Path:").grid(row=0, column=0, sticky="w", padx=8, pady=8)
         model_entry = ttk.Entry(model_frame, textvariable=self.model_var)
         model_entry.grid(row=0, column=1, sticky="ew", padx=8, pady=8)
@@ -67,7 +76,7 @@ class OptimizerTab(ttk.Frame):
         param_frame.grid(row=1, column=0, sticky="ew", padx=8, pady=(0, 8))
         param_frame.columnconfigure(1, weight=1)
         
-        self.ctx_var = tk.IntVar(value=65536)
+        self.ctx_var = tk.IntVar(value=config_service.get("context_size", 65536))
         ttk.Label(param_frame, text="Context Size:").grid(row=0, column=0, sticky="w", padx=8, pady=8)
         ctx_entry = ttk.Entry(param_frame, textvariable=self.ctx_var, width=10)
         ctx_entry.grid(row=0, column=1, sticky="w", padx=8, pady=8)
@@ -131,8 +140,43 @@ class OptimizerTab(ttk.Frame):
         env_btn = ttk.Button(env_frame, text="Save", command=self._save_env)
         env_btn.grid(row=0, column=2, padx=8)
         
+        # Connect model_var and ctx_var to update functions
+        self.model_var.trace_add("write", lambda *_: self._model_changed())
+        self.ctx_var.trace_add("write", lambda *_: self._context_changed())
+        
         # Initialize output
         self._refresh_outputs()
+    
+    def _register_event_handlers(self) -> None:
+        """Register event handlers."""
+        event_bus.subscribe("state_changed:model_path", self._update_model_path)
+        event_bus.subscribe("gpu_updated", self._refresh_outputs)
+    
+    def _update_model_path(self, path: str) -> None:
+        """Update model path from state."""
+        if path != self.model_var.get():
+            self.model_var.set(path)
+            
+    def _model_changed(self) -> None:
+        """Handle model path change."""
+        # Update state
+        app_state.set("model_path", self.model_var.get())
+        # Update last model in config
+        config_service.set("last_model", self.model_var.get())
+        # Refresh outputs
+        self._refresh_outputs()
+    
+    def _context_changed(self) -> None:
+        """Handle context size change."""
+        # Update config
+        try:
+            ctx_size = self.ctx_var.get()
+            if ctx_size > 0:
+                config_service.set("context_size", ctx_size)
+                self._refresh_outputs()
+        except (ValueError, tk.TclError):
+            # Invalid value, ignore
+            pass
     
     def _browse(self) -> None:
         """Open file dialog to select model path."""
@@ -148,21 +192,32 @@ class OptimizerTab(ttk.Frame):
         )
         if path:
             self.model_var.set(path)
-            self._refresh_outputs()
+            # _model_changed will be called by the trace
     
-    def _refresh_outputs(self) -> None:
+    def _refresh_outputs(self, _=None) -> None:
         """Update output fields based on current settings."""
-        # Generate split string
-        split = optimizer.split_string(self.gpus)
-        self.split_var.set(split)
-        
-        # Generate commands if model path is set
-        model_path = self.model_var.get()
-        ctx = self.ctx_var.get()
-        
-        if model_path:
-            self.llama_var.set(optimizer.llama_command(model_path, ctx, split))
-            self.vllm_var.set(optimizer.vllm_command(model_path, len(self.gpus)))
+        try:
+            # Generate split string
+            split = optimizer.split_string(self.gpus)
+            self.split_var.set(split)
+            
+            # Generate commands if model path is set
+            model_path = self.model_var.get()
+            ctx = self.ctx_var.get()
+            
+            if model_path:
+                self.llama_var.set(optimizer.llama_command(model_path, ctx, split))
+                self.vllm_var.set(optimizer.vllm_command(model_path, len(self.gpus)))
+                
+                # Publish commands generated event
+                event_bus.publish("commands_generated", {
+                    "split": split,
+                    "llama_cmd": self.llama_var.get(),
+                    "vllm_cmd": self.vllm_var.get()
+                })
+        except Exception as e:
+            error_service.handle_error(e, level="ERROR", title="Optimization Error",
+                                     context={"operation": "generate_commands"})
     
     def _copy(self, which: str) -> None:
         """
@@ -182,11 +237,21 @@ class OptimizerTab(ttk.Frame):
         if value:
             self.clipboard_clear()
             self.clipboard_append(value)
+            
+            # Publish copied event
+            event_bus.publish("command_copied", {"type": which, "value": value})
     
     def _save_env(self) -> None:
         """Generate and save environment variables file."""
-        env_path = pathlib.Path(self.env_path_var.get())
-        optimizer.make_env_file(self.gpus, env_path)
+        try:
+            env_path = pathlib.Path(self.env_path_var.get())
+            optimizer.make_env_file(self.gpus, env_path)
+            
+            # Publish env file saved event
+            event_bus.publish("env_file_saved", {"path": str(env_path)})
+        except Exception as e:
+            error_service.handle_error(e, level="ERROR", title="Save Error", 
+                                      context={"operation": "save_env_file", "path": self.env_path_var.get()})
     
     def _preset_selected(self, *_) -> None:
         """Handle preset selection."""
@@ -197,7 +262,9 @@ class OptimizerTab(ttk.Frame):
                 self.model_var.set(preset_data["path"])
             if "ctx" in preset_data:
                 self.ctx_var.set(preset_data["ctx"])
-            self._refresh_outputs()
+                
+            # Publish preset selected event
+            event_bus.publish("preset_selected", {"preset": preset_name, "data": preset_data})
     
     def _load_presets(self) -> Dict[str, Any]:
         """
@@ -209,8 +276,12 @@ class OptimizerTab(ttk.Frame):
         try:
             preset_path = pathlib.Path(__file__).parent.parent / "presets" / "mixtral.json"
             if preset_path.exists():
-                return json.load(preset_path.open())
-        except Exception:
-            # If there's any error loading presets, return an empty dict
-            pass
+                with open(preset_path, "r", encoding="utf-8") as f:
+                    presets = json.load(f)
+                self.logger.info(f"Loaded {len(presets)} presets")
+                return presets
+        except Exception as e:
+            error_service.handle_error(e, level="WARNING", title="Preset Error", 
+                                      show_dialog=False,
+                                      context={"operation": "load_presets"})
         return {} 
