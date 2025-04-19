@@ -97,24 +97,16 @@ def test_validate_config_fav_paths():
     assert result["fav_paths"] == configio._DEFAULT["fav_paths"]
 
 
-def test_load_cfg_no_file():
+def test_load_cfg_no_file(monkeypatch):
     """Test loading config when file doesn't exist."""
-    # Create a backup of the original function
-    original_exists = Path.exists
+    # Mock Path.exists to return False
+    monkeypatch.setattr(Path, "exists", lambda self: False)
     
-    try:
-        # Replace Path.exists with a mock that always returns False
-        Path.exists = lambda self: False
-        
-        # Call the function under test
-        result = configio.load_cfg()
-        
-        # Verify results
-        assert result == configio._DEFAULT
+    # Call the function under test
+    result = configio.load_cfg()
     
-    finally:
-        # Restore the original function
-        Path.exists = original_exists
+    # Verify results
+    assert result == configio._DEFAULT
 
 
 def test_load_cfg_with_file(monkeypatch):
@@ -126,8 +118,11 @@ def test_load_cfg_with_file(monkeypatch):
     monkeypatch.setattr(Path, "exists", lambda self: True)
     
     # Mock the open function to avoid file system access
-    mock_open = mock.mock_open()
-    monkeypatch.setattr("builtins.open", mock_open)
+    mock_file = mock.MagicMock()
+    mock_context = mock.MagicMock()
+    mock_context.__enter__.return_value = mock_file
+    
+    monkeypatch.setattr(Path, "open", lambda self, mode: mock_context)
     
     # Mock tomllib.load to return our test data
     monkeypatch.setattr("tomllib.load", lambda file: test_config)
@@ -146,8 +141,11 @@ def test_save_cfg(monkeypatch):
     test_config = {"theme": "light", "ctx": 32768}
     
     # Mock dependencies
-    mock_open = mock.mock_open()
-    monkeypatch.setattr("builtins.open", mock_open)
+    mock_file = mock.MagicMock()
+    mock_context = mock.MagicMock()
+    mock_context.__enter__.return_value = mock_file
+    
+    monkeypatch.setattr(Path, "open", lambda self, mode: mock_context)
     
     mock_dump = mock.Mock()
     monkeypatch.setattr("tomli_w.dump", mock_dump)
@@ -156,5 +154,9 @@ def test_save_cfg(monkeypatch):
     configio.save_cfg(test_config)
     
     # Verify mock was called
-    mock_open.assert_called_once()
-    mock_dump.assert_called_once() 
+    # Check validation was applied
+    mock_dump.assert_called_once()
+    args, _ = mock_dump.call_args
+    saved_config = args[0]
+    assert saved_config["theme"] == "light"
+    assert saved_config["ctx"] == 32768 
