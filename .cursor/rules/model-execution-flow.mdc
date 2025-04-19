@@ -1,65 +1,60 @@
 ---
-description: Defines how machine learning models are executed across multiple GPUs, including command generation, configuration and resource allocation
-globs: **/optimizer.py,**/runner.py,**/launcher.py,**/commands/*.py,**/batch/*.py
+description: Defines execution flow and coordination of LLM workloads across multiple GPUs, including memory management and hardware optimization
+globs: 
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow handles distributing and running machine learning models across multiple GPUs through several key components:
+The model execution flow implements several key components for orchestrating LLM inference across multiple GPUs:
 
-## Command Generation System (85)
-File: dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py
+## Command Generation (Importance: 95)
+Location: dualgpuopt/optimizer.py
 
-Generates framework-specific commands for model execution:
+Generates specialized command configurations for different LLM frameworks:
+- llama.cpp: GPU split parameters, memory allocation ratios
+- vLLM: Tensor parallelism degree, per-GPU memory quotas
 
-1. llama.cpp Mode:
-- Creates GPU split strings based on available memory ratios
-- Configures context window sizes per GPU
-- Sets thread count and batch size parameters
+Key parameters managed:
+- Context size allocation
+- GPU memory splits
+- Tensor parallel fractions
 
-2. vLLM Mode: 
-- Generates tensor parallel configurations
-- Calculates GPU memory fraction allocations
-- Sets environment variables for GPU visibility
+## Mixed Precision Policy (Importance: 90)
+Location: dualgpuopt/mpolicy.py
 
-## Batch Processing Engine (90)
-File: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
+Manages precision for different operation types:
+- FP32: LayerNorm, Softmax, Residual adds
+- FP16/BF16: Matrix multiplications
+- INT8/FP4: Weight storage and lookup
+- Custom dtype mapping for PyTorch ops
 
-Implements intelligent batching logic:
-- Length-aware sequence bucketing using power-of-two strategy
-- Automatic batch size adjustment based on GPU memory constraints
-- Back-pressure handling with configurable queue depth limits
-- OOM recovery through cache purging and retry mechanisms
+## Batching System (Importance: 85)
+Location: dualgpuopt/batch/smart_batch.py
 
-## Resource Allocation Controller (95)
-File: dual_gpu_optimizer/dualgpuopt/optimizer.py
+Implements length-aware sequence batching:
+- Power-of-two bucketing strategy
+- Token ratio bucketing with size ratios
+- Back-pressure mechanism with configurable limits
+- Automatic retry after OOM with cache purging
 
-Controls GPU resource distribution:
-- Dynamically splits model layers across available GPUs
-- Calculates optimal tensor parallel fractions
-- Manages GPU memory allocation ratios
-- Handles model-specific memory requirements
-- Generates environment configurations for each framework
+## Layer Distribution (Importance: 80) 
+Location: dualgpuopt/layer_balance.py
 
-## Execution Flow Manager (85)
-File: dual_gpu_optimizer/dualgpuopt/runner.py
+Controls model layer placement:
+- Weighted profiling (20% short / 80% long sequences)
+- Memory quota enforcement
+- Latency-based distribution
+- MoE routing optimization
 
-Coordinates model execution:
-- Initializes GPU contexts and CUDA streams
-- Manages model loading and weight distribution
-- Handles framework-specific execution paths
-- Monitors GPU utilization and adjusts splits
-- Provides graceful shutdown and cleanup
+## Command Execution (Importance: 75)
+Location: dualgpuopt/runner.py
 
-## Memory Management (80)
-File: dual_gpu_optimizer/dualgpuopt/mpolicy.py
-
-Implements memory policies:
-- Mixed precision handling for different operations
-- Context size calculations based on model architecture
-- Memory safety buffers and threshold management
-- Automatic tensor offloading when memory constrained
+Manages model execution lifecycle:
+- Framework-specific launch sequences
+- GPU resource allocation/deallocation
+- Error handling and recovery
+- Metric collection and monitoring
 
 $END$

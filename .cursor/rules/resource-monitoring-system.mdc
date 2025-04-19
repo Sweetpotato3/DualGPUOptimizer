@@ -1,55 +1,60 @@
 ---
-description: Documentation for resource monitoring and GPU metrics collection functionality in a dual GPU optimization system.
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/services/event_*.py
+description: Technical specification for GPU resource monitoring and telemetry collection system including metrics tracking and alert mechanisms
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and analysis with the following key components:
+The resource monitoring system implements specialized GPU telemetry collection and visualization with the following key components:
 
 ## GPU Metrics Collection (telemetry.py)
 Importance: 95
+- Collects comprehensive GPU performance metrics:
+  - Memory utilization and allocation tracking
+  - PCIe bandwidth monitoring (RX/TX rates) 
+  - Power consumption in watts
+  - Temperature readings with warning thresholds
+  - Clock speeds for both graphics and memory
+- Implements metric middleware pipeline for processing raw data
+- Manages real-time monitoring through configurable polling intervals
+- Fault tolerant collection with mock data fallback
 
-Core metrics collection engine gathers real-time GPU performance data:
-- GPU utilization percentage 
-- Memory usage and bandwidth
-- PCIe throughput (RX/TX rates)
-- Temperature monitoring
-- Power consumption in watts
-- Fan speeds and clock frequencies
-
-Custom middleware pipeline processes raw GPU metrics:
-- EventBusMiddleware transforms telemetry into structured GPU events
-- LoggingMiddleware handles diagnostic data recording
-- Thread-safe queue manages metrics distribution
-
-## Resource Usage Detection (tray.py)
+## Dashboard Visualization (dashboard.py) 
 Importance: 85
+- Real-time multi-GPU monitoring panels with:
+  - 60-sample rolling history window
+  - Color-coded performance indicators for critical metrics
+  - Independent tracking per GPU device
+  - Automatic unit scaling for bandwidth/memory
+- Dynamic maximum value calculations per GPU model
+- Synchronized metric updates across detected GPUs
 
-Implements specialized GPU resource monitoring:
-- Idle GPU detection after configurable 5-minute threshold
-- System tray notifications for underutilized GPU resources
-- Automatic power state management based on usage patterns
-
-## Metrics Processing Engine (metrics.py)
-Importance: 90
-
-Processes synchronized telemetry data streams:
-- Real-time bandwidth conversion (KB/s to GB/s)
-- Temperature display capping at 100°C  
-- Power usage scaled to GPU-specific limits
-- Clock speeds normalized to maximum frequencies
-
-## Event Management (services/event_bus.py)
+## Alert System (tray.py)
 Importance: 80
+- Temperature threshold monitoring with alerts at:
+  - Warning level: 80°C
+  - Critical level: 90°C 
+- Memory utilization warnings at <256MB available
+- Custom status indicators for:
+  - GPU states (ok, warning, error)
+  - Idle detection
+  - Resource exhaustion
+- Three-tier update frequency:
+  - Critical metrics: 500ms
+  - Standard metrics: 1000ms
+  - Background metrics: 2000ms
 
-Specialized event system for GPU monitoring:
-- Priority-based GPU event processing
-- GPU-specific event types (metrics, optimization, alerts)
-- Event type locking for security-critical operations
-
-The monitoring system maintains a 60-sample rolling window of historical data and implements fault tolerance through mock data generation when hardware monitoring fails.
+## Metric Processing (metrics.py)
+Importance: 75
+- Specialized metric event system for GPU telemetry
+- Unit conversion and normalization:
+  - Power (mW to W)
+  - Memory (KB/MB/GB)
+  - Temperature scaling
+  - Bandwidth calculations
+- Integration with application state management
+- Event-driven distribution to visualization components
 
 $END$

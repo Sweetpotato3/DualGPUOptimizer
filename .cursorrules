@@ -229,7 +229,7 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Creates a high-level overview of dual GPU optimization systems focused on machine learning workloads, specifically when documenting memory management, resource allocation, and GPU coordination logic
+description: Rules for documenting dual GPU optimization systems for ML workloads, covering GPU resource management, monitoring, and parallel execution strategies
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -246,51 +246,43 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized logic for managing and optimizing machine learning workloads across multiple GPUs with three core subsystems:
+DualGPUOptimizer delivers intelligent GPU resource management and optimization for machine learning workloads across multiple GPUs.
 
-1. GPU Memory Management and Optimization
-- Context size calculation using model-specific parameters:
-  - Layer count, KV heads, dimensions
-  - Memory overhead buffers
-  - Architecture-specific adjustments 
-- Tensor parallel fraction distribution based on relative GPU memory sizes
-- Dynamic memory split optimization for heterogeneous GPU configurations
+Core Business Components:
 
-2. Layer Distribution System (dual_gpu_optimizer/dualgpuopt/layer_balance.py)
-- Adaptive latency-aware layer redistribution
-- Dual sequence length profiling (64/1024 tokens) with 20/80 weighted averaging
-- Balances layer allocation based on:
-  - Execution time measurements
-  - Memory constraints per GPU
-  - Thermal and power limits
-- Prioritizes fastest GPU for compute-intensive layers
+1. GPU Resource Management
+- Memory splitting algorithms distribute model layers across GPUs
+- Adaptive tensor parallelism fractions based on GPU capabilities
+- Dynamic memory quotas with 90% allocation safety threshold
+- MoE-aware context sizing with 1.05x gating cache factor
 
-3. Real-time GPU Telemetry (dual_gpu_optimizer/dualgpuopt/telemetry.py)
-- Comprehensive metrics collection:
-  - GPU/Memory utilization 
-  - PCIe bandwidth monitoring
-  - Temperature and power tracking
-  - Clock speed optimization
-- Event-driven monitoring pipeline with middleware processing
-- Hardware protection policies with automatic failover
-- Idle detection for resource optimization
+2. Workload Optimization
+- Length-aware batch scheduling for inference optimization 
+- Power-of-two bucketing strategy similar to llama.cpp
+- Token ratio bucketing maintains configurable size ratios
+- Back-pressure system prevents GPU memory overflow
 
-Core integration components:
+3. Hardware Monitoring
+- Real-time GPU metrics collection:
+  - Utilization percentages
+  - Memory allocation tracking 
+  - Temperature monitoring with 80°C warning threshold
+  - Power draw monitoring against 400W maximum
+- Rolling 60-sample performance history
 
-1. Command Generation (dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py)
-- Framework-specific command optimization for:
-  - llama.cpp with GPU split configurations
-  - vLLM with tensor parallelism settings
-- Environment variable management for GPU memory allocation
-- Model preset handling for common configurations
+4. Framework Integration
+- Framework-specific command generation:
+  - llama.cpp: GPU split parameters
+  - vLLM: Tensor parallelism configs
+- Mixed precision policies maintain FP32 for critical operations
 
-2. Smart Batching System (dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py)
-- Length-aware inference scheduling
-- Dynamic batch sizing based on token counts
-- Memory-aware optimization with 20% overhead buffer
-- Automatic recovery from GPU OOM conditions
+Critical Paths:
+- dualgpuopt/optimizer.py: Core optimization logic
+- dualgpuopt/layer_balance.py: Layer distribution system
+- dualgpuopt/telemetry.py: GPU metrics collection
+- dualgpuopt/mpolicy.py: Mixed precision management
 
-The system provides real-time GPU optimization for ML model inference, emphasizing efficient resource utilization and safe operation within hardware constraints.
+The system focuses on maximizing GPU resource utilization while maintaining stability through careful memory management and workload distribution across multiple GPUs.
 
 $END$
 END SPECIFICATION

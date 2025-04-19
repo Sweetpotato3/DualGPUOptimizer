@@ -1,5 +1,5 @@
 ---
-description: GPU memory distribution and tensor parallelism algorithms for optimizing large language models across multiple GPUs
+description: Specification for GPU optimization algorithms including memory distribution, tensor splits, and allocation strategies
 globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
 alwaysApply: false
 ---
@@ -7,40 +7,41 @@ alwaysApply: false
 
 # gpu-optimization-algorithms
 
-## GPU Memory Distribution Algorithm
-Located in optimizer.py:
-- Dynamic tensor parallel fraction calculation based on relative GPU memory sizes
-- Generates memory splits across multiple GPUs with safety margins
-- Framework-specific command generation for llama.cpp and vLLM
-- Environment configuration optimization for multi-GPU setups
-Importance Score: 95
+Core GPU Memory Distribution System:
+- Calculates optimal memory splits between multiple GPUs using configurable quotas
+- Implements dynamic tensor parallel fraction calculations based on available VRAM
+- Memory balancing considers device capabilities and power limits
 
-## Layer Distribution System
-Located in layer_balance.py:
-- Adaptive latency-aware layer redistribution across GPUs
-- Dual-pass profiling with sequence lengths 64 and 1024
-- Weighted averaging (0.2 short + 0.8 long) for attention scaling compensation
-- Dynamic layer allocation based on execution time and memory constraints
-Importance Score: 90
+Location: dualgpuopt/optimizer.py
+Importance: 95
 
-## Context Size Management
-Located in ctx_size.py:
-- Heuristic algorithm for maximum safe context length calculation
-- Model-specific parameter handling:
-  - Layer count
-  - KV heads
-  - Head dimensions
-  - Precision bits
-  - MoE factor
-- Reserved memory buffer calculation
-Importance Score: 85
+Memory Distribution Algorithm:
+- Distributes model layers across GPUs based on memory capacity and bandwidth
+- Uses weighted layer profiling (20% short sequences, 80% long sequences)
+- Dynamically adapts splits based on real-time GPU metrics and thermal constraints
+- Accounts for MoE factor adjustments in Mixtral-style architectures
 
-## GPU Resource Management
-Located in gpu_info.py:
-- Memory utilization ratio tracking between GPUs
-- Performance characteristics profiling for load balancing
-- Power and thermal constraint monitoring
-- Architecture-specific CUDA core calculations
-Importance Score: 80
+Location: dualgpuopt/layer_balance.py
+Importance: 90
+
+Context Size Optimization:
+- Calculates maximum safe context length using:
+  - Model architecture parameters (layers, heads, dimensions)
+  - Available GPU memory across devices
+  - Precision requirements (FP16/INT8/INT4)
+  - Reserved memory buffer ratios
+- Adapts calculations for different model types (Llama, Mistral, Mixtral)
+
+Location: dualgpuopt/ctx_size.py 
+Importance: 85
+
+GPU Resource Management:
+- Monitors memory utilization ratios for dynamic load balancing
+- Tracks performance characteristics for optimal layer distribution
+- Implements thermal and power monitoring for workload optimization
+- Manages memory-aware GPU pairing and redistribution
+
+Location: dualgpuopt/gpu_info.py
+Importance: 80
 
 $END$

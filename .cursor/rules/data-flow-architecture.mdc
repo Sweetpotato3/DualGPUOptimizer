@@ -1,86 +1,55 @@
 ---
-description: Documents data flow patterns for GPU resource optimization, telemetry, and monitoring metrics across multi-GPU systems
-globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py
+description: Specification for analyzing and documenting data flow patterns between GPU optimization components
+globs: **/*.py,**/dualgpuopt/**
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flows:
+Core Data Flow Components:
 
-1. GPU Resource Metrics Flow
-- Source: GPU hardware telemetry (dualgpuopt/telemetry.py)
-- Flow: Hardware metrics -> Telemetry Service -> Event Bus -> Dashboard
-- Key metrics:
-  * GPU/Memory utilization 
-  * Temperature and power consumption
-  * Clock speeds and fan status
-  * PCIe bandwidth usage
+1. GPU Metrics Pipeline
+- Source: dualgpuopt/telemetry.py
+- Collects real-time GPU performance data:
+  - Utilization, memory, temperature, power metrics
+  - PCIe bandwidth monitoring
+  - Clock speeds (core/memory)
+- Distributes metrics through event bus to visualization components
+- Powers real-time dashboard updates via 60-sample rolling window
 
 2. Optimization Parameter Flow
-- Source: Optimizer configuration (dualgpuopt/optimizer.py)
-- Flow: User input -> Optimizer -> Command Generator -> Model Runner
-- Parameters:
-  * GPU memory split ratios
-  * Tensor parallel fractions
-  * Context size constraints
-  * Layer distribution weights
+- Source: dualgpuopt/optimizer.py
+- Calculates and distributes:
+  - Memory split ratios between GPUs
+  - Tensor parallelism fractions
+  - Context size limits
+- Feeds configuration to framework-specific runners (llama.cpp/vLLM)
 
-3. GPU State Management Flow
-- Source: GPU hardware state (dualgpuopt/services/state_service.py)
-- Flow: GPU State -> Event Bus -> Services -> UI Components
-- States:
-  * Overclocking profiles
-  * Power/thermal limits
-  * Memory allocation status
-  * Idle detection flags
+3. GPU Command Pipeline
+- Source: dualgpuopt/commands/gpu_commands.py
+- Manages overclocking parameter flow:
+  - Core/memory clock offsets
+  - Power limits
+  - Fan speed curves
+- Implements reversible command pattern with state restoration
 
-4. Model Deployment Flow
-- Source: Model configuration (dualgpuopt/gui/launcher.py)
-- Flow: Model params -> Optimizer -> Framework-specific commands -> GPU execution
-- Configuration:
-  * Framework selection (llama.cpp/vLLM)
-  * GPU split configuration
-  * Memory allocation strategy
-  * Tensor parallel settings
+4. Event Distribution System
+- Source: dualgpuopt/services/event_bus.py
+- Handles priority-based metric propagation:
+  - CRITICAL: Hardware safety events
+  - HIGH: Optimization adjustments
+  - NORMAL: Monitoring updates
+- Routes GPU telemetry to visualization components
 
-Key Integration Points:
+5. Batch Processing Flow
+- Source: dualgpuopt/batch/smart_batch.py
+- Manages inference workload distribution:
+  - Length-aware sequence batching
+  - Back-pressure mechanisms
+  - Memory-based batch size calculations
+- Feeds into GPU resource allocation system
 
-1. Telemetry Pipeline
-```
-GPU Hardware -> NVML Interface -> Telemetry Service -> Event Bus -> Monitoring Dashboard
-```
-
-2. Optimization Pipeline
-```
-User Input -> Optimizer -> Command Generator -> Framework Runner -> GPUs
-```
-
-3. State Management Pipeline
-```
-GPU State Changes -> Event Bus -> State Service -> UI Components
-```
-
-Critical Data Structures:
-
-1. GPUMetrics
-- Utilization percentages
-- Memory usage stats
-- Temperature/power data
-- Clock/fan speeds
-- PCIe bandwidth metrics
-
-2. OptimizationParameters  
-- Memory split ratios
-- Tensor fractions
-- Context sizes
-- Layer distribution
-
-3. GPUState
-- Hardware settings
-- Power profiles
-- Memory allocation
-- Idle status
+The architecture implements a multi-layered data flow optimized for dual-GPU setups, with emphasis on real-time metric collection, workload distribution, and hardware safety monitoring.
 
 $END$
