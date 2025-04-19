@@ -1,58 +1,76 @@
 ---
-description: Use for analyzing data flow patterns between GPU optimization components and services
-globs: **/services/**,**/gpu_info.py,**/telemetry.py,**/event_bus.py
+description: Definition of data flows, component interactions, and information pathways for the dual GPU optimization system
+globs: *.py,dualgpuopt/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The data flow architecture consists of several key flows:
+Primary Data Flow Paths:
 
-## Core Data Flows
+1. GPU Metrics Pipeline
+- Source: GPU hardware via NVML/CUDA libraries 
+- Flow: Hardware -> Telemetry Service -> Event Bus -> Dashboard/Visualization
+- Key metrics:
+  * Utilization rates
+  * Memory usage
+  * Temperature/Power data
+  * Clock speeds
+- Update frequencies:
+  * Critical metrics: 500ms
+  * Standard metrics: 1000ms
+  * Background metrics: 2000ms
 
-1. GPU Telemetry Flow
-- GPU metrics flow from NVML through gpu_info.py to telemetry service
-- Telemetry service broadcasts metrics via event bus to dashboard and optimizer
-- Metrics include: utilization, memory, temperature, power, clocks
-- Dashboard renders realtime visualizations of metrics
+2. Optimization Parameter Flow
+- Source: GPU Memory Analysis
+- Flow: Optimizer -> Command Generator -> Runner Service -> GPU Hardware
+- Parameters:
+  * Tensor split ratios
+  * Layer distribution configs
+  * Memory allocation maps
+  * Context size calculations
 
-2. Configuration Flow
-- Config service manages application settings and GPU parameters
-- Changes propagate through event bus to relevant components  
-- Overclocking settings flow from UI through command pattern to GPU
-- Preset configs load from JSON and apply to optimizer
+3. Configuration Data Flow
+- Source: Settings Service
+- Flow: Config Service -> State Manager -> GPU Commands -> Hardware
+- Settings:
+  * Overclock profiles
+  * Fan curves
+  * Power limits
+  * Idle thresholds
 
-3. Optimization Flow  
-- Layer balance data flows from profiler to optimizer
-- Context size calculator determines memory splits
-- Device maps flow to model runners
-- Optimization parameters broadcast via events
+4. Event Communication Architecture
+- Central Event Bus with priority levels:
+  * CRITICAL: GPU error conditions
+  * HIGH: Resource allocation changes
+  * NORMAL: Metric updates
+  * LOW: Background tasks
 
-4. Event Flow System
-- Central event bus handles typed events with priorities
-- GPU state changes trigger config/telemetry updates
-- Error events flow to centralized error service
-- UI components subscribe to relevant event types
+Key Integration Points:
 
-## Key Integration Points
+1. GPU Resource Management
+File: dualgpuopt/services/state_service.py
+- Manages bidirectional flow of GPU state data
+- Coordinates resource allocation across components
+- Importance Score: 95
 
-1. GPU Resource Data
-- gpu_info.py → telemetry service → event bus → dashboard
-- Memory/utilization stats drive optimization decisions
+2. Metrics Distribution System
+File: dualgpuopt/telemetry.py
+- Collects and distributes real-time GPU metrics
+- Routes performance data to visualization components
+- Importance Score: 85
 
-2. Optimization Parameters  
-- optimizer.py → command generators → runners
-- Device maps and memory splits coordinate GPU usage
+3. Command Pipeline
+File: dualgpuopt/commands/gpu_commands.py
+- Handles GPU configuration command flow
+- Manages parameter validation and execution
+- Importance Score: 80
 
-3. Monitoring Metrics
-- telemetry.py → event bus → dashboard/UI
-- Error metrics flow through error service
-
-4. Configuration State
-- config_service.py → event bus → components
-- Settings changes trigger component updates
-
-The architecture emphasizes loose coupling through event-based communication while maintaining consistent data flow patterns for GPU resources, configuration, and monitoring data.
+4. Event Communication
+File: dualgpuopt/services/event_bus.py
+- Routes system events between components
+- Manages priority-based message distribution
+- Importance Score: 75
 
 $END$

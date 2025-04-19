@@ -1,55 +1,45 @@
 ---
-description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and generating alerts
-globs: **/telemetry.py,**/tray.py,**/dashboard.py,**/event_dashboard.py,**/metrics.py
+description: Resource monitoring system for tracking GPU metrics, utilization, and alerting mechanisms.
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py,**/event_dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## Core Telemetry Collection
-The telemetry system continuously collects and processes GPU metrics including:
-- Utilization rates for compute and memory
-- Temperature readings
-- Power consumption levels
-- Clock speeds (core and memory)
-- PCIe bandwidth utilization
-- Memory allocation and usage
+The resource monitoring system implements comprehensive GPU telemetry collection and alert mechanisms:
 
-## Real-time Monitoring Pipeline 
-- Telemetry collector runs on configurable intervals (default 1s)
-- Implements middleware pattern for metric processing:
-  - Raw data collection from NVML
-  - Metric normalization and formatting
-  - Event bus publishing for UI updates
-  - History tracking for graphs
+GPU Metrics Collection (Importance: 95)
+- Tracks critical GPU performance indicators:
+  - Utilization percentage 
+  - Memory usage/allocation
+  - Temperature monitoring
+  - Power consumption tracking
+  - Fan speeds and clock rates
+  - PCIe bandwidth (RX/TX)
+- Maintains 60-point sliding window history
+- Default 1-second telemetry collection interval
 
-## GPU Idle Detection
-- Monitors GPU utilization patterns over time
-- Triggers alerts when GPUs remain below threshold for 5+ minutes
-- Suggests freeing resources through system tray notifications
-- Customizable idle thresholds and monitoring periods
+Utilization Alert System (Importance: 85)
+- GPU idle detection with configurable thresholds:
+  - Default 30% utilization threshold
+  - 5-minute idle time window
+- Notification triggers for underutilized resources
+- Thread-safe updates using RLock mechanism
 
-## Metrics Dashboard
-- Live utilization graphs with 60-point history
-- Per-GPU metrics display with color coding
-- Automatic scaling for bandwidth values (KB/s to GB/s)
-- Dynamic UI updates based on detected GPUs
+Event-Driven Architecture (Importance: 90)
+- Priority-based event processing system:
+  - CRITICAL: Hardware safety events
+  - HIGH: Resource allocation events
+  - NORMAL: Standard telemetry
+  - LOW: Background metrics
+- Real-time metrics distribution via event bus
+- Dynamic GPU detection/removal handling
 
-## Alert System
-- Threshold-based alerting for:
-  - High temperature conditions
-  - Sustained high utilization
-  - Memory bottlenecks
-  - Power limit warnings
-- Alerts published through event bus
-- System tray integration for notifications
-
-Importance Scores:
-- Telemetry Collection: 95 (Core monitoring functionality)
-- Real-time Pipeline: 85 (Critical data flow)
-- Idle Detection: 75 (Resource optimization)
-- Metrics Dashboard: 70 (Visualization)
-- Alert System: 80 (System health monitoring)
+Relevant Files:
+- dual_gpu_optimizer/dualgpuopt/telemetry.py
+- dual_gpu_optimizer/dualgpuopt/tray.py
+- dual_gpu_optimizer/dualgpuopt/metrics.py
+- dual_gpu_optimizer/dualgpuopt/gui/event_dashboard.py
 
 $END$

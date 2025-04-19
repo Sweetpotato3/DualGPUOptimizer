@@ -1,54 +1,74 @@
 ---
-description: Defines the execution flow and resource allocation for running LLM models across dual GPUs
-globs: **/optimizer.py,**/runner.py,**/commands/**,**/batch/**
+description: Defines the execution workflow and orchestration of LLM models across multiple GPUs and frameworks
+globs: **/*.py,**/model/**,**/execution/**,**/runner/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-### Core Execution Components
+## Core Model Execution Components (Importance: 95)
 
-1. **Command Generation and Optimization**
-- Generates optimized command strings for llama.cpp and vLLM execution
-- Calculates GPU memory splits and tensor fractions based on available GPU memory
-- Creates environment files with CUDA device mappings and runtime parameters
+1. Framework-Specific Model Deployment
+- Specialized command generation for llama.cpp and vLLM frameworks
+- Dynamic tensor parallelism configuration for vLLM
+- GPU layer splitting logic for llama.cpp
+- Environment variable orchestration based on GPU configuration
 
-2. **Asynchronous Batch Processing**
-The SmartBatcher handles inference request queueing and execution:
-- Groups requests into buckets based on input sequence length
-- Implements back-pressure via queue depth limits
-- Retries inference on OOM errors after cache clearing
-- Uses pluggable heuristics for bucket sizing
+Files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/runner.py
 
-3. **Layer Distribution System**
-- Profiles layer execution times to identify fast/slow layers
-- Redistributes layers across GPUs based on memory quotas and latency
-- Saves device maps as JSON for model inference
+## Smart Batching System (Importance: 90)
 
-4. **Context Size Management**
-- Calculates safe maximum context length based on:
-  - Available GPU memory
-  - Model parameters (layers, heads, dimensions)
-  - MOE factors
-  - Precision requirements
-  
-5. **Command Pattern for GPU Operations**
-- Encapsulates GPU operations in command objects
-- Tracks command history for undo/redo
-- Publishes execution events for monitoring
-- Handles overclocking and mock GPU mode commands
+1. Dynamic Batch Scheduling
+- Length-aware inference queue management
+- Token count based batch optimization
+- OOM recovery with cache clearing mechanism
+- Two specialized bucketing strategies:
+  - Power-of-two sequence grouping
+  - Token ratio maintenance between buckets
 
-### Key File Paths:
-```
-dual_gpu_optimizer/dualgpuopt/
-├── optimizer.py         # Core optimization logic
-├── runner.py           # Model execution
-├── commands/
-│   ├── gpu_commands.py # GPU operation commands
-└── batch/
-    ├── smart_batch.py  # Batching system
-    └── heuristics.py   # Batching policies
-```
+Files:
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/batch/heuristics.py
+
+## Layer Distribution Engine (Importance: 85)
+
+1. Adaptive Layer Balancing 
+- Latency-aware neural network layer distribution
+- Dual sequence length profiling (64/1024 tokens)
+- 90% memory reservation quota enforcement
+- Dynamic workload distribution based on execution time
+
+Files:
+- dualgpuopt/layer_balance.py
+
+## Context Management (Importance: 80)
+
+1. Model Context Calculation
+- Maximum safe context length determination
+- Model-specific parameter handling:
+  - Layer count
+  - KV heads configuration  
+  - Head dimensions
+  - Precision bits
+  - MoE factor handling
+- Multi-GPU memory buffer allocation
+
+Files:
+- dualgpuopt/ctx_size.py
+
+## Execution State Management (Importance: 75)
+
+1. Model Process Lifecycle
+- Resource allocation orchestration
+- Process state transitions
+- GPU configuration state tracking
+- Framework initialization sequencing
+
+Files:
+- dualgpuopt/gui/launcher.py
+- dualgpuopt/services/state_service.py
 
 $END$
