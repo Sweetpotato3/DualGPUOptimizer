@@ -1,57 +1,59 @@
 ---
-description: Specification for GPU memory distribution algorithms, tensor parallel splits, and allocation strategies
-globs: /dualgpuopt/optimizer.py,/dualgpuopt/gpu_info.py,/dualgpuopt/services/*.py
+description: Specification for GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies
+globs: **/optimizer.py,**/gpu_info.py,**/gpu_commands.py,**/services/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution System
-Located in `dualgpuopt/optimizer.py`
-Importance: 95
+Core GPU Optimization Components:
 
-1. GPU Memory Splitting Algorithm
-- Calculates optimal memory distribution across available GPUs
-- Assigns tensor fractions based on relative GPU memory capacities 
-- Handles asymmetric GPU configurations (different memory sizes)
-- Generates split ratios specific to LLaMA and vLLM frameworks
+1. Memory Distribution Algorithm (optimizer.py)
+Importance Score: 95
+- Calculates optimal GPU memory splits based on total memory capacity ratios
+- Generates tensor parallelism fractions for balanced GPU utilization
+- Produces framework-specific memory allocation parameters for llama.cpp and vLLM
+- Handles dynamic context size adjustments based on model requirements
 
-2. Tensor Parallel Distribution
-- Determines parallel split configurations based on:
-  - Individual GPU memory capacity
-  - Total available system memory
-  - Model requirements and context sizes
-- Creates framework-specific tensor configurations
+2. GPU Hardware Profiling (gpu_info.py)  
+Importance Score: 90
+- Custom GPU metrics modeling with comprehensive hardware profiling
+- Architecture detection with CUDA core estimation
+- Memory capacity and utilization tracking
+- Power limit and usage calculations
 
-## GPU Architecture Management
-Located in `dualgpuopt/gpu_info.py`
-Importance: 85
+3. Tensor Split Optimization (optimizer.py)
+Importance Score: 85
+- Dynamic tensor parallel size computation
+- Multi-GPU workload distribution logic
+- Memory-aware model splitting for distributed inference
+- Framework-specific environment variable generation
 
-1. Hardware Capability Assessment
-- Maps compute capabilities to specific GPU architectures
-- Calculates CUDA core counts using architecture-specific formulas
-- Determines memory bandwidth and allocation limits
-- Provides architecture-aware optimization parameters
+4. Overclocking Management (gpu_commands.py)
+Importance Score: 75
+- GPU-specific overclocking profiles with safety bounds:
+  - Core clock offset (-200 to +200 MHz)
+  - Memory clock offset (-1000 to +1500 MHz)
+  - Power limit (50% to 120%)
+  - Fan speed control (0-100%)
+- Profile persistence and rollback capability
 
-2. Multi-GPU Configuration Handler
-- Manages resource coordination between GPUs
-- Implements mock GPU simulation for testing
-- Handles architecture-specific memory constraints
+5. Resource Monitoring (services/event_bus.py)
+Importance Score: 70
+- Real-time GPU metrics collection:
+  - Load balancing metrics
+  - PCIe bandwidth monitoring  
+  - Power consumption tracking
+  - Memory utilization patterns
+- Event-driven monitoring pipeline
+- Configurable alert thresholds
 
-## Optimization Strategies
-Located in `dualgpuopt/services/state_service.py`
-Importance: 90
-
-1. GPU Profile Management
-- Maintains per-GPU optimization profiles
-- Handles memory allocation strategies per profile
-- Preserves optimization states between sessions
-
-2. Resource Allocation Rules
-- Power limit thresholds: 50% to 120%
-- Memory clock offset ranges: -1000 to +1500 MHz
-- Core clock offset ranges: -200 to +200 MHz
-- Temperature-based throttling controls
+Key Domain Features:
+- Specialized handling of dual-GPU configurations for AI model deployment
+- Framework-aware optimization parameter generation
+- Hardware capability detection and profiling
+- Memory-aware workload distribution
+- GPU-specific safety limits enforcement
 
 $END$

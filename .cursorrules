@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Use when documenting high-level architecture of GPU optimization systems, particularly those focused on dual-GPU configurations and machine learning model execution
+description: Use this overview documentation when analyzing dual GPU optimization systems focused on LLM workload distribution and performance monitoring, particularly for projects handling real-time GPU metrics and tensor operations across multiple devices.
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,41 +18,41 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements a specialized system for managing and optimizing dual-GPU configurations with four core business domains:
+The Dual GPU Optimizer system implements specialized logic for managing and optimizing GPU resources for large language model deployments. The core business functionality is organized into three main domains:
 
-1. GPU Optimization Engine (Importance: 95)
-- Memory splitting algorithms for distributing ML model workloads
-- Tensor fraction calculations based on GPU memory capacities
-- Environment configuration generation for LLaMA and vLLM frameworks
-- Located in: dual_gpu_optimizer/dualgpuopt/optimizer.py
+1. GPU Resource Management & Optimization (Importance: 95)
+- Specialized tensor distribution algorithms for dual GPU configurations
+- Dynamic memory split calculations based on GPU capabilities
+- Framework-specific optimization parameters for llama.cpp and vLLM
+- Automatic hardware capability detection and profiling
+- Real-time utilization monitoring with 60-sample rolling windows
 
-2. Hardware Control System (Importance: 90)
-- GPU overclocking management with safety limits
+2. Performance Monitoring & Telemetry (Importance: 85)
+- Custom event hierarchy for GPU-specific monitoring
+- Real-time metrics collection including utilization, memory usage, temperature
+- PCIe bandwidth monitoring with automatic unit scaling
+- Temperature and power consumption correlation tracking
+- Idle detection system with configurable thresholds
+
+3. Overclocking Management (Importance: 80)
+- GPU-specific overclocking profiles with safety bounds
+- Core/Memory clock offset management
 - Power limit and fan speed control
-- State preservation for rollback operations
-- Located in: dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py
+- Profile persistence and rollback capabilities
+- Hardware safety limit enforcement
 
-3. Performance Monitoring (Importance: 85)
-- Real-time GPU metrics tracking
-- PCIe bandwidth monitoring with dynamic unit scaling
-- Temperature and power consumption analysis
-- Located in: dual_gpu_optimizer/dualgpuopt/telemetry.py
+Key Implementation Files:
+- dualgpuopt/optimizer.py: Core GPU optimization logic
+- dualgpuopt/gpu_info.py: Hardware profiling and metrics
+- dualgpuopt/telemetry.py: Real-time monitoring system
+- dualgpuopt/services/event_bus.py: GPU event management
 
-4. Model Execution Framework (Importance: 80)
-- Dual-mode execution system for llama.cpp and vLLM
-- Dynamic GPU split configurations
-- Framework-specific command generation
-- Located in: dual_gpu_optimizer/dualgpuopt/gui/launcher.py
-
-Key Business Rules:
-1. GPU memory allocation must optimize for model requirements
-2. Overclocking changes require preservation for rollback
-3. Hardware failures trigger automatic mock mode
-4. Temperature thresholds map to 0-100°C scale
-5. Power usage normalized to 400W baseline
-6. Performance history maintained in 60-sample windows
-
-The system specifically targets AI/ML workload optimization across dual GPU configurations, with emphasis on memory management, hardware safety, and framework-specific optimizations.
+The system focuses on optimizing dual-GPU setups for AI model deployment through:
+- Real-time performance monitoring
+- Dynamic tensor distribution
+- Hardware-specific configuration generation
+- Fault-tolerant operation handling
+- Framework-specific launch strategies
 
 $END$
 END SPECIFICATION

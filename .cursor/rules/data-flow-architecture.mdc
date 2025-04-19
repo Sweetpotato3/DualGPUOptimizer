@@ -1,6 +1,6 @@
 ---
-description: Defines data flow patterns and information exchange between GPU optimization components, monitoring systems, and configuration services
-globs: **/services/*.py,**/commands/*.py,**/optimizer.py,**/telemetry.py
+description: Analysis of data flow between components in GPU resource management and optimization systems
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
@@ -9,65 +9,67 @@ alwaysApply: false
 
 Core Data Flow Components:
 
-1. GPU Optimization Pipeline (Importance: 95)
-- Telemetry service collects real-time GPU metrics
-- State service maintains current GPU configurations 
-- Optimizer determines memory splits and tensor fractions
-- Command service executes optimized configurations
+1. Event Bus System (services/event_bus.py)
+Importance: 95
+- GPU metrics event streams flow from hardware monitoring to visualization components
+- OptimizationEvents carry tensor split ratios and distribution parameters
+- Priority-based event routing ensures critical GPU metrics are processed first
+
+2. GPU Resource Monitoring Pipeline (telemetry.py -> event_dashboard.py)
+Importance: 90
+- Raw GPU telemetry data flows through middleware processing pipeline
+- Processed metrics feed into 60-sample rolling window visualization
+- Multi-GPU state updates propagate to dashboard components
+
+3. Configuration Data Flow (config_service.py)
+Importance: 85
+- GPU overclock profiles flow from settings to hardware controllers
+- Model context sizes and tensor parameters flow to optimization engine
+- Idle threshold settings propagate to monitoring system
+
+4. Optimization Parameter Flow (optimizer.py)
+Importance: 90
+- Memory split calculations flow to framework-specific command generators
+- Tensor parallelism fractions propagate to model deployment services
+- GPU capability data flows to environment variable generation
+
+Key Data Paths:
+
+1. GPU Metrics Flow:
 ```
-telemetry -> state_service -> optimizer -> gpu_commands
+Hardware -> Telemetry System -> Event Bus -> Dashboard Display
 ```
 
-2. Configuration Management Flow (Importance: 85)
-- Config service loads GPU profiles and thresholds
-- State service validates and applies configurations
-- Event service broadcasts configuration changes
+2. Optimization Settings Flow:
 ```
-config_service -> state_service -> event_service
+Configuration -> State Service -> Optimizer -> Command Generation
 ```
 
-3. Performance Monitoring Pipeline (Importance: 80)
-- Telemetry module captures metrics:
-  - GPU/memory utilization
-  - PCIe bandwidth 
-  - Temperature data
-  - Power consumption
-- Dashboard receives 1-second sample intervals
-- History tracking maintains 60-sample windows
+3. Error Handling Flow:
 ```
-telemetry -> dashboard -> history_tracking
+Error Service -> State Updates -> Mock Mode Activation -> UI Updates
 ```
 
-4. Error Recovery Flow (Importance: 75)
-- Error service categorizes GPU-specific failures
-- State service triggers rollback mechanisms
-- Command service executes recovery operations
-```
-error_service -> state_service -> gpu_commands
-```
+Critical Data Models:
 
-Key Data Exchange Points:
-
-1. GPU Resource Data
-- Memory capacity/usage
-- Clock speeds (core/memory)
-- Temperature thresholds
-- Power limits
-- Fan speed settings
+1. GPU Metrics Event
+- Utilization percentages
+- Memory usage 
+- Temperature readings
+- Power consumption
+- Fan speeds
 
 2. Optimization Parameters
-- Memory split ratios
-- Tensor fractions
+- Tensor split ratios
 - Context sizes
-- Framework-specific configurations
+- Memory allocations
+- Framework-specific settings
 
-3. Monitoring Metrics
-- Utilization percentages
-- Bandwidth measurements
-- Temperature readings
-- Power consumption data
-- Clock speed values
+3. Configuration State
+- Overclock profiles
+- Idle thresholds
+- Framework preferences
 
-The architecture emphasizes bidirectional flow between monitoring and optimization components, with state preservation and error recovery mechanisms integrated throughout the pipeline.
+The architecture emphasizes real-time flow of GPU metrics and optimization parameters, with specialized handling for dual-GPU configurations and tensor operations distribution.
 
 $END$
