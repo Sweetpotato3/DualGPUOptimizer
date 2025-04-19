@@ -173,7 +173,13 @@ class TelemetryService:
         """
         try:
             handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
-            name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
+            name_bytes = pynvml.nvmlDeviceGetName(handle)
+            # Handle different return types from various pynvml versions
+            if isinstance(name_bytes, bytes):
+                name = name_bytes.decode('utf-8')
+            else:
+                # Already a string in newer pynvml versions
+                name = name_bytes
             
             # Get utilization
             util = pynvml.nvmlDeviceGetUtilizationRates(handle)
