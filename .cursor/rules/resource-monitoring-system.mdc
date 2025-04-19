@@ -1,51 +1,47 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and alert systems for dual GPU optimization
-globs: **/telemetry.py,**/tray.py,**/gpu_info.py
+description: Specification for GPU telemetry, resource monitoring, and alert systems implementation
+globs: **/telemetry.py,**/tray.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### GPU Telemetry Collection System
-The telemetry system provides continuous monitoring and metrics collection for GPU resources through multiple components:
+The GPU resource monitoring system consists of three core components:
 
-1. Core Telemetry Engine (telemetry.py):
-- Collects real-time GPU metrics including utilization, memory usage, PCIe throughput, temperature, power usage, clock speeds
-- Maintains a telemetry queue limited to 60 samples for historical tracking
-- Streams metrics at configurable intervals through background threading
-
-Importance Score: 95
-
-2. Resource State Detection (gpu_info.py):
-- Implements parallel GPU probing for performance optimization
-- Collects comprehensive GPU information including architecture details, CUDA cores, PCIe specifications
-- Provides mock GPU data generation for testing environments
+## Telemetry Collection (dualgpuopt/telemetry.py)
+- Real-time monitoring of critical GPU metrics:
+  - GPU utilization percentage
+  - Memory usage tracking
+  - PCIe bandwidth consumption
+  - Power draw measurements
+  - Temperature monitoring
+  - Core/Memory clock speeds
+- Implements 1-second sampling rate for metrics collection
+- Maintains 60-sample rolling window for trend analysis
 
 Importance Score: 85
 
-3. Alert System (tray.py):
-- Monitors GPU idle states with 5-minute threshold detection
-- Triggers user notifications for prolonged GPU idle states
-- Recommends resource optimization actions through system tray alerts
+## Performance Dashboard (dualgpuopt/gui/dashboard.py)
+- Multi-GPU visualization system with:
+  - Color-coded performance graphs per GPU
+  - Threshold-based progress bars for temperature/power
+  - Intelligent unit scaling for PCIe bandwidth (KB/s to GB/s)
+  - Separate tracking for graphics/memory clocks
+- Business rules for metric visualization:
+  - Temperature scale: 0-100°C maps to percentage 
+  - Power normalization: 400W baseline
+  - Clock speed maximums: 2500 MHz graphics, 12000 MHz memory
 
 Importance Score: 75
 
-### Key Integration Points:
+## Idle Detection System (dualgpuopt/tray.py)
+- GPU utilization monitoring with configurable thresholds
+- Sustained low utilization detection algorithm
+- Alert mechanism for underutilized GPU resources
+- Configurable idle time threshold in minutes
+- Default utilization threshold of 30%
 
-1. Metrics Pipeline:
-```
-GPU Hardware -> Telemetry Engine -> Metrics Queue -> Dashboard/Alerts
-```
-
-2. Resource Optimization Flow:
-```
-Idle Detection -> Alert Generation -> User Notification -> Resource Management
-```
-
-File Paths:
-- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
-- `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- `dual_gpu_optimizer/dualgpuopt/tray.py`
+Importance Score: 70
 
 $END$

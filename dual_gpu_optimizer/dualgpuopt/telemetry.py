@@ -2,9 +2,15 @@
 NVML‑based polling generator: yield dict every `interval` seconds.
 """
 from __future__ import annotations
-import time, dataclasses as dc, queue, threading
-from typing import Dict, List
+import time
+import dataclasses as dc
+import queue
+import threading
+import logging
+from typing import Dict, List, Callable, Protocol, Optional, Any
+
 from dualgpuopt.gpu_info import probe_gpus, GPU
+from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
 
 @dc.dataclass(slots=True)
 class Telemetry:
@@ -19,6 +25,66 @@ class Telemetry:
     fan_speed: List[int]      # Fan speed %
     graphics_clock: List[int] # MHz
     memory_clock: List[int]   # MHz
+
+class TelemetryMiddleware(Protocol):
+    """Protocol for telemetry middleware components."""
+    
+    def process(self, telemetry: Telemetry) -> None:
+        """Process telemetry data."""
+        ...
+
+class EventBusMiddleware:
+    """Middleware that publishes telemetry data to the event bus."""
+    
+    def __init__(self) -> None:
+        """Initialize the middleware."""
+        self.logger = logging.getLogger("dualgpuopt.telemetry.middleware")
+        
+    def process(self, telemetry: Telemetry) -> None:
+        """Publish telemetry data to the event bus."""
+        try:
+            for i, (load, mem, temp, power, fan) in enumerate(zip(
+                telemetry.load,
+                telemetry.mem_used,
+                telemetry.temperature,
+                telemetry.power_usage,
+                telemetry.fan_speed
+            )):
+                # We need to determine memory total, but it's not in the telemetry
+                # object. This is an imperfect solution as we may not get the exact
+                # total that was used to calculate, but it should be close enough
+                gpus = probe_gpus()
+                mem_total = 0
+                if i < len(gpus):
+                    mem_total = gpus[i].mem_total
+                
+                # Create and publish the GPU metrics event
+                event = GPUMetricsEvent(
+                    gpu_index=i,
+                    utilization=float(load),
+                    memory_used=mem,
+                    memory_total=mem_total,
+                    temperature=float(temp),
+                    power_draw=power,
+                    fan_speed=fan
+                )
+                event_bus.publish_typed(event)
+        except Exception as e:
+            self.logger.error(f"Error publishing telemetry to event bus: {e}")
+
+class LoggingMiddleware:
+    """Middleware that logs telemetry data for debugging."""
+    
+    def __init__(self) -> None:
+        """Initialize the middleware."""
+        self.logger = logging.getLogger("dualgpuopt.telemetry.logging")
+        
+    def process(self, telemetry: Telemetry) -> None:
+        """Log telemetry data."""
+        try:
+            self.logger.debug(f"GPU metrics: load={telemetry.load}, temp={telemetry.temperature}")
+        except Exception as e:
+            self.logger.error(f"Error logging telemetry: {e}")
 
 def _collect() -> Telemetry:
     gpus = probe_gpus()
@@ -102,12 +168,60 @@ def _collect() -> Telemetry:
         memory_clock
     )
 
+# Global middleware registry
+_middleware: List[TelemetryMiddleware] = []
+
+def register_middleware(middleware: TelemetryMiddleware) -> None:
+    """Register a middleware component to process telemetry data."""
+    _middleware.append(middleware)
+    
+def unregister_middleware(middleware: TelemetryMiddleware) -> None:
+    """Unregister a middleware component."""
+    if middleware in _middleware:
+        _middleware.remove(middleware)
+        
+def clear_middleware() -> None:
+    """Clear all middleware components."""
+    _middleware.clear()
+
 def start_stream(interval: float=1.0) -> "queue.Queue[Telemetry]":
+    """
+    Start collecting telemetry at the specified interval.
+    
+    Args:
+        interval: Polling interval in seconds
+        
+    Returns:
+        Queue of telemetry objects
+    """
     q: "queue.Queue[Telemetry]" = queue.Queue()
     def run() -> None:
         while True:
-            q.put(_collect())
-            time.sleep(interval)
+            try:
+                # Collect telemetry
+                telemetry = _collect()
+                
+                # Put in queue for consumers
+                q.put(telemetry)
+                
+                # Process through middleware pipeline
+                for mw in _middleware:
+                    try:
+                        mw.process(telemetry)
+                    except Exception as e:
+                        logging.getLogger("dualgpuopt.telemetry").error(
+                            f"Middleware error: {e}", exc_info=True
+                        )
+            except Exception as e:
+                logging.getLogger("dualgpuopt.telemetry").error(
+                    f"Telemetry collection error: {e}", exc_info=True
+                )
+            finally:
+                time.sleep(interval)
+                
     th = threading.Thread(target=run, daemon=True)
     th.start()
-    return q 
+    return q
+
+# Register default middleware
+register_middleware(EventBusMiddleware()) 

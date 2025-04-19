@@ -1,71 +1,73 @@
 ---
-description: Defines data flow patterns for GPU resource management, optimization parameters, and monitoring metrics across the system
-globs: dual_gpu_optimizer/dualgpuopt/**/*.py
+description: Defines data flow patterns and information exchange between GPU optimization components, monitoring systems, and configuration services
+globs: **/services/*.py,**/commands/*.py,**/optimizer.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-## Core Data Flows (Importance: 95)
+Core Data Flow Components:
 
-### GPU Telemetry Flow
-- GPU metrics collected via NVML interface in `gpu_info.py`
-- Telemetry stream generated in `telemetry.py` using background thread
-- Data queued to `tele_q` for dashboard consumption
-- Dashboard processes metrics every second from queue
-- Historical data maintained for 60 samples in dashboard graphs
-
-### Configuration Data Flow
-- GPU overclocking settings flow from GUI to persistent storage
-- Theme configurations propagate through widget hierarchy
-- Application settings persisted via `configio.py`
-- Mock GPU data injection flow when `DGPUOPT_MOCK_GPUS` enabled
-
-### Optimization Parameter Flow
-- Model configuration flows from JSON presets to optimizer
-- GPU memory splits calculated and propagated to command generation
-- Tensor fractions computed based on GPU memory distribution
-- Environment variables generated and saved to .env files
-- Framework-specific commands (llama.cpp, vLLM) generated from parameters
-
-## Component Communication (Importance: 85)
-
-### Dashboard Updates
-File: `dual_gpu_optimizer/dualgpuopt/gui/dashboard.py`
-- Telemetry queue -> Dashboard processor
-- Metrics update -> UI elements 
-- Historical data -> Graph renderer
-
-### Settings Propagation 
-File: `dual_gpu_optimizer/dualgpuopt/gui/settings.py`
-- GUI inputs -> Configuration storage
-- Stored settings -> GPU controls
-- Theme selection -> Widget styling
-
-### Optimizer Data Path
-File: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- GPU info -> Split calculator
-- Memory data -> Tensor fraction generator
-- Configuration -> Environment file writer
-- Parameters -> Command string builder
-
-## Key Integration Points (Importance: 80)
-
-### GPU Resource Management
-Files:
-- `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+1. GPU Optimization Pipeline (Importance: 95)
+- Telemetry service collects real-time GPU metrics
+- State service maintains current GPU configurations 
+- Optimizer determines memory splits and tensor fractions
+- Command service executes optimized configurations
 ```
-GPU Hardware <-> NVML Interface <-> Telemetry Collector <-> Application Logic
+telemetry -> state_service -> optimizer -> gpu_commands
 ```
 
-### Command Generation Pipeline
-Files:
-- `dual_gpu_optimizer/dualgpuopt/gui/optimizer_tab.py`
-- `dual_gpu_optimizer/dualgpuopt/gui/launcher.py`
+2. Configuration Management Flow (Importance: 85)
+- Config service loads GPU profiles and thresholds
+- State service validates and applies configurations
+- Event service broadcasts configuration changes
 ```
-Model Selection -> GPU Split Calculation -> Environment Generation -> Command Construction
+config_service -> state_service -> event_service
 ```
+
+3. Performance Monitoring Pipeline (Importance: 80)
+- Telemetry module captures metrics:
+  - GPU/memory utilization
+  - PCIe bandwidth 
+  - Temperature data
+  - Power consumption
+- Dashboard receives 1-second sample intervals
+- History tracking maintains 60-sample windows
+```
+telemetry -> dashboard -> history_tracking
+```
+
+4. Error Recovery Flow (Importance: 75)
+- Error service categorizes GPU-specific failures
+- State service triggers rollback mechanisms
+- Command service executes recovery operations
+```
+error_service -> state_service -> gpu_commands
+```
+
+Key Data Exchange Points:
+
+1. GPU Resource Data
+- Memory capacity/usage
+- Clock speeds (core/memory)
+- Temperature thresholds
+- Power limits
+- Fan speed settings
+
+2. Optimization Parameters
+- Memory split ratios
+- Tensor fractions
+- Context sizes
+- Framework-specific configurations
+
+3. Monitoring Metrics
+- Utilization percentages
+- Bandwidth measurements
+- Temperature readings
+- Power consumption data
+- Clock speed values
+
+The architecture emphasizes bidirectional flow between monitoring and optimization components, with state preservation and error recovery mechanisms integrated throughout the pipeline.
 
 $END$

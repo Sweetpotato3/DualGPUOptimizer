@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Create a high-level overview documentation for projects focused on GPU optimization and management, particularly when dealing with multi-GPU setups for machine learning workloads and model execution
-globs: *.py,*.json
+description: Use when documenting high-level architecture of GPU optimization systems, particularly those focused on dual-GPU configurations and machine learning model execution
+globs: *.py,*.code-workspace
 alwaysApply: false
 ---
 
@@ -18,49 +18,41 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer is a specialized application for managing and optimizing dual GPU setups, with core business functionality organized around three main areas:
+The DualGPUOptimizer implements a specialized system for managing and optimizing dual-GPU configurations with four core business domains:
 
-## GPU Management and Monitoring (Importance: 95)
-- Probes and validates GPU configurations through NVML integration
-- Collects comprehensive GPU metrics including memory, utilization, PCIe throughput, power usage
-- Implements continuous telemetry streaming for real-time GPU performance monitoring
-- Provides mock GPU functionality for testing and development
+1. GPU Optimization Engine (Importance: 95)
+- Memory splitting algorithms for distributing ML model workloads
+- Tensor fraction calculations based on GPU memory capacities
+- Environment configuration generation for LLaMA and vLLM frameworks
+- Located in: dual_gpu_optimizer/dualgpuopt/optimizer.py
 
-Key files:
-- `dualgpuopt/gpu_info.py`
-- `dualgpuopt/telemetry.py`
+2. Hardware Control System (Importance: 90)
+- GPU overclocking management with safety limits
+- Power limit and fan speed control
+- State preservation for rollback operations
+- Located in: dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py
 
-## Model Optimization Engine (Importance: 90)
-- Generates optimized GPU split configurations based on available GPU memory
-- Creates environment configurations for CUDA and NCCL optimizations
-- Produces framework-specific command strings for llama.cpp and vLLM
-- Manages model presets and configurations for common ML models
+3. Performance Monitoring (Importance: 85)
+- Real-time GPU metrics tracking
+- PCIe bandwidth monitoring with dynamic unit scaling
+- Temperature and power consumption analysis
+- Located in: dual_gpu_optimizer/dualgpuopt/telemetry.py
 
-Key files:
-- `dualgpuopt/optimizer.py`
-- `dualgpuopt/gui/optimizer_tab.py`
+4. Model Execution Framework (Importance: 80)
+- Dual-mode execution system for llama.cpp and vLLM
+- Dynamic GPU split configurations
+- Framework-specific command generation
+- Located in: dual_gpu_optimizer/dualgpuopt/gui/launcher.py
 
-## Execution Management (Importance: 85)
-- Controls model execution across multiple GPUs
-- Manages process lifecycle and logging for running models
-- Provides real-time monitoring through an interactive dashboard
-- Implements idle detection and resource optimization alerts
+Key Business Rules:
+1. GPU memory allocation must optimize for model requirements
+2. Overclocking changes require preservation for rollback
+3. Hardware failures trigger automatic mock mode
+4. Temperature thresholds map to 0-100°C scale
+5. Power usage normalized to 400W baseline
+6. Performance history maintained in 60-sample windows
 
-Key files:
-- `dualgpuopt/gui/launcher.py`
-- `dualgpuopt/gui/dashboard.py`
-- `dualgpuopt/tray.py`
-
-## Configuration and Theme Management (Importance: 75)
-- Handles GPU-specific overclocking settings and persistence
-- Manages application themes with support for multiple color schemes
-- Maintains user preferences and GPU configurations across sessions
-
-Key files:
-- `dualgpuopt/gui/settings.py`
-- `dualgpuopt/gui/theme.py`
-
-The application integrates these components through a GUI interface that provides real-time monitoring, optimization controls, and model execution management, specifically designed for machine learning workloads on multi-GPU systems.
+The system specifically targets AI/ML workload optimization across dual GPU configurations, with emphasis on memory management, hardware safety, and framework-specific optimizations.
 
 $END$
 END SPECIFICATION

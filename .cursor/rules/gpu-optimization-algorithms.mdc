@@ -1,52 +1,57 @@
 ---
-description: Specialized GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies.
-globs: **/optimizer.py,**/gpu_info.py
+description: Specification for GPU memory distribution algorithms, tensor parallel splits, and allocation strategies
+globs: /dualgpuopt/optimizer.py,/dualgpuopt/gpu_info.py,/dualgpuopt/services/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Distribution System
-The optimizer implements advanced memory distribution algorithms for multi-GPU deep learning model execution. Key components:
+## Memory Distribution System
+Located in `dualgpuopt/optimizer.py`
+Importance: 95
 
-1. Memory Split Generation
-- Located in: `dualgpuopt/optimizer.py`
-- Calculates optimal GPU memory splits based on detected GPU configurations
-- Generates split strings used by model frameworks like llama.cpp and vLLM
-- Importance Score: 95
+1. GPU Memory Splitting Algorithm
+- Calculates optimal memory distribution across available GPUs
+- Assigns tensor fractions based on relative GPU memory capacities 
+- Handles asymmetric GPU configurations (different memory sizes)
+- Generates split ratios specific to LLaMA and vLLM frameworks
 
-2. Tensor Parallel Fraction Calculator
-- Located in: `dualgpuopt/optimizer.py`  
-- Determines optimal tensor parallel fractions for model distribution
-- Accounts for varying GPU memory capacities
-- Calculates balanced memory allocation ratios
-- Importance Score: 90
+2. Tensor Parallel Distribution
+- Determines parallel split configurations based on:
+  - Individual GPU memory capacity
+  - Total available system memory
+  - Model requirements and context sizes
+- Creates framework-specific tensor configurations
 
-3. GPU Memory Probing
-- Located in: `dualgpuopt/gpu_info.py`
-- Collects detailed GPU memory metrics including:
-  - Available VRAM
-  - Current memory utilization
-  - Memory bandwidth capabilities
-- Utilizes parallel probing for enhanced detection
-- Importance Score: 85
+## GPU Architecture Management
+Located in `dualgpuopt/gpu_info.py`
+Importance: 85
 
-4. Framework-Specific Command Generation 
-- Located in: `dualgpuopt/optimizer.py`
-- Generates optimized command strings for:
-  - llama.cpp tensor splits
-  - vLLM memory distribution
-  - Environment variable configurations
-- Incorporates calculated memory splits and tensor fractions
-- Importance Score: 80
+1. Hardware Capability Assessment
+- Maps compute capabilities to specific GPU architectures
+- Calculates CUDA core counts using architecture-specific formulas
+- Determines memory bandwidth and allocation limits
+- Provides architecture-aware optimization parameters
 
-5. Mock GPU Memory Simulation
-- Located in: `dualgpuopt/gpu_info.py`
-- Simulates GPU memory configurations for testing
-- Generates realistic memory distribution scenarios
-- Importance Score: 45
+2. Multi-GPU Configuration Handler
+- Manages resource coordination between GPUs
+- Implements mock GPU simulation for testing
+- Handles architecture-specific memory constraints
 
-The system prioritizes balanced memory distribution while accounting for heterogeneous GPU configurations. Memory splits are calculated based on relative VRAM capacities and adjusted for optimal tensor parallel execution.
+## Optimization Strategies
+Located in `dualgpuopt/services/state_service.py`
+Importance: 90
+
+1. GPU Profile Management
+- Maintains per-GPU optimization profiles
+- Handles memory allocation strategies per profile
+- Preserves optimization states between sessions
+
+2. Resource Allocation Rules
+- Power limit thresholds: 50% to 120%
+- Memory clock offset ranges: -1000 to +1500 MHz
+- Core clock offset ranges: -200 to +200 MHz
+- Temperature-based throttling controls
 
 $END$

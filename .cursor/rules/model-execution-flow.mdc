@@ -1,56 +1,49 @@
 ---
-description: Used for analyzing and documenting LLM model execution workflows, command generation, and GPU resource management
-globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/launcher.py
+description: System for managing and optimizing LLM execution workflows across multiple GPUs with dynamic resource allocation.
+globs: **/*.py,**/*.json
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow consists of several key components that manage the LLM execution pipeline:
+Core model execution workflow consists of two parallel paths optimized for llama.cpp and vLLM frameworks:
 
-### Command Generation (Importance: 95)
-- Generates optimized command strings for running models with llama.cpp and vLLM
-- Takes into account GPU memory splits and tensor fractions based on available GPU resources
+1. Command Generation System
 - Located in `dualgpuopt/optimizer.py`
+- Generates framework-specific execution commands with:
+  * GPU memory split configurations for llama.cpp
+  * Tensor parallelism settings for vLLM
+  * Dynamic context size allocation
+  * Model path integration
 
-### GPU Resource Allocation (Importance: 90)
-- Calculates optimal GPU memory splits based on detected GPU configurations
-- Generates environment files with CUDA and NCCL configurations specific to GPU setup
-- Dynamically adjusts tensor fractions based on available GPU memory
-- Located in `dualgpuopt/gpu_info.py`
+2. Resource Allocation Flow
+- Located in `dualgpuopt/runner.py`
+- Calculates tensor fractions based on GPU memory capacity
+- Handles process lifecycle for model execution
+- Manages GPU memory distribution
+- Implements fallback mechanisms for resource constraints
 
-### Model Execution Pipeline (Importance: 85)
-- Handles model initialization and execution across multiple GPUs
-- Manages process logging and execution state
-- Enables starting/stopping model execution with selected frameworks
-- Located in `dualgpuopt/gui/launcher.py`
+3. Framework-Specific Optimizations
+- llama.cpp execution path:
+  * Split ratios for memory distribution
+  * Context size partitioning
+  * Multi-GPU coordination
+- vLLM execution path:
+  * Tensor parallel configurations
+  * Memory utilization parameters
+  * GPU device mapping
 
-### Framework-Specific Workflows (Importance: 80)
-Two primary execution paths:
+4. Model Preset Management
+- Located in `dualgpuopt/gui/optimizer_tab.py`
+- Maintains predefined configurations for common model architectures
+- Handles memory requirement calculations
+- Manages framework compatibility mapping
 
-1. llama.cpp flow:
-   - Generates split configuration strings
-   - Sets up multi-GPU environment variables
-   - Configures memory and compute parameters
-
-2. vLLM flow:
-   - Manages tensor parallel configurations
-   - Sets up GPU device mapping
-   - Configures framework-specific parameters
-
-Located in `dualgpuopt/runner.py`
-
-### Telemetry Integration (Importance: 75)
-- Streams real-time GPU metrics during model execution
-- Monitors memory utilization and GPU load
-- Provides feedback for execution optimization
-- Located in `dualgpuopt/telemetry.py`
-
-### Mock Execution Mode (Importance: 65)
-- Simulates GPU presence for testing execution flows
-- Generates mock telemetry data
-- Enables workflow testing without physical GPUs
-- Located in `dualgpuopt/gpu_info.py`
+Importance Scores:
+- Command Generation System: 95 (Core business logic for model execution)
+- Resource Allocation Flow: 90 (Critical GPU optimization logic)
+- Framework-Specific Optimizations: 85 (Key integration components)
+- Model Preset Management: 75 (Important workflow support)
 
 $END$
