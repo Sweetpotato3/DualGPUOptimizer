@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Overview documentation for GPU optimization and management system focused on machine learning workloads, particularly for multi-GPU environments running large language models
+description: Create high-level overview documentation for projects focused on GPU optimization and management, particularly those handling multi-GPU configurations and model execution workflows
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,35 +18,37 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The system consists of three core business domains:
+The DualGPUOptimizer system provides specialized GPU management and optimization for machine learning model execution across multiple GPUs. The system consists of three core business domains:
 
-## GPU Management and Optimization (Importance: 95)
-- Discovers and monitors NVIDIA GPUs through NVML integration
-- Calculates optimal workload splits across multiple GPUs based on memory capacity
-- Generates environment configurations and command-line parameters for LLM frameworks
-- Determines tensor fraction allocations for distributed model loading
-- Key file: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
+### GPU Resource Management (Importance: 95)
+- GPU detection and telemetry collection through NVML integration
+- Dynamic memory allocation calculations for multi-GPU workloads
+- Idle state detection and resource optimization notifications
+- Memory utilization tracking and threshold monitoring
 
-## Real-time GPU Telemetry (Importance: 85)
-- Collects real-time GPU metrics including load, memory usage, and PCIe throughput
-- Maintains historical performance data for trend analysis
-- Implements idle detection and notification system
-- Provides visualization of GPU utilization patterns
-- Key file: `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+### Model Execution Optimization (Importance: 90)
+- Automated workload distribution across available GPUs
+- Specialized command generation for llama.cpp and vLLM execution
+- Tensor parallel size calculations for optimal model splitting
+- Environment configuration generation for GPU-specific parameters
 
-## Model Configuration Management (Importance: 80)
-- Handles model path and repository selection
-- Manages context size settings for LLM operations
-- Generates optimized launch commands for llama.cpp and vLLM frameworks
-- Provides preset configurations for common model deployments
-- Key file: `dual_gpu_optimizer/dualgpuopt/gui.py`
+### Configuration and Monitoring (Importance: 75)
+- GPU-specific color visualization for performance metrics
+- Threshold-based alerting for memory and utilization
+- Theme-based visualization of GPU metrics
+- Mock GPU support for testing and demonstration
 
-## Framework Integration Layer (Importance: 75)
-- Generates specific commands for LLM frameworks
-- Manages subprocess execution for model servers
-- Streams real-time logs from running processes
-- Handles framework-specific environment setup
-- Key file: `dual_gpu_optimizer/dualgpuopt/runner.py`
+Key Integration Points:
+1. GPU Information Retrieval -> Optimization Engine
+2. Optimization Engine -> Command Generation
+3. Telemetry Collection -> Idle Detection
+4. Configuration Validation -> GPU Management
+
+Core Workflow:
+1. Detect available GPUs and collect capabilities
+2. Calculate optimal workload distribution
+3. Generate execution commands with GPU-specific parameters
+4. Monitor performance and provide resource optimization alerts
 
 $END$
 END SPECIFICATION

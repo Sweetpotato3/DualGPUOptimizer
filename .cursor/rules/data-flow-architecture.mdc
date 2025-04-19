@@ -1,45 +1,48 @@
 ---
-description: Documents data flow between components for GPU resource management, optimization, and monitoring
-globs: dual_gpu_optimizer/dualgpuopt/**/*.py
+description: Documents the data flow and component interactions for GPU optimization and monitoring
+globs: **/gpu_info.py,**/configio.py,**/optimizer.py,**/telemetry.py,**/tray.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-## Core Data Flows (Importance: 95)
+### Core Data Flows (Importance: 95)
+- GPU resource data flows from NVML through `gpu_info.py` to monitoring components
+- Optimization parameters flow from `configio.py` to optimizer module
+- Telemetry metrics flow from GPU hardware through `telemetry.py` to monitoring system
 
-GPU Resource Data Flow:
-- NVML library → `gpu_info.py` → Concurrent GPU data collection
-- `gpu_info.py` → GPU dataclass → `optimizer.py` for workload distribution
-- GPU metrics stream → `telemetry.py` → Real-time visualization in `gui.py`
+### Component Interactions (Importance: 90)
+1. GPU Information Flow
+   - NVML → `gpu_info.py` → Configuration validation
+   - GPU detection results → Mock data generator (fallback)
+   - Memory usage metrics → Optimization calculator
 
-Optimization Parameter Flow:
-- User inputs (model path, context size) → `gui.py`
-- `gui.py` → `optimizer.py` → GPU split calculations
-- `optimizer.py` → Environment configuration → LLM framework commands
+2. Configuration Flow
+   - User settings → `configio.py` → Validation layer
+   - Validated config → GPU optimizer
+   - Theme selections → UI components
 
-## Monitoring Pipeline (Importance: 85)
+3. Telemetry Pipeline
+   - GPU metrics → `telemetry.py` collection
+   - Metrics queue → Idle detection system
+   - Alert thresholds → Notification system
 
-Telemetry Data Flow:
-- `telemetry.py` polls NVML metrics
-- Metrics forwarded to visualization components
-- Historical data maintained in fixed-size window
-- Alert thresholds trigger notifications via `tray.py`
+### Optimization Data Flow (Importance: 85)
+1. Command Generation Pipeline
+   - GPU split calculations → Command string generation
+   - Model parameters → Environment file generator
+   - GPU memory totals → Tensor fraction calculator
 
-## Configuration Flow (Importance: 75)
+2. Resource Monitoring
+   - Telemetry stream → Idle detection watcher
+   - Usage patterns → Resource release suggestions
+   - PCIe metrics → Performance monitoring
 
-Settings Distribution:
-- Theme preferences → `gui.py` → Persistent storage
-- Monitoring parameters → `telemetry.py` → Alert system
-- Logging levels → `logconfig.py` → Application-wide logging
-
-## Command Generation Flow (Importance: 80)
-
-LLM Framework Integration:
-- GPU configuration → Tensor fraction calculations
-- Optimization parameters → Framework-specific commands
-- Environment variables → Command line generation
-- Commands → `runner.py` for execution
+### Integration Points (Importance: 80)
+- GPU split strings integrate with `llama.cpp` and `vLLM` commands
+- Environment variables connect with CUDA and NCCL systems
+- Telemetry data feeds into notification system
+- Configuration values flow to command generators
 
 $END$

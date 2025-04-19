@@ -1,62 +1,47 @@
 ---
-description: Documents the core model execution workflows for LLM inference, including GPU allocation and command generation
-globs: **/optimizer.py,**/runner.py,**/telemetry.py
+description: Manages the execution flow and orchestration of LLM models across GPU resources using llama.cpp and vLLM
+globs: **/*optimizer.py,**/*runner.py,**/*gpu_info.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Execution Components (Score: 95)
+### Command Generation (Importance: 95)
+- `/dualgpuopt/optimizer.py`
+  - Generates executable commands for both llama.cpp and vLLM runtimes
+  - Constructs GPU split configurations based on available memory
+  - Sets environment variables for optimal tensor parallel execution
+  - Configures CUDA device visibility and NCCL parameters
 
-The model execution flow consists of three main components:
+### GPU Resource Allocation (Importance: 90)
+- `/dualgpuopt/optimizer.py`
+  - Calculates tensor fractions for memory distribution across GPUs
+  - Determines optimal GPU splits based on model requirements
+  - Maps model parameters to available GPU resources
 
-1. GPU Allocation System
-- Calculates optimal tensor splits across multiple GPUs based on memory capacity
-- Generates device allocation strings for frameworks
-- Produces environment configurations with CUDA_VISIBLE_DEVICES settings
+### Execution Environment Setup (Importance: 85)
+- `/dualgpuopt/optimizer.py`
+  - Creates environment files with GPU-specific configurations
+  - Sets up CUDA device mappings
+  - Configures OpenMP and NCCL parameters for multi-GPU execution
 
-2. Command Generation Engine
-- Creates framework-specific execution commands for:
-  - llama.cpp inference
-  - vLLM serving
-- Incorporates GPU split configurations into command parameters
-- Handles model path and context size parameters
+### Model Runtime Flow (Importance: 80)
+- `/dualgpuopt/runner.py`
+  - Orchestrates model execution across selected GPUs
+  - Manages context size allocation
+  - Handles runtime switching between llama.cpp and vLLM backends
 
-3. Process Management
-- Non-blocking subprocess execution for LLM servers
-- Real-time log streaming from model processes
-- Process lifecycle management
+### Resource Monitoring (Importance: 75)
+- `/dualgpuopt/telemetry.py`
+  - Tracks GPU utilization during model execution
+  - Monitors memory allocation and PCIe throughput
+  - Provides real-time execution metrics
 
-## Runtime Flow (Score: 85)
-
-1. GPU Configuration
-```
-Load GPU Details -> Calculate Split String -> Generate Environment File
-```
-
-2. Model Launch
-```
-Parse Model Settings -> Generate Framework Command -> Execute via Runner
-```
-
-3. Monitoring Loop
-```
-Start Telemetry -> Monitor GPU Usage -> Handle Idle Detection
-```
-
-## Framework Integration (Score: 80)
-
-Specific command generation logic for:
-
-1. llama.cpp
-- GPU split parameter generation
-- Context size configuration
-- Model path handling
-
-2. vLLM
-- Tensor parallel configuration
-- GPU device mapping
-- Server configuration parameters
+### Resource State Management (Importance: 70)
+- `/dualgpuopt/gpu_info.py`
+  - Maintains current GPU allocation state
+  - Tracks available memory across devices
+  - Provides device capability information for execution planning
 
 $END$

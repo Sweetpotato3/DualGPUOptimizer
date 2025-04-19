@@ -1,5 +1,5 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and alert system implementation
+description: Specification for GPU resource monitoring, telemetry collection, and idle detection system
 globs: **/telemetry.py,**/tray.py,**/gpu_info.py
 alwaysApply: false
 ---
@@ -7,44 +7,29 @@ alwaysApply: false
 
 # resource-monitoring-system
 
-## Core Telemetry Collection (Importance: 95)
-`dual_gpu_optimizer/dualgpuopt/telemetry.py`
-- Implements NVML-based polling system for real-time GPU metrics collection
-- Gathers comprehensive GPU statistics including:
-  - Load percentages
-  - Memory utilization
-  - PCIe throughput measurements
-- Maintains telemetry streams for multiple GPUs concurrently
+### Telemetry Collection (Importance: 85)
+- Continuous polling of GPU metrics via NVML interface
+- Collects utilization, memory usage, and PCIe throughput data
+- Packages metrics into structured Telemetry dataclass
+- Maintains telemetry stream through daemon thread
+- Implements configurable collection intervals
 
-## Utilization Monitoring (Importance: 90)
-`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- Parallelized GPU discovery and information retrieval using ThreadPoolExecutor
-- Structured GPU data representation including:
-  - Device indices
-  - Memory allocation stats
-  - Hardware capabilities
-- Real-time memory tracking for optimization decisions
+### Idle Detection System (Importance: 80)
+- Monitors telemetry stream for low GPU utilization patterns
+- Triggers resource release recommendations after 5 minutes of idle time
+- Implements notification system for resource optimization
+- Tracks multiple GPU devices simultaneously
 
-## Alert System (Importance: 85)
-`dual_gpu_optimizer/dualgpuopt/tray.py`
-- Implements idle detection mechanism for GPU resources
-- Triggers notifications based on configurable thresholds:
-  - Extended idle periods
-  - High utilization warnings
-  - Memory saturation alerts
-- Maintains alert history for pattern analysis
+### GPU Information Management (Importance: 75)
+- Direct NVML integration for hardware-level GPU detection
+- Memory usage and device name retrieval
+- Fallback mock data system for testing/demo scenarios
+- Real-time GPU state monitoring capabilities
 
-## Visualization Integration (Importance: 75)
-`dual_gpu_optimizer/dualgpuopt/gui.py`
-- Real-time visualization of GPU metrics through dynamic charts
-- Historical data retention for trend analysis
-- Custom color coding per GPU for clear visual differentiation
-- Configurable monitoring intervals and thresholds
-
-## Monitoring Configuration (Importance: 70)
-- User-configurable alert thresholds
-- Adjustable polling intervals for telemetry collection
-- Persistence of monitoring settings across sessions
-- Dynamic update of visualization parameters based on system load
+### Alert Mechanism (Importance: 70)
+- Threshold-based alert generation for GPU metrics
+- User-configurable alert parameters
+- Integration with system notification framework
+- Alert priority management based on resource utilization levels
 
 $END$

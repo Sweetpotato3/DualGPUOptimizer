@@ -1,50 +1,38 @@
 ---
-description: Specification for GPU memory distribution and optimization algorithms for multi-GPU LLM deployments
-globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py
+description: Technical documentation for GPU memory optimization algorithms, tensor splits and allocation strategies
+globs: **/optimizer.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Distribution Algorithm (Importance: 95)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+## Core GPU Memory Distribution (Importance: 95)
+`optimizer.py` implements the critical GPU memory splitting logic:
 
-The GPU split calculation algorithm determines optimal memory distribution across multiple GPUs:
-- Computes tensor fractions based on available GPU memory capacities
-- Generates split configuration strings for framework-specific tensor parallelism
-- Adjusts memory allocation ratios based on detected GPU capabilities
+- Calculates optimal tensor parallel splits across available GPUs based on relative memory capacities
+- Generates normalized memory fractions for balanced workload distribution
+- Produces environment configurations for NCCL and OMP settings to enable efficient multi-GPU operation
 
-## GPU Detection and Query System (Importance: 85)
-`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
+## GPU Resource Detection (Importance: 85)
+`gpu_info.py` handles GPU resource discovery and management:
 
-Parallelized GPU information retrieval system:
-- Concurrent querying of multiple GPUs using ThreadPoolExecutor
-- GPU data encapsulation in structured format including index, name, memory stats
-- Direct NVML integration for accurate hardware-level information
-
-## Real-time Memory Monitoring (Importance: 80)
-`dual_gpu_optimizer/dualgpuopt/telemetry.py`
-
-GPU telemetry system for memory optimization:
-- NVML-based polling of GPU metrics for memory usage patterns
-- Memory threshold monitoring for optimization adjustments
-- PCIe throughput tracking to validate memory distribution effectiveness
+- Detects available NVIDIA GPUs using NVML interface 
+- Retrieves real-time memory usage and device capabilities
+- Provides mock GPU data capability for testing scenarios
 
 ## Memory Allocation Strategy (Importance: 90)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+Memory allocation algorithms in `optimizer.py`:
 
-Framework-specific memory allocation strategies:
-- Generates environment configurations for CUDA device visibility
-- Computes optimal tensor parallel splits based on model requirements
-- Adjusts memory allocation based on framework-specific requirements (llama.cpp vs vLLM)
+- Split string generation algorithm maps total available GPU memory to allocation ratios
+- Tensor fraction calculator normalizes memory distribution across asymmetric GPU configurations
+- Command generation system produces optimized launch parameters for llama.cpp and vLLM based on calculated splits
 
-## Memory Configuration Output (Importance: 75)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+## GPU Workload Optimization (Importance: 80)
+Core optimization logic:
 
-Configuration generation system:
-- Environment file generation with GPU-specific memory settings
-- Framework-specific command generation incorporating memory splits
-- Dynamic adjustment of memory configurations based on model context size
+- Dynamically adjusts tensor parallel size based on detected GPU configurations
+- Calculates optimal context sizes for model execution
+- Generates environment settings for cross-GPU communication optimization
 
 $END$
