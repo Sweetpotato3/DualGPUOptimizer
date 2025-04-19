@@ -53,6 +53,8 @@ from .optimizer_tab import OptimizerTab
 from dualgpuopt.telemetry import TelemetryService, GPUMetrics, get_telemetry_service
 # Import the Runner class
 from dualgpuopt.runner import Runner
+# Import integration module
+from dualgpuopt.integration import get_optimizer_integration
 
 CFG_FILE = Path.home() / ".dualgpuopt" / "ui.json"
 
@@ -116,16 +118,9 @@ class ModernApp(ttk.Window):
         if "win" in cfg:
             self.geometry(cfg["win"])
         
-        # Default to real GPU mode
+        # Always use real GPU mode
         self.mock_mode = False
-        
-        # If environment variable is set, respect it (mainly for backwards compatibility)
-        if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":
-            self.mock_mode = True
-            logger.info("Mock GPU mode enabled via environment variable")
-            
-        # Clear the mock mode environment variable if it exists and we're not in mock mode
-        if not self.mock_mode and "DGPUOPT_MOCK_GPUS" in os.environ:
+        if "DGPUOPT_MOCK_GPUS" in os.environ:
             del os.environ["DGPUOPT_MOCK_GPUS"]
             logger.info("Disabled mock GPU mode (environment variable cleared)")
 
@@ -137,10 +132,13 @@ class ModernApp(ttk.Window):
 
         # Initialize and start Telemetry Service
         self.telemetry_service = get_telemetry_service() # Use singleton
-        self.telemetry_service.use_mock = self.mock_mode # Ensure service knows the mode
+        self.telemetry_service.use_mock = False # Always use real GPU mode
         self.telemetry_service.register_callback(self._update_dashboard)
         self.telemetry_service.start()
-        logger.info(f"Telemetry service started (mock_mode={self.mock_mode})")
+        logger.info(f"Telemetry service started (using real GPU mode)")
+
+        # Get optimizer integration singleton
+        self.optimizer_integration = get_optimizer_integration()
 
         self.active_runner: Optional[Runner] = None # Track the active runner
         self.gpu_widgets: Dict[int, Dict[str, Any]] = {} # Store dynamically created GPU widgets
@@ -168,6 +166,7 @@ class ModernApp(ttk.Window):
         nb.add(launcher, text="Launcher")
         ttk.Label(launcher, text="Model path:").grid(row=0, column=0, sticky="w")
         self.model_var = tk.StringVar(value="")
+        self.model_var.trace_add("write", self._on_model_path_changed)  # Add callback for model path changes
         ttk.Entry(launcher, textvariable=self.model_var, width=38).grid(row=0, column=1, sticky="ew", padx=6)
         self.launch_vllm_btn = NeonButton(launcher, text="Launch vLLM", command=lambda: self._start_framework("vllm"))
         self.launch_vllm_btn.grid(row=0, column=2, padx=8)
@@ -224,25 +223,7 @@ class ModernApp(ttk.Window):
                        command=self._toggle_theme, bootstyle="round-toggle").pack(anchor="w", pady=4)
         if self.style.theme.name != "flatly":
             self.dark_var.set(True)
-            
-        # Create GPU settings frame
-        gpu_frame = ttk.Labelframe(st, text="GPU Settings", padding=10)
-        gpu_frame.pack(fill="x", pady=5)
         
-        # Add mock mode toggle
-        self.mock_var = tk.BooleanVar(value=self.mock_mode)
-        ttk.Checkbutton(gpu_frame, text="Enable Mock GPU Mode", variable=self.mock_var, 
-                      command=self._toggle_mock_mode, bootstyle="round-toggle").pack(anchor="w", pady=4)
-        
-        # Add mock mode description
-        ttk.Label(gpu_frame, text="Mock mode simulates GPU hardware for testing\nwhen no physical GPUs are available.", 
-                 font=("Segoe UI", 9), foreground="gray").pack(anchor="w", pady=4)
-                 
-        # Add refresh button for real GPU detection (less critical now with telemetry)
-        # refresh_button = ttk.Button(gpu_frame, text="Refresh GPU Information", 
-        #                           command=self._refresh_gpu_info, bootstyle="info-outline")
-        # refresh_button.pack(anchor="w", pady=8) # Keep commented or remove
-
         # Chat (will be repurposed for Logs)
         log_frame = ttk.Frame(nb, padding=6)
         nb.add(log_frame, text="Logs")
@@ -258,84 +239,14 @@ class ModernApp(ttk.Window):
         new = "flatly" if self.dark_var.get() else "superhero"
         self.style.theme_use(new)
         
-    def _toggle_mock_mode(self):
-        """Toggle mock GPU mode on/off based on checkbox state."""
-        if self.mock_var.get():
-            self._enable_mock_mode()
-        else:
-            self._disable_mock_mode()
-            
-    def _enable_mock_mode(self, notify=True):
-        """Enable mock GPU mode."""
-        if self.mock_mode: return # Already enabled
-
-        os.environ["DGPUOPT_MOCK_GPUS"] = "1"
-        self.mock_mode = True
-        logger.info("Enabling mock GPU mode")
-        if hasattr(self, 'telemetry_service') and self.telemetry_service:
-             self.telemetry_service.stop()
-             self.telemetry_service.use_mock = True
-             self.telemetry_service.start()
-        if notify:
-            self.status("Mock GPU mode enabled")
-            self.q.put(("toast", "Mock GPU mode enabled"))
-
-    def _disable_mock_mode(self):
-        """Disable mock GPU mode and use real GPUs if available."""
-        if not self.mock_mode: return # Already disabled
-
-        logger.info("Attempting to disable mock GPU mode")
-        # Clear env variable first
-        if "DGPUOPT_MOCK_GPUS" in os.environ:
-            del os.environ["DGPUOPT_MOCK_GPUS"]
-
-        # Stop current service, change mode, restart
-        if hasattr(self, 'telemetry_service') and self.telemetry_service:
-            self.telemetry_service.stop()
-            self.telemetry_service.use_mock = False
-
-        # Need to re-check NVML availability if we start without mock
-        try:
-            import pynvml # Re-import might be needed if error occurred
-            pynvml.nvmlInit()
-            gpu_count = pynvml.nvmlDeviceGetCount()
-            pynvml.nvmlShutdown()
-            if gpu_count == 0:
-                raise RuntimeError("No NVIDIA GPUs detected")
-
-            # If real GPUs detected, proceed
-            self.mock_mode = False
-            if hasattr(self, 'telemetry_service') and self.telemetry_service:
-                self.telemetry_service.start()
-            logger.info("Real GPU mode enabled")
-            self.status("Real GPU mode enabled")
-            self.q.put(("toast", "Real GPU mode enabled"))
-
-        except Exception as e:
-            # Failed to detect real GPUs, revert to mock mode
-            logger.warning(f"Failed to detect real GPUs ({e}), reverting to mock mode.")
-            os.environ["DGPUOPT_MOCK_GPUS"] = "1" # Re-set env var
-            self.mock_var.set(True)  # Reset the checkbox
-            self.mock_mode = True
-            if hasattr(self, 'telemetry_service') and self.telemetry_service:
-                self.telemetry_service.use_mock = True # Set flag back
-                self.telemetry_service.start() # Restart in mock mode
-            error_msg = f"No real GPUs detected: {e}. Using mock mode."
-            self.status(error_msg)
-            self.q.put(("toast", error_msg))
-
     def _refresh_gpu_info(self):
-        """Manually trigger GPU info refresh (less critical now)."""
-        # This might be useful if telemetry stops or for explicit checks
+        """Manually trigger GPU info refresh."""
         self.status("Refreshing GPU information...")
-        # The TelemetryService handles periodic refresh, so this might
-        # just involve querying the service's current state or
-        # potentially asking the service to refresh immediately if implemented.
         latest_metrics = self.telemetry_service.get_metrics()
         self._update_dashboard(latest_metrics) # Update UI with latest known
 
     def _get_gpu_info(self):
-        """Get real GPU information or mock data."""
+        """Get real GPU information."""
         # This method is largely replaced by the telemetry service callback
         # Kept for potential direct calls if needed, but should rely on telemetry
         logger.debug("Direct _get_gpu_info called - relying on telemetry service.")
@@ -424,29 +335,31 @@ class ModernApp(ttk.Window):
             messagebox.showwarning("Process Running", "Another process is already running.", parent=self)
             return
 
-        # Get command from Optimizer Tab
+        # Get model path
+        model_path = self.model_var.get()
+        if not model_path:
+            messagebox.showerror("Error", "Model path cannot be empty.", parent=self)
+            return
+            
+        # Get command from integration based on framework
         if framework == "vllm":
-            command_string = self.optimizer_tab.vllm_cmd_var.get()
+            command_string = self.optimizer_integration.get_vllm_command()
             status_msg = "Launching vLLM..."
         elif framework == "llama.cpp":
-            command_string = self.optimizer_tab.llama_cmd_var.get()
+            command_string = self.optimizer_integration.get_llama_command()
             status_msg = "Launching llama.cpp..."
         else:
             logger.error(f"Unknown framework requested: {framework}")
             messagebox.showerror("Error", f"Unknown framework: {framework}", parent=self)
             return
-
+            
+        # Check if we have a valid command
         if not command_string:
-            messagebox.showerror("Error", f"{framework.upper()} command is empty. Calculate optimization first.", parent=self)
+            messagebox.showerror("Error", 
+                f"No command available for {framework}. Please calculate optimization first.", 
+                parent=self)
             return
-
-        model_path = self.model_var.get()
-        if not model_path:
-             messagebox.showerror("Error", f"Model path cannot be empty.", parent=self)
-             return
-        # TODO: Properly inject model path into the command string if needed
-        # This currently assumes the optimizer tab generated the full command.
-
+            
         self.status(status_msg)
         logger.info(f"Starting {framework} with command: {command_string}")
         # Disable launch buttons, enable stop button
@@ -588,11 +501,16 @@ class ModernApp(ttk.Window):
         cfg = {
             "theme": self.style.theme.name,
             "win": self.geometry(),
-            "mock_mode": self.mock_mode,  # Save mock mode setting
         }
         _save_cfg(cfg)
         self.pool.shutdown(wait=False, cancel_futures=True) # Don't wait indefinitely
         self.destroy()
+
+    def _on_model_path_changed(self, *args):
+        """Handle model path changes"""
+        model_path = self.model_var.get()
+        self.optimizer_integration.update_model_path(model_path)
+        logger.debug(f"Model path updated: {model_path}")
 
 # ---------------- entry point ----------------
 def run_modern_app():

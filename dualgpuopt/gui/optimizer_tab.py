@@ -7,6 +7,7 @@ from typing import Dict, List, Optional, Callable, Any
 import logging
 
 from ..optimizer import get_optimizer, ModelParameters, GPUMemoryInfo, SplitConfiguration
+from ..integration import get_optimizer_integration
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.OptimizerTab")
@@ -77,6 +78,7 @@ class OptimizerTab(ttk.Frame):
         
         # Initialize optimizer
         self.optimizer = get_optimizer()
+        self.integration = get_optimizer_integration()
         
         # Setup the grid layout
         self.columnconfigure(0, weight=1)
@@ -295,6 +297,9 @@ class OptimizerTab(ttk.Frame):
             # Update GPU info before calculating
             self._update_gpu_info()
             
+            # Get model path from integration (if available)
+            model_path = self.integration.model_path
+            
             # Calculate optimal split
             config = self.optimizer.optimize_gpu_split(model)
             
@@ -302,8 +307,14 @@ class OptimizerTab(ttk.Frame):
             self._display_results(model, config)
             
             # Update command arguments
-            self.llama_cmd_var.set(self.optimizer.generate_llama_cpp_args(config))
-            self.vllm_cmd_var.set(self.optimizer.generate_vllm_args(config))
+            llama_cmd = self.optimizer.generate_llama_cpp_args(config, model_path)
+            vllm_cmd = self.optimizer.generate_vllm_args(config, model_path)
+            
+            self.llama_cmd_var.set(llama_cmd)
+            self.vllm_cmd_var.set(vllm_cmd)
+            
+            # Update integration with the commands
+            self.integration.update_commands(llama_cmd, vllm_cmd)
             
         except Exception as e:
             logger.error(f"Error calculating split: {e}")

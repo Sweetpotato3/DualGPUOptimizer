@@ -8,6 +8,11 @@ import logging
 from dataclasses import dataclass
 from enum import Enum
 
+# Import our core functionality
+from . import gpu_info
+from . import ctx_size
+from .commands.gpu_commands import generate_llama_cpp_cmd, generate_vllm_cmd
+
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Optimizer")
 
@@ -111,37 +116,20 @@ class Optimizer:
             List of GPUMemoryInfo objects for available GPUs
         """
         try:
-            import torch
-            import pynvml
+            gpu_data = gpu_info.query()
+            gpu_info_list = []
             
-            pynvml.nvmlInit()
-            gpu_count = pynvml.nvmlDeviceGetCount()
-            gpu_info = []
-            
-            for gpu_id in range(gpu_count):
-                handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
-                name = pynvml.nvmlDeviceGetName(handle).decode('utf-8')
-                
-                # Get memory info
-                mem_info = pynvml.nvmlDeviceGetMemoryInfo(handle)
-                total_memory = mem_info.total // (1024 * 1024)  # Convert to MB
-                used_memory = mem_info.used // (1024 * 1024)  # Convert to MB
-                available_memory = total_memory - used_memory
-                
-                # Determine if this is the primary GPU
-                is_primary = gpu_id == 0
-                
-                gpu_info.append(GPUMemoryInfo(
-                    gpu_id=gpu_id,
-                    name=name,
-                    total_memory=total_memory,
-                    available_memory=available_memory,
-                    is_primary=is_primary
+            for gpu in gpu_data:
+                gpu_info_list.append(GPUMemoryInfo(
+                    gpu_id=gpu["id"],
+                    name=gpu["name"],
+                    total_memory=gpu["mem_total"],
+                    available_memory=gpu["mem_total"] - gpu["mem_used"],
+                    is_primary=gpu["id"] == 0
                 ))
             
-            return gpu_info
-        
-        except (ImportError, Exception) as e:
+            return gpu_info_list
+        except Exception as e:
             logger.warning(f"Failed to get GPU info: {e}")
             # Return mock data
             return [
@@ -274,30 +262,38 @@ class Optimizer:
             recommended_context_length=recommended_context
         )
     
-    def generate_llama_cpp_args(self, config: SplitConfiguration) -> str:
+    def generate_llama_cpp_args(self, config: SplitConfiguration, model_path: str = "") -> str:
         """Generate llama.cpp command line arguments for the split configuration
         
         Args:
             config: Split configuration
+            model_path: Optional model path to include
             
         Returns:
             Command line arguments for llama.cpp
         """
         # Format the split configuration for llama.cpp
-        split_args = ",".join([f"{ratio:.6f}" for ratio in config.gpu_split])
-        
-        return f"--tensor-split {split_args} -c {config.recommended_context_length}"
+        return generate_llama_cpp_cmd(
+            model_path=model_path if model_path else "<model_path>", 
+            gpu_split=config.gpu_split,
+            ctx_size=config.recommended_context_length
+        )
     
-    def generate_vllm_args(self, config: SplitConfiguration) -> str:
+    def generate_vllm_args(self, config: SplitConfiguration, model_path: str = "") -> str:
         """Generate vLLM command line arguments for the split configuration
         
         Args:
             config: Split configuration
+            model_path: Optional model path to include
             
         Returns:
             Command line arguments for vLLM
         """
-        return f"--tensor-parallel-size {config.tensor_parallel_size} --max-model-len {config.recommended_context_length}"
+        return generate_vllm_cmd(
+            model_path=model_path if model_path else "<model_path>",
+            tensor_parallel_size=config.tensor_parallel_size,
+            max_model_len=config.recommended_context_length
+        )
 
 
 # Singleton instance for global access

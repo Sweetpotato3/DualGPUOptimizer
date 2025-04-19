@@ -1,121 +1,88 @@
 """
-Memory-aware context size calculator for LLMs
-Provides functions to calculate maximum safe context size based on GPU memory
+Context size calculator for determining maximum safe token window size
 """
-from typing import List, Tuple
+from __future__ import annotations
 import logging
+from typing import Optional, Tuple
 
-# Initialize logger
+from . import gpu_info
+
 logger = logging.getLogger("DualGPUOpt.CtxSize")
 
-# Try to import core dependencies
-try:
-    from .gpu_info import GPU
-    DEPENDENCIES_AVAILABLE = True
-except ImportError:
-    logger.warning("GPU info module not available")
-    DEPENDENCIES_AVAILABLE = False
-
-
-def calc_max_ctx(
-    gpus: List['GPU'],
-    *,
-    n_layers: int,
-    n_kv_heads: int,
-    head_dim: int,
-    precision_bits: int = 16,
-    moe_factor: float = 1.0,
-    reserve_gb: int = 2,
-) -> int:
-    """Calculate maximum safe context size based on GPU parameters
+def calc(n_layers: int, n_kv: int, dim: int, bits: int = 16,
+         moe: float = 1.0, reserve_mib: int = 2048) -> int:
+    """
+    Calculate maximum context length that fits in available GPU memory
     
     Args:
-        gpus: List of GPU objects
-        n_layers: Number of model layers
-        n_kv_heads: Number of key-value heads
-        head_dim: Dimension per head
-        precision_bits: Precision in bits (16 for FP16, 8 for INT8, etc.)
-        moe_factor: MoE overhead factor (1.05 for Mixtral)
-        reserve_gb: Amount of memory to reserve in GB
+        n_layers: Number of transformer layers
+        n_kv: Number of key-value heads
+        dim: Hidden dimension size
+        bits: Precision in bits (default: 16)
+        moe: Mixture of Experts factor (default: 1.0)
+        reserve_mib: Reserved memory in MiB (default: 2048)
         
     Returns:
-        Maximum safe context length
+        Maximum context length in tokens
     """
-    if not DEPENDENCIES_AVAILABLE:
-        # Return a conservative default if dependencies aren't available
-        return 4096
+    # Calculate bytes per token = 2 * layers * KV heads * dimensions * (bits/8) * moe
+    # 2 because we store both K and V
+    bytes_per_token = 2 * n_layers * n_kv * dim * (bits // 8) * moe
     
-    # Calculate bytes per token
-    bytes_per_token = (
-        n_layers * n_kv_heads * head_dim * (precision_bits // 8) * 2 * moe_factor
-    )
+    # Get total available memory across all GPUs
+    gpus = gpu_info.query()
+    if not gpus:
+        logger.warning("No GPUs found, using fallback context size")
+        return 2048  # Fallback size
     
-    # Calculate free memory
-    free_mib = sum(g.mem_free for g in gpus) - reserve_gb * 1024
+    # Calculate total free memory in bytes
+    total_free = sum(g["mem_total"] - g["mem_used"] for g in gpus) * 1024 * 1024
     
-    # Check if we have enough memory
-    if free_mib <= 0:
-        logger.warning("Not enough free memory for context calculation")
-        return 2048
+    # Subtract reserved memory
+    total_free -= reserve_mib * 1024 * 1024
     
-    # Calculate maximum context length
-    max_ctx = int((free_mib * 1024**2) // bytes_per_token)
+    if total_free <= 0:
+        logger.warning("Insufficient free memory, using fallback context size")
+        return 2048  # Fallback if no usable memory
     
-    # Apply a safety margin of 10%
-    max_ctx = int(max_ctx * 0.9)
+    # Calculate maximum tokens that can fit
+    max_tokens = int(total_free / bytes_per_token)
     
-    return max_ctx
+    # Apply constraints - round down to nearest 256 for alignment
+    max_tokens = (max_tokens // 256) * 256
+    
+    logger.info(f"Calculated max context size: {max_tokens} tokens " +
+               f"(using {n_layers} layers, {n_kv} KV heads, {dim} dim, {bits} bits)")
+    
+    return max_tokens
 
-
-def model_params_from_name(model_name: str) -> Tuple[int, int, int, float]:
-    """Estimate model parameters from model name
+def get_max_context_for_model(model_name: str, reserve_mib: int = 2048) -> int:
+    """
+    Get maximum context size for a known model preset
     
     Args:
-        model_name: Name of the model file
+        model_name: Name of model (e.g., "Llama-2 7B", "Mistral 7B")
+        reserve_mib: Reserved memory in MiB
         
     Returns:
-        Tuple of (n_layers, n_kv_heads, head_dim, moe_factor)
+        Maximum context length in tokens
     """
-    model_name = model_name.lower()
+    model_params = {
+        "llama-2 7b": (32, 32, 4096),   # layers, kv_heads, dim
+        "llama-2 13b": (40, 40, 5120),
+        "llama-2 70b": (80, 8, 8192),   # Grouped query attention
+        "mistral 7b": (32, 8, 4096),    # Grouped query attention
+        "mixtral 8x7b": (32, 8, 4096, 1.5),  # MoE factor 1.5
+        "phi-2": (32, 32, 2560),
+    }
     
-    # Default values
-    n_layers = 32
-    n_kv_heads = 8
-    head_dim = 128
-    moe_factor = 1.0
+    # Normalize model name for lookup
+    norm_name = model_name.lower().replace("-", " ").replace("_", " ")
     
-    # Mixtral parameters
-    if "mixtral" in model_name:
-        n_layers = 32
-        n_kv_heads = 8
-        head_dim = 128
-        moe_factor = 1.05
-    
-    # Llama 2 parameters
-    elif "llama-2" in model_name or "llama2" in model_name:
-        if "7b" in model_name:
-            n_layers = 32
-            n_kv_heads = 32
-            head_dim = 128
-        elif "13b" in model_name:
-            n_layers = 40
-            n_kv_heads = 40
-            head_dim = 128
-        elif "70b" in model_name:
-            n_layers = 80
-            n_kv_heads = 8
-            head_dim = 128
-    
-    # Mistral parameters
-    elif "mistral" in model_name:
-        n_layers = 32
-        n_kv_heads = 8
-        head_dim = 128
-    
-    # Phi-2 parameters
-    elif "phi-2" in model_name or "phi2" in model_name:
-        n_layers = 32
-        n_kv_heads = 32
-        head_dim = 80
-    
-    return n_layers, n_kv_heads, head_dim, moe_factor 
+    if norm_name in model_params:
+        params = model_params[norm_name]
+        moe_factor = 1.0 if len(params) < 4 else params[3]
+        return calc(params[0], params[1], params[2], 16, moe_factor, reserve_mib)
+    else:
+        logger.warning(f"Unknown model '{model_name}', using base LLaMA-2 7B parameters")
+        return calc(32, 32, 4096, 16, 1.0, reserve_mib)  # Default LLaMA-2 7B 

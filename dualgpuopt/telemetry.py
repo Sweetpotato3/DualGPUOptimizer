@@ -12,11 +12,13 @@ from enum import Enum
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Telemetry")
 
+# Always try to import pynvml
 try:
     import pynvml
     NVML_AVAILABLE = True
+    logger.info("PYNVML successfully imported")
 except ImportError:
-    logger.warning("PYNVML not available, using mock GPU data")
+    logger.error("PYNVML not available - install with 'pip install pynvml'")
     NVML_AVAILABLE = False
 
 
@@ -71,10 +73,11 @@ class TelemetryService:
         
         Args:
             poll_interval: How frequently to poll GPU data (seconds)
-            use_mock: Force using mock data even if NVML is available
+            use_mock: Force using mock data even if NVML is available 
+                      (deprecated, always attempts to use real GPUs first)
         """
         self.poll_interval = poll_interval
-        self.use_mock = use_mock or not NVML_AVAILABLE
+        self.use_mock = not NVML_AVAILABLE  # Only use mock if NVML is unavailable
         self.running = False
         self.metrics: Dict[int, GPUMetrics] = {}
         self.callbacks: List[Callable[[Dict[int, GPUMetrics]], None]] = []
@@ -88,6 +91,7 @@ class TelemetryService:
             except Exception as e:
                 logger.error(f"Failed to initialize NVML: {e}")
                 self.use_mock = True
+                logger.warning("Falling back to mock GPU data due to NVML initialization failure")
         
         if self.use_mock:
             self.gpu_count = 2  # Mock 2 GPUs
