@@ -4,6 +4,7 @@ Purple themed desktop GUI for DualGPUOptimizer.
 """
 from __future__ import annotations
 import json, tkinter as tk
+from tkinter import messagebox # Import messagebox
 import ttkbootstrap as ttk
 from ttkbootstrap.scrolled import ScrolledText
 from ttkbootstrap.widgets import Meter
@@ -13,7 +14,7 @@ import queue, threading
 import time, random
 import logging
 import os
-from typing import Dict
+from typing import Dict, Optional # Add Optional
 
 try:
     from sseclient import SSEClient
@@ -50,6 +51,8 @@ import dualgpuopt.gpu_info as gpu_info
 from .optimizer_tab import OptimizerTab
 # Import TelemetryService and GPUMetrics
 from dualgpuopt.telemetry import TelemetryService, GPUMetrics, get_telemetry_service
+# Import the Runner class
+from dualgpuopt.runner import Runner
 
 CFG_FILE = Path.home() / ".dualgpuopt" / "ui.json"
 
@@ -139,22 +142,24 @@ class ModernApp(ttk.Window):
         self.telemetry_service.start()
         logger.info(f"Telemetry service started (mock_mode={self.mock_mode})")
 
+        self.active_runner: Optional[Runner] = None # Track the active runner
+
         nb = ttk.Notebook(self, bootstyle="dark")
         nb.pack(fill="both", expand=True)
         nb.enable_traversal()
 
         self._build_tabs(nb)
         self.after(100, self._marquee)  # status reset marquee
-        self.after(50, self._poll_queue)
+        self.after(100, self._poll_queue) # Poll queue for non-telemetry events
         
         # Initial GPU info display relies on telemetry callback now
         # self.after(500, self._refresh_gpu_info) # Removed, handled by telemetry
 
     # ---------------- Tabs -----------------
     def _build_tabs(self, nb):
-        # Optimizer Tab - Now using the real implementation
-        optimizer_frame = OptimizerTab(nb)
-        nb.add(optimizer_frame, text="Optimizer")
+        # Optimizer Tab - Store instance for later access
+        self.optimizer_tab = OptimizerTab(nb)
+        nb.add(self.optimizer_tab, text="Optimizer")
 
         # Launcher
         launcher = ttk.Frame(nb, padding=12)
@@ -162,12 +167,16 @@ class ModernApp(ttk.Window):
         ttk.Label(launcher, text="Model path:").grid(row=0, column=0, sticky="w")
         self.model_var = tk.StringVar(value="")
         ttk.Entry(launcher, textvariable=self.model_var, width=38).grid(row=0, column=1, sticky="ew", padx=6)
-        self.launch_btn = NeonButton(launcher, text="Launch vLLM", command=self._start_vllm)
-        self.launch_btn.grid(row=0, column=2, padx=8)
+        self.launch_vllm_btn = NeonButton(launcher, text="Launch vLLM", command=lambda: self._start_framework("vllm"))
+        self.launch_vllm_btn.grid(row=0, column=2, padx=8)
+        self.launch_llama_btn = NeonButton(launcher, text="Launch llama.cpp", command=lambda: self._start_framework("llama.cpp"))
+        self.launch_llama_btn.grid(row=1, column=2, padx=8, pady=5)
+        self.stop_btn = NeonButton(launcher, text="Stop Process", command=self._stop_process, state="disabled")
+        self.stop_btn.grid(row=0, column=3, rowspan=2, padx=8)
         launcher.columnconfigure(1, weight=1)
         
         # Register keyboard shortcut after button creation
-        self.bind_all("<Control-l>", lambda *_: self.launch_btn.invoke())
+        self.bind_all("<Control-l>", lambda *_: self.launch_vllm_btn.invoke())
 
         # Dashboard
         dash = ttk.Frame(nb, padding=12)
@@ -224,16 +233,11 @@ class ModernApp(ttk.Window):
         #                           command=self._refresh_gpu_info, bootstyle="info-outline")
         # refresh_button.pack(anchor="w", pady=8) # Keep commented or remove
 
-        # Chat
-        chat = ttk.Frame(nb, padding=6)
-        nb.add(chat, text="Chat")
-        self.chat_box = ScrolledText(chat, autohide=True, height=18, state="disabled")
-        self.chat_box.pack(fill="both", expand=True)
-        self.chat_entry = ttk.Entry(chat)
-        self.chat_entry.pack(fill="x", pady=6, padx=4, side="left", expand=True)
-        self.chat_entry.bind("<Return>", self._on_send)
-        self.send_btn = NeonButton(chat, text="Send", command=self._on_send)
-        self.send_btn.pack(side="right", padx=4)
+        # Chat (will be repurposed for Logs)
+        log_frame = ttk.Frame(nb, padding=6)
+        nb.add(log_frame, text="Logs")
+        self.log_box = ScrolledText(log_frame, autohide=True, height=18, state="disabled", font=("Consolas", 9))
+        self.log_box.pack(fill="both", expand=True)
 
         # status bar
         self.status_var = tk.StringVar(value="Ready")
@@ -258,14 +262,14 @@ class ModernApp(ttk.Window):
         os.environ["DGPUOPT_MOCK_GPUS"] = "1"
         self.mock_mode = True
         logger.info("Enabling mock GPU mode")
-        self.telemetry_service.stop()
-        self.telemetry_service.use_mock = True
-        self.telemetry_service.start()
+        if hasattr(self, 'telemetry_service') and self.telemetry_service:
+             self.telemetry_service.stop()
+             self.telemetry_service.use_mock = True
+             self.telemetry_service.start()
         if notify:
             self.status("Mock GPU mode enabled")
             self.q.put(("toast", "Mock GPU mode enabled"))
-            # self._refresh_gpu_info() # No need to manually refresh
-            
+
     def _disable_mock_mode(self):
         """Disable mock GPU mode and use real GPUs if available."""
         if not self.mock_mode: return # Already disabled
@@ -276,11 +280,13 @@ class ModernApp(ttk.Window):
             del os.environ["DGPUOPT_MOCK_GPUS"]
 
         # Stop current service, change mode, restart
-        self.telemetry_service.stop()
-        self.telemetry_service.use_mock = False
+        if hasattr(self, 'telemetry_service') and self.telemetry_service:
+            self.telemetry_service.stop()
+            self.telemetry_service.use_mock = False
 
         # Need to re-check NVML availability if we start without mock
         try:
+            import pynvml # Re-import might be needed if error occurred
             pynvml.nvmlInit()
             gpu_count = pynvml.nvmlDeviceGetCount()
             pynvml.nvmlShutdown()
@@ -289,11 +295,11 @@ class ModernApp(ttk.Window):
 
             # If real GPUs detected, proceed
             self.mock_mode = False
-            self.telemetry_service.start()
+            if hasattr(self, 'telemetry_service') and self.telemetry_service:
+                self.telemetry_service.start()
             logger.info("Real GPU mode enabled")
             self.status("Real GPU mode enabled")
             self.q.put(("toast", "Real GPU mode enabled"))
-            # self._refresh_gpu_info() # No need to manually refresh
 
         except Exception as e:
             # Failed to detect real GPUs, revert to mock mode
@@ -301,8 +307,9 @@ class ModernApp(ttk.Window):
             os.environ["DGPUOPT_MOCK_GPUS"] = "1" # Re-set env var
             self.mock_var.set(True)  # Reset the checkbox
             self.mock_mode = True
-            self.telemetry_service.use_mock = True # Set flag back
-            self.telemetry_service.start() # Restart in mock mode
+            if hasattr(self, 'telemetry_service') and self.telemetry_service:
+                self.telemetry_service.use_mock = True # Set flag back
+                self.telemetry_service.start() # Restart in mock mode
             error_msg = f"No real GPUs detected: {e}. Using mock mode."
             self.status(error_msg)
             self.q.put(("toast", error_msg))
@@ -346,49 +353,126 @@ class ModernApp(ttk.Window):
             self.vram_bar.set(0)
             logger.warning("Metrics received, but GPU 0 data missing.")
 
-    def _start_vllm(self):
-        self.status("Launching vLLM …")
-        self.launch_btn.configure(state="disabled")
-        self.pool.submit(self._dummy_long_task)
+    def _start_framework(self, framework: str):
+        """Start the selected framework (vLLM or llama.cpp)."""
+        if self.active_runner:
+            messagebox.showwarning("Process Running", "Another process is already running.", parent=self)
+            return
+
+        # Get command from Optimizer Tab
+        if framework == "vllm":
+            command_string = self.optimizer_tab.vllm_cmd_var.get()
+            status_msg = "Launching vLLM..."
+        elif framework == "llama.cpp":
+            command_string = self.optimizer_tab.llama_cmd_var.get()
+            status_msg = "Launching llama.cpp..."
+        else:
+            logger.error(f"Unknown framework requested: {framework}")
+            messagebox.showerror("Error", f"Unknown framework: {framework}", parent=self)
+            return
+
+        if not command_string:
+            messagebox.showerror("Error", f"{framework.upper()} command is empty. Calculate optimization first.", parent=self)
+            return
+
+        model_path = self.model_var.get()
+        if not model_path:
+             messagebox.showerror("Error", f"Model path cannot be empty.", parent=self)
+             return
+        # TODO: Properly inject model path into the command string if needed
+        # This currently assumes the optimizer tab generated the full command.
+
+        self.status(status_msg)
+        logger.info(f"Starting {framework} with command: {command_string}")
+        # Disable launch buttons, enable stop button
+        self.launch_vllm_btn.configure(state="disabled")
+        self.launch_llama_btn.configure(state="disabled")
+        self.stop_btn.configure(state="normal")
+        self._clear_logs()
+        self._append_log(f"--- Starting {framework} ---")
+        self._append_log(f"Command: {command_string}")
+
+        try:
+            self.active_runner = Runner(cmd=command_string)
+            self.active_runner.start()
+            # Start monitoring the runner output in a separate thread
+            self.pool.submit(self._monitor_runner)
+        except Exception as e:
+            logger.error(f"Failed to start runner for {framework}: {e}", exc_info=True)
+            messagebox.showerror("Launch Error", f"Failed to start {framework}:\n{e}", parent=self)
+            self.status(f"{framework.capitalize()} launch failed")
+            self.launch_vllm_btn.configure(state="normal")
+            self.launch_llama_btn.configure(state="normal")
+            self.stop_btn.configure(state="disabled")
+            self.active_runner = None
+
+    def _monitor_runner(self):
+        """Monitor the output queue of the active runner process."""
+        if not self.active_runner or not self.active_runner.proc:
+            return
+
+        runner = self.active_runner # Local reference
+        while True:
+            try:
+                line = runner.q.get(timeout=0.2) # Check queue periodically
+                self.q.put(("runner_log", line)) # Send log line to main thread queue
+            except queue.Empty:
+                # Check if process has ended
+                if runner.proc and runner.proc.poll() is not None:
+                    exit_code = runner.proc.poll()
+                    status_msg = f"Process finished with exit code {exit_code}."
+                    self.q.put(("status", status_msg))
+                    logger.info(status_msg)
+                    self.q.put(("runner_stopped", None)) # Signal completion
+                    break # Exit monitoring loop
+            except Exception as e:
+                logger.error(f"Error monitoring runner: {e}", exc_info=True)
+                self.q.put(("status", "Error monitoring process"))
+                self.q.put(("runner_stopped", None))
+                break
+
+    def _stop_process(self):
+        """Stop the currently active runner process."""
+        if self.active_runner:
+            logger.info("Stopping active process...")
+            self.status("Stopping process...")
+            try:
+                self.active_runner.stop()
+                # Give monitor time to notice and exit
+                # The runner_stopped signal will re-enable buttons
+            except Exception as e:
+                 logger.error(f"Error stopping process: {e}", exc_info=True)
+                 messagebox.showerror("Error", f"Failed to stop process: {e}", parent=self)
+                 # Force re-enable buttons if stop fails badly
+                 self._on_runner_stopped()
+        else:
+            logger.warning("Stop requested but no active runner found.")
+
+    def _on_runner_stopped(self):
+        """Actions to perform when the runner stops (called from main thread)."""
+        self.launch_vllm_btn.configure(state="normal")
+        self.launch_llama_btn.configure(state="normal")
+        self.stop_btn.configure(state="disabled")
+        self.active_runner = None
+        logger.info("Runner stopped, UI updated.")
 
     def _dummy_long_task(self):
-        # Keep TPS simulation for now, until real launcher integration
-        for _ in range(60):
-            time.sleep(0.1)
-            # self.util_bar.set(random.randint(40, 100)) # Let telemetry handle this
-            # self.vram_bar.set(random.randint(10, 90)) # Let telemetry handle this
-            self.q.put(("tps", random.randint(10, 80)))
-        self.q.put(("status", "vLLM ready"))
-        self.q.put(("toast", "vLLM finished warm‑up"))
-        self.after_idle(lambda: self.launch_btn.configure(state="normal"))
-
-    # chat
-    def _on_send(self, *_):
-        prompt = self.chat_entry.get().strip()
-        if not prompt: return
-        self._append_chat(f"🟣 You: {prompt}\n")
-        self.chat_entry.delete(0, "end")
-        self.send_btn.configure(state="disabled")
-        threading.Thread(target=self._chat_worker, args=(prompt,), daemon=True).start()
-
-    def _chat_worker(self, prompt: str):
-        try:
-            # Simulate API response
-            for _ in range(5):
-                time.sleep(0.3)
-                self.q.put(("chat", "This is a simulated response... "))
-            self.q.put(("chat", "\n"))
-        except Exception as e:
-            self.q.put(("status", f"Chat error: {e}"))
-        finally:
-            self.after_idle(lambda: self.send_btn.configure(state="normal"))
+        # This is now replaced by _start_framework and _monitor_runner
+        pass
 
     # ---------------- Helpers ----------------
-    def _append_chat(self, txt: str):
-        self.chat_box.configure(state="normal")
-        self.chat_box.insert("end", txt)
-        self.chat_box.see("end")
-        self.chat_box.configure(state="disabled")
+    def _append_log(self, txt: str):
+        """Append text to the log box."""
+        self.log_box.configure(state="normal")
+        self.log_box.insert("end", txt + "\n")
+        self.log_box.see("end")
+        self.log_box.configure(state="disabled")
+
+    def _clear_logs(self):
+        """Clear the log box."""
+        self.log_box.configure(state="normal")
+        self.log_box.delete(1.0, "end")
+        self.log_box.configure(state="disabled")
 
     def _poll_queue(self):
         try:
@@ -399,8 +483,8 @@ class ModernApp(ttk.Window):
                         self.tps_meter.configure(amountused=val)
                     elif hasattr(self, 'tps_var'):
                         self.tps_var.set(f"{val} toks/s")
-                elif kind == "chat":
-                    self._append_chat(val)
+                elif kind == "runner_log":
+                    self._append_log(str(val))
                 elif kind == "status":
                     self.status(val)
                 elif kind == "toast":
@@ -409,6 +493,8 @@ class ModernApp(ttk.Window):
                     except Exception as e:
                         logger.error(f"Toast notification error: {e}")
                         print(f"Toast notification error: {e}")
+                elif kind == "runner_stopped":
+                     self._on_runner_stopped()
                 # Removed util and vram handling, now done by callback
         except queue.Empty:
             pass
@@ -417,15 +503,18 @@ class ModernApp(ttk.Window):
 
     def status(self, msg):
         self.status_var.set(msg)
-        self.after(5000, lambda: self.status_var.set("Ready"))
+        # Clear status after a delay unless it's replaced by another message
+        self.after(10000, lambda current_msg=msg: \
+                   self.status_var.set("Ready") if self.status_var.get() == current_msg else None)
 
     def _marquee(self):        # periodic status reset safeguard
-        if not self.status_var.get():
-            self.status_var.set("Ready")
         self.after(60000, self._marquee)
 
     def on_close(self):
         logger.info("Closing application...")
+        # Stop any active runner
+        self._stop_process()
+
         # Stop telemetry service
         if hasattr(self, 'telemetry_service') and self.telemetry_service:
             self.telemetry_service.stop()
