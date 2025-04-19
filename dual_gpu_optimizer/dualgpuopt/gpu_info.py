@@ -7,7 +7,9 @@ import concurrent.futures as _fut
 import dataclasses as _dc
 import logging
 import os
-from typing import List, Optional
+import threading
+import time
+from typing import List, Optional, Dict, Any
 
 try:
     import pynvml  # external, tiny
@@ -90,6 +92,204 @@ class GPU:
             if name.startswith(prefix):
                 name = name[len(prefix):]
         return name
+
+
+class GpuInfo:
+    """GPU information service that provides access to GPU data and events."""
+    
+    def __init__(self, mock_mode: bool = False, update_interval: float = 5.0):
+        """
+        Initialize the GPU information service.
+        
+        Args:
+            mock_mode: Whether to use mock GPU data instead of real hardware
+            update_interval: How often to update GPU data in seconds
+        """
+        self.logger = logging.getLogger("dualgpuopt.gpu_info")
+        self.mock_mode = mock_mode
+        self.update_interval = update_interval
+        self._gpus: List[GPU] = []
+        self._lock = threading.RLock()
+        
+        # Enable mock mode if environment variable is set
+        if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":
+            self.mock_mode = True
+            self.logger.info("Mock GPU mode enabled by environment variable")
+            
+        # Force mock mode if explicitly requested
+        if mock_mode:
+            self.logger.info("Mock GPU mode enabled by parameter")
+            os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+        
+        # Initial GPU probe
+        self.refresh()
+        
+        # Start background update thread
+        self._stop_event = threading.Event()
+        self._update_thread = threading.Thread(
+            target=self._update_loop, 
+            daemon=True,
+            name="GpuInfoUpdateThread"
+        )
+        self._update_thread.start()
+    
+    def __del__(self):
+        """Clean up resources when the object is deleted."""
+        self.shutdown()
+    
+    def shutdown(self):
+        """Stop the background update thread."""
+        if hasattr(self, '_stop_event'):
+            self._stop_event.set()
+            if hasattr(self, '_update_thread') and self._update_thread.is_alive():
+                self._update_thread.join(timeout=1.0)
+    
+    def _update_loop(self):
+        """Background loop to update GPU information periodically."""
+        while not self._stop_event.is_set():
+            try:
+                self.refresh()
+            except Exception as e:
+                self.logger.error(f"Error updating GPU information: {e}")
+            
+            # Wait for the specified interval or until stopped
+            self._stop_event.wait(self.update_interval)
+    
+    def refresh(self):
+        """Refresh GPU information."""
+        try:
+            with self._lock:
+                self._gpus = probe_gpus()
+            self.logger.debug(f"Refreshed information for {len(self._gpus)} GPUs")
+        except Exception as e:
+            self.logger.error(f"Failed to refresh GPU information: {e}")
+            if self.mock_mode or os.environ.get("DGPUOPT_MOCK_GPUS") == "1":
+                # Use mock data as fallback
+                with self._lock:
+                    self._gpus = _mock_gpus()
+                self.logger.info("Using mock GPU data as fallback")
+            else:
+                # Re-raise if not in mock mode
+                raise
+    
+    def get_gpus(self) -> List[GPU]:
+        """
+        Get the list of available GPUs.
+        
+        Returns:
+            List of GPU objects
+        """
+        with self._lock:
+            return self._gpus.copy()
+    
+    def get_gpu(self, index: int) -> Optional[GPU]:
+        """
+        Get information for a specific GPU by index.
+        
+        Args:
+            index: GPU index
+            
+        Returns:
+            GPU object if found, None otherwise
+        """
+        with self._lock:
+            for gpu in self._gpus:
+                if gpu.index == index:
+                    return gpu
+        return None
+    
+    def get_gpu_count(self) -> int:
+        """
+        Get the number of available GPUs.
+        
+        Returns:
+            Number of GPUs
+        """
+        with self._lock:
+            return len(self._gpus)
+    
+    def has_multiple_gpus(self) -> bool:
+        """
+        Check if multiple GPUs are available.
+        
+        Returns:
+            True if multiple GPUs are available, False otherwise
+        """
+        return self.get_gpu_count() >= 2
+    
+    def get_total_memory(self) -> int:
+        """
+        Get the total memory of all GPUs in MiB.
+        
+        Returns:
+            Total memory in MiB
+        """
+        with self._lock:
+            return sum(gpu.mem_total for gpu in self._gpus)
+    
+    def get_free_memory(self) -> int:
+        """
+        Get the free memory of all GPUs in MiB.
+        
+        Returns:
+            Free memory in MiB
+        """
+        with self._lock:
+            return sum(gpu.mem_free for gpu in self._gpus)
+    
+    def get_memory_ratio(self) -> List[float]:
+        """
+        Get the memory ratios between GPUs.
+        
+        Returns:
+            List of memory ratios (relative to the total)
+        """
+        with self._lock:
+            if not self._gpus:
+                return []
+                
+            total_memory = sum(gpu.mem_total for gpu in self._gpus)
+            if total_memory == 0:
+                return [1.0 / len(self._gpus)] * len(self._gpus)
+                
+            return [gpu.mem_total / total_memory for gpu in self._gpus]
+    
+    def get_summary(self) -> Dict[str, Any]:
+        """
+        Get a summary of GPU information.
+        
+        Returns:
+            Dictionary with summary information
+        """
+        with self._lock:
+            return {
+                "count": len(self._gpus),
+                "total_memory": self.get_total_memory(),
+                "free_memory": self.get_free_memory(),
+                "gpus": [
+                    {
+                        "index": gpu.index,
+                        "name": gpu.name,
+                        "memory": {
+                            "total": gpu.mem_total,
+                            "free": gpu.mem_free,
+                            "used": gpu.mem_used,
+                            "used_percent": gpu.mem_used_percent
+                        },
+                        "utilization": {
+                            "gpu": gpu.gpu_utilization,
+                            "memory": gpu.memory_utilization
+                        },
+                        "temperature": gpu.temperature,
+                        "power": {
+                            "usage": gpu.power_usage,
+                            "limit": gpu.power_limit,
+                            "percent": gpu.power_usage_percent
+                        }
+                    }
+                    for gpu in self._gpus
+                ]
+            }
 
 
 def _query_gpu(index: int) -> GPU:

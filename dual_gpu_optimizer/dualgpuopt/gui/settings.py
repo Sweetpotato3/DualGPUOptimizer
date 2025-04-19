@@ -42,7 +42,7 @@ from dualgpuopt.services.state_service import StateService
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
     
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service, state_service: StateService, danger_style: str = "danger") -> None:
+    def __init__(self, parent: ttk.Frame, gpus: List[GPU] = None, config_service = None, state_service: StateService = None, danger_style: str = "danger") -> None:
         """
         Initialize the settings tab.
         
@@ -53,6 +53,16 @@ class SettingsTab(ttk.Frame):
             state_service: State service for loading/saving settings
             danger_style: Style name for danger elements
         """
+        # Set default values for services
+        if gpus is None:
+            gpus = []
+        if config_service is None:
+            from dualgpuopt.services.config_service import config_service as default_config
+            config_service = default_config
+        if state_service is None:
+            from dualgpuopt.services.state_service import state_service as default_state
+            state_service = default_state
+            
         # Get PAD value from parent class if available or set default
         try:
             from dualgpuopt.gui.app import DualGpuApp
@@ -233,14 +243,12 @@ class SettingsTab(ttk.Frame):
         # Auto fan checkbox or Switch (if ttkbootstrap available)
         self.auto_fan_var = tk.BooleanVar(value=True)
         if TTKBOOTSTRAP_AVAILABLE:
-            from ttkbootstrap.widgets import ToggleButton
-            auto_fan_check = ToggleButton(
+            # Create a standard button that simulates a toggle switch
+            auto_fan_check = ttk.Checkbutton(
                 oc_sliders_frame,
                 text="Auto Fan",
                 variable=self.auto_fan_var,
-                onvalue=True,
-                offvalue=False,
-                bootstyle="success",
+                style="success.TCheckbutton",
                 command=self._toggle_fan_control
             )
         else:
@@ -305,37 +313,24 @@ class SettingsTab(ttk.Frame):
         ttk.Label(idle_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
         self.start_min_var = tk.BooleanVar(value=config_service.get("start_minimized", False))
         
-        # Use Switch if ttkbootstrap available, otherwise checkbox
-        if TTKBOOTSTRAP_AVAILABLE:
-            from ttkbootstrap.widgets import Switch
-            start_min_check = Switch(
-                idle_settings_frame,
-                variable=self.start_min_var,
-                bootstyle="success"
-            )
-        else:
-            start_min_check = ttk.Checkbutton(
-                idle_settings_frame,
-                variable=self.start_min_var
-            )
+        # Use a standard checkbutton
+        start_min_check = ttk.Checkbutton(
+            idle_settings_frame,
+            variable=self.start_min_var,
+            style="success.TCheckbutton" if TTKBOOTSTRAP_AVAILABLE else ""
+        )
         start_min_check.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # GPU idle detection
         ttk.Label(idle_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
         self.idle_alerts_var = tk.BooleanVar(value=config_service.get("idle_alerts", True))
         
-        # Use Switch if ttkbootstrap available, otherwise checkbox
-        if TTKBOOTSTRAP_AVAILABLE:
-            idle_alerts_check = Switch(
-                idle_settings_frame,
-                variable=self.idle_alerts_var,
-                bootstyle="success"
-            )
-        else:
-            idle_alerts_check = ttk.Checkbutton(
-                idle_settings_frame,
-                variable=self.idle_alerts_var
-            )
+        # Use a standard checkbutton
+        idle_alerts_check = ttk.Checkbutton(
+            idle_settings_frame,
+            variable=self.idle_alerts_var,
+            style="success.TCheckbutton" if TTKBOOTSTRAP_AVAILABLE else ""
+        )
         idle_alerts_check.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # Idle threshold

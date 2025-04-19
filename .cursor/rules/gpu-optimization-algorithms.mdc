@@ -1,52 +1,71 @@
 ---
-description: Specification for GPU memory optimization, tensor parallel splits, and memory allocation algorithms
-globs: **/gpu_info.py,**/optimizer.py,**/layer_balance.py,**/ctx_size.py,**/batch/*.py
+description: Specification for GPU memory optimization, tensor parallel splits, and memory allocation strategies for multi-GPU LLM deployment.
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/metrics.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithms
-- Calculates optimal tensor splits between GPUs based on available VRAM
-- Implements parallel GPU probing to gather real-time memory metrics
-- Dynamically adjusts memory quotas based on model size and precision settings
+## Memory Distribution System
+- GPU memory split calculation based on available VRAM ratios
+- Safety buffer allocation (2GB default) for operational overhead
+- Model-specific memory scaling factors:
+  - Mixtral MoE: 1.05x multiplier
+  - Standard transformers: 1.0x multiplier
 
-File: `dualgpuopt/gpu_info.py`
+## Layer Distribution Optimization
+Location: layer_balance.py
+Importance: 95
 
-## Layer Balancing System
-- Redistributes model layers across GPUs for optimal latency
-- Profiles layer execution times to determine optimal splits
-- Generates adaptive layer-to-GPU mapping saved as JSON
-- Respects configured VRAM quotas while balancing
+- Weighted profiling methodology:
+  - Short sequences (64 tokens): 20% weight
+  - Long sequences (1024 tokens): 80% weight
+- Dynamic layer redistribution based on real-time execution profiles
+- Latency-aware balancing respecting per-GPU VRAM quotas 
 
-File: `dualgpuopt/layer_balance.py`
+## Context Size Calculation
+Location: ctx_size.py
+Importance: 90
 
-## Context Size Management
-- Calculates maximum safe context length based on:
-  - Available GPU memory
-  - Model parameters
-  - Chosen precision settings
-- Adjusts context dynamically based on current GPU load
+- Maximum safe context length formula:
+  `max_ctx = (free_memory * 1024²) / (n_layers * n_kv_heads * head_dim * precision_factor * 2 * moe_factor)`
+- Model architecture parameter mapping for:
+  - Mixtral MoE variants
+  - Llama 2 architectures
+  - Mistral models
 
-File: `dualgpuopt/ctx_size.py`
+## Tensor Parallel Splits
+Location: optimizer.py
+Importance: 85
 
-## Smart Batching Logic
-- Length-aware batching for inference requests
-- Implements configurable backlog limits to prevent RAM overflow
-- Handles back-pressure and automatic retries on GPU OOM errors
-- Uses pluggable bucket policies:
-  - Power of 2 bucketing
-  - Token ratio bucketing
+- Split ratio calculation based on relative GPU memory sizes
+- Framework-specific command generation:
+  - llama.cpp GPU split strings
+  - vLLM tensor parallel configurations
+- Dynamic tensor distribution factoring in:
+  - Available VRAM per GPU
+  - Model layer counts
+  - Attention head configurations
 
-File: `dualgpuopt/batch/smart_batch.py`
+## Memory Management Pipeline
+Location: gpu_info.py
+Importance: 80
 
-## Memory Distribution Commands
-- Applies overclocking settings with rollback capability
-- Handles errors with centralized error service
-- Saves applied settings to persistent configuration
-- Enables mock GPU mode for testing
+- Real-time GPU telemetry collection
+- Multi-GPU coordination system
+- Asymmetric GPU configuration handling
+- Dynamic memory quota adjustments
+- Safety thresholds enforcement
 
-File: `dualgpuopt/commands/gpu_commands.py`
+## Metrics Collection
+Location: metrics.py
+Importance: 75
+
+- GPU utilization tracking
+- Memory usage monitoring
+- Temperature and power metrics
+- PCIe bandwidth measurement
+- Clock speed monitoring
 
 $END$

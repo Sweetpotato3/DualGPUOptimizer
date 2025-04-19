@@ -8,7 +8,7 @@ import logging
 import pathlib
 from typing import Dict, Any, Callable, List, Optional
 
-from dualgpuopt.services.event_service import event_bus
+from dualgpuopt.services.event_bus import event_bus
 
 
 class AppState:
@@ -117,6 +117,85 @@ class AppState:
             self.logger.error(f"Error parsing state file {filepath}: {e}")
         except IOError as e:
             self.logger.error(f"Error reading state file {filepath}: {e}")
+    
+    def save(self) -> None:
+        """Save the current state to disk using the default path."""
+        self.save_to_disk()
+
+
+class StateService:
+    """
+    Service for managing application state with event-based updates.
+    Provides a centralized way to manage state across the application.
+    """
+    
+    def __init__(self) -> None:
+        """Initialize the state service."""
+        self.app_state = AppState()
+        self.logger = logging.getLogger("dualgpuopt.services.state_service")
+        self._subscribers: Dict[str, List[Callable[[Any], None]]] = {}
+        
+        # Register for state change events
+        event_bus.subscribe("state_changed", self._on_state_changed)
+        
+    def _on_state_changed(self, data: Dict[str, Any]) -> None:
+        """Handle state change events internally."""
+        key = data.get("key", "")
+        value = data.get("value")
+        
+        # Notify subscribers for this key
+        if key in self._subscribers:
+            for callback in self._subscribers[key]:
+                try:
+                    callback(value)
+                except Exception as e:
+                    self.logger.error(f"Error in state subscriber callback: {e}")
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get a value from application state."""
+        return self.app_state.get(key, default)
+    
+    def set(self, key: str, value: Any) -> None:
+        """Set a value in application state."""
+        self.app_state.set(key, value)
+    
+    def update(self, state_updates: Dict[str, Any]) -> None:
+        """Update multiple state values at once."""
+        self.app_state.update(state_updates)
+    
+    def subscribe(self, key: str, callback: Callable[[Any], None]) -> None:
+        """
+        Subscribe to changes in a specific state key.
+        
+        Args:
+            key: The state key to subscribe to
+            callback: Function to call when state changes
+        """
+        if key not in self._subscribers:
+            self._subscribers[key] = []
+        self._subscribers[key].append(callback)
+    
+    def unsubscribe(self, key: str, callback: Callable[[Any], None]) -> None:
+        """
+        Unsubscribe from changes in a specific state key.
+        
+        Args:
+            key: The state key to unsubscribe from
+            callback: The callback to remove
+        """
+        if key in self._subscribers and callback in self._subscribers[key]:
+            self._subscribers[key].remove(callback)
+    
+    def save_state(self, filepath: Optional[pathlib.Path] = None) -> None:
+        """Save current state to disk."""
+        self.app_state.save_to_disk(filepath)
+    
+    def load_state(self, filepath: Optional[pathlib.Path] = None) -> None:
+        """Load state from disk."""
+        self.app_state.load_from_disk(filepath)
+
 
 # Create a global state instance
-app_state = AppState() 
+app_state = AppState()
+# Create a global state service instance
+state_service = StateService() 

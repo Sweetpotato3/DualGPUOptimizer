@@ -1,66 +1,69 @@
 ---
-description: Manages model execution workflows, command generation, and GPU resource allocation for LLM inference optimization
-globs: **/gpu_info.py,**/optimizer.py,**/runner.py,**/telemetry.py,**/batch/*.py,**/commands/*.py
+description: Defines and documents how LLM model execution flows through the system including command generation and GPU allocation
+globs: */gpu_info.py,*/optimizer.py,*/layer_balance.py,*/commands/*.py,*/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Execution Components
+The system implements a sophisticated model execution workflow spanning multiple components:
 
-### Command Generation
-- Generates optimized execution commands for different model frameworks:
-  ```python
-  llama_command(model_path, ctx_size, gpu_split)  # For llama.cpp models
-  vllm_command(model_path, tensor_parallel)       # For vLLM models
-  ```
-- Calculates optimal GPU splits based on available memory and model requirements
-- Handles environment variable configuration for multi-GPU setups
+## Command Generation (Importance: 95)
+Located in `commands/gpu_commands.py`:
 
-### Batch Processing Engine
+1. Framework-specific command builders:
+- llama.cpp: Generates split configuration strings for GPU layer distribution
+- vLLM: Creates tensor parallel deployment parameters
+- Handles environment variable generation for GPU memory allocation
+
+2. Parameter Generation:
+- Context size calculation based on available GPU memory
+- Tensor split ratios for multi-GPU deployment
+- Framework-specific flags and options
+
+## Layer Distribution (Importance: 90)
+Located in `layer_balance.py`:
+
+1. Adaptive layer redistribution using:
+- Short sequence profiling (64 tokens) - 20% weight
+- Long sequence profiling (1024 tokens) - 80% weight
+- Per-GPU VRAM quota enforcement
+- Dynamic device mapping based on execution times
+
+2. Distribution formulas:
+- Weighted execution time: final_time = 0.2 * short_seq + 0.8 * long_seq
+- Memory-aware layer assignment per GPU
+- MoE-specific handling for mixture models
+
+## Batch Processing (Importance: 85)
 Located in `batch/smart_batch.py`:
-- Implements length-aware dynamic batching for inference requests
-- Uses configurable bucket policies (power-of-2, token ratio) for sequence batching
-- Manages backlog limits to prevent memory overflow
-- Handles GPU OOM errors with automatic retries
 
-### GPU Resource Management
+1. Length-aware sequence batching:
+- Groups similar length sequences
+- Maintains configurable backlog limits
+- Implements OOM protection with auto-retry
+- Token-based size management
+
+2. Two bucketing strategies:
+- Power-of-two for llama.cpp
+- Token ratio for proportional sizing
+
+## Resource Management (Importance: 80)
 Located in `gpu_info.py`:
-- Collects real-time GPU metrics (memory, utilization, temperature)
-- Calculates tensor fractions for optimal model distribution
-- Generates environment configurations for GPU visibility and communication
 
-### Telemetry Pipeline
-Located in `telemetry.py`:
-- Streams real-time GPU performance metrics
-- Implements middleware pattern for metrics processing
-- Publishes metrics events for monitoring and optimization
+1. Memory allocation:
+- 2GB default operational overhead
+- Model-specific scaling factors
+- Architecture-based parameter tuning
+- Dynamic VRAM quota calculation
 
-### Model Execution Control
-Located in `runner.py`:
-- Manages model lifecycle (load, execute, unload)
-- Handles framework-specific execution flows
-- Coordinates GPU resource allocation
-- Implements execution error recovery
+2. Resource monitoring:
+- Real-time memory tracking
+- Multi-GPU coordination
+- Temperature and power monitoring
+- Utilization metrics collection
 
-## File Paths Summary
-```
-dual_gpu_optimizer/dualgpuopt/
-  ├── optimizer.py      # Core optimization logic
-  ├── runner.py        # Model execution management  
-  ├── gpu_info.py      # GPU resource monitoring
-  ├── telemetry.py     # Metrics collection
-  └── batch/
-      ├── smart_batch.py    # Request batching
-      └── heuristics.py     # Batching policies
-```
-
-Importance Scores:
-- Command Generation: 95 (Core business logic for model execution)
-- Batch Processing: 90 (Critical for inference optimization)
-- GPU Resource Management: 85 (Key for multi-GPU coordination)
-- Telemetry Pipeline: 75 (Important for optimization decisions)
-- Model Execution Control: 85 (Essential workflow management)
+The execution flow prioritizes optimal resource utilization while maintaining model performance through intelligent layer distribution and batching strategies.
 
 $END$

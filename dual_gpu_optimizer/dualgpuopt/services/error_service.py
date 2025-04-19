@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import messagebox
 from typing import Dict, Any, Callable, Optional, Type
 
-from dualgpuopt.services.event_service import event_bus
+from dualgpuopt.services.event_bus import event_bus
 
 
 class ErrorService:
@@ -33,6 +33,7 @@ class ErrorService:
         self.logger = logging.getLogger("dualgpuopt.services.error")
         self.root = root
         self.error_handlers: Dict[str, Callable] = {}
+        self.general_handler: Optional[Callable] = None
         
     def set_root(self, root: tk.Tk) -> None:
         """
@@ -43,16 +44,20 @@ class ErrorService:
         """
         self.root = root
         
-    def register_handler(self, error_type: str, handler: Callable) -> None:
+    def register_handler(self, handler: Callable, error_type: str = None) -> None:
         """
-        Register a custom handler for a specific error type.
+        Register a custom handler for errors.
         
         Args:
-            error_type: Name of the exception class
             handler: Callback function that takes (error, context)
+            error_type: Optional name of the exception class for specific handling
         """
-        self.error_handlers[error_type] = handler
-        self.logger.debug(f"Registered custom handler for {error_type}")
+        if error_type:
+            self.error_handlers[error_type] = handler
+            self.logger.debug(f"Registered custom handler for {error_type}")
+        else:
+            self.general_handler = handler
+            self.logger.debug("Registered general error handler")
         
     def handle_error(self, 
                      error: Exception, 
@@ -101,13 +106,21 @@ class ErrorService:
         }
         event_bus.publish("error_occurred", event_data)
         
-        # Check for custom handler
+        # Check for custom handler for this error type
         if error_type in self.error_handlers:
             try:
                 self.error_handlers[error_type](error, context)
                 return
             except Exception as handler_error:
                 self.logger.error(f"Error in custom handler: {handler_error}")
+        
+        # Try general handler if available
+        if self.general_handler:
+            try:
+                self.general_handler(error, context)
+                return
+            except Exception as handler_error:
+                self.logger.error(f"Error in general handler: {handler_error}")
         
         # Show dialog if requested
         if show_dialog and self.root is not None:

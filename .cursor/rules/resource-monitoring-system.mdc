@@ -1,48 +1,71 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and metric visualization systems
-globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/dashboard.py,**/event_dashboard.py
+description: Specifications for GPU resource monitoring, metrics collection, and telemetry system implementation
+globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/tray.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### GPU Telemetry Collection Engine
-- Collects comprehensive real-time GPU metrics through NVML including:
-  - Memory usage and utilization percentages
-  - Temperature and power consumption
-  - Fan speeds and clock rates
-  - PCIe throughput
-- Implements parallel GPU probing using thread pools for efficient data collection
-- Supports mock GPU data generation for testing environments
+The resource monitoring system implements specialized GPU telemetry collection and performance tracking:
 
-### Real-Time Metric Processing Pipeline
-- Event-driven middleware architecture processes raw telemetry data:
-  - EventBusMiddleware publishes metrics to subscribers
-  - LoggingMiddleware maintains metric history
-  - PrometheusMiddleware exports metrics (optional)
-- Maintains rolling history of utilization metrics for trending
-- Supports pluggable metric transformers for data normalization
+## Core Components
 
-### Resource Alert System
-- Monitors GPU idle states and triggers notifications after 5 minutes of inactivity
-- Tracks memory usage thresholds and alerts on potential OOM conditions
-- Supports custom alert rules based on temperature and power thresholds
+### GPU Metrics Collection (telemetry.py)
+- Real-time monitoring of critical GPU metrics:
+  - Utilization percentage 
+  - Memory usage and availability
+  - Temperature readings
+  - Power consumption
+  - Fan speeds
+  - Core/Memory clock speeds
+- Custom middleware pipeline for metrics processing
+- Event-based publication of normalized GPU data
 
-### Visualization Components
-- Real-time GPU metrics dashboard showing:
-  - Utilization graphs with historical data
-  - Memory usage breakdowns
-  - Temperature and power readings
-  - Clock speed monitoring
-- Color-coded status indicators for different resource states
-- Dynamic GPU discovery and display adaptation
+### Resource Utilization Detection (tray.py)
+- Idle GPU detection system:
+  - Monitors sustained low utilization (<30%)
+  - Time-based validation (5 minute threshold)
+  - Automated alerts for underutilized resources
+- Resource optimization recommendations
 
-### Key Files
-- `telemetry.py`: Core telemetry collection and processing
-- `metrics.py`: Metric definitions and Prometheus integration
-- `gpu_info.py`: GPU data structure and mock implementations
-- `dashboard.py`: Main visualization components
-- `event_dashboard.py`: Event-driven metric display updates
+### GPU Information Service (gpu_info.py)
+- GPU telemetry aggregation system
+- Multi-GPU coordination and monitoring
+- Real-time performance metric tracking
+- Asymmetric GPU configuration handling
+
+### Metrics Processing (metrics.py)
+- GPU performance data normalization
+- Rolling metrics history maintenance (60 data points)
+- Automatic scaling of measurements:
+  - Memory (MB/GB)
+  - Temperature (°C with 100° cap)
+  - Power (relative to 400W max)
+  
+## Key Business Rules
+
+1. GPU Utilization Thresholds
+- Idle detection: <30% utilization
+- Sustained monitoring: 5+ minutes
+- Temperature cap: 100°C
+- Power limit: 400W reference
+
+2. Metrics Collection Intervals
+- Critical metrics: 500ms
+- Standard metrics: 1000ms
+- Background metrics: 2000ms
+
+3. Event Processing
+- Priority-based handling (LOW to CRITICAL)
+- Automated failover to mock mode
+- Hardware failure detection
+- Performance degradation alerts
+
+Importance Scores:
+- GPU Metrics Collection: 95
+- Resource Detection: 85  
+- GPU Information Service: 90
+- Metrics Processing: 80
 
 $END$

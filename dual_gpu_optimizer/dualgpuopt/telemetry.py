@@ -7,10 +7,25 @@ import dataclasses as dc
 import queue
 import threading
 import logging
-from typing import Dict, List, Callable, Protocol, Optional, Any
+from typing import Dict, List, Callable, Protocol, Optional, Any, TypedDict
 
 from dualgpuopt.gpu_info import probe_gpus, GPU
 from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
+
+class GpuTelemetry(TypedDict):
+    """Type definition for GPU telemetry data used by the dashboard."""
+    gpu_index: int
+    name: str
+    utilization: float
+    memory_used: int
+    memory_total: int
+    temperature: float
+    power_draw: float
+    fan_speed: int
+    pcie_rx: int
+    pcie_tx: int
+    graphics_clock: int
+    memory_clock: int
 
 @dc.dataclass(slots=True)
 class Telemetry:
@@ -25,6 +40,26 @@ class Telemetry:
     fan_speed: List[int]      # Fan speed %
     graphics_clock: List[int] # MHz
     memory_clock: List[int]   # MHz
+    
+    def to_dict(self, gpu_index: int, gpu_name: str) -> GpuTelemetry:
+        """Convert telemetry data for a specific GPU to a dictionary."""
+        if gpu_index >= len(self.load):
+            raise IndexError(f"GPU index {gpu_index} out of range (0-{len(self.load)-1})")
+        
+        return {
+            "gpu_index": gpu_index,
+            "name": gpu_name,
+            "utilization": float(self.load[gpu_index]),
+            "memory_used": self.mem_used[gpu_index],
+            "memory_total": 0,  # Will be populated by consumer
+            "temperature": float(self.temperature[gpu_index]),
+            "power_draw": self.power_usage[gpu_index],
+            "fan_speed": self.fan_speed[gpu_index],
+            "pcie_rx": self.pcie_rx[gpu_index],
+            "pcie_tx": self.pcie_tx[gpu_index],
+            "graphics_clock": self.graphics_clock[gpu_index],
+            "memory_clock": self.memory_clock[gpu_index]
+        }
 
 class TelemetryMiddleware(Protocol):
     """Protocol for telemetry middleware components."""

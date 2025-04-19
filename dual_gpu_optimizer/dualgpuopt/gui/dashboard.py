@@ -22,7 +22,13 @@ from dualgpuopt.gui.constants import (
     DEFAULT_CHART_FG,
     GPU_COLORS, # Use the dictionary mapping
     GRID_LINE_COLOR, 
-    LIGHT_FOREGROUND
+    LIGHT_FOREGROUND,
+    PURPLE_PRIMARY,
+    PURPLE_HIGHLIGHT,
+    BLUE_ACCENT,
+    PINK_ACCENT,
+    CYAN_ACCENT,
+    ORANGE_ACCENT
 )
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.telemetry import GpuTelemetry # Use the specific type hint
@@ -229,9 +235,9 @@ class GpuDashboard(ttk.Frame):
         clock_style = self.get_progress_style(self.gpu_colors.get(0, PURPLE_PRIMARY))
 
         for i, gpu in enumerate(gpus):
-            # Max clocks can vary greatly, use sensible defaults or get from gpu_info if available
-            max_graphics_clock = gpu.max_graphics_clock or 2500
-            max_memory_clock = gpu.max_memory_clock or 12000
+            # Max clocks can vary greatly, use sensible defaults
+            max_graphics_clock = 2500  # Default max graphics clock
+            max_memory_clock = 12000   # Default max memory clock
 
             # Graphics clock
             ttk.Label(clock_frame, text=f"GPU {gpu.index} Graphics:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)

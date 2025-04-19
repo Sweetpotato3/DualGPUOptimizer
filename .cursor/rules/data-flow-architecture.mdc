@@ -1,80 +1,65 @@
 ---
-description: Specification for GPU optimization data flow architecture, telemetry collection, and metrics processing across system components
-globs: **/services/*.py,**/gui/*.py,**/metrics.py,**/telemetry.py,**/gpu_info.py
+description: Specification for documenting data flows between components for GPU resource management and optimization systems
+globs: dual_gpu_optimizer/**,integrated_app/**
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-### Core Data Flow Components
+Core Data Flow Components:
 
-1. GPU Telemetry Pipeline
-- GPUs → GPU Info Collection (`gpu_info.py`) → Telemetry Service (`telemetry.py`) → Event Bus → Dashboard/UI
-- Collects real-time metrics: utilization, memory, temperature, power usage
-- Data processed through middleware pipeline with EventBus and Logging handlers
-- Metrics published to subscribers using priority-based event dispatch
+1. GPU Metrics Pipeline
+- GPUMetricsEvent streams real-time telemetry:
+  * Utilization, memory, temperature, power data
+  * PCIe bandwidth metrics
+  * Clock speeds
+- Collected by telemetry service (`dualgpuopt/telemetry.py`)
+- Published through EventBus (`services/event_bus.py`)
+- Consumed by Dashboard (`gui/dashboard.py`)
 
-2. Configuration Flow
-- Config Service → Event Bus → UI Components
-- Manages GPU optimization settings, overclocking profiles
-- Configuration changes trigger `config_changed` events
-- Settings automatically propagated to dependent components
+2. Optimization Parameter Flow
+- Context size calculations (`ctx_size.py`) →
+- Layer balance optimizer (`layer_balance.py`) →
+- GPU command generator (`commands/gpu_commands.py`)
+- Parameters include:
+  * Memory split ratios
+  * Tensor parallel fractions
+  * Context length limits
+  * Layer distribution maps
 
-3. State Management Flow
-- State Service → Event Bus → UI/Command Components 
-- Centralized state updates for GPU status and optimization parameters
-- State changes trigger typed events with specific keys
-- Components subscribe to relevant state changes
+3. State Management Chain
+- Configuration Service (`services/config_service.py`)
+  * Stores GPU profiles
+  * Manages overclock settings
+  * Maintains idle thresholds
+- State Service (`services/state_service.py`)
+  * Tracks optimization state
+  * Manages GPU context sizes
+  * Handles model configurations
+- Persisted to disk via ConfigIO (`configio.py`)
 
-4. Optimization Data Flow
-- GPU Commands → Event Bus → State Service → UI
-- Overclocking and optimization commands generate result events
-- Results update application state and trigger UI refresh
-- Command history tracked for undo/redo operations
+4. Error Handling Flow
+- Error Service (`services/error_service.py`) detects GPU failures
+- Publishes through EventBus to ErrorHandlers
+- Triggers mock mode transitions
+- Maintains error state history
 
-5. Metrics Collection Pipeline
-- GPU Metrics → Prometheus Collectors → External Monitoring
-- Optional integration with Prometheus for metrics export
-- Histograms for batch latency and queue depth
-- Fallback collectors when Prometheus unavailable
+5. Batch Processing Pipeline
+- Smart batching system (`batch/smart_batch.py`)
+- Sequences flow through:
+  * Length-based bucketing
+  * GPU memory optimization
+  * Token-aware distribution
+- Results feed back to monitoring system
 
-### Key Data Structures
+Key Integration Points:
+- `event_bus.py`: Central message broker
+- `state_service.py`: State coordination
+- `telemetry.py`: Metrics collection
+- `optimizer.py`: Resource allocation
 
-1. GPU Telemetry Data
-```python
-{
-  'utilization': float,
-  'memory_used': int,
-  'temperature': int,
-  'power_usage': float,
-  'clock_speed': int
-}
-```
-
-2. Configuration Data
-```python
-{
-  'gpu_settings': dict,
-  'optimization_params': dict,
-  'monitoring_config': dict
-}
-```
-
-3. State Data
-```python
-{
-  'gpu_status': dict,
-  'active_profile': str,
-  'command_history': list
-}
-```
-
-### File Paths for Core Components
-- Telemetry: `dualgpuopt/telemetry.py`
-- Event Bus: `dualgpuopt/services/event_bus.py` 
-- State Service: `dualgpuopt/services/state_service.py`
-- Config Service: `dualgpuopt/services/config_service.py`
-- Metrics: `dualgpuopt/metrics.py`
+Data flows form a closed loop:
+Metrics Collection → State Updates → Optimization → Command Generation → Execution → Metrics Collection
 
 $END$

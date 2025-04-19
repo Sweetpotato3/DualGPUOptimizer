@@ -533,11 +533,19 @@ class DualGpuApp:
     def update_telemetry(self):
         """Update GPU telemetry data periodically."""
         try:
-            # Fetch new telemetry data
-            self.telemetry.update()
+            # If telemetry is a dict, use it directly, otherwise try to get data
+            if isinstance(self.telemetry, dict):
+                telemetry_data = self.telemetry
+            else:
+                # Try to get data from telemetry object if it has get_data method
+                try:
+                    telemetry_data = self.telemetry.get_data()
+                except AttributeError:
+                    # Fallback - telemetry might be the data itself
+                    telemetry_data = self.telemetry
             
             # Publish telemetry update event
-            event_bus.publish("gpu.telemetry.updated", self.telemetry.get_data())
+            event_bus.publish("gpu.telemetry.updated", telemetry_data)
         except Exception as e:
             self.logger.error(f"Error updating telemetry: {e}", exc_info=e)
         
@@ -589,6 +597,47 @@ def main():
     # Create and run application
     app = DualGpuApp()
     app.run()
+
+def run_app(mock_mode: bool = False, theme: str = None):
+    """
+    Run the DualGPUOptimizer application.
+    
+    Args:
+        mock_mode: Whether to use mock GPU data
+        theme: Optional theme name to use
+    """
+    # Configure basic logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+    
+    logger = logging.getLogger("dualgpuopt.gui.app")
+    logger.info(f"Starting application with mock_mode={mock_mode}, theme={theme}")
+    
+    try:
+        # Create application instance
+        app = DualGpuApp(
+            root=None,
+            theme=theme,
+            mock_mode=mock_mode
+        )
+        
+        # Run application main loop
+        app.run()
+        
+        return 0
+    except Exception as e:
+        logger.error(f"Error starting application: {e}", exc_info=True)
+        
+        # Show error dialog
+        if 'tk' in sys.modules:
+            messagebox.showerror(
+                "Application Error",
+                f"Failed to start application: {e}\n\nCheck logs for details."
+            )
+        
+        return 1
 
 if __name__ == "__main__":
     main() 
