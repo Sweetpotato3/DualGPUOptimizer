@@ -1,41 +1,38 @@
 ---
-description: Specification for GPU memory distribution algorithms, tensor parallel splits, and memory allocation strategies
-globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py
+description: GPU memory management and tensor parallelism optimization algorithms for multi-GPU LLM deployments
+globs: **/optimizer.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-### GPU Memory Distribution (Importance: 95)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- Calculates optimal memory splits across multiple GPUs for LLM workloads
-- Generates split configuration strings representing total memory allocation per GPU
-- Computes tensor fraction distributions relative to highest-memory GPU
-- Creates environment configurations for balanced GPU memory utilization
+## Memory Distribution Algorithm (Importance: 95)
+- Tensor fraction calculation based on relative GPU memory capacities
+- Each GPU's memory allocation weighted against highest capacity GPU
+- Automated tensor parallel size determination for vLLM deployments
+- Fixed 90% memory utilization policy for vLLM framework
 
-### GPU Detection and Monitoring (Importance: 90)
-`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- Integrates with NVML for real-time GPU discovery and information retrieval
-- Implements fallback mock GPU data system for testing environments
-- Tracks device names and memory usage across detected GPUs
+```python
+def tensor_fractions(gpus):
+    top = max(g.mem_total for g in gpus)
+    return [round(g.mem_total / top, 3) for g in gpus]
+```
 
-### Telemetry Collection System (Importance: 85)
-`dual_gpu_optimizer/dualgpuopt/telemetry.py`
-- Gathers real-time GPU metrics including load, memory usage, and PCIe throughput
-- Maintains continuous telemetry stream for dynamic resource monitoring
-- Provides data for GPU utilization optimization decisions
+## GPU Resource Validation (Importance: 85)
+- Enforces minimum 2-GPU requirement for optimization
+- Validates memory override values as integers
+- Supports dynamic GPU memory overrides through environment variables
+- Implements mock GPU mode with simulated 3090/3080 configurations
 
-### Machine Learning Framework Integration (Importance: 80)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- Generates framework-specific commands for llama.cpp with GPU split configurations
-- Creates vLLM commands incorporating model paths and tensor parallel sizes
-- Adjusts command parameters based on detected GPU count and memory distribution
+## Memory Split Optimization (Importance: 90)
+- Custom memory splitting algorithm for model distribution
+- Calculates optimal splits based on available VRAM across GPUs
+- Handles framework-specific memory requirements (llama.cpp vs vLLM)
+- Generates optimized deployment commands with memory parameters
 
-### GPU Resource Management (Importance: 75)
-`dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- Sets CUDA visible devices based on optimization calculations
-- Manages environment variables for GPU memory allocation
-- Coordinates tensor parallel splits across available GPUs
+Key Files:
+- dual_gpu_optimizer/dualgpuopt/optimizer.py
+- dual_gpu_optimizer/dualgpuopt/gpu_info.py
 
 $END$

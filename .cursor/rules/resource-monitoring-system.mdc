@@ -1,5 +1,5 @@
 ---
-description: Technical specification for GPU resource monitoring, telemetry collection, and alert systems
+description: Technical specification for GPU resource monitoring, telemetry collection, and performance alerting system
 globs: **/telemetry.py,**/tray.py,**/gpu_info.py
 alwaysApply: false
 ---
@@ -7,36 +7,46 @@ alwaysApply: false
 
 # resource-monitoring-system
 
-The resource monitoring system consists of three main components:
+The resource monitoring system implements specialized GPU telemetry collection and performance tracking with the following core components:
 
-## GPU Telemetry Collection (Importance: 85)
-- Located in `telemetry.py`
-- Collects real-time GPU metrics using NVML:
-  - GPU load percentage
-  - Memory usage statistics
-  - PCIe throughput data
-- Implements continuous telemetry streaming with configurable intervals
-- Provides telemetry data buffer management for real-time monitoring
+## Telemetry Collection (telemetry.py)
+Importance Score: 95
 
-## Idle Resource Detection (Importance: 75)
-- Located in `tray.py`
-- Monitors GPU utilization patterns
-- Triggers system tray notifications when GPUs remain idle for 5+ minutes
-- Suggests potential resource optimization opportunities
-- Maintains watchdog functionality for continuous GPU load tracking
+- Real-time GPU metric streaming system capturing:
+  - GPU utilization percentages
+  - Memory usage patterns
+  - PCIe bandwidth metrics (RX/TX)
+- Configurable polling intervals for metric collection
+- Direct NVML integration for hardware-level monitoring
 
-## GPU Information System (Importance: 90)
-- Located in `gpu_info.py`
-- Implements NVML-based GPU detection and information retrieval
-- Provides device names and memory usage statistics
-- Includes mock GPU data functionality for testing scenarios
-- Logs warning messages and troubleshooting steps when GPU detection fails
+## Alert System (tray.py)
+Importance Score: 85
 
-The monitoring system handles:
-1. Real-time GPU metric collection
-2. Resource utilization tracking
-3. Idle resource notifications
-4. GPU detection and verification
-5. Mock data generation for testing
+- GPU idle detection with 30% utilization threshold
+- 5-minute monitoring window for underutilization warnings
+- Resource optimization suggestion system
+- Application lifecycle management with user notifications
+
+## GPU Monitoring Rules
+Importance Score: 80
+
+- Alert thresholds configurable between 5-80%
+- Alert duration settings between 60-900 seconds
+- Historical GPU load tracking in 2-minute rolling windows
+- Color-coded performance visualization system
+- Support for up to 8 GPUs with distinct tracking schemes
+
+## Memory Tracking
+Importance Score: 90
+
+- Specialized MiB/GB conversion rules for GPU memory
+- Continuous memory allocation pattern analysis
+- Memory utilization tracking against total VRAM
+- Dynamic GPU memory override capabilities through environment variables
+
+Relevant Files:
+- dual_gpu_optimizer/dualgpuopt/telemetry.py
+- dual_gpu_optimizer/dualgpuopt/tray.py
+- dual_gpu_optimizer/dualgpuopt/gpu_info.py
 
 $END$

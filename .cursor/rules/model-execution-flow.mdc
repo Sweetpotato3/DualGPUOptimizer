@@ -1,61 +1,43 @@
 ---
-description: Specification for LLM model execution workflows, command generation, and GPU resource management
-globs: **/optimizer.py,**/runner.py,**/gpu_info.py,**/telemetry.py
+description: Specification for LLM model execution workflows, GPU resource allocation, and command generation for llama.cpp and vLLM
+globs: **/optimizer.py,**/gpu_info.py,**/runner.py,**/simple_launcher.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Model Execution Components 
-Importance Score: 95
+Core Model Execution Components:
 
-The model execution workflow is handled through several key components:
+1. GPU Resource Allocation (Importance: 95)
+- Implements dual GPU memory splitting based on available VRAM ratios
+- Calculates tensor fractions for parallel model distribution
+- Supports dynamic GPU memory overrides through environment variables
+- Enforces 90% memory utilization policy for vLLM deployments
 
-1. Command Generation Engine
-- Generates execution commands for llama.cpp and vLLM frameworks
-- Configures environment variables for GPU memory allocation
-- Creates split strings for multi-GPU tensor distribution
-- Sets data types and tensor parallel sizes based on available GPUs
+2. Framework-Specific Command Generation (Importance: 90)
+- Generates optimized commands for llama.cpp and vLLM deployments
+- Calculates framework-specific parameters based on GPU configurations
+- Handles tensor parallel size determination for vLLM
+- Manages context size settings per model type
 
-2. GPU Resource Management
-- Calculates tensor fractions for balanced GPU memory distribution
-- Detects and validates available GPU devices through NVML
-- Generates GPU split configurations for optimal resource utilization
-- Supports mock GPU data for testing environments
+3. Model Deployment Workflow (Importance: 85)
+- Validates minimum GPU requirements (2 GPUs required)
+- Implements automatic layer distribution across available GPUs
+- Manages preset model configurations for different AI models
+- Supports mock mode for development/testing scenarios
 
-3. Model Execution Flow
-- Initializes GPU monitoring and telemetry collection
-- Configures CUDA visible devices based on optimization parameters
-- Streams real-time GPU utilization metrics during model execution
-- Manages environment file generation for runtime configurations
+Key Files:
+- dual_gpu_optimizer/dualgpuopt/optimizer.py - Core optimization logic
+- dual_gpu_optimizer/dualgpuopt/runner.py - Model execution handling
+- dual_gpu_optimizer/dualgpuopt/gpu_info.py - GPU resource management
+- simple_launcher.py - Framework command generation
 
-## Key Integration Points
-Importance Score: 85
-
-The execution flow integrates with:
-
-1. Telemetry System
-- Collects GPU load, memory usage, and PCIe throughput metrics
-- Streams real-time utilization data during model execution
-- Monitors GPU idle states for resource optimization
-
-2. Framework Adapters
-- llama.cpp command generation with GPU split configuration
-- vLLM execution parameters with tensor parallel distribution
-- Dynamic adaptation based on GPU availability and memory capacity
-
-## Resource Allocation Logic
-Importance Score: 80
-
-1. GPU Split Configuration
-- Generates comma-separated strings for GPU memory allocation
-- Calculates relative tensor fractions for memory distribution
-- Creates environment files with CUDA device configurations
-
-2. Monitoring and Optimization
-- Real-time GPU utilization tracking
-- Idle resource detection and notification
-- Dynamic resource reallocation based on usage patterns
+Business Rules:
+- Minimum 2 GPU requirement for model execution
+- Memory splitting based on relative GPU capacities
+- Automatic tensor parallel size calculation
+- Framework-specific memory utilization policies
+- Support for up to 8 GPUs in parallel configuration
 
 $END$
