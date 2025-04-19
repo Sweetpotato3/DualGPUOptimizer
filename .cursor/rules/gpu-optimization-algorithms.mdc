@@ -1,59 +1,45 @@
 ---
-description: Specification for GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies
-globs: **/optimizer.py,**/gpu_info.py,**/gpu_commands.py,**/services/*.py
+description: Specification for GPU memory optimization algorithms and tensor parallel calculations for dual-GPU LLM inference
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/smart_batch.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Optimization Components:
+GPU Memory Distribution Algorithm (optimizer.py):
+- Tensor split calculation based on relative GPU memory capacities
+- Dynamic memory fraction allocation: tensor_fraction = gpu_memory / max_gpu_memory
+- GPU-specific command generation for llama.cpp and vLLM frameworks
+- Automatic tensor parallelism degree calculation
 
-1. Memory Distribution Algorithm (optimizer.py)
+Layer Balancing System (layer_balance.py):
 Importance Score: 95
-- Calculates optimal GPU memory splits based on total memory capacity ratios
-- Generates tensor parallelism fractions for balanced GPU utilization
-- Produces framework-specific memory allocation parameters for llama.cpp and vLLM
-- Handles dynamic context size adjustments based on model requirements
+- Adaptive latency-based layer distribution across GPUs
+- Dual sequence length profiling (64/1024 tokens) with weighted scoring
+- Layer placement optimization using 0.2 * short_seq + 0.8 * long_seq formula
+- VRAM quota enforcement during distribution
 
-2. GPU Hardware Profiling (gpu_info.py)  
+Context Size Calculator (ctx_size.py):
 Importance Score: 90
-- Custom GPU metrics modeling with comprehensive hardware profiling
-- Architecture detection with CUDA core estimation
-- Memory capacity and utilization tracking
-- Power limit and usage calculations
+- Maximum safe context length calculation considering:
+  - n_layers, n_kv_heads, head_dim parameters
+  - Precision type adjustments (16-bit, 8-bit QLoRA, 4-bit GPTQ)
+  - MoE factor handling for Mixtral-type models
+  - Dynamic safety margin calculation
 
-3. Tensor Split Optimization (optimizer.py)
+Smart Batching Algorithm (smart_batch.py):
 Importance Score: 85
-- Dynamic tensor parallel size computation
-- Multi-GPU workload distribution logic
-- Memory-aware model splitting for distributed inference
-- Framework-specific environment variable generation
+- Length-aware GPU inference scheduling
+- Token-based dynamic batch size optimization
+- Automatic OOM recovery with cache clearing
+- Power-of-two bucketing strategy for sequence grouping
+- Token ratio maintenance between buckets (1.5x sizing)
 
-4. Overclocking Management (gpu_commands.py)
-Importance Score: 75
-- GPU-specific overclocking profiles with safety bounds:
-  - Core clock offset (-200 to +200 MHz)
-  - Memory clock offset (-1000 to +1500 MHz)
-  - Power limit (50% to 120%)
-  - Fan speed control (0-100%)
-- Profile persistence and rollback capability
-
-5. Resource Monitoring (services/event_bus.py)
-Importance Score: 70
-- Real-time GPU metrics collection:
-  - Load balancing metrics
-  - PCIe bandwidth monitoring  
-  - Power consumption tracking
-  - Memory utilization patterns
-- Event-driven monitoring pipeline
-- Configurable alert thresholds
-
-Key Domain Features:
-- Specialized handling of dual-GPU configurations for AI model deployment
-- Framework-aware optimization parameter generation
-- Hardware capability detection and profiling
-- Memory-aware workload distribution
-- GPU-specific safety limits enforcement
+File paths containing core algorithms:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py
+- dualgpuopt/ctx_size.py
+- dualgpuopt/batch/smart_batch.py
 
 $END$

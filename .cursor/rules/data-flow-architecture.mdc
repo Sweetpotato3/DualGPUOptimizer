@@ -1,75 +1,66 @@
 ---
-description: Analysis of data flow between components in GPU resource management and optimization systems
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
+description: Use when analyzing or documenting data flows between components in GPU optimization and monitoring systems
+globs: **/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+The system implements a multi-layered data flow architecture for GPU optimization and monitoring:
 
-1. Event Bus System (services/event_bus.py)
-Importance: 95
-- GPU metrics event streams flow from hardware monitoring to visualization components
-- OptimizationEvents carry tensor split ratios and distribution parameters
-- Priority-based event routing ensures critical GPU metrics are processed first
+1. Core Event Bus Data Flow (event_bus.py, event_service.py)
+- GPUMetricsEvent stream carries real-time metrics:
+  - Utilization percentages
+  - Memory usage stats
+  - Temperature readings
+  - Power consumption data
+  - Fan speeds
+- OptimizationEvent stream manages:
+  - Tensor split configurations
+  - Layer distribution updates
+  - Model path changes
 
-2. GPU Resource Monitoring Pipeline (telemetry.py -> event_dashboard.py)
-Importance: 90
-- Raw GPU telemetry data flows through middleware processing pipeline
-- Processed metrics feed into 60-sample rolling window visualization
-- Multi-GPU state updates propagate to dashboard components
+2. Telemetry Pipeline (telemetry.py)
+- GPU metrics collection flow:
+  - Raw metrics gathering from NVML
+  - Processing through middleware pipeline
+  - Distribution to event bus subscribers
+- Metrics update frequency:
+  - Primary metrics: 1-second intervals
+  - Tray monitoring: 5-second intervals
 
-3. Configuration Data Flow (config_service.py)
-Importance: 85
-- GPU overclock profiles flow from settings to hardware controllers
-- Model context sizes and tensor parameters flow to optimization engine
-- Idle threshold settings propagate to monitoring system
+3. State Management Flow (state_service.py)
+- Bidirectional state updates for:
+  - GPU overclock settings
+  - Model configurations
+  - Context size parameters
+- State change propagation through:
+  - Direct service calls
+  - Event bus notifications
+  - Configuration updates
 
-4. Optimization Parameter Flow (optimizer.py)
-Importance: 90
-- Memory split calculations flow to framework-specific command generators
-- Tensor parallelism fractions propagate to model deployment services
-- GPU capability data flows to environment variable generation
+4. Optimization Data Flow (optimizer.py, layer_balance.py)
+- Layer distribution calculations:
+  - Performance metrics input
+  - Workload analysis
+  - Distribution output
+- Memory split optimization:
+  - GPU capacity inputs
+  - Tensor fraction calculations
+  - Framework-specific outputs
 
-Key Data Paths:
-
-1. GPU Metrics Flow:
+Key Data Flow Paths:
 ```
-Hardware -> Telemetry System -> Event Bus -> Dashboard Display
+Metrics Collection -> Event Bus -> Dashboard Display
+State Changes -> Event Bus -> Service Updates
+Optimization Calculations -> Command Generation -> Runner Execution
 ```
 
-2. Optimization Settings Flow:
-```
-Configuration -> State Service -> Optimizer -> Command Generation
-```
-
-3. Error Handling Flow:
-```
-Error Service -> State Updates -> Mock Mode Activation -> UI Updates
-```
-
-Critical Data Models:
-
-1. GPU Metrics Event
-- Utilization percentages
-- Memory usage 
-- Temperature readings
-- Power consumption
-- Fan speeds
-
-2. Optimization Parameters
-- Tensor split ratios
-- Context sizes
-- Memory allocations
-- Framework-specific settings
-
-3. Configuration State
-- Overclock profiles
-- Idle thresholds
-- Framework preferences
-
-The architecture emphasizes real-time flow of GPU metrics and optimization parameters, with specialized handling for dual-GPU configurations and tensor operations distribution.
+Relevant Components:
+- dualgpuopt/services/event_bus.py
+- dualgpuopt/services/state_service.py
+- dualgpuopt/telemetry.py
+- dualgpuopt/optimizer.py
 
 $END$

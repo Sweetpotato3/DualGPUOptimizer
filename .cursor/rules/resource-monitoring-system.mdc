@@ -1,61 +1,43 @@
 ---
-description: Technical specification for GPU resource monitoring systems including telemetry collection, utilization tracking, and alert mechanisms
-globs: **/telemetry.py,**/tray.py,**/gpu_info.py,**/event_dashboard.py
+description: Technical specification for the GPU telemetry and resource monitoring system components, including metrics collection and alerts
+globs: **/telemetry.py,**/metrics.py,**/event_dashboard.py,**/tray.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and analysis capabilities:
+The resource monitoring system implements specialized GPU telemetry collection and alerting with three core components:
 
-Core Monitoring Components (Importance: 85):
+## GPU Metrics Collection (Importance: 85)
+- Collects comprehensive GPU performance metrics:
+  - Utilization percentages for compute and memory
+  - PCIe bandwidth monitoring (RX/TX rates)
+  - Temperature and power draw metrics
+  - Fan speeds and clock frequencies
+- Implements 60-sample rolling window for historical trend analysis
+- Custom middleware pipeline processes raw GPU metrics before distribution
 
-1. Real-time Telemetry Collection (telemetry.py)
-- GPU metrics collection pipeline tracking:
-  - Load balancing statistics 
-  - PCIe bandwidth utilization
-  - Power consumption patterns
-  - Memory usage tracking
-- Configurable alert thresholds for GPU utilization levels
-- Event bus integration for real-time monitoring
-- Performance metric aggregation
+## Real-time Monitoring Dashboard (Importance: 80)
+- Dynamic visualization of multi-GPU metrics through event-driven architecture  
+- Per-GPU displays showing:
+  - Load percentage with color-coded thresholds
+  - Memory usage with dynamic MB/GB formatting
+  - Temperature monitoring against 100°C threshold
+  - Power consumption scaled to 400W maximum
+- Auto-detects and adapts UI for newly connected GPUs
 
-2. Idle Detection System (tray.py)
-- Continuous GPU load monitoring across devices
-- Notification triggers for underutilized GPUs:
-  - Load threshold: <30% utilization
-  - Time window: 5+ minute duration
-- System tray integration for status visibility
+## Idle Detection System (Importance: 75)
+- Advanced GPU idle detection logic:
+  - Monitors utilization across all detected GPUs
+  - Triggers alerts when usage drops below 30% threshold
+  - Accumulates idle time with 5-minute notification threshold
+  - Implements reset logic when GPU becomes active
+- System tray integration provides persistent monitoring
 
-3. Metrics Dashboard (event_dashboard.py)
-- 60-point rolling window for historical utilization
-- Dynamic GPU detection and monitoring adaptation
-- Normalized metric visualization:
-  - GPU utilization percentage
-  - Memory usage with MB/GB scaling
-  - Temperature monitoring (0-100°C range)
-  - Power draw (0-400W scale)
-
-4. Hardware Profiling (gpu_info.py)
-- Comprehensive GPU metrics modeling using dataclasses
-- Specialized calculations for:
-  - Memory usage percentages
-  - Power usage relative to limits
-  - Architecture detection
-  - CUDA core estimation
-
-Key Domain Features:
-- Real-time GPU resource tracking
-- Multi-GPU monitoring coordination
-- Intelligent idle detection
-- Performance threshold alerts
-- Historical utilization analysis
-
-File Paths:
+Key Files:
 - dualgpuopt/telemetry.py
 - dualgpuopt/tray.py
 - dualgpuopt/gui/event_dashboard.py
-- dualgpuopt/gpu_info.py
 
 $END$

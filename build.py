@@ -73,7 +73,7 @@ def _pyi_cmd(exe_name: str, nvml_path: pathlib.Path, extras: List[pathlib.Path])
         "--noconfirm",
         "--onefile",
         "--clean",
-        "--windowed",
+        # "--windowed",  # Comment out the windowed flag to show console output
         "--name", exe_name,
         "--add-binary", f"{nvml_path}{os.pathsep}.",
         "--hidden-import", "pynvml",
@@ -89,6 +89,11 @@ def _pyi_cmd(exe_name: str, nvml_path: pathlib.Path, extras: List[pathlib.Path])
         "--hidden-import", "argparse",
         "--hidden-import", "concurrent.futures",
         "--hidden-import", "psutil",
+        "--hidden-import", "torch",
+        "--hidden-import", "torch.cuda",
+        "--hidden-import", "torch.autocast",
+        "--hidden-import", "prometheus_client",
+        "--hidden-import", "asyncio",
         "--hidden-import",
         "pystray._win32" if platform.system() == "Windows" else "pystray._xorg",
     ]

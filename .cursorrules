@@ -1,7 +1,7 @@
 
 START SPECIFICATION:
 ---
-description: Use this overview documentation when analyzing dual GPU optimization systems focused on LLM workload distribution and performance monitoring, particularly for projects handling real-time GPU metrics and tensor operations across multiple devices.
+description: Use this overview documentation when examining a GPU optimization system for large language models that handles dual GPU configurations, memory management, and performance monitoring.
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -18,41 +18,48 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The Dual GPU Optimizer system implements specialized logic for managing and optimizing GPU resources for large language model deployments. The core business functionality is organized into three main domains:
+The Dual GPU Optimizer implements specialized logic for running large language models across multiple GPUs with three core business areas:
 
-1. GPU Resource Management & Optimization (Importance: 95)
-- Specialized tensor distribution algorithms for dual GPU configurations
-- Dynamic memory split calculations based on GPU capabilities
-- Framework-specific optimization parameters for llama.cpp and vLLM
-- Automatic hardware capability detection and profiling
-- Real-time utilization monitoring with 60-sample rolling windows
+1. GPU Memory and Resource Management (Importance: 95)
+- Calculates optimal tensor split ratios based on GPU memory capacities
+- Implements model-specific context size management considering:
+  - Layer counts, KV heads, and head dimensions
+  - Precision types (16-bit, 8-bit QLoRA, 4-bit GPTQ)
+  - MoE factors for specialized models
+- Handles real-time memory allocation and recovery
 
-2. Performance Monitoring & Telemetry (Importance: 85)
-- Custom event hierarchy for GPU-specific monitoring
-- Real-time metrics collection including utilization, memory usage, temperature
-- PCIe bandwidth monitoring with automatic unit scaling
-- Temperature and power consumption correlation tracking
-- Idle detection system with configurable thresholds
+Key files:
+- dualgpuopt/ctx_size.py
+- dualgpuopt/optimizer.py
 
-3. Overclocking Management (Importance: 80)
-- GPU-specific overclocking profiles with safety bounds
-- Core/Memory clock offset management
-- Power limit and fan speed control
-- Profile persistence and rollback capabilities
-- Hardware safety limit enforcement
+2. GPU Performance Monitoring (Importance: 85)
+- Tracks critical GPU metrics:
+  - Utilization and memory usage
+  - Temperature and power draw
+  - PCIe bandwidth
+  - Clock speeds
+- Implements idle detection with configurable thresholds
+- Maintains 60-sample rolling window for performance trends
 
-Key Implementation Files:
-- dualgpuopt/optimizer.py: Core GPU optimization logic
-- dualgpuopt/gpu_info.py: Hardware profiling and metrics
-- dualgpuopt/telemetry.py: Real-time monitoring system
-- dualgpuopt/services/event_bus.py: GPU event management
+Key files:
+- dualgpuopt/telemetry.py
+- dualgpuopt/gui/dashboard.py
 
-The system focuses on optimizing dual-GPU setups for AI model deployment through:
-- Real-time performance monitoring
-- Dynamic tensor distribution
-- Hardware-specific configuration generation
-- Fault-tolerant operation handling
-- Framework-specific launch strategies
+3. Layer Distribution System (Importance: 90)
+- Balances model layers across GPUs using:
+  - Dual sequence length testing (64/1024 tokens)
+  - Weighted scoring system for throughput optimization
+  - VRAM quota management
+- Implements specialized mixed precision strategies:
+  - FP32 for critical operations
+  - Automatic precision scaling
+  - Framework-specific optimizations for llama.cpp and vLLM
+
+Key files:
+- dualgpuopt/layer_balance.py
+- dualgpuopt/mpolicy.py
+
+The system integrates these components through an event-driven architecture that coordinates GPU resource allocation, monitors performance, and optimizes model deployment across multiple GPUs.
 
 $END$
 END SPECIFICATION

@@ -43,6 +43,23 @@ try:
         print(f"Error: Missing 'rich' module. Try installing it with: pip install rich")
         sys.exit(1)
 
+    # Try to import optional dependencies
+    try:
+        import torch
+        logger.info("Successfully imported torch")
+        TORCH_AVAILABLE = True
+    except ImportError:
+        logger.warning("Optional dependency 'torch' not found - some features will be disabled")
+        TORCH_AVAILABLE = False
+    
+    try:
+        import prometheus_client
+        logger.info("Successfully imported prometheus_client")
+        PROMETHEUS_AVAILABLE = True
+    except ImportError:
+        logger.warning("Optional dependency 'prometheus_client' not found - metrics will be disabled")
+        PROMETHEUS_AVAILABLE = False
+
     # Try to import application modules
     try:
         from dualgpuopt.gui import run_app
@@ -158,6 +175,7 @@ try:
 
     def main() -> int:
         """Main entry point."""
+        global logger
         args = parse_args()
         
         # Enable mock mode if requested
@@ -167,7 +185,7 @@ try:
         
         # Setup logging regardless of mode
         log_file = pathlib.Path.home() / ".dualgpuopt" / "logs" / "gui.log"
-        logger = setup_logging(
+        app_logger = setup_logging(
             verbose=args.verbose,
             log_file=log_file
         )
@@ -186,7 +204,7 @@ try:
                 run_app()
                 return 0
         except Exception as err:
-            logger.error(f"Application error: {err}", exc_info=args.verbose)
+            app_logger.error(f"Application error: {err}", exc_info=args.verbose)
             print(f"Error: {err}")
             print(f"For more details, check the log file at: {log_file}")
             return 1

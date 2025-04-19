@@ -1,48 +1,41 @@
 ---
-description: Defines execution flows and resource allocation for GPU-accelerated LLM inference using llama.cpp and vLLM frameworks
-globs: **/services/*.py,**/gui/launcher.py,**/optimizer.py,**/runner.py
+description: Specification for implementing and documenting LLM model execution workflows across multiple GPUs
+globs: **/runner.py,**/optimizer.py,**/batch/*.py,**/layer_balance.py,**/mpolicy.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core command generation and execution workflow for LLM inference:
+The model execution flow consists of three main components:
 
-1. Model Execution Pipeline (dualgpuopt/optimizer.py, dualgpuopt/runner.py)
-- Generates framework-specific launch commands:
-  ```
-  llama.cpp: --n-gpu-layers split --split [ratio] --ctx-size [context]
-  vLLM: --tensor-parallel-size [num_gpus] --max-model-len [context]
-  ```
-- Memory calculation logic:
-  - Computes GPU split ratios based on available VRAM
-  - Adjusts context sizes according to model requirements
-  - Determines tensor parallel size based on GPU count
+1. Model Deployment Orchestration (Importance: 95)
+- Generates framework-specific commands for llama.cpp and vLLM
+- Configures GPU split ratios based on available VRAM
+- Manages tensor parallelism settings for multi-GPU deployments 
+- Handles environment variable setup for memory allocation
 
-2. Resource Allocation Flow (dualgpuopt/services/state_service.py)
-- Maintains resource state:
-  - Active model paths and context window sizes
-  - Current GPU memory allocations
-  - Tensor parallel configurations
-- Tracks idle thresholds for optimization
+2. Layer Distribution System (Importance: 90)
+- Implements adaptive layer balancing across GPUs:
+  - Profiles layer performance with dual sequence testing (64/1024 tokens)
+  - Uses weighted scoring (0.2 * short_seq + 0.8 * long_seq)
+  - Distributes layers while respecting VRAM constraints
+  - Places highest-latency layers optimally
 
-3. Launch Orchestration (dualgpuopt/gui/launcher.py)
-- Framework-specific launch strategies:
-  - llama.cpp: GPU splits and context management
-  - vLLM: Tensor parallelism configuration
-- Non-blocking process management with output handling
+3. Smart Batching Pipeline (Importance: 85)
+- Length-aware inference scheduling with queue depth control
+- Token-based batch size optimization 
+- Automatic OOM recovery with cache clearing
+- Power-of-two bucket grouping for sequences
+- Token ratio-based bucketing for balanced workloads
 
-4. Configuration Management (dualgpuopt/services/config_service.py)
-- Manages execution parameters:
-  - Model context sizing
-  - GPU memory thresholds
-  - Framework-specific optimizations
+Key File Paths:
+- dualgpuopt/optimizer.py: GPU split calculations and command generation
+- dualgpuopt/layer_balance.py: Layer distribution algorithms
+- dualgpuopt/batch/smart_batch.py: Batching system implementation
+- dualgpuopt/batch/heuristics.py: Batching strategies
+- dualgpuopt/mpolicy.py: Mixed precision policies
 
-Importance Scores:
-- Command Generation Pipeline: 95 (Core execution logic)
-- Resource Allocation: 90 (Critical for multi-GPU coordination)
-- Launch Orchestration: 85 (Framework integration)
-- Configuration Management: 75 (Execution parameters)
+The execution flow emphasizes optimal resource utilization across dual GPU setups while maintaining safe memory constraints and efficient workload distribution.
 
 $END$
