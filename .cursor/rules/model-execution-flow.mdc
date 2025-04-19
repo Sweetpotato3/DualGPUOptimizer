@@ -1,69 +1,69 @@
 ---
-description: Defines and documents how LLM model execution flows through the system including command generation and GPU allocation
-globs: */gpu_info.py,*/optimizer.py,*/layer_balance.py,*/commands/*.py,*/batch/*.py
+description: Documents LLM execution workflows, command generation, and GPU resource management for dual GPU optimization
+globs: **/dualgpuopt/runner.py,**/dualgpuopt/optimizer.py,**/commands/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The system implements a sophisticated model execution workflow spanning multiple components:
+The model execution flow implements specialized handling of LLM workloads across dual GPU configurations:
 
-## Command Generation (Importance: 95)
-Located in `commands/gpu_commands.py`:
+Core Execution Components (Importance: 95):
 
-1. Framework-specific command builders:
-- llama.cpp: Generates split configuration strings for GPU layer distribution
-- vLLM: Creates tensor parallel deployment parameters
-- Handles environment variable generation for GPU memory allocation
+1. Command Generation Pipeline
+- Produces optimized commands for llama.cpp:
+  ```
+  --gpu-split <ratio> --n-gpu-layers <count> --ctx-size <window>
+  ```
+- Generates vLLM tensor parallelism settings:
+  ```
+  tensor_parallel_size=<n> max_context_len=<size>
+  ```
+- Dynamically calculates memory splits based on available GPU VRAM
 
-2. Parameter Generation:
-- Context size calculation based on available GPU memory
-- Tensor split ratios for multi-GPU deployment
-- Framework-specific flags and options
+2. Batch Processing Workflow (Importance: 90)
+- Length-aware sequence batching with 20% memory reserve
+- Token limit management (max 8192 tokens default)
+- Dynamic batch size scaling based on:
+  - Available GPU memory
+  - Model parameter count
+  - Sequence length distribution
+  - Memory overhead estimations
 
-## Layer Distribution (Importance: 90)
-Located in `layer_balance.py`:
+3. GPU Resource Allocation Flow (Importance: 85)
+- Real-time GPU utilization monitoring
+- Memory distribution across GPUs:
+  - Primary allocation based on VRAM ratios
+  - Secondary fine-tuning based on utilization
+  - Temperature-aware load balancing
+  - PCIe bandwidth optimization
 
-1. Adaptive layer redistribution using:
-- Short sequence profiling (64 tokens) - 20% weight
-- Long sequence profiling (1024 tokens) - 80% weight
-- Per-GPU VRAM quota enforcement
-- Dynamic device mapping based on execution times
+4. Model Context Management (Importance: 80)
+- Automatic context size calculation based on:
+  - Layer count and dimensions
+  - KV head configuration 
+  - Precision settings (4/8/16-bit)
+  - MoE scaling factors
+- Dynamic adjustment based on memory availability
 
-2. Distribution formulas:
-- Weighted execution time: final_time = 0.2 * short_seq + 0.8 * long_seq
-- Memory-aware layer assignment per GPU
-- MoE-specific handling for mixture models
+Execution Paths:
+1. Pre-execution:
+   - GPU capability detection
+   - Memory availability checks
+   - Command parameter generation
+   
+2. Runtime:
+   - Batch queue management
+   - Memory utilization monitoring
+   - Temperature-based throttling
+   - Load rebalancing
 
-## Batch Processing (Importance: 85)
-Located in `batch/smart_batch.py`:
+3. Error Recovery:
+   - OOM handling with cache purge
+   - Batch size reduction
+   - Automatic retries with reduced parameters
 
-1. Length-aware sequence batching:
-- Groups similar length sequences
-- Maintains configurable backlog limits
-- Implements OOM protection with auto-retry
-- Token-based size management
-
-2. Two bucketing strategies:
-- Power-of-two for llama.cpp
-- Token ratio for proportional sizing
-
-## Resource Management (Importance: 80)
-Located in `gpu_info.py`:
-
-1. Memory allocation:
-- 2GB default operational overhead
-- Model-specific scaling factors
-- Architecture-based parameter tuning
-- Dynamic VRAM quota calculation
-
-2. Resource monitoring:
-- Real-time memory tracking
-- Multi-GPU coordination
-- Temperature and power monitoring
-- Utilization metrics collection
-
-The execution flow prioritizes optimal resource utilization while maintaining model performance through intelligent layer distribution and batching strategies.
+The system prioritizes stable execution while maximizing GPU utilization through intelligent resource allocation and dynamic batch management.
 
 $END$

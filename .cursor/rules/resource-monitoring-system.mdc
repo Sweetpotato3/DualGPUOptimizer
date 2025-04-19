@@ -1,71 +1,61 @@
 ---
-description: Specifications for GPU resource monitoring, metrics collection, and telemetry system implementation
-globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/tray.py
+description: Monitors dual GPU performance metrics, utilization, and resource allocation for optimization
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and performance tracking:
+Core telemetry system components:
 
-## Core Components
+1. GPU Metrics Collection (telemetry.py):
+- Comprehensive GPU performance monitoring metrics:
+  - Memory utilization and bandwidth 
+  - PCIe RX/TX traffic
+  - Temperature, power, clock metrics
+  - Fan speeds and load percentages
+- Real-time middleware pipeline for metric processing/distribution
+- Non-blocking telemetry collection with failover to mock mode
+- Event-based metric publishing to application monitoring bus
 
-### GPU Metrics Collection (telemetry.py)
-- Real-time monitoring of critical GPU metrics:
-  - Utilization percentage 
-  - Memory usage and availability
-  - Temperature readings
-  - Power consumption
-  - Fan speeds
-  - Core/Memory clock speeds
-- Custom middleware pipeline for metrics processing
-- Event-based publication of normalized GPU data
+2. Idle Resource Detection (tray.py):
+- GPU idle state monitoring with configurable thresholds:
+  - Utilization below 30% trigger point
+  - 5-minute minimum idle duration
+  - Per-GPU idle tracking
+- Resource optimization recommendations generation
+- Notification system for underutilized GPU resources
 
-### Resource Utilization Detection (tray.py)
-- Idle GPU detection system:
-  - Monitors sustained low utilization (<30%)
-  - Time-based validation (5 minute threshold)
-  - Automated alerts for underutilized resources
-- Resource optimization recommendations
+3. Performance Analysis (metrics.py):
+- Batch latency tracking for end-to-end processing
+- Queue depth monitoring for request handling
+- Prometheus integration for metrics collection
+- Rolling 60-second history window for trend analysis
 
-### GPU Information Service (gpu_info.py)
-- GPU telemetry aggregation system
-- Multi-GPU coordination and monitoring
-- Real-time performance metric tracking
-- Asymmetric GPU configuration handling
+4. Hardware Info Collection (gpu_info.py):
+- Architecture-specific CUDA core detection
+- Memory capacity and bandwidth profiling
+- Temperature threshold monitoring:
+  - Warning level: 80°C
+  - Critical level: 90°C
+- Multi-GPU synchronization and correlation
 
-### Metrics Processing (metrics.py)
-- GPU performance data normalization
-- Rolling metrics history maintenance (60 data points)
-- Automatic scaling of measurements:
-  - Memory (MB/GB)
-  - Temperature (°C with 100° cap)
-  - Power (relative to 400W max)
-  
-## Key Business Rules
+Key monitoring thresholds:
+```python
+UTIL_LOW = 30%      # Idle detection trigger
+UTIL_MEDIUM = 60%   # Normal operation range  
+UTIL_HIGH = 90%     # High load warning
+TEMP_WARNING = 80°C
+TEMP_CRITICAL = 90°C
+```
 
-1. GPU Utilization Thresholds
-- Idle detection: <30% utilization
-- Sustained monitoring: 5+ minutes
-- Temperature cap: 100°C
-- Power limit: 400W reference
+The system maintains continuous monitoring of dual GPU setups with emphasis on:
+- Resource utilization efficiency
+- Thermal management
+- Memory allocation optimization
+- Performance bottleneck detection
 
-2. Metrics Collection Intervals
-- Critical metrics: 500ms
-- Standard metrics: 1000ms
-- Background metrics: 2000ms
-
-3. Event Processing
-- Priority-based handling (LOW to CRITICAL)
-- Automated failover to mock mode
-- Hardware failure detection
-- Performance degradation alerts
-
-Importance Scores:
-- GPU Metrics Collection: 95
-- Resource Detection: 85  
-- GPU Information Service: 90
-- Metrics Processing: 80
+All metrics are processed through a priority-based event pipeline enabling real-time optimization decisions and resource reallocation.
 
 $END$

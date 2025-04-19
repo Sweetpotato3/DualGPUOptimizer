@@ -5,6 +5,8 @@ This script contains all the GUI constants in one place to avoid import issues.
 """
 
 from typing import Dict, Tuple
+from __future__ import annotations
+from pathlib import Path
 
 # UI Padding constants
 PAD = 10  # Standard padding for UI elements
@@ -92,4 +94,11 @@ STATUS_COLORS: Dict[str, str] = {
     "error": "#f44336",   # Red
     "idle": "#03a9f4",    # Blue
     "disabled": "#9e9e9e" # Gray
-} 
+}
+
+APP_NAME        = "DualGPUOptimizer"
+THEME           = "darkly"
+ASSET_DIR       = Path(__file__).parent.parent / "assets"
+BASE_FONT       = ("Segoe UI", 10)
+STATUS_DURATION = 5000            # ms
+VRAM_WARN_MB    = 256             # warn banner if < 256 MB reclaimed 

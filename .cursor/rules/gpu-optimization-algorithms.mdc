@@ -1,71 +1,49 @@
 ---
-description: Specification for GPU memory optimization, tensor parallel splits, and memory allocation strategies for multi-GPU LLM deployment.
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py,**/metrics.py
+description: Documents core GPU optimization algorithms, memory management, and tensor parallel processing logic for dual GPU systems
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution System
-- GPU memory split calculation based on available VRAM ratios
-- Safety buffer allocation (2GB default) for operational overhead
-- Model-specific memory scaling factors:
-  - Mixtral MoE: 1.05x multiplier
-  - Standard transformers: 1.0x multiplier
+Core GPU Memory Distribution Algorithm:
+- Calculates optimal memory splits across multiple GPUs based on total available VRAM
+- Dynamically adjusts tensor parallel fractions relative to highest capacity GPU
+- Implements model-aware scaling for MoE architectures with extra memory overhead
+- Reserve ratio maintains 10% buffer for system operations
 
-## Layer Distribution Optimization
-Location: layer_balance.py
-Importance: 95
+Context Size Calculation:
+```python
+bytes_per_token = n_layers * n_kv_heads * head_dim * (precision_bits/8) * 2 * moe_factor
+max_context = (available_gpu_mem * reserve_ratio) / bytes_per_token
+```
 
-- Weighted profiling methodology:
-  - Short sequences (64 tokens): 20% weight
-  - Long sequences (1024 tokens): 80% weight
-- Dynamic layer redistribution based on real-time execution profiles
-- Latency-aware balancing respecting per-GPU VRAM quotas 
+Layer Balancing System:
+- Dual-pass profiling strategy:
+  - Short sequence pass (64 tokens) establishes baseline performance
+  - Long sequence pass (1024 tokens) determines scaling behavior
+  - Weighted combination (20/80) provides realistic workload assessment
+- Dynamic GPU allocation adjusts based on real-time profiling metrics
+- Maintains memory constraints while optimizing for computational latency
 
-## Context Size Calculation
-Location: ctx_size.py
-Importance: 90
+Tensor Parallel Split Calculator:
+- Generates specialized command parameters for different ML frameworks:
+  - llama.cpp: GPU split string based on relative VRAM ratios
+  - vLLM: Tensor parallelism configuration with balanced distribution
+- Handles architecture-specific CUDA core calculations
+- Implements failover to mock GPU mode for testing scenarios
 
-- Maximum safe context length formula:
-  `max_ctx = (free_memory * 1024²) / (n_layers * n_kv_heads * head_dim * precision_factor * 2 * moe_factor)`
-- Model architecture parameter mapping for:
-  - Mixtral MoE variants
-  - Llama 2 architectures
-  - Mistral models
+Relevant Files:
+- dual_gpu_optimizer/dualgpuopt/optimizer.py
+- dual_gpu_optimizer/dualgpuopt/gpu_info.py
+- dual_gpu_optimizer/dualgpuopt/layer_balance.py
+- dual_gpu_optimizer/dualgpuopt/ctx_size.py
 
-## Tensor Parallel Splits
-Location: optimizer.py
-Importance: 85
-
-- Split ratio calculation based on relative GPU memory sizes
-- Framework-specific command generation:
-  - llama.cpp GPU split strings
-  - vLLM tensor parallel configurations
-- Dynamic tensor distribution factoring in:
-  - Available VRAM per GPU
-  - Model layer counts
-  - Attention head configurations
-
-## Memory Management Pipeline
-Location: gpu_info.py
-Importance: 80
-
-- Real-time GPU telemetry collection
-- Multi-GPU coordination system
-- Asymmetric GPU configuration handling
-- Dynamic memory quota adjustments
-- Safety thresholds enforcement
-
-## Metrics Collection
-Location: metrics.py
-Importance: 75
-
-- GPU utilization tracking
-- Memory usage monitoring
-- Temperature and power metrics
-- PCIe bandwidth measurement
-- Clock speed monitoring
+Business Impact Scores:
+- GPU Memory Distribution: 95 (Core optimization logic)
+- Context Size Algorithm: 90 (Critical for model deployment)
+- Layer Balancing: 85 (Key performance optimization)
+- Tensor Split Calculator: 80 (Framework integration)
 
 $END$

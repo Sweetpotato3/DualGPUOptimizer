@@ -161,8 +161,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create a high-level overview of systems that manage and optimize GPU resources, focusing on dual-GPU configurations and LLM deployment. Use when documenting core optimization logic, resource management, and GPU-specific algorithms.
-globs: *.py,*.cpp,*.hpp
+description: Apply this overview documentation rule when summarizing core business logic and domain-specific implementations in GPU optimization systems, particularly focusing on dual-GPU workload management and machine learning model deployment scenarios.
+globs: *.py,*.md,*.code-workspace
 alwaysApply: false
 ---
 
@@ -178,62 +178,50 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized GPU resource management and optimization for large language models across multiple GPUs.
+DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning workloads:
 
-Core Business Components:
+Core Components:
 
-1. GPU Memory Management System
-- Heuristic algorithms for context length calculation
-- Model parameter mapping for LLM architectures
-- Architecture-specific memory scaling factors
-- Safety reserves and operational overhead handling
-- Located in: dual_gpu_optimizer/dualgpuopt/ctx_size.py
+1. GPU Optimization Engine (dualgpuopt/optimizer.py)
+- Calculates optimal GPU memory splits between available GPUs
+- Generates tensor fractions for multi-GPU load balancing 
+- Produces framework-specific commands for LLM deployment
 
-2. Layer Distribution Engine
-- Adaptive latency-aware layer redistribution
-- Weighted profiling methodology (20% short/80% long sequences)
-- Dynamic device mapping based on execution times
-- Located in: dual_gpu_optimizer/dualgpuopt/layer_balance.py
+2. Mixed Precision Policy (dualgpuopt/mpolicy.py)
+- Manages precision policies for LLM inference
+- Handles datatype casting while preserving FP32 for critical operations
+- Configures specialized GradScaler for training cases
 
-3. GPU Optimization Service
-- Tensor parallel fraction calculations
-- Split strategy implementation for multi-GPU deployments
-- Model-specific memory configuration
-- Located in: dual_gpu_optimizer/dualgpuopt/optimizer.py
+3. Context Size Management (dualgpuopt/ctx_size.py)
+- Calculates maximum safe context length based on:
+  - Model parameters (layers, heads, dimensions)
+  - Available GPU memory
+  - MoE overhead considerations
+- Specialized handling for different model architectures
 
-4. Advanced Event System
-- GPU-specific event hierarchy
-- Metrics tracking for utilization, memory, temperature
-- Priority-based event handling (LOW to CRITICAL)
-- Located in: dual_gpu_optimizer/dualgpuopt/services/event_bus.py
+4. Layer Balance Optimization (dualgpuopt/layer_balance.py) 
+- Implements adaptive layer distribution across GPUs
+- Uses weighted profiling combining short/long sequences
+- Balances distribution while respecting VRAM quotas
 
-5. Smart Batching System
+5. Telemetry System (dualgpuopt/telemetry.py)
+- Collects GPU metrics:
+  - Memory utilization 
+  - PCIe bandwidth
+  - Temperature/power/clocks
+  - Load distribution
+- Implements middleware for metric processing
+
+6. Batch Processing (dualgpuopt/batch/smart_batch.py)
 - Length-aware sequence batching
-- Memory-based batch size optimization
-- Token-based workload distribution
-- Located in: dual_gpu_optimizer/dualgpuopt/batch/smart_batch.py
+- Dynamic batch size calculation
+- Memory-aware scheduling with OOM protection
 
-6. Telemetry Collection
-- Real-time GPU metrics monitoring
-- Hardware-specific data collection
-- Performance metric normalization
-- Located in: dual_gpu_optimizer/dualgpuopt/telemetry.py
-
-Key Integration Points:
-
-1. Command Generation
-- Framework-specific optimizations (llama.cpp, vLLM)
-- GPU split configuration
-- Memory allocation parameters
-- Located in: dual_gpu_optimizer/dualgpuopt/commands/gpu_commands.py
-
-2. State Management
-- GPU configuration persistence
-- Model parameter tracking
-- Resource allocation state
-- Located in: dual_gpu_optimizer/dualgpuopt/services/state_service.py
-
-The system architecture centers around optimizing large language model deployment across multiple GPUs, with specialized handling of memory distribution, layer balancing, and resource monitoring.
+Integration Architecture:
+- Event-driven communication between components
+- State management focused on GPU configurations
+- Framework-specific command generation (llama.cpp, vLLM)
+- Real-time monitoring and optimization feedback loop
 
 $END$
 END SPECIFICATION

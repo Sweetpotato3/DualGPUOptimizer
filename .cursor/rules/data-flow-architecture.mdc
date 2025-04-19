@@ -1,65 +1,56 @@
 ---
-description: Specification for documenting data flows between components for GPU resource management and optimization systems
-globs: dual_gpu_optimizer/**,integrated_app/**
+description: Rules and guidelines for documenting data flow patterns between components in GPU optimization systems
+globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/commands/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+Core Data Flow Paths:
 
-1. GPU Metrics Pipeline
-- GPUMetricsEvent streams real-time telemetry:
-  * Utilization, memory, temperature, power data
-  * PCIe bandwidth metrics
-  * Clock speeds
-- Collected by telemetry service (`dualgpuopt/telemetry.py`)
-- Published through EventBus (`services/event_bus.py`)
-- Consumed by Dashboard (`gui/dashboard.py`)
+1. GPU Telemetry Collection Pipeline
+- Source: telemetry.py → event_bus.py → metrics.py
+- Raw GPU metrics flow from NVML interfaces through middleware processors
+- Normalized metrics published to application event bus
+- Performance data routed to Prometheus collectors
 
 2. Optimization Parameter Flow
-- Context size calculations (`ctx_size.py`) →
-- Layer balance optimizer (`layer_balance.py`) →
-- GPU command generator (`commands/gpu_commands.py`)
-- Parameters include:
-  * Memory split ratios
-  * Tensor parallel fractions
-  * Context length limits
-  * Layer distribution maps
+- Source: optimizer.py → mpolicy.py → gpu_commands.py
+- GPU memory splits calculated based on available VRAM
+- Mixed precision policies generated for inference
+- Command parameters propagated to framework-specific launchers
 
-3. State Management Chain
-- Configuration Service (`services/config_service.py`)
-  * Stores GPU profiles
-  * Manages overclock settings
-  * Maintains idle thresholds
-- State Service (`services/state_service.py`)
-  * Tracks optimization state
-  * Manages GPU context sizes
-  * Handles model configurations
-- Persisted to disk via ConfigIO (`configio.py`)
+3. Resource Monitoring Chain
+- Source: gpu_info.py → telemetry.py → dashboard.py
+- Real-time GPU utilization metrics
+- Temperature/power/clock data streams
+- PCIe bandwidth monitoring flow
 
-4. Error Handling Flow
-- Error Service (`services/error_service.py`) detects GPU failures
-- Publishes through EventBus to ErrorHandlers
-- Triggers mock mode transitions
-- Maintains error state history
-
-5. Batch Processing Pipeline
-- Smart batching system (`batch/smart_batch.py`)
-- Sequences flow through:
-  * Length-based bucketing
-  * GPU memory optimization
-  * Token-aware distribution
-- Results feed back to monitoring system
+4. Configuration Distribution
+- Source: config_service.py → state_service.py → optimizer.py
+- GPU overclock profiles
+- Idle detection thresholds
+- Model context sizes
+- Framework-specific parameters
 
 Key Integration Points:
-- `event_bus.py`: Central message broker
-- `state_service.py`: State coordination
-- `telemetry.py`: Metrics collection
-- `optimizer.py`: Resource allocation
 
-Data flows form a closed loop:
-Metrics Collection → State Updates → Optimization → Command Generation → Execution → Metrics Collection
+1. Metrics Collection Hub (metrics.py)
+- Centralizes GPU performance data
+- Distributes to monitoring systems
+- Feeds optimization decision engine
+
+2. Event Distribution System (event_bus.py)
+- Routes GPU state changes
+- Propagates optimization decisions
+- Handles telemetry broadcasts
+
+3. Command Generation Pipeline (gpu_commands.py)
+- Receives optimization parameters
+- Generates framework commands
+- Routes to execution services
+
+The data flow architecture emphasizes real-time GPU metric collection and distribution, with optimization parameters flowing from analysis components to execution services through a centralized event bus system.
 
 $END$
