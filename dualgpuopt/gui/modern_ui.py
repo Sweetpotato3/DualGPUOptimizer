@@ -13,6 +13,7 @@ import queue, threading
 import time, random
 import logging
 import os
+from typing import Dict
 
 try:
     from sseclient import SSEClient
@@ -45,6 +46,10 @@ except ImportError:
 from dualgpuopt.ui.widgets import GradientProgress, NeonButton
 # Import gpu_info to access GPU-related functions
 import dualgpuopt.gpu_info as gpu_info
+# Import the OptimizerTab
+from .optimizer_tab import OptimizerTab
+# Import TelemetryService and GPUMetrics
+from dualgpuopt.telemetry import TelemetryService, GPUMetrics, get_telemetry_service
 
 CFG_FILE = Path.home() / ".dualgpuopt" / "ui.json"
 
@@ -127,21 +132,29 @@ class ModernApp(ttk.Window):
         self.pool = ThreadPoolExecutor(max_workers=4)
         self.q = queue.Queue()
 
+        # Initialize and start Telemetry Service
+        self.telemetry_service = get_telemetry_service() # Use singleton
+        self.telemetry_service.use_mock = self.mock_mode # Ensure service knows the mode
+        self.telemetry_service.register_callback(self._update_dashboard)
+        self.telemetry_service.start()
+        logger.info(f"Telemetry service started (mock_mode={self.mock_mode})")
+
         nb = ttk.Notebook(self, bootstyle="dark")
         nb.pack(fill="both", expand=True)
         nb.enable_traversal()
 
         self._build_tabs(nb)
         self.after(100, self._marquee)  # status reset marquee
-        self.after(40, self._poll_queue)
+        self.after(50, self._poll_queue)
         
-        # Initialize GPU info immediately
-        self.after(500, self._refresh_gpu_info)
+        # Initial GPU info display relies on telemetry callback now
+        # self.after(500, self._refresh_gpu_info) # Removed, handled by telemetry
 
     # ---------------- Tabs -----------------
     def _build_tabs(self, nb):
-        # Optimizer placeholder
-        nb.add(ttk.Frame(nb), text="Optimizer")
+        # Optimizer Tab - Now using the real implementation
+        optimizer_frame = OptimizerTab(nb)
+        nb.add(optimizer_frame, text="Optimizer")
 
         # Launcher
         launcher = ttk.Frame(nb, padding=12)
@@ -159,9 +172,9 @@ class ModernApp(ttk.Window):
         # Dashboard
         dash = ttk.Frame(nb, padding=12)
         nb.add(dash, text="GPU Dashboard")
-        ttk.Label(dash, text="GPU util").grid(row=0, column=0, sticky="w")
+        ttk.Label(dash, text="GPU 0 util").grid(row=0, column=0, sticky="w")
         self.util_bar = GradientProgress(dash); self.util_bar.grid(row=0, column=1, padx=6, sticky="ew")
-        ttk.Label(dash, text="VRAM").grid(row=1, column=0, sticky="w")
+        ttk.Label(dash, text="GPU 0 VRAM").grid(row=1, column=0, sticky="w")
         self.vram_bar = GradientProgress(dash); self.vram_bar.grid(row=1, column=1, padx=6, sticky="ew")
         
         # Try to create a Meter widget, with fallback to a label if it fails
@@ -206,10 +219,10 @@ class ModernApp(ttk.Window):
         ttk.Label(gpu_frame, text="Mock mode simulates GPU hardware for testing\nwhen no physical GPUs are available.", 
                  font=("Segoe UI", 9), foreground="gray").pack(anchor="w", pady=4)
                  
-        # Add refresh button for real GPU detection
-        refresh_button = ttk.Button(gpu_frame, text="Refresh GPU Information", 
-                                  command=self._refresh_gpu_info, bootstyle="info-outline")
-        refresh_button.pack(anchor="w", pady=8)
+        # Add refresh button for real GPU detection (less critical now with telemetry)
+        # refresh_button = ttk.Button(gpu_frame, text="Refresh GPU Information", 
+        #                           command=self._refresh_gpu_info, bootstyle="info-outline")
+        # refresh_button.pack(anchor="w", pady=8) # Keep commented or remove
 
         # Chat
         chat = ttk.Frame(nb, padding=6)
@@ -240,76 +253,98 @@ class ModernApp(ttk.Window):
             
     def _enable_mock_mode(self, notify=True):
         """Enable mock GPU mode."""
+        if self.mock_mode: return # Already enabled
+
         os.environ["DGPUOPT_MOCK_GPUS"] = "1"
         self.mock_mode = True
+        logger.info("Enabling mock GPU mode")
+        self.telemetry_service.stop()
+        self.telemetry_service.use_mock = True
+        self.telemetry_service.start()
         if notify:
             self.status("Mock GPU mode enabled")
             self.q.put(("toast", "Mock GPU mode enabled"))
-            self._refresh_gpu_info()
+            # self._refresh_gpu_info() # No need to manually refresh
             
     def _disable_mock_mode(self):
         """Disable mock GPU mode and use real GPUs if available."""
-        # Attempt to check if real GPUs are available before disabling mock mode
+        if not self.mock_mode: return # Already disabled
+
+        logger.info("Attempting to disable mock GPU mode")
+        # Clear env variable first
+        if "DGPUOPT_MOCK_GPUS" in os.environ:
+            del os.environ["DGPUOPT_MOCK_GPUS"]
+
+        # Stop current service, change mode, restart
+        self.telemetry_service.stop()
+        self.telemetry_service.use_mock = False
+
+        # Need to re-check NVML availability if we start without mock
         try:
-            # Temporarily disable mock mode to check for real GPUs
-            if "DGPUOPT_MOCK_GPUS" in os.environ:
-                del os.environ["DGPUOPT_MOCK_GPUS"]
-                
-            # Try to probe for real GPUs
-            gpus = gpu_info.probe_gpus()
-            if gpus:
-                self.mock_mode = False
-                self.status(f"Using real GPU hardware: {', '.join(gpu.short_name for gpu in gpus)}")
-                self.q.put(("toast", "Real GPU mode enabled"))
-                self._refresh_gpu_info()
-            else:
-                raise RuntimeError("No GPUs detected")
+            pynvml.nvmlInit()
+            gpu_count = pynvml.nvmlDeviceGetCount()
+            pynvml.nvmlShutdown()
+            if gpu_count == 0:
+                raise RuntimeError("No NVIDIA GPUs detected")
+
+            # If real GPUs detected, proceed
+            self.mock_mode = False
+            self.telemetry_service.start()
+            logger.info("Real GPU mode enabled")
+            self.status("Real GPU mode enabled")
+            self.q.put(("toast", "Real GPU mode enabled"))
+            # self._refresh_gpu_info() # No need to manually refresh
+
         except Exception as e:
-            # If no real GPUs are available, keep mock mode on and inform the user
-            os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+            # Failed to detect real GPUs, revert to mock mode
+            logger.warning(f"Failed to detect real GPUs ({e}), reverting to mock mode.")
+            os.environ["DGPUOPT_MOCK_GPUS"] = "1" # Re-set env var
             self.mock_var.set(True)  # Reset the checkbox
             self.mock_mode = True
+            self.telemetry_service.use_mock = True # Set flag back
+            self.telemetry_service.start() # Restart in mock mode
             error_msg = f"No real GPUs detected: {e}. Using mock mode."
             self.status(error_msg)
             self.q.put(("toast", error_msg))
-            logger.warning(f"Failed to disable mock mode: {e}")
-            
+
     def _refresh_gpu_info(self):
-        """Refresh GPU information."""
+        """Manually trigger GPU info refresh (less critical now)."""
+        # This might be useful if telemetry stops or for explicit checks
         self.status("Refreshing GPU information...")
-        self.pool.submit(self._get_gpu_info)
-        
+        # The TelemetryService handles periodic refresh, so this might
+        # just involve querying the service's current state or
+        # potentially asking the service to refresh immediately if implemented.
+        latest_metrics = self.telemetry_service.get_metrics()
+        self._update_dashboard(latest_metrics) # Update UI with latest known
+
     def _get_gpu_info(self):
         """Get real GPU information or mock data."""
-        try:
-            # Test if we have real GPUs
-            if not self.mock_mode:
-                gpus = gpu_info.probe_gpus()
-                self.q.put(("status", f"Using real GPUs: {', '.join(gpu.short_name for gpu in gpus)}"))
-                if gpus:
-                    # Update UI with real GPU data
-                    self.q.put(("util", gpus[0].gpu_utilization))
-                    self.q.put(("vram", gpus[0].mem_used_percent))
-                    return
-            
-            # If we get here, either mock mode is enabled or real GPU detection failed
-            if not self.mock_mode:
-                # If we were trying to use real GPUs but failed, enable mock mode
-                self.mock_mode = True
-                self.q.put(("toast", "Failed to detect real GPUs. Using mock mode."))
-                # Update checkbox on main thread
-                self.after_idle(lambda: self.mock_var.set(True))
-                os.environ["DGPUOPT_MOCK_GPUS"] = "1"
-                
-            # Use mock data
-            gpus = gpu_info._mock_gpus()
-            self.q.put(("status", f"Using mock GPUs: {', '.join(gpu.short_name for gpu in gpus)}"))
-            self.q.put(("util", gpus[0].gpu_utilization))
-            self.q.put(("vram", gpus[0].mem_used_percent))
-            
-        except Exception as e:
-            self.q.put(("status", f"Error refreshing GPU info: {e}"))
-            logger.error(f"Error getting GPU info: {e}")
+        # This method is largely replaced by the telemetry service callback
+        # Kept for potential direct calls if needed, but should rely on telemetry
+        logger.debug("Direct _get_gpu_info called - relying on telemetry service.")
+        latest_metrics = self.telemetry_service.get_metrics()
+        self._update_dashboard(latest_metrics) # Update UI with latest known
+
+    def _update_dashboard(self, metrics: Dict[int, GPUMetrics]):
+        """Callback function to update dashboard widgets with new telemetry."""
+        if not metrics:
+            # No metrics received yet or an error occurred
+            self.util_bar.set(0)
+            self.vram_bar.set(0)
+            return
+
+        # For now, display GPU 0's metrics
+        gpu0_metrics = metrics.get(0)
+        if gpu0_metrics:
+            self.util_bar.set(gpu0_metrics.utilization)
+            self.vram_bar.set(gpu0_metrics.memory_percent)
+            # Update status bar maybe?
+            # self.status(f"GPU 0: {gpu0_metrics.utilization}% Util, {gpu0_metrics.memory_percent:.1f}% VRAM")
+        else:
+            # Handle case where GPU 0 data isn't available
+            self.util_bar.set(0)
+            self.vram_bar.set(0)
+            logger.warning("Metrics received, but GPU 0 data missing.")
 
     def _start_vllm(self):
         self.status("Launching vLLM …")
@@ -317,10 +352,11 @@ class ModernApp(ttk.Window):
         self.pool.submit(self._dummy_long_task)
 
     def _dummy_long_task(self):
+        # Keep TPS simulation for now, until real launcher integration
         for _ in range(60):
             time.sleep(0.1)
-            self.util_bar.set(random.randint(40, 100))
-            self.vram_bar.set(random.randint(10, 90))
+            # self.util_bar.set(random.randint(40, 100)) # Let telemetry handle this
+            # self.vram_bar.set(random.randint(10, 90)) # Let telemetry handle this
             self.q.put(("tps", random.randint(10, 80)))
         self.q.put(("status", "vLLM ready"))
         self.q.put(("toast", "vLLM finished warm‑up"))
@@ -358,14 +394,14 @@ class ModernApp(ttk.Window):
         try:
             while True:
                 kind, val = self.q.get_nowait()
-                if kind == "tps":
+                if kind == "tps": # Keep TPS polling for now
                     if hasattr(self, '_has_meter') and self._has_meter:
                         self.tps_meter.configure(amountused=val)
                     elif hasattr(self, 'tps_var'):
                         self.tps_var.set(f"{val} toks/s")
-                elif kind == "chat": 
+                elif kind == "chat":
                     self._append_chat(val)
-                elif kind == "status": 
+                elif kind == "status":
                     self.status(val)
                 elif kind == "toast":
                     try:
@@ -373,13 +409,11 @@ class ModernApp(ttk.Window):
                     except Exception as e:
                         logger.error(f"Toast notification error: {e}")
                         print(f"Toast notification error: {e}")
-                elif kind == "util":
-                    self.util_bar.set(val)
-                elif kind == "vram":
-                    self.vram_bar.set(val)
+                # Removed util and vram handling, now done by callback
         except queue.Empty:
             pass
-        self.after(50, self._poll_queue)
+        # Reduce polling frequency slightly if only checking for non-telemetry
+        self.after(100, self._poll_queue)
 
     def status(self, msg):
         self.status_var.set(msg)
@@ -391,13 +425,19 @@ class ModernApp(ttk.Window):
         self.after(60000, self._marquee)
 
     def on_close(self):
+        logger.info("Closing application...")
+        # Stop telemetry service
+        if hasattr(self, 'telemetry_service') and self.telemetry_service:
+            self.telemetry_service.stop()
+            logger.info("Telemetry service stopped.")
+
         cfg = {
             "theme": self.style.theme.name,
             "win": self.geometry(),
             "mock_mode": self.mock_mode,  # Save mock mode setting
         }
         _save_cfg(cfg)
-        self.pool.shutdown(cancel_futures=True)
+        self.pool.shutdown(wait=False, cancel_futures=True) # Don't wait indefinitely
         self.destroy()
 
 # ---------------- entry point ----------------
