@@ -1,41 +1,47 @@
 ---
-description: Specifications for GPU memory distribution and tensor parallel optimization algorithms for LLM inference
-globs: **/gpu_info.py,**/optimizer.py
+description: GPU optimization algorithms documentation for memory distribution and tensor parallel splits.
+globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-The GPU optimization system implements specialized algorithms for distributing large language model workloads across multiple GPUs:
+## Core GPU Memory Distribution (Importance: 95)
+`dual_gpu_optimizer/dualgpuopt/optimizer.py`
 
-## Memory Distribution Algorithm (Importance: 95)
-Located in: `dual_gpu_optimizer/dualgpuopt/optimizer.py`
-- Calculates optimal memory splits based on available GPU resources
-- Generates memory split configuration strings for llama.cpp
-- Computes relative tensor fractions against highest memory GPU
-- Enforces memory allocation constraints based on model requirements
+The GPU memory distribution system calculates optimal tensor splits across multiple GPUs:
+- Determines memory allocation strategy based on available GPU capacities
+- Computes tensor fractions for distributing model layers
+- Generates split configurations for parallel processing
+- Creates environment settings for GPU visibility and memory limits
 
-## Tensor Parallel Optimization (Importance: 90)
-Located in: `dual_gpu_optimizer/dualgpuopt/gpu_info.py`
-- Implements tensor parallel splitting calculations
-- Determines optimal layer distribution across available GPUs
-- Generates GPU-specific configuration parameters:
-  - Memory allocation strategies
-  - Layer placement decisions
-  - NCCL peer-to-peer communication settings
+## GPU Discovery and Telemetry (Importance: 85) 
+`dual_gpu_optimizer/dualgpuopt/gpu_info.py`
 
-## Command Generation Logic (Importance: 85)
-- Produces specialized runtime configurations:
-  - llama.cpp: GPU layer splitting with context parameters
-  - vLLM: Tensor parallelism and memory utilization settings
+The GPU detection system leverages NVML to:
+- Discover available NVIDIA GPUs in parallel using concurrent processing
+- Extract detailed GPU specifications including:
+  - Memory capacity and availability
+  - Device index and name
+  - Current utilization state
 
-## Resource Requirements Engine (Importance: 80)
-- Validates multi-GPU environment compatibility:
-  - GPU memory threshold verification
-  - NCCL communication path validation
-  - Thread optimization parameters
+## Real-time Monitoring (Importance: 75)
+`dual_gpu_optimizer/dualgpuopt/telemetry.py`
 
-The algorithms focus on maximizing GPU resource utilization while maintaining model inference performance through intelligent workload distribution and memory management strategies.
+Real-time GPU monitoring system that:
+- Streams telemetry data using NVML interface
+- Tracks GPU load patterns
+- Monitors memory usage fluctuations
+- Measures PCIe throughput
+
+## Framework-Specific Optimizations (Importance: 90)
+`dual_gpu_optimizer/dualgpuopt/optimizer.py`
+
+Specialized optimization algorithms for LLM frameworks:
+- Generates optimized command configurations for llama.cpp
+- Creates vLLM-specific tensor parallel strategies
+- Adjusts split ratios based on framework requirements
+- Produces environment configurations tuned per framework
 
 $END$

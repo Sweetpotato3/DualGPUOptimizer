@@ -8,6 +8,8 @@ import pathlib
 import queue
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
+import colorsys
+import sys
 
 from dualgpuopt import gpu_info, optimizer, configio
 from dualgpuopt.telemetry import start_stream
@@ -15,18 +17,78 @@ from dualgpuopt.runner import Runner
 from dualgpuopt.tray import init_tray
 
 
+# Pre-defined colors for up to 8 GPUs
+GPU_COLORS = [
+    "#33ff55",  # Green
+    "#00b0ff",  # Blue
+    "#ff5500",  # Orange
+    "#aa00ff",  # Purple
+    "#ffcc00",  # Yellow
+    "#ff0066",  # Pink
+    "#00ffcc",  # Cyan
+    "#ffffff",  # White
+]
+
+# Theme definitions
+THEMES = {
+    "dark": {
+        "bg": "#2d2d2d",
+        "text": "#ffffff",
+        "chart_bg": "#202020",
+        "highlight": "#0078d7",
+        "button": "#3d3d3d",
+        "entry": "#3d3d3d",
+        "ttk_theme": "clam"
+    },
+    "light": {
+        "bg": "#f0f0f0",
+        "text": "#000000",
+        "chart_bg": "#e0e0e0",
+        "highlight": "#007acc",
+        "button": "#e0e0e0",
+        "entry": "#ffffff",
+        "ttk_theme": "clam"
+    },
+    "system": {
+        # Will use system default theme
+        "ttk_theme": None  # Use default
+    }
+}
+
+
+def generate_colors(count: int) -> list[str]:
+    """Generate distinct colors for GPU visualization."""
+    if count <= len(GPU_COLORS):
+        return GPU_COLORS[:count]
+    
+    # Generate additional colors if needed using HSV color space
+    colors = []
+    for i in range(count):
+        hue = i / count
+        r, g, b = colorsys.hsv_to_rgb(hue, 0.8, 0.9)
+        hex_color = f"#{int(r*255):02x}{int(g*255):02x}{int(b*255):02x}"
+        colors.append(hex_color)
+    return colors
+
+
 class DualGpuApp(ttk.Frame):
     PAD = 8
 
     def __init__(self, master: tk.Tk) -> None:
+        # Load config before initializing UI
+        self.cfg = configio.load_cfg()
+        
+        # Apply theme to root window before creating widgets
+        self._apply_theme(master)
+        
         super().__init__(master, padding=self.PAD)
         self.model_var = tk.StringVar(value="dolphin‑2.5‑mixtral‑8x7b.Q3_K_M.gguf")
         self.ctx_var = tk.IntVar(value=65536)
+        self.theme_var = tk.StringVar(value=self.cfg["theme"])
         self.runner = None
-        self.tele_hist: list[tuple[int, int]] = []  # (gpu0_load, gpu1_load)
+        self.tele_hist = []  # List of GPU load tuples
 
-        # Load config and presets
-        self.cfg = configio.load_cfg()
+        # Load presets
         preset_path = pathlib.Path(__file__).parent / "presets" / "mixtral.json"
         self.presets = json.load(preset_path.open())
         
@@ -38,6 +100,9 @@ class DualGpuApp(ttk.Frame):
             messagebox.showerror("Error", "Need ≥ 2 GPUs – aborting")
             master.destroy()
             return
+            
+        # Generate colors for GPU visualization
+        self.gpu_colors = generate_colors(len(self.gpus))
 
         self._build_ui()
         self._refresh_outputs()
@@ -48,8 +113,50 @@ class DualGpuApp(ttk.Frame):
         
         # Setup tray
         init_tray(self)
+    
+    def _apply_theme(self, root: tk.Tk) -> None:
+        """Apply selected theme to the application."""
+        theme_name = self.cfg["theme"]
+        
+        # Handle system theme specially
+        if theme_name == "system":
+            # Just use default theme for the platform
+            if sys.platform == "darwin":  # macOS
+                ttk_theme = "aqua"
+            elif sys.platform == "win32":  # Windows
+                ttk_theme = "vista"
+            else:  # Linux and others
+                ttk_theme = "clam"
+        else:
+            # Get theme from our definitions
+            theme = THEMES.get(theme_name, THEMES["dark"])
+            ttk_theme = theme.get("ttk_theme")
+            
+            # Configure colors
+            if "bg" in theme:
+                root.configure(bg=theme["bg"])
+                style = ttk.Style()
+                style.configure(".", background=theme["bg"], foreground=theme["text"])
+                style.configure("TButton", background=theme["button"])
+                style.configure("TEntry", fieldbackground=theme["entry"])
+                style.configure("TFrame", background=theme["bg"])
+                style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
+                
+                # Set text widget colors via root options
+                root.option_add("*Text.Background", theme["entry"])
+                root.option_add("*Text.Foreground", theme["text"])
+                
+                # Set canvas colors
+                self.chart_bg = theme.get("chart_bg", "#202020")
+        
+        # Apply ttk theme if specified
+        if ttk_theme:
+            try:
+                ttk.Style().theme_use(ttk_theme)
+            except tk.TclError:
+                # Fall back to default theme if specified one not available
+                pass
 
-    # ---------- UI builders ----------
     def _build_ui(self) -> None:
         self.columnconfigure(0, weight=1)
         
@@ -65,8 +172,110 @@ class DualGpuApp(ttk.Frame):
         self.launch_frame = ttk.Frame(nb, padding=self.PAD)
         self._build_launch_tab(self.launch_frame)
         nb.add(self.launch_frame, text="Launch")
+        
+        # Add settings tab
+        self.settings_frame = ttk.Frame(nb, padding=self.PAD)
+        self._build_settings_tab(self.settings_frame)
+        nb.add(self.settings_frame, text="Settings")
+        
         nb.pack(fill="both", expand=True)
+    
+    def _build_settings_tab(self, parent: ttk.Frame) -> None:
+        """Create settings UI including theme selector."""
+        parent.columnconfigure(0, weight=1)
+        
+        # Theme selection
+        theme_frame = ttk.LabelFrame(parent, text="Appearance")
+        theme_frame.grid(sticky="ew", pady=(0, self.PAD))
+        
+        ttk.Label(theme_frame, text="Theme:").pack(side="left", padx=self.PAD)
+        theme_combo = ttk.Combobox(
+            theme_frame, 
+            textvariable=self.theme_var,
+            values=["dark", "light", "system"],
+            width=10,
+            state="readonly"
+        )
+        theme_combo.pack(side="left", padx=self.PAD)
+        theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
+        
+        ttk.Button(
+            theme_frame, 
+            text="Apply", 
+            command=self._apply_theme_change
+        ).pack(side="left", padx=self.PAD)
+        
+        # Monitoring settings
+        monitor_frame = ttk.LabelFrame(parent, text="Monitoring")
+        monitor_frame.grid(sticky="ew", pady=(0, self.PAD), row=1)
+        
+        interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
+        ttk.Label(monitor_frame, text="Update interval (sec):").grid(row=0, column=0, padx=self.PAD, pady=5, sticky="w")
+        interval_spin = ttk.Spinbox(
+            monitor_frame,
+            from_=0.5,
+            to=10.0,
+            increment=0.5,
+            textvariable=interval_var,
+            width=5
+        )
+        interval_spin.grid(row=0, column=1, padx=self.PAD, pady=5, sticky="w")
+        
+        alert_threshold_var = tk.IntVar(value=self.cfg["alert_threshold"])
+        ttk.Label(monitor_frame, text="Alert threshold (%):").grid(row=1, column=0, padx=self.PAD, pady=5, sticky="w")
+        threshold_spin = ttk.Spinbox(
+            monitor_frame,
+            from_=5,
+            to=80,
+            increment=5,
+            textvariable=alert_threshold_var,
+            width=5
+        )
+        threshold_spin.grid(row=1, column=1, padx=self.PAD, pady=5, sticky="w")
+        
+        alert_duration_var = tk.IntVar(value=self.cfg["alert_duration"])
+        ttk.Label(monitor_frame, text="Alert after (sec):").grid(row=2, column=0, padx=self.PAD, pady=5, sticky="w")
+        duration_spin = ttk.Spinbox(
+            monitor_frame,
+            from_=60,
+            to=900,
+            increment=60,
+            textvariable=alert_duration_var,
+            width=5
+        )
+        duration_spin.grid(row=2, column=1, padx=self.PAD, pady=5, sticky="w")
+        
+        # Save button for monitoring settings
+        def save_monitor_settings():
+            self.cfg["monitor_interval"] = interval_var.get()
+            self.cfg["alert_threshold"] = alert_threshold_var.get()
+            self.cfg["alert_duration"] = alert_duration_var.get()
+            configio.save_cfg(self.cfg)
+            messagebox.showinfo("Settings", "Monitoring settings saved.\nRestart application for changes to take effect.")
+        
+        ttk.Button(
+            monitor_frame,
+            text="Save",
+            command=save_monitor_settings
+        ).grid(row=3, column=0, columnspan=2, pady=10)
+    
+    def _theme_changed(self, event=None) -> None:
+        """Handle theme selection change."""
+        # Just update the UI to show Apply button is needed
+        pass
+    
+    def _apply_theme_change(self) -> None:
+        """Apply the selected theme and save to config."""
+        new_theme = self.theme_var.get()
+        self.cfg["theme"] = new_theme
+        configio.save_cfg(self.cfg)
+        
+        messagebox.showinfo(
+            "Theme Changed", 
+            "Theme will be applied after restarting the application."
+        )
 
+    # ---------- UI builders ----------
     def _build_optimizer_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
 
@@ -220,21 +429,53 @@ class DualGpuApp(ttk.Frame):
     def _tick_chart(self) -> None:
         try:
             tele = self.tele_q.get_nowait()
-            self.tele_hist.append((tele.load[0], tele.load[1]))
+            
+            # Store all GPU loads in history
+            self.tele_hist.append(tele.load)
             self.tele_hist = self.tele_hist[-120:]  # keep 2 min
+            
+            # Clear and draw chart
             self.chart.delete("all")
             w = self.chart.winfo_width()
-            if w > 1:  # Ensure chart is visible
-                step = w/len(self.tele_hist)
-                for i, (l0, l1) in enumerate(self.tele_hist):
-                    x = int(i*step)
-                    self.chart.create_line(x, 120, x, 120-l0, fill="#33ff55")
-                    self.chart.create_line(x, 120-l0, x, 120-l0-l1, fill="#00b0ff")
+            h = self.chart.winfo_height()
+            
+            if w > 1 and self.tele_hist:  # Ensure chart is visible
+                step = w / len(self.tele_hist)
+                
+                # Draw load history for each GPU
+                for t_idx, loads in enumerate(self.tele_hist):
+                    x = int(t_idx * step)
+                    y_bottom = h
+                    
+                    # Draw stacked bars for each GPU
+                    for g_idx, load in enumerate(loads):
+                        if g_idx < len(self.gpus):  # Ensure we have data for this GPU
+                            y_top = y_bottom - (load * h / 100)  # Scale load to chart height
+                            self.chart.create_line(x, y_bottom, x, y_top, 
+                                                  fill=self.gpu_colors[g_idx])
+                            y_bottom = y_top
+                
+                # Draw legend
+                legend_x = 10
+                legend_y = 15
+                for i, gpu in enumerate(self.gpus):
+                    if i < len(self.gpu_colors):
+                        # Draw color sample
+                        self.chart.create_rectangle(legend_x, legend_y, 
+                                                   legend_x + 10, legend_y + 10, 
+                                                   fill=self.gpu_colors[i], outline="")
+                        # Draw GPU name
+                        self.chart.create_text(legend_x + 15, legend_y + 5, 
+                                              text=f"GPU {gpu.index}", 
+                                              fill="white", anchor="w")
+                        legend_y += 15
+                        
         except queue.Empty:
             pass
-        except IndexError:
-            # Handle case where not enough GPUs
-            pass
+        except Exception as e:
+            # Handle any other exceptions gracefully
+            print(f"Chart error: {e}")
+            
         self.after(1000, self._tick_chart)
 
 

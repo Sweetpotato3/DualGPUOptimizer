@@ -1,8 +1,8 @@
 
 START SPECIFICATION:
 ---
-description: Use for high-level documentation of GPU optimization systems focused on LLM model execution across multiple GPUs, specifically when analyzing resource allocation and tensor parallelism implementations
-globs: *.py,*.cpp
+description: Create high-level documentation focused on business logic organization for GPU optimization and management solutions that handle multi-GPU configurations and model execution
+globs: *.py,*.code-workspace
 alwaysApply: false
 ---
 
@@ -18,38 +18,43 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system orchestrates GPU resource allocation for large language model inference across multiple GPUs, with specialized support for llama.cpp and vLLM implementations.
+The Dual GPU Optimizer system implements specialized logic for managing and optimizing GPU resources across several key areas:
 
-Key Components:
+### GPU Resource Management (Importance: 95)
+Located in `dual_gpu_optimizer/dualgpuopt/gpu_info.py`, handles critical GPU discovery and resource allocation:
+- Parallel GPU detection using NVML integration
+- Memory capacity analysis and allocation strategy
+- Real-time GPU utilization tracking 
 
-## GPU Resource Management (Importance: 95)
-`dualgpuopt/optimizer.py`, `dualgpuopt/gpu_info.py`
-- Calculates optimal tensor parallel splits for multi-GPU setups
-- Generates memory split configurations for llama.cpp
-- Determines tensor fractions based on available GPU memory
-- Enforces NCCL peer-to-peer communication requirements
+### Optimization Engine (Importance: 98)
+Core optimization logic in `dual_gpu_optimizer/dualgpuopt/optimizer.py`:
+- Calculates optimal GPU split configurations based on memory profiles
+- Generates tensor distribution patterns across multiple GPUs
+- Creates environment configurations for balanced GPU workloads
+- Produces framework-specific commands for LLM execution
 
-## Model Execution Control (Importance: 90)
-`dualgpuopt/optimizer.py`
-- Creates specialized command configurations for:
-  - llama.cpp GPU layer splitting
-  - vLLM tensor parallelism settings
-- Manages context size parameters
-- Controls thread optimization for CPU utilization
+### Model Execution Management (Importance: 85)
+Implemented across `runner.py` and `gui.py`:
+- Model path and context size configuration
+- Dynamic command generation for different LLM frameworks
+- Real-time execution monitoring and control
+- Preset management for common model configurations
 
-## Resource Monitoring (Importance: 75)
-`dualgpuopt/telemetry.py`
-- Collects GPU utilization metrics
-- Tracks memory usage patterns
-- Monitors PCIe bandwidth statistics
+### Resource Monitoring System (Importance: 80)
+Handled by `telemetry.py` and `tray.py`:
+- NVML-based GPU performance metrics collection
+- Idle resource detection and notification
+- PCIe throughput monitoring
+- Resource utilization visualization
 
-## Utilization Alerts (Importance: 70)
-`dualgpuopt/tray.py`
-- Detects underutilized GPU resources
-- Triggers optimization alerts
-- Provides resource efficiency recommendations
+### Configuration Management (Importance: 75)
+Split across `configio.py` and related components:
+- Theme and appearance customization
+- Persistent storage of optimization settings
+- Model configuration presets
+- Environment file generation
 
-The system primarily focuses on optimizing expensive GPU resources for LLM inference, automatically generating configurations to maximize resource utilization across multiple GPUs while maintaining optimal performance characteristics.
+The system architecture emphasizes real-time GPU resource optimization, focusing on efficient distribution of LLM workloads across multiple GPUs while maintaining monitoring and control capabilities.
 
 $END$
 END SPECIFICATION

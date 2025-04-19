@@ -1,50 +1,58 @@
 ---
-description: Analysis of data flows, data pipelines, and information exchange patterns between system components in GPU optimization systems.
-globs: **/gpu_info.py,**/optimizer.py,**/telemetry.py,**/configio.py
+description: Documents data flow patterns and component interactions in GPU optimization system
+globs: *.py,dual_gpu_optimizer/dualgpuopt/**
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Primary Data Flows:
+## Core Data Flows (Importance: 95)
 
-1. GPU Resource Data Pipeline (Importance: 95)
-- `gpu_info.py` collects hardware capabilities and constraints
-- Data flows to `optimizer.py` for memory allocation decisions
-- Optimization parameters transmitted to model execution components
-- Critical metrics include:
-  * Memory capacity per GPU
-  * Tensor parallel split ratios
-  * VRAM distribution patterns
+1. GPU Resource Information Flow
+- NVML queries provide GPU details to gpu_info.py
+- Parallel processing distributes GPU data collection across threads
+- Data flows to optimizer.py for split calculations
+- Results propagate to command generation and environment configuration
 
 2. Optimization Parameter Flow (Importance: 90)
-- `optimizer.py` generates configuration parameters
-- Memory split configurations flow to LLM runtime systems
-- Command configurations transmitted for:
-  * llama.cpp GPU layer splitting
-  * vLLM tensor parallelism settings
-- Resource allocation decisions propagate to execution environment
+- Model path and context settings flow from configio.py to optimizer.py
+- Optimizer generates GPU split calculations
+- Split configurations feed into command generator
+- Commands and environment variables flow to runner.py for execution
 
-3. Telemetry Data Stream (Importance: 85)
-- `telemetry.py` captures continuous performance metrics
-- Real-time data flows to monitoring subsystems:
-  * GPU utilization metrics
-  * Memory consumption patterns
-  * PCIe bandwidth metrics
-- Alert triggers flow to notification components
+3. Telemetry Data Flow (Importance: 85)
+- Real-time GPU metrics collected by telemetry.py using NVML
+- Utilization data streams to visualization components
+- Alert thresholds trigger notifications through tray.py
+- Monitoring metrics persist to logging system
 
-4. Configuration Data Flow (Importance: 75)
-- `configio.py` manages persistent settings
-- Runtime parameters flow between components:
-  * GPU optimization preferences
-  * Model execution parameters
-  * Resource monitoring thresholds
+## Integration Points (Importance: 80)
 
-Integration Points:
-- GPU resource data → Optimization engine
-- Optimization parameters → Model execution
-- Telemetry metrics → Resource monitoring
-- Alert conditions → User notification system
+1. GUI Data Exchange
+- Theme/appearance settings flow from gui.py to persistent storage
+- Model configurations propagate to optimization engine
+- Real-time execution logs stream from runner.py to GUI display
+- GPU utilization data feeds visualization components
+
+2. Configuration Management
+- Settings flow bidirectionally between configio.py and GUI
+- Optimization parameters propagate to command generation
+- Theme preferences persist across sessions
+- Logging configuration distributes to all components
+
+## Monitoring Pipeline (Importance: 75)
+
+1. GPU Status Updates
+- NVML provides raw GPU metrics
+- Telemetry module processes and formats data
+- Visualization components receive formatted metrics
+- Alert system monitors thresholds and triggers notifications
+
+2. Execution Feedback
+- Command execution status flows from runner.py
+- Real-time logs stream to GUI display
+- Error conditions propagate to notification system
+- Performance metrics feed into optimization engine
 
 $END$

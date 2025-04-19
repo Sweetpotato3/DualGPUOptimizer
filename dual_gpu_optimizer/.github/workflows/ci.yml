@@ -1,5 +1,10 @@
 name: dualgpuopt-ci
 on: [push, pull_request]
+
+# Explicitly restrict permissions
+permissions:
+  contents: read
+  
 jobs:
   test:
     strategy:
