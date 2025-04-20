@@ -10,19 +10,43 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 
-## New: Comprehensive Dashboard in Direct Application
+## New: Event-Driven Architecture
 
-The direct application now features the full GPU dashboard from the main application, providing:
+The direct application now implements a fully event-driven architecture that:
 
+- **Decouples Components**: Dashboard and optimizer components communicate through events rather than direct method calls
+- **Improves Extensibility**: New features can subscribe to existing events without modifying the original code
+- **Enhances Responsiveness**: Real-time updates flow through the system via events
+- **Centralizes Communication**: The event bus serves as a central message broker between components
+- **Provides Status Updates**: A status bar shows real-time event information
+
+Event types include:
+- `GPUMetricsEvent`: Real-time GPU metrics updates
+- `ModelSelectedEvent`: Fired when a model is selected in the optimizer
+- `SplitCalculatedEvent`: Contains calculated GPU split configurations
+
+This architecture follows the same patterns used in the main application, ensuring consistent behavior and making the direct app more maintainable and scalable.
+
+## Complete Functionality in Direct Application
+
+The direct application features a full-featured tabbed interface with:
+
+### Dashboard Tab
 - Enhanced GPU metrics visualization with progress bars
 - Temperature monitoring with color-coded warnings
 - Power usage tracking with limit indicators
 - PCIe bandwidth monitoring
 - GPU clock speed visualization
-- Memory reset capabilities when available
-- Graceful fallback to basic monitoring when dashboard component is unavailable
+- Memory reset capabilities
 
-This integration brings the powerful monitoring dashboard from the full application to the simplified direct launcher, making it easier to monitor your GPU resources without launching the full application.
+### Optimizer Tab
+- Model selection for popular LLMs (Llama, Mistral, Mixtral)
+- Automatic GPU memory split ratio calculation
+- Context length optimization
+- Custom model parameter configuration
+- Command generation for frameworks like llama.cpp and vLLM
+
+Both tabs feature graceful fallbacks when components are unavailable, ensuring the application can run in any environment while providing helpful guidance for enabling full functionality.
 
 ## Graceful Fallbacks for Dependencies
 
@@ -85,13 +109,13 @@ The application will function with graceful fallbacks when optional dependencies
 
 ### Running the Direct Application (Recommended)
 
-For the most reliable startup with the comprehensive GPU dashboard:
+For the most reliable startup with complete functionality:
 
 ```
 python run_direct_app.py
 ```
 
-This provides a simplified interface with the full dashboard that works regardless of optional dependencies and automatically uses the most advanced monitoring features available in your environment.
+This provides a full-featured application with both dashboard and optimizer functionality in a tabbed interface. The application automatically uses the most advanced features available in your environment with helpful fallbacks if certain components aren't available.
 
 ### Running in Standard Mode
 
