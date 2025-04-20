@@ -1,67 +1,93 @@
 ---
-description: Documents data flow between components including GPU resource data, optimization parameters and monitoring metrics
-globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py,integrated_app/**/*.py
+description: Describes data flow patterns and architecture for dual GPU optimization system with focus on resource management and model inference
+globs: **/*.py,**/dualgpuopt/**
 alwaysApply: false
 ---
 
 
-# data-flow-architecture 
+# data-flow-architecture
 
 ## Core Data Flow Components
 
-### GPU Telemetry Pipeline
-File: dualgpuopt/telemetry.py
-- Real-time GPU metrics collection via NVML
-- Metrics include utilization, memory usage, temperature, power draw
-- Publishing metrics to event bus for consumption by UI components  
-- Fallback to mock telemetry data when hardware access unavailable
+### Model Parameter Data Flow
+1. Initial parameter detection from model filenames:
+- Architecture parameters extracted (layers, heads, dimensions) 
+- Quantization type identified
+- Framework type determined (llama.cpp vs vLLM)
 
-### State Management Service 
-File: dualgpuopt/services/state_service.py
-- Centralized state store for GPU configurations and model parameters
-- Event-driven updates with selective notification to subscribers
-- Persists state to disk for configuration continuity
-- Maintains GPU allocation ratios and optimization parameters
+2. Parameter transformation:
+```
+Model Parameters -> Optimization Parameters -> Launch Configuration
+```
+- Raw parameters converted to device-specific settings
+- Memory requirements calculated per device
+- Launch parameters generated based on framework
 
-### Model Parameter Flow
-File: dualgpuopt/gui/launcher.py
-- Extracts model architecture details from filenames 
-- Calculates optimal context sizes based on GPU resources
-- Propagates tensor split configurations to runner components
-- Manages framework-specific launch parameters
+### GPU Resource Data Flow
+1. Primary telemetry collection:
+- Memory utilization metrics
+- Compute utilization data  
+- Temperature/power data
+- PCIe bandwidth metrics
 
-### Memory Monitor Pipeline
-File: dualgpuopt/memory_monitor.py
-- Tracks model-specific memory consumption patterns
-- Projects future memory needs using historical data
-- Implements four-level alert system for memory pressure
-- Triggers automatic recovery strategies when thresholds exceeded
+2. Resource optimization pipeline:
+```
+Raw Metrics -> Analysis -> Split Ratios -> Device Maps
+```
+- Real-time metrics processed through profiling system
+- Layer performance data analyzed
+- Optimal split ratios calculated
+- Device maps generated for model deployment
 
-### Optimization Data Flow
-File: dualgpuopt/optimizer.py
-- Calculates GPU split ratios based on available VRAM
-- Generates framework-specific optimization commands
-- Propagates tensor parallel configurations
-- Manages memory quota distribution between GPUs
+### Optimization Metrics Flow
+1. Performance data collection:
+- Layer execution times
+- Memory pressure metrics
+- Batch processing rates
+- Temperature thresholds
 
-### Layer Balance Pipeline
-File: dualgpuopt/layer_balance.py
-- Profiles layer performance across GPUs
-- Calculates weighted ratios for layer assignment
-- Dynamically rebalances layers based on runtime metrics
-- Optimizes for contiguous layer blocks per GPU
+2. Optimization feedback loop:
+```
+Metrics -> Adjustments -> New Parameters -> Performance Validation
+```
+- Performance metrics trigger automatic adjustments
+- New parameters propagated to launch system
+- Results validated against performance targets
 
-### Dashboard Data Pipeline
-File: dualgpuopt/gui/dashboard.py
-- Subscribes to real-time GPU telemetry
-- Processes metrics for visualization
-- Maintains rolling window of performance history
-- Correlates cross-GPU performance metrics
+## Key Integration Points
 
-Key integration points:
-- Event bus enables decoupled metric flow between components
-- State service provides centralized configuration distribution
-- Memory monitor feeds optimization decisions
-- Telemetry pipeline drives visualization updates
+### Framework Integration
+1. llama.cpp integration:
+```
+Split Configuration -> GPU Commands -> Launch Parameters
+```
+- GPU split strings generated
+- Layer allocation determined
+- Context size parameters set
+
+2. vLLM integration:
+```
+Tensor Config -> Parallel Setup -> Launch Config
+```
+- Tensor parallelism degree set
+- GPU device mapping created
+- Memory utilization parameters configured
+
+### Monitoring Pipeline
+1. System metrics flow:
+```
+Raw GPU Data -> Event Bus -> UI Components
+```
+- GPU metrics collected via NVML
+- Data processed through event system
+- Metrics propagated to visualization components
+
+2. Alert propagation:
+```
+Thresholds -> Event Generation -> Handler Execution
+```
+- Performance thresholds monitored
+- Events generated for violations
+- Handlers execute corrective actions
 
 $END$

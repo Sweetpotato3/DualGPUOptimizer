@@ -82,6 +82,12 @@ The DualGPUOptimizer consists of several key components:
 - Provides real-time resource monitoring through an interactive dashboard
 - Implements idle detection and optimization alerts
 
+### Code Organization
+- Follows a modular architecture with separation of concerns
+- Recently completed refactoring of `launcher.py` into smaller, focused components
+- Ongoing initiative to refactor large modules (>500 lines) for improved maintainability
+- See `dualgpuopt/REFACTORING.md` for details on the refactoring strategy
+
 ## Supported Models
 
 The application includes built-in profiles for various language models:
@@ -106,12 +112,23 @@ If PyTorch is not detected, the application will attempt to install the appropri
 
 Future development priorities:
 
-1. **Code Cleanup**: Fix linter issues related to trailing whitespace
-2. **Improved Error Handling**: Better error reporting when `calc_max_ctx` or other functions are missing
-3. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
-4. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
-5. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
-6. **Documentation Improvements**: Detailed API docs and usage examples
+1. **Module Refactoring**: Continuing our refactoring initiative for modules >500 lines:
+   - `memory_monitor.py` (769 lines) - In progress
+   - `settings.py` (722 lines) - Planned
+   - `error_handler.py` (558 lines) - Planned
+   - `theme.py` (549 lines) - Planned
+
+2. **Code Quality**: Fix linter issues related to trailing whitespace
+
+3. **Testing Improvements**: Add unit tests for newly refactored components
+
+4. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
+
+5. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
+
+6. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
+
+7. **Documentation Improvements**: Detailed API docs and usage examples
 
 ## License
 
