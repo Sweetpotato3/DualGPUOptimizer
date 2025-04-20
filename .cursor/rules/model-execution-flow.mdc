@@ -1,53 +1,55 @@
 ---
-description: Documentation for managing LLM execution workflows, command generation, and GPU resource allocation patterns
-globs: **/optimizer.py,**/runner.py,**/gui/launcher.py,**/commands/*.py,**/batch/*.py
+description: Specification for GPU-accelerated model execution flows, command generation, and resource allocation in ML inference
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized handling of LLM deployments across multiple GPUs:
+Core Execution Flow Components:
 
-### Core Execution Components
+1. Model Launch Orchestration (`dualgpuopt/gui/launcher.py`):
+- Generates optimized commands for different ML frameworks:
+```python
+def get_llama_command(model_path, ctx_size, split):
+    return f"--model {model_path} --gpu-split {split} --ctx-size {ctx_size}"
 
-1. Command Generation System
-- Framework-specific command builders:
-  ```
-  llama.cpp: ./main -m {model} --gpu-split {ratio} --n-gpu-layers {count}
-  vLLM: python -m vllm.entrypoints.api_server --model {path} --tensor-parallel-size {tp}
-  ```
-- Dynamic parameter calculation based on:
+def get_vllm_command(model_path, tensor_parallel):
+    return f"--model {model_path} --tensor-parallel-size {tensor_parallel}"
+```
+- Handles model parameter detection from filenames
+- Implements dynamic context size optimization
+- Controls GPU resource allocation
+
+2. Memory Management (`dualgpuopt/memory_monitor.py`):
+- Tracks per-token and per-batch memory patterns
+- Defines model-specific memory profiles:
+  - Llama2: Base + KV cache scaling
+  - Mixtral: Expert gating overhead
+  - Mistral: Sliding window attention
+- Implements four-level alert system (Normal/Warning/Critical/Emergency)
+
+3. GPU Layer Distribution (`dualgpuopt/layer_balance.py`):
+- Calculates optimal layer distribution across GPUs
+- Uses weighted performance profiling (20% short sequences, 80% long sequences)
+- Maintains contiguous layer blocks to minimize cross-GPU communication
+- Assigns input embeddings to first GPU, output components to second GPU
+
+4. Model Parameter Configuration (`dualgpuopt/ctx_size.py`):
+- Calculates safe context lengths based on:
   - Available GPU memory
-  - Model architecture (layers, heads)
-  - KV cache requirements
-  - MoE factors for expert models
+  - Model architecture (layers, heads, hidden size)
+  - MoE factor for expert models
+  - Quantization settings
+- Implements model-specific overrides for popular architectures
 
-2. Resource Allocation Flow
-- Pre-execution GPU memory analysis:
-  - Base memory footprint calculation
-  - Dynamic KV cache sizing
-  - Safety buffer allocation (10-20%)
-- Layer distribution optimization:
-  - Performance profiling with dual sequence lengths:
-    - Short sequences (64 tokens) - 20% weight
-    - Long sequences (1024 tokens) - 80% weight
-  - Layer rebalancing based on empirical performance
+5. Command Generation and Resource Allocation:
+- Produces framework-specific launch commands
+- Sets environment variables for GPU visibility
+- Configures tensor parallel sizes
+- Manages GPU memory thresholds
 
-3. Execution Pipeline
-- Model loading phase:
-  - Memory pressure monitoring
-  - CUDA cache management
-  - Layer distribution enforcement
-- Inference optimization:
-  - Batch size determination
-  - Context length validation
-  - Memory fragmention prevention
-
-Relevant Files:
-- dualgpuopt/optimizer.py - Core optimization logic
-- dualgpuopt/gui/launcher.py - Launch orchestration
-- dualgpuopt/commands/gpu_commands.py - Command generation
-- dualgpuopt/batch/smart_batch.py - Batch optimization
+Critical execution paths include model initialization, layer distribution calculation, memory monitoring, and dynamic resource reallocation based on monitoring alerts.
 
 $END$

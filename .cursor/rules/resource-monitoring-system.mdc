@@ -1,62 +1,75 @@
 ---
-description: Core specification for GPU resource monitoring, telemetry collection, and real-time metric analysis systems
-globs: **/telemetry.py,**/metrics.py,**/tray.py,**/gpu_info.py,**/dashboard.py
+description: Handles GPU resource monitoring, telemetry collection, and alert systems for dual GPU optimization
+globs: '**/telemetry.py','**/tray.py','**/metrics.py','**/memory_monitor.py','**/dashboard.py'
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## Core Telemetry System
+### GPU Telemetry Collection Engine
 
-### GPU Metrics Collection (telemetry.py)
-- Implements real-time GPU metrics tracking through NVML integration
-- Collects comprehensive metrics:
-  - Memory utilization 
-  - PCIe bandwidth (RX/TX)
-  - Temperature monitoring
-  - Power consumption tracking
-  - Clock speeds (graphics/memory)
-- Uses middleware pattern for metrics processing
-- Includes idle detection with 5-minute threshold
+Core telemetry system that monitors GPU metrics including:
+- Memory utilization and VRAM pressure tracking
+- Temperature and power consumption thresholds
+- GPU/Memory clock speeds
+- PCIe bandwidth utilization
+- Fan speeds and thermal conditions
 
-### Metrics Processing Pipeline (metrics.py)
-- Maintains rolling 60-sample history window for trend analysis
-- Implements domain-specific thresholds:
-  - Temperature warning at 80°C
-  - Power limit enforcement
-  - Memory pressure alerts
-- Dynamic metric scaling based on GPU capabilities
-- Automatic unit conversion (mW to W, bytes to MB/GB)
+Implementation prioritizes:
+1. Real-time metrics collection via NVML
+2. Memory pressure detection with configurable thresholds (80%, 90%, 95%)
+3. Multi-level alert system with severity classification
+4. Historical metrics tracking for trend analysis
 
-### Dashboard Visualization (dashboard.py)
-- Real-time GPU telemetry visualization for multiple GPUs
-- Custom progress bar styling per GPU index
-- Color-coded metric display:
-  - Temperature thresholds (green/orange/red)
-  - Memory utilization gradients
-  - Power consumption relative to TDP
-- Rolling metrics history graphs with 60-point window
+### Memory Management and OOM Prevention
 
-### Resource Monitoring Alert System
-- Multi-level alert hierarchy:
-  - Warning: High utilization/temperature
-  - Critical: Near memory limits
-  - Emergency: Thermal throttling risk
-- Automatic CUDA cache clearing on memory pressure
-- Temperature-based fan speed adjustment
-- Power limit enforcement with throttling detection
+Memory monitor implements hierarchical recovery strategies:
+1. Cache clearing when memory pressure exceeds 80%
+2. Batch size reduction at 90% threshold
+3. Memory offloading at 95% threshold 
+4. Process termination as last resort
 
-### File Paths
-- dualgpuopt/telemetry.py
-- dualgpuopt/metrics.py
-- dualgpuopt/gui/dashboard.py
-- dualgpuopt/gpu_info.py
+Model-specific memory profiles track:
+- Base memory requirements per architecture
+- Token-level memory scaling factors
+- Batch processing overhead
+- KV cache growth patterns
 
-Importance Scores:
-- Telemetry System: 95 (Core monitoring infrastructure)
-- Metrics Pipeline: 85 (Critical data processing)
-- Dashboard: 75 (Key visualization)
-- Alert System: 80 (Safety monitoring)
+### Dashboard Visualization System
+
+Real-time visualization components:
+- Multi-GPU line charts with 60-sample history
+- Dynamic progress bars with color-coded thresholds
+- Adaptive bandwidth formatting (KB/s → MB/s → GB/s)
+- Temperature warning indicators
+
+Implementation in dashboard.py handles:
+- GPU-specific color coding for metrics
+- Automatic grid scaling based on sample count
+- Intelligent label placement for readability
+- Configurable update intervals per metric type
+
+### Alert Mechanism
+
+Four-level alert system:
+1. Normal: Below 80% memory utilization
+2. Warning: 80-90% utilization
+3. Critical: 90-95% utilization  
+4. Emergency: Above 95% utilization
+
+Each level triggers specific actions:
+- Status updates to system tray
+- Memory optimization recommendations
+- Automatic intervention based on severity
+- Event logging for post-analysis
+
+Relevant paths:
+```
+dualgpuopt/telemetry.py
+dualgpuopt/memory_monitor.py
+dualgpuopt/gui/dashboard.py
+dualgpuopt/tray.py
+```
 
 $END$

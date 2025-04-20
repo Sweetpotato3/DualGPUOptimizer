@@ -1,67 +1,54 @@
 ---
-description: Technical specification for GPU memory optimization, distribution algorithms, and performance monitoring logic
-globs: **/optimizer.py,**/gpu_info.py,**/memory_monitor.py,**/layer_balance.py
+description: Specification for GPU memory distribution algorithms, tensor parallel splits calculation and memory allocation strategies
+globs: **/gpu_info.py,**/optimizer.py,**/gpu_commands.py,**/layer_balance.py,**/memory_monitor.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## GPU Memory Distribution Algorithms
+## GPU Memory Split Optimization
 
-Core memory allocation logic in optimizer.py implements:
+Core algorithm for distributing model layers and memory across multiple GPUs:
 
-1. Tensor Parallel Split Calculation:
+1. Memory Distribution Algorithm:
 ```python
-def calculate_split(gpus):
-    total_mem = sum(g.mem_total for g in gpus)
-    return [g.mem_total/total_mem for g in gpus]
-```
-- Determines optimal tensor parallel fractions based on relative GPU memory sizes
-- Maintains proportional load distribution across GPUs
-- Accounts for memory overhead and safety margins
-
-2. Layer Balancing Algorithm (layer_balance.py):
-- Weighted performance profiling:
-  - Short sequences (64 tokens): 20% weight
-  - Long sequences (1024 tokens): 80% weight 
-- Block merging optimization to reduce GPU switching overhead
-- Input/output layer pinning to specific GPUs
-
-3. Memory Monitoring System (memory_monitor.py):
-- Tracks per-model memory requirements:
-  - Base footprint
-  - Per-batch consumption
-  - Per-token growth rate
-  - MoE overhead factors
-- OOM prevention with multi-stage recovery:
-  1. Cache clearing
-  2. Batch reduction
-  3. Memory offloading
-  4. Process termination
-
-4. Context Size Optimization:
-```python
-def max_safe_context(model_params, gpu_mem):
-    bytes_per_token = (
-        model_params.layers * 
-        model_params.kv_heads *
-        model_params.head_dim *
-        model_params.dtype_size *
-        model_params.moe_factor
-    )
-    return int(gpu_mem / bytes_per_token)
+def calculate_gpu_splits(gpus):
+  total_mem = sum(g.mem_total for g in gpus)
+  splits = [round(g.mem_total/total_mem, 3) for g in gpus]
+  return splits
 ```
 
-5. Model-Specific Memory Profiles:
-- LLaMA2: {7B, 13B, 70B variants}
-- Mistral: 7B model
-- Mixtral: 8x7B MoE model
+2. Tensor Parallel Size Calculation:
+- For N GPUs, calculates optimal tensor parallel size based on:
+  - Total available VRAM across GPUs
+  - Model size and parameter count 
+  - Communication overhead between GPUs
+  - Framework-specific requirements (vLLM vs llama.cpp)
 
-Relevant Files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py 
+3. Layer Balancing:
+- Uses weighted performance profiling with two sequence lengths:
+  - Short sequences (64 tokens) weighted at 20%
+  - Long sequences (1024 tokens) weighted at 80%
+- Groups layers into contiguous blocks to minimize GPU switching
+- Accounts for temperature and power limits when distributing compute
+
+4. Memory Reservation:
+- Reserves fixed 2GB buffer per GPU for system overhead
+- Additional 5% reservation for dynamic allocations
+- Framework-specific memory optimizations:
+  - vLLM: 90% memory utilization target
+  - llama.cpp: Variable based on quantization
+
+5. Model-Specific Optimizations:
+- MoE models: Additional 5% memory for expert routing
+- Attention patterns: Adjusts for sliding window vs full attention
+- Quantization: Accounts for precision (FP16/INT8/INT4)
+
+File paths containing core GPU optimization logic:
+- dualgpuopt/optimizer.py 
 - dualgpuopt/memory_monitor.py
+- dualgpuopt/layer_balance.py
 - dualgpuopt/gpu_info.py
 
 $END$

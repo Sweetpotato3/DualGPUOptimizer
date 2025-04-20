@@ -3,6 +3,16 @@ import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap import utility
 from tkhtmlview import HTMLLabel   # pip install tkhtmlview
+import textwrap
+from typing import Dict, Optional, List
+
+try:
+    from ttkbootstrap.constants import *
+    from ttkbootstrap.style import Bootstyle
+    TTKBOOTSTRAP_AVAILABLE = True
+except ImportError:
+    import tkinter.ttk as ttk
+    TTKBOOTSTRAP_AVAILABLE = False
 
 # ---------- bubble style ----------
 def _bubble_frame(parent, align="left", bg="#371b59") -> ttk.Frame:
@@ -28,226 +38,109 @@ def _bubble_frame(parent, align="left", bg="#371b59") -> ttk.Frame:
 
 # ---------- message bubble ----------
 class Bubble(ttk.Frame):
-    """A chat bubble widget that displays HTML/Markdown formatted text
+    """A chat bubble widget with modern styling for user and assistant messages"""
     
-    This widget creates message bubbles similar to modern chat applications,
-    with support for different alignments and HTML/Markdown content.
-    """
-    def __init__(self, parent, text_md: str, is_user: bool):
-        """Initialize a new chat bubble
+    def __init__(self, master, content: str, is_user: bool = False, **kwargs):
+        """Initialize a chat bubble widget
         
         Args:
-            parent: Parent widget
-            text_md: HTML/Markdown formatted text content
-            is_user: True if this is a user message (right-aligned)
+            master: Parent widget
+            content: HTML-like formatted text content
+            is_user: Whether this is a user message (True) or assistant message (False)
+            **kwargs: Additional keyword arguments for the frame
         """
-        super().__init__(parent)
-        self.columnconfigure(0, weight=1)
-        
-        # Determine alignment based on message sender
-        align = "right" if is_user else "left"
-        
-        # Create styled outer frame
-        self.outer = _bubble_frame(self, align)
-        
-        # Position the bubble with proper alignment and fill behavior
-        if is_user:
-            self.outer.pack(anchor="e", pady=6, padx=(50, 10), fill="x")
+        # Configure the style based on whether it's a user or assistant message
+        if TTKBOOTSTRAP_AVAILABLE:
+            style = "primary" if is_user else "secondary"
+            super().__init__(master, bootstyle=style, padding=10, **kwargs)
         else:
-            self.outer.pack(anchor="w", pady=6, padx=(10, 50), fill="x")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        # Create content area with a Frame to hold both HTML and resize handle
-        content_frame = ttk.Frame(self.outer)
-        content_frame.pack(fill="both", expand=True)
-        content_frame.columnconfigure(0, weight=1)
-        content_frame.rowconfigure(0, weight=1)
+            super().__init__(master, padding=10, **kwargs)
+            
+        # Set background colors based on message type
+        self.bg_color = "#371B59" if is_user else "#2E1D47"
+        self.text_color = "#FFFFFF"
         
-        # Create the HTML content widget
-        self.html = HTMLLabel(content_frame, html=text_md, width=0, background=self.outer.cget("background"))
-        self.html.grid(row=0, column=0, sticky="nsew")
+        # Create a Text widget to display the content with proper wrapping
+        self.text = tk.Text(
+            self, 
+            wrap="word",
+            width=60,
+            height=4,
+            font=("Inter", 10),
+            bg=self.bg_color,
+            fg=self.text_color,
+            relief="flat",
+            highlightthickness=0,
+            padx=8,
+            pady=6
+        )
         
-        # Add resize handle in the bottom right
-        resize_style = "info.TButton" if not is_user else "secondary.TButton"
-        self.resize_handle = ttk.Button(content_frame, text="↔", width=2, style=resize_style)
-        self.resize_handle.grid(row=1, column=0, sticky="se", padx=2, pady=2)
+        # Insert the content
+        self.text.insert("1.0", content)
         
-        # Track original and current height for resizing
-        self.original_height = None
-        self.current_height = None
+        # Make the text widget read-only
+        self.text.configure(state="disabled")
         
-        # Bind drag events for resizing
-        self.resize_handle.bind("<ButtonPress-1>", self._start_resize)
-        self.resize_handle.bind("<B1-Motion>", self._resize)
-        self.resize_handle.bind("<ButtonRelease-1>", self._end_resize)
+        # Adjust height based on content
+        self.adjust_height()
         
-        # Bind to window resize for responsive layout adjustments
-        self.bind("<Configure>", self._on_resize)
+        # Pack the text widget
+        self.text.pack(fill="both", expand=True)
+        
+        # Add rounded corners and styling to the frame
+        if TTKBOOTSTRAP_AVAILABLE:
+            self.configure(bootstyle=f"{style}.rounded")
+        
+    def adjust_height(self):
+        """Adjust the height of the text widget based on its content"""
+        # Get the height of the content
+        num_lines = int(self.text.index('end-1c').split('.')[0])
+        
+        # Set a minimum height of 2 lines and a maximum of 20
+        height = max(2, min(num_lines, 20))
+        
+        # Update the text widget's height
+        self.text.configure(height=height)
+
+# The rest of your existing widget classes...
+
+class MessageContainer(ttk.Frame):
+    """Container frame for chat messages with styling."""
     
-    def _start_resize(self, event):
-        """Start tracking resize operation"""
-        self.resize_y = event.y
-        # Store current height
-        self.current_height = self.html.winfo_height()
-        if not self.original_height:
-            self.original_height = self.current_height
-    
-    def _resize(self, event):
-        """Handle resize during mouse drag"""
-        diff_y = event.y - self.resize_y
-        # Calculate new height and apply min/max constraints
-        new_height = max(50, min(500, self.current_height + diff_y))
-        self.html.configure(height=new_height)
-    
-    def _end_resize(self, event):
-        """End resize operation"""
-        # Store new height
-        self.current_height = self.html.winfo_height()
-    
-    def _on_resize(self, event=None):
-        """Handle resize events to adjust text wrapping
+    def __init__(self, master, **kwargs):
+        """Initialize a message container.
         
         Args:
-            event: The resize event
+            master: Parent widget
+            **kwargs: Additional keyword arguments for the frame
         """
-        # Update wrapping based on current size
-        parent_width = self.winfo_width()
-        if parent_width > 10:  # Only adjust if we have a real width
-            # Set the wraplength to a percentage of the parent width
-            wrap_width = int(parent_width * 0.95)  # 95% of container width
-            self.html.config(wraplength=wrap_width)
-    
-    def reset_size(self):
-        """Reset to original size"""
-        if self.original_height:
-            self.html.configure(height=self.original_height)
-            self.current_height = self.original_height 
+        super().__init__(master, **kwargs)
+        
+        # Configure grid layout
+        self.columnconfigure(0, weight=1)
+        self.rowconfigure(0, weight=1)
+        
+        # Apply styling - can be customized based on your theme
+        if TTKBOOTSTRAP_AVAILABLE:
+            self.configure(bootstyle=DARK)
+        
+    def add_message(self, content: str, is_user: bool = False, **kwargs) -> Bubble:
+        """Add a new message to the container.
+        
+        Args:
+            content: Message content
+            is_user: Whether this is a user message
+            **kwargs: Additional keyword arguments for the message bubble
+            
+        Returns:
+            The created message bubble
+        """
+        # Create a new row for the message
+        row = self.grid_size()[1]
+        
+        # Create and configure the message bubble
+        bubble = Bubble(self, content, is_user, **kwargs)
+        bubble.grid(row=row, column=0, sticky="ew", padx=(10 if is_user else 20, 20 if is_user else 10), pady=5)
+        
+        # Return the created bubble
+        return bubble 

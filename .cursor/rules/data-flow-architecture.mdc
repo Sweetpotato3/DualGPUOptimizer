@@ -1,6 +1,6 @@
 ---
-description: Specification for analyzing and documenting data flow patterns between components in GPU optimization systems
-globs: 
+description: Documents the data flow patterns and component interactions for GPU resource management and optimization
+globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py,integrated_app/**/*.py
 alwaysApply: false
 ---
 
@@ -9,53 +9,48 @@ alwaysApply: false
 
 Key Data Flow Components:
 
-1. GPU Telemetry Pipeline
-- Telemetry service collects GPU metrics (utilization, memory, temperature)
-- EventBusMiddleware publishes metrics to application event bus
-- LoggingMiddleware handles diagnostic data streams
-- Components subscribe to metrics via event bus for real-time updates
-- Mock data generation provides fallback data flow when hardware unavailable
+1. Telemetry Collection Pipeline
+- GPUMetricsEvent system captures real-time GPU metrics
+- Metrics flow from NVML through telemetry service to dashboard
+- Event bus dispatches metrics to registered subscribers
+- Flow: GPU Hardware → NVML → Telemetry Service → Event Bus → Dashboard
 
-2. Model Optimization Data Flow
-- Optimizer calculates memory splits and tensor parallel configurations
-- Layer balancing algorithm receives performance profiles:
-  - Short sequence (64 tokens) profile weighted at 20%
-  - Long sequence (1024 tokens) profile weighted at 80%
-- Distributes model layers across GPUs based on performance ratios
-- Sends configuration commands to ML frameworks (llama.cpp, vLLM)
+2. Model Optimization Pipeline  
+- Model parameters flow from launcher to optimizer
+- Optimizer calculates GPU splits and tensor parallel configurations
+- Results flow to framework-specific command generators
+- Flow: Model Config → Optimizer → Command Generator → Runner
 
 3. Memory Management Pipeline
-- MemoryMonitor tracks per-model memory profiles:
-  - Base memory footprint
-  - Per-batch memory scaling 
-  - Token memory requirements
-  - Growth characteristics
-- OOM prevention system implements recovery stages:
-  1. Cache clearing
-  2. Batch size reduction 
-  3. Memory offloading
-  4. Process termination
+- Memory monitor tracks VRAM usage across GPUs
+- Predictive OOM prevention with alert levels (Normal → Warning → Critical → Emergency) 
+- Memory alerts trigger hierarchical recovery actions
+- Flow: Memory Monitor → Alert System → Recovery Actions
 
-4. Configuration Data Flow
-- StateService manages centralized application state
-- Persistent storage maintains GPU settings and model configurations
-- Event bus publishes state changes to subscribers
-- Components receive updates through state change subscriptions
+4. Resource Distribution Pipeline
+- Layer balance optimizer analyzes model architecture
+- Generates per-GPU layer distribution plans
+- Distributes tensors based on memory availability ratios
+- Flow: Model Architecture → Layer Balancer → GPU Distribution
 
-5. Command Generation Pipeline  
-- Optimizer generates framework-specific commands
-- Parameters flow from:
-  - GPU memory calculations
-  - Layer distribution profiles
-  - Model architecture settings
-  - Runtime configurations
-- Commands distributed to framework runners
+5. Configuration Flow
+- GPU profiles and settings flow from config service
+- State changes propagate through event bus to subscribers 
+- Settings persist to disk for restoration
+- Flow: Config Service → State Service → Event Bus → Components
 
-Relevant Files:
-- dualgpuopt/telemetry.py
-- dualgpuopt/memory_monitor.py
-- dualgpuopt/services/state_service.py
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
+Key File Paths:
+```
+dualgpuopt/
+  telemetry.py          # Metric collection pipeline
+  memory_monitor.py     # Memory tracking pipeline
+  layer_balance.py      # Resource distribution
+  optimizer.py          # Model optimization flow
+  services/
+    config_service.py   # Configuration pipeline
+    state_service.py    # State management flow
+```
+
+The data flow architecture focuses on real-time GPU metric collection, model optimization, memory management, and resource distribution across multiple GPUs. The event bus provides decoupled communication between components.
 
 $END$

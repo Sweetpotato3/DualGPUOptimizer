@@ -138,8 +138,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Applies to dual GPU optimization systems focused on ML model deployment, specifically when documenting high-level architecture and core business logic organization across multiple components
-globs: *.py,*.code-workspace
+description: Use this overview for documenting the core business logic of GPU optimization systems that manage dual GPU configurations for ML model inference, focusing on memory management, layer balancing, and hardware monitoring
+globs: *.py,*.hpp,*.cpp
 alwaysApply: false
 ---
 
@@ -155,63 +155,46 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The Dual GPU Optimizer system implements specialized logic for managing and optimizing large language model deployment across multiple GPUs. The core business functionality is organized into several key domains:
+The DualGPUOptimizer implements specialized logic for managing dual GPU configurations in machine learning inference scenarios, with three core business components:
 
-1. GPU Resource Management (Importance: 95)
-- Layer balancing algorithm in `dualgpuopt/layer_balance.py`
-- Memory monitoring system in `dualgpuopt/memory_monitor.py`
-- Context size optimization in `dualgpuopt/ctx_size.py`
-- Smart batching in `dualgpuopt/batch/smart_batch.py`
+1. GPU Memory Management and Optimization
+- Dynamic calculation of optimal memory splits between GPUs based on model architecture
+- Context size optimization considering model parameters (layers, heads, dimensions)
+- Token-based memory tracking for preventing OOM conditions 
+- Memory usage prediction with progressive alerting thresholds
 
-2. Model Optimization (Importance: 90)
-- Profile-based memory estimation
-- Framework-specific command generation
-- Tensor parallelism configuration
-- Model architecture detection
-Files: `dualgpuopt/optimizer.py`, `dualgpuopt/model_profiles.py`
+Key files:
+- `dualgpuopt/memory_monitor.py`
+- `dualgpuopt/model_profiles.py`
 
-3. GPU State Management (Importance: 85)
-- Overclocking controls and safety limits
-- Fan speed management with temperature thresholds
-- Power limit monitoring and adjustment
-- Idle detection system
-Files: `dualgpuopt/gui/settings.py`
+2. Model Layer Distribution 
+- Layer performance profiling using weighted sequence analysis
+- Adaptive distribution algorithm balancing layer computational intensity
+- Block optimization to create contiguous layer groups
+- MoE model handling with expert distribution logic
 
-4. Performance Monitoring (Importance: 80)
-- Real-time GPU metrics collection
-- VRAM usage tracking
-- Temperature and power monitoring
-- PCIe bandwidth analysis
-Files: `dualgpuopt/telemetry.py`, `dualgpuopt/gui/dashboard.py`
+Key files:
+- `dualgpuopt/layer_balance.py`
+- `dualgpuopt/optimizer.py`
 
-5. Memory Recovery System (Importance: 75)
-- Multi-strategy VRAM reclamation
-- Cache management
-- Device reset coordination
-Files: `dualgpuopt/vram_reset.py`
+3. Hardware Monitoring and Control
+- Real-time GPU metrics collection (utilization, temperature, power)
+- Multi-level alerting system with configurable thresholds
+- Progressive intervention for memory pressure events
+- Overclocking profile management with safety constraints
 
-Key Integration Points:
-- Model runner coordinates between optimization and execution
-- Telemetry service feeds into monitoring dashboard
-- Memory monitor triggers recovery system
-- Layer balancer works with optimizer for distribution decisions
+Key files:
+- `dualgpuopt/telemetry.py`
+- `dualgpuopt/gui/settings.py`
 
-The system implements specialized algorithms for:
-- Dynamic context length calculation
-- Layer distribution across GPUs
-- Memory pressure detection
-- Smart batch size optimization
-- Model-specific memory profiling
+The system integrates these components to provide automated optimization of large language model inference across multiple GPUs while maintaining stability and performance. Core workflows include:
 
-Core files for business logic:
-```
-dualgpuopt/
-  optimizer.py
-  layer_balance.py
-  memory_monitor.py
-  ctx_size.py
-  model_profiles.py
-```
+- Dynamic memory allocation based on model requirements
+- Intelligent layer distribution for optimal throughput
+- Proactive monitoring and intervention for stability
+- Safe overclocking management with profile support
+
+The business logic focuses on maximizing GPU utilization while preventing out-of-memory conditions and maintaining hardware safety through careful resource management and monitoring.
 
 $END$
 END SPECIFICATION

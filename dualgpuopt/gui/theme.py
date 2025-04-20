@@ -31,23 +31,47 @@ THEME_DARK_PURPLE = {
     "secondary_bg": "#372952"
 }
 
-# Define fallback theme
-THEME_DEFAULT = {
-    "bg": "#F0F0F0",
-    "fg": "#000000",
-    "accent": "#007BFF",
-    "accent_light": "#3395FF",
-    "accent_dark": "#0062CC",
+# Define light theme
+THEME_LIGHT = {
+    "bg": "#F5F5F7",
+    "fg": "#333333",
+    "accent": "#7B3FD5",
+    "accent_light": "#9B6AE8",
+    "accent_dark": "#5A2DAA",
+    "warning": "#F57C00",
+    "error": "#D32F2F",
+    "success": "#388E3C",
+    "border": "#E1E1E6",
+    "input_bg": "#FFFFFF",
+    "secondary_bg": "#EAEAEF"
+}
+
+# Define neon dark theme
+THEME_NEON_DARK = {
+    "bg": "#1A1A2E",
+    "fg": "#E6E6E6",
+    "accent": "#9B59B6",
+    "accent_light": "#BF7DE0",
+    "accent_dark": "#7D3C98",
     "warning": "#FF9800",
     "error": "#F44336",
-    "success": "#4CAF50",
-    "border": "#CDCDCD",
-    "input_bg": "#FFFFFF",
-    "secondary_bg": "#E8E8E8"
+    "success": "#2ECC71",
+    "border": "#2D2D44",
+    "input_bg": "#13141C",
+    "secondary_bg": "#222235",
+    "gradient_start": "#37ECBA",
+    "gradient_end": "#E436CA"
 }
 
 # Current theme
 current_theme = THEME_DARK_PURPLE
+
+# All available themes
+AVAILABLE_THEMES = {
+    "dark_purple": THEME_DARK_PURPLE,
+    "light": THEME_LIGHT,
+    "neon_dark": THEME_NEON_DARK
+}
 
 def get_theme_path():
     """Get the path to theme resources"""
@@ -103,20 +127,6 @@ def configure_fonts(root):
         # Get available font families
         families = sorted(font.families())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         # Prefer common, well-scaling fonts that look good on high DPI displays
         preferred_fonts = ["Segoe UI", "Helvetica", "Arial", "DejaVu Sans", "Verdana", "Tahoma"]
         
@@ -139,6 +149,57 @@ def configure_fonts(root):
         logger.info(f"Configured application fonts: {main_font} at size {scale_font_size(DEFAULT_FONT_SIZE)}")
     except Exception as e:
         logger.warning(f"Error configuring fonts: {e}")
+
+def toggle_theme(root):
+    """Toggle between light and dark themes
+    
+    Args:
+        root: The root Tk window
+        
+    Returns:
+        The name of the new theme
+    """
+    global current_theme
+    
+    # Determine which theme to switch to
+    if current_theme == THEME_DARK_PURPLE or current_theme == THEME_NEON_DARK:
+        current_theme = THEME_LIGHT
+        theme_name = "light"
+    else:
+        current_theme = THEME_NEON_DARK
+        theme_name = "neon_dark"
+    
+    # Apply the new theme
+    apply_custom_styling(root)
+    
+    logger.info(f"Switched to {theme_name} theme")
+    return theme_name
+
+def set_theme(root, theme_name):
+    """Set a specific theme
+    
+    Args:
+        root: The root Tk window
+        theme_name: Name of the theme to set
+        
+    Returns:
+        The name of the theme that was set
+    """
+    global current_theme
+    
+    # Set the theme based on the name
+    if theme_name in AVAILABLE_THEMES:
+        current_theme = AVAILABLE_THEMES[theme_name]
+    else:
+        # Default to dark purple if theme not found
+        current_theme = THEME_DARK_PURPLE
+        theme_name = "dark_purple"
+    
+    # Apply the theme
+    apply_custom_styling(root)
+    
+    logger.info(f"Set theme to {theme_name}")
+    return theme_name
 
 def apply_theme(root):
     """Apply the current theme to the application
@@ -218,6 +279,20 @@ def apply_custom_styling(root):
     
     style.map("TButton",
                background=[("active", current_theme["accent_light"]),
+                          ("disabled", current_theme["bg"])],
+               foreground=[("disabled", "#AAAAAA")])
+    
+    # Configure ThemeToggle.TButton with custom style for theme toggle button
+    style.configure("ThemeToggle.TButton", 
+                    background=current_theme["secondary_bg"],
+                    foreground=current_theme["fg"],
+                    borderwidth=1,
+                    focusthickness=1,
+                    padding=(10, 6),
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
+    
+    style.map("ThemeToggle.TButton",
+               background=[("active", current_theme["accent"]),
                           ("disabled", current_theme["bg"])],
                foreground=[("disabled", "#AAAAAA")])
     
@@ -400,4 +475,39 @@ def apply_minimal_styling(root):
     style.configure("TButton", padding=(10, 5))
     
     # Basic tab styling
-    style.configure("TNotebook.Tab", padding=(10, 2)) 
+    style.configure("TNotebook.Tab", padding=(10, 2))
+
+# Theme Toggle Button Widget
+class ThemeToggleButton(ttk.Button):
+    """A button that toggles between light and dark themes"""
+    
+    def __init__(self, master, **kwargs):
+        """Initialize a theme toggle button
+        
+        Args:
+            master: Parent widget
+            **kwargs: Additional keyword arguments for the button
+        """
+        # Initialize with theme toggle style
+        super().__init__(
+            master, 
+            text="🌙" if current_theme == THEME_LIGHT else "☀️", 
+            style="ThemeToggle.TButton",
+            command=self._toggle_theme,
+            **kwargs
+        )
+    
+    def _toggle_theme(self):
+        """Toggle the theme and update the button text"""
+        theme_name = toggle_theme(self.winfo_toplevel())
+        
+        # Update button text based on new theme
+        new_text = "🌙" if theme_name == "light" else "☀️"
+        self.configure(text=new_text)
+        
+        # Publish theme changed event if event_bus is available
+        try:
+            from dualgpuopt.services.event_service import event_bus
+            event_bus.publish("theme_changed", {"theme": theme_name})
+        except ImportError:
+            pass  # Ignore if event_bus is not available 

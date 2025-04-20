@@ -1,27 +1,33 @@
 """
-DualGPUOptimizer - A tool for optimizing dual GPU setups.
+DualGPUOptimizer - GPU optimization toolkit for ML model inference
 """
-from __future__ import annotations
-
-import os
+import logging
 import sys
+from pathlib import Path
 
-# Version information
-VERSION = "0.2.0"
+__version__ = "0.2.0"
 
-# Expose version as package attribute
-__version__ = VERSION
+# Setup logger
+logger = logging.getLogger("DualGPUOpt")
+
+# Set up Python path to include parent directory
+parent_dir = str(Path(__file__).resolve().parent.parent)
+if parent_dir not in sys.path:
+    sys.path.insert(0, parent_dir)
 
 # Functions for mock mode control, but don't enable by default
+MOCK_MODE = False
+
 def enable_mock_mode():
-    """Enable mock mode for testing without real GPUs."""
-    os.environ["DGPUOPT_MOCK_GPUS"] = "1"
+    """Enable mock mode for testing without GPUs"""
+    global MOCK_MODE
+    MOCK_MODE = True
     
 def disable_mock_mode():
-    """Disable mock mode and use real GPUs."""
-    if "DGPUOPT_MOCK_GPUS" in os.environ:
-        del os.environ["DGPUOPT_MOCK_GPUS"]
-    
+    """Disable mock mode"""
+    global MOCK_MODE
+    MOCK_MODE = False
+
 def is_mock_mode_enabled():
     """Check if mock mode is enabled."""
-    return os.environ.get("DGPUOPT_MOCK_GPUS") == "1" 
+    return MOCK_MODE 
