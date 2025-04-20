@@ -172,6 +172,14 @@ def toggle_theme(root):
     # Apply the new theme
     apply_custom_styling(root)
     
+    # Save theme preference to config if available
+    try:
+        from dualgpuopt.services.config_service import config_service
+        config_service.set("theme", theme_name)
+        logger.info(f"Saved theme preference: {theme_name}")
+    except ImportError:
+        logger.warning("Could not save theme preference: config_service not available")
+    
     logger.info(f"Switched to {theme_name} theme")
     return theme_name
 
@@ -181,7 +189,6 @@ def set_theme(root, theme_name):
     Args:
         root: The root Tk window
         theme_name: Name of the theme to set
-        
     Returns:
         The name of the theme that was set
     """
@@ -198,8 +205,34 @@ def set_theme(root, theme_name):
     # Apply the theme
     apply_custom_styling(root)
     
+    # Save theme preference to config if available
+    try:
+        from dualgpuopt.services.config_service import config_service
+        config_service.set("theme", theme_name)
+        logger.info(f"Saved theme preference: {theme_name}")
+    except ImportError:
+        logger.warning("Could not save theme preference: config_service not available")
+    
     logger.info(f"Set theme to {theme_name}")
     return theme_name
+
+def load_theme_from_config(root):
+    """Load and apply theme from configuration
+    
+    Args:
+        root: The root Tk window
+        
+    Returns:
+        The name of the loaded theme
+    """
+    try:
+        from dualgpuopt.services.config_service import config_service
+        theme_name = config_service.get("theme", "dark_purple")
+        logger.info(f"Loading theme from config: {theme_name}")
+        return set_theme(root, theme_name)
+    except ImportError:
+        logger.warning("Could not load theme from config: config_service not available")
+        return set_theme(root, "dark_purple")  # Default
 
 def apply_theme(root):
     """Apply the current theme to the application
@@ -213,6 +246,9 @@ def apply_theme(root):
         
         # Configure default fonts
         configure_fonts(root)
+        
+        # Load theme from config
+        load_theme_from_config(root)
         
         # Try to load ttkthemes if available
         try:

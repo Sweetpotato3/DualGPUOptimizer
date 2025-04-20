@@ -23,10 +23,10 @@ from dualgpuopt.gpu_info import GPU
 from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.config_service import config_service
 from dualgpuopt.services.error_service import error_service
-from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES
+from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES, AVAILABLE_THEMES
+from dualgpuopt.gui.theme_selector import ThemeSelector
 from dualgpuopt.commands.command_base import command_manager
 from dualgpuopt.commands.gpu_commands import ApplyOverclockCommand
-<<<<<<< HEAD
 
 # Try to import ttkbootstrap Tooltip
 try:
@@ -38,22 +38,12 @@ except ImportError:
 # Import constants from shared module
 from dualgpuopt.gui.constants import PAD
 from dualgpuopt.services.state_service import StateService
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
 
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
     
-<<<<<<< HEAD
-<<<<<<< HEAD
     def __init__(self, parent: ttk.Frame, gpus: List[GPU] = None, config_service = None, state_service: StateService = None, danger_style: str = "danger") -> None:
-=======
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service, state_service: StateService, danger_style: str = "danger") -> None:
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-=======
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], config_service) -> None:
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         """
         Initialize the settings tab.
         
@@ -61,11 +51,8 @@ class SettingsTab(ttk.Frame):
             parent: Parent frame
             gpus: List of GPU objects
             config_service: Application configuration service
-<<<<<<< HEAD
             state_service: State service for loading/saving settings
             danger_style: Style name for danger elements
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         """
         # Set default values for services
         if gpus is None:
@@ -88,15 +75,11 @@ class SettingsTab(ttk.Frame):
         self.parent = parent
         self.gpus = gpus
         self.config_service = config_service
-<<<<<<< HEAD
         self.state_service = state_service
         self.PAD = PAD  # Store locally
         self.columnconfigure(0, weight=1)
         self.rowconfigure(0, weight=1)  # Content area takes all available space
         self.rowconfigure(1, weight=0)  # Footer bar is fixed height
-=======
-        self.columnconfigure(0, weight=1)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         self.logger = logging.getLogger("dualgpuopt.gui.settings")
         
         # Register event handlers
@@ -129,42 +112,63 @@ class SettingsTab(ttk.Frame):
         # ------ Appearance Section ------
         appearance_frame = ttk.LabelFrame(scrollable_frame, text="Appearance")
         appearance_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=0)
-        appearance_frame.columnconfigure(1, weight=1)
+        appearance_frame.columnconfigure(0, weight=1)
         
-        # Theme selection
-        self.theme_var = tk.StringVar(value=config_service.get("theme", "dark"))
-<<<<<<< HEAD
-        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
-=======
-        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-        theme_combo = ttk.Combobox(
-            appearance_frame, 
-            textvariable=self.theme_var,
-            values=list(THEMES.keys()),
-            width=10,
-            state="readonly"
+        # Theme settings frame
+        theme_settings_frame = ttk.Frame(appearance_frame)
+        theme_settings_frame.grid(row=0, column=0, sticky="ew", padx=self.PAD, pady=5)
+        theme_settings_frame.columnconfigure(0, weight=1)
+        
+        # Use our new ThemeSelector component
+        self.theme_selector = ThemeSelector(
+            theme_settings_frame,
+            label_text="Color Theme:",
+            callback=self._on_theme_applied,
+            padx=self.PAD,
+            pady=5
         )
-        theme_combo.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
+        self.theme_selector.grid(row=0, column=0, sticky="w", pady=5)
         
         # Add TTK theme selection if ttkthemes is available
-        self.ttk_theme_var = tk.StringVar(value=config_service.get("ttk_theme", ""))
         if AVAILABLE_TTK_THEMES:
-            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+            self.ttk_theme_var = tk.StringVar(value=config_service.get("ttk_theme", ""))
+            ttk_theme_frame = ttk.Frame(appearance_frame)
+            ttk_theme_frame.grid(row=1, column=0, sticky="ew", padx=self.PAD, pady=5)
+            
+            ttk.Label(ttk_theme_frame, text="Widget Style:").pack(side="left", padx=self.PAD, pady=5)
             ttk_theme_combo = ttk.Combobox(
-                appearance_frame,
+                ttk_theme_frame,
                 textvariable=self.ttk_theme_var,
                 values=AVAILABLE_TTK_THEMES,
-                width=10,
+                width=12,
                 state="readonly"
             )
-            ttk_theme_combo.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
+            ttk_theme_combo.pack(side="left", padx=self.PAD, pady=5)
+            
+            ttk.Button(
+                ttk_theme_frame,
+                text="Apply",
+                command=self._apply_ttk_theme
+            ).pack(side="left", padx=self.PAD, pady=5)
         
-        ttk.Button(
-            appearance_frame, 
-            text="Apply Theme", 
-            command=self._apply_theme_change
-        ).grid(row=0, column=2, padx=self.PAD, pady=5)
+        # Theme previews section
+        preview_frame = ttk.Frame(appearance_frame)
+        preview_frame.grid(row=2, column=0, sticky="ew", padx=self.PAD, pady=5)
+        preview_frame.columnconfigure(0, weight=1)
+        
+        # Add theme preview thumbnails
+        ttk.Label(preview_frame, text="Available Themes:").grid(row=0, column=0, sticky="w", pady=(10, 5))
+        
+        # Create preview grid
+        preview_grid = ttk.Frame(preview_frame)
+        preview_grid.grid(row=1, column=0, sticky="ew", pady=5)
+        
+        # Create a preview tile for each theme
+        for i, (theme_name, theme_colors) in enumerate(AVAILABLE_THEMES.items()):
+            preview_tile = self._create_theme_preview(preview_grid, theme_name, theme_colors)
+            col = i % 3
+            row = i // 3
+            preview_tile.grid(row=row, column=col, padx=10, pady=10)
         
         # ------ GPU Overclocking Section ------
         overclocking_frame = ttk.LabelFrame(scrollable_frame, text="GPU Overclocking")
@@ -332,15 +336,10 @@ class SettingsTab(ttk.Frame):
         idle_settings_frame.columnconfigure(1, weight=1)
         
         # Startup behavior
-<<<<<<< HEAD
         ttk.Label(idle_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
         self.start_min_var = tk.BooleanVar(value=config_service.get("start_minimized", False))
         
         # Use a standard checkbutton
-=======
-        ttk.Label(app_settings_frame, text="Start minimized:").grid(row=0, column=0, sticky="w", padx=8, pady=5)
-        self.start_min_var = tk.BooleanVar(value=config_service.get("start_minimized", False))
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         start_min_check = ttk.Checkbutton(
             idle_settings_frame,
             variable=self.start_min_var,
@@ -349,15 +348,10 @@ class SettingsTab(ttk.Frame):
         start_min_check.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # GPU idle detection
-<<<<<<< HEAD
         ttk.Label(idle_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
         self.idle_alerts_var = tk.BooleanVar(value=config_service.get("idle_alerts", True))
         
         # Use a standard checkbutton
-=======
-        ttk.Label(app_settings_frame, text="Enable GPU idle alerts:").grid(row=1, column=0, sticky="w", padx=8, pady=5)
-        self.idle_alerts_var = tk.BooleanVar(value=config_service.get("idle_alerts", True))
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         idle_alerts_check = ttk.Checkbutton(
             idle_settings_frame,
             variable=self.idle_alerts_var,
@@ -366,11 +360,7 @@ class SettingsTab(ttk.Frame):
         idle_alerts_check.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # Idle threshold
-<<<<<<< HEAD
         ttk.Label(idle_settings_frame, text="Idle threshold (%):").grid(row=2, column=0, sticky="w", padx=self.PAD, pady=5)
-=======
-        ttk.Label(app_settings_frame, text="Idle threshold (%):").grid(row=2, column=0, sticky="w", padx=8, pady=5)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         self.idle_threshold_var = tk.IntVar(value=config_service.get("idle_threshold", 30))
         idle_threshold_entry = ttk.Entry(
             idle_settings_frame,
@@ -380,11 +370,7 @@ class SettingsTab(ttk.Frame):
         idle_threshold_entry.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=5)
         
         # Idle time
-<<<<<<< HEAD
         ttk.Label(idle_settings_frame, text="Idle time (minutes):").grid(row=3, column=0, sticky="w", padx=self.PAD, pady=5)
-=======
-        ttk.Label(app_settings_frame, text="Idle time (minutes):").grid(row=3, column=0, sticky="w", padx=8, pady=5)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         self.idle_time_var = tk.IntVar(value=config_service.get("idle_time", 5))
         idle_time_entry = ttk.Entry(
             idle_settings_frame,
@@ -398,7 +384,6 @@ class SettingsTab(ttk.Frame):
         
         # Reference to undo button
         self.undo_button = oc_buttons_frame.winfo_children()[2]
-<<<<<<< HEAD
         
         # ------ Sticky Footer Bar ------
         if TTKBOOTSTRAP_AVAILABLE:
@@ -431,14 +416,11 @@ class SettingsTab(ttk.Frame):
             text="Reset to Defaults",
             command=self._reset_all_settings
         ).pack(side="right", padx=5)
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
     
     def _register_event_handlers(self) -> None:
         """Register event handlers for events."""
         event_bus.subscribe("command_history_updated", self._update_command_history)
         event_bus.subscribe("command_executed:apply_overclock", self._handle_overclock_result)
-<<<<<<< HEAD
         event_bus.subscribe("settings_saved", self._update_status_saved)
     
     def _update_status_saved(self, *args) -> None:
@@ -446,8 +428,6 @@ class SettingsTab(ttk.Frame):
         self.status_var.set("Settings saved successfully")
         # Reset after 3 seconds
         self.after(3000, lambda: self.status_var.set("Ready"))
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
     
     def _update_command_history(self, data: Dict[str, Any]) -> None:
         """
@@ -470,31 +450,18 @@ class SettingsTab(ttk.Frame):
         success = data.get("success", False)
         
         if success:
-<<<<<<< HEAD
             self.status_var.set(f"Overclock applied to GPU {data.get('gpu_index', '?')}")
             # Reset status after 3 seconds
             self.after(3000, lambda: self.status_var.set("Ready"))
             
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-            messagebox.showinfo(
-                "Overclock Applied", 
-                f"Overclocking settings applied to GPU {data.get('gpu_index', '?')}",
-                parent=self.winfo_toplevel()
-            )
-    
     def _undo_last_command(self) -> None:
         """Undo the last command."""
         result = command_manager.undo()
-<<<<<<< HEAD
         if result:
             self.status_var.set("Last operation undone")
             # Reset status after 3 seconds
             self.after(3000, lambda: self.status_var.set("Ready"))
         else:
-=======
-        if not result:
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
             messagebox.showerror(
                 "Undo Failed", 
                 "Failed to undo the last operation",
@@ -549,14 +516,11 @@ class SettingsTab(ttk.Frame):
             # Update fan control
             self._toggle_fan_control()
             
-<<<<<<< HEAD
             # Update status
             self.status_var.set(f"Loaded settings for GPU {gpu_idx}")
             # Reset status after 3 seconds
             self.after(3000, lambda: self.status_var.set("Ready"))
             
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         except (ValueError, IndexError) as e:
             error_service.handle_error(e, level="WARNING", title="GPU Selection Error",
                                      show_dialog=False,
@@ -584,12 +548,9 @@ class SettingsTab(ttk.Frame):
                 gpu_idx, core_offset, memory_offset, power_limit, fan_speed, auto_fan
             )
             
-<<<<<<< HEAD
             # Update status
             self.status_var.set(f"Applying overclock to GPU {gpu_idx}...")
             
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
             # Execute command
             command_manager.execute(command)
             
@@ -621,38 +582,65 @@ class SettingsTab(ttk.Frame):
                     
                     # Publish event that GPU overclock was reset
                     event_bus.publish("gpu_overclock_reset", {"gpu_index": gpu_idx})
-<<<<<<< HEAD
                     
                     # Update status
                     self.status_var.set(f"Reset overclock for GPU {gpu_idx}")
                     # Reset status after 3 seconds
                     self.after(3000, lambda: self.status_var.set("Ready"))
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
             except (ValueError, IndexError) as e:
                 error_service.handle_error(e, level="WARNING", title="Reset Error",
                                         show_dialog=False,
                                         context={"operation": "reset_overclock"})
     
-    def _apply_theme_change(self) -> None:
-        """Apply theme change."""
-        theme_name = self.theme_var.get()
-        ttk_theme = self.ttk_theme_var.get()
+    def _apply_theme_from_preview(self, theme_name):
+        """Apply a theme from a preview tile click
         
-        # Update config
-        self.config_service.update({
-            "theme": theme_name,
-            "ttk_theme": ttk_theme
-        })
+        Args:
+            theme_name: Name of the theme to apply
+        """
+        # Update theme selector
+        self.theme_selector.set_theme(theme_name)
         
-<<<<<<< HEAD
+        # Apply the theme
+        root_window = self.winfo_toplevel()
+        from dualgpuopt.gui.theme import set_theme
+        set_theme(root_window, theme_name)
+        
         # Update status
         self.status_var.set(f"Theme changed to {theme_name}")
         # Reset status after 3 seconds
         self.after(3000, lambda: self.status_var.set("Ready"))
+    
+    def _on_theme_applied(self, theme_name):
+        """Callback when theme is applied through the selector
+        
+        Args:
+            theme_name: Name of the applied theme
+        """
+        # Update status
+        self.status_var.set(f"Theme changed to {theme_name}")
+        # Reset status after 3 seconds
+        self.after(3000, lambda: self.status_var.set("Ready"))
+    
+    def _apply_ttk_theme(self):
+        """Apply the selected TTK theme"""
+        ttk_theme = self.ttk_theme_var.get()
+        
+        # Update config
+        self.config_service.set("ttk_theme", ttk_theme)
         
         # Notify about theme change
-        event_bus.publish("config_changed:theme", theme_name)
+        event_bus.publish("config_changed:ttk_theme", ttk_theme)
+        
+        # Show message that restart is required
+        messagebox.showinfo("Theme Changed", 
+                          "TTK theme will be applied on next application restart",
+                          parent=self.winfo_toplevel())
+        
+        # Update status
+        self.status_var.set(f"TTK theme will apply on restart")
+        # Reset status after 3 seconds
+        self.after(3000, lambda: self.status_var.set("Ready"))
     
     def _reset_all_settings(self) -> None:
         """Reset all settings to defaults."""
@@ -666,8 +654,7 @@ class SettingsTab(ttk.Frame):
             self.idle_time_var.set(5)
             
             # Apply default theme
-            self.theme_var.set("dark")
-            self.ttk_theme_var.set("")
+            self.theme_selector.set_theme("dark")
             
             # Save changes
             self._save_all_settings()
@@ -676,10 +663,6 @@ class SettingsTab(ttk.Frame):
             self.status_var.set("All settings reset to defaults")
             # Reset status after 3 seconds
             self.after(3000, lambda: self.status_var.set("Ready"))
-=======
-        # Notify about theme change
-        event_bus.publish("config_changed:theme", theme_name)
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
     
     def _save_all_settings(self) -> None:
         """Save all settings to the configuration file."""
@@ -690,9 +673,8 @@ class SettingsTab(ttk.Frame):
                 "idle_alerts": self.idle_alerts_var.get(),
                 "idle_threshold": self.idle_threshold_var.get(),
                 "idle_time": self.idle_time_var.get(),
-<<<<<<< HEAD
-                "theme": self.theme_var.get(),
-                "ttk_theme": self.ttk_theme_var.get()
+                "theme": self.theme_selector.get_theme(),
+                "ttk_theme": getattr(self, 'ttk_theme_var', tk.StringVar()).get()
             })
             
             # Update status
@@ -700,10 +682,6 @@ class SettingsTab(ttk.Frame):
             # Reset status after 3 seconds
             self.after(3000, lambda: self.status_var.set("Ready"))
             
-=======
-            })
-            
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
             # Notify about settings update
             event_bus.publish("settings_saved")
             
@@ -711,4 +689,34 @@ class SettingsTab(ttk.Frame):
                               parent=self.winfo_toplevel())
         except Exception as e:
             error_service.handle_error(e, level="ERROR", title="Settings Error",
-                                     context={"operation": "save_settings"}) 
+                                     context={"operation": "save_settings"})
+    
+    def _create_theme_preview(self, parent, theme_name, theme_colors):
+        """Create a preview tile for a theme
+        
+        Args:
+            parent: Parent widget
+            theme_name: Name of the theme
+            theme_colors: Theme color definitions
+            
+        Returns:
+            Frame containing the preview
+        """
+        frame = ttk.Frame(parent)
+        
+        # Create the preview canvas
+        canvas = tk.Canvas(frame, width=80, height=60, highlightthickness=1, highlightbackground=theme_colors["border"])
+        canvas.pack(pady=5)
+        
+        # Draw theme preview with primary, secondary and accent colors
+        canvas.create_rectangle(0, 0, 80, 60, fill=theme_colors["bg"], outline="")
+        canvas.create_rectangle(10, 10, 70, 50, fill=theme_colors["secondary_bg"], outline="")
+        canvas.create_rectangle(30, 25, 50, 35, fill=theme_colors["accent"], outline="")
+        
+        # Add theme name label
+        ttk.Label(frame, text=theme_name).pack()
+        
+        # Add click handler to apply this theme
+        canvas.bind("<Button-1>", lambda e, name=theme_name: self._apply_theme_from_preview(name))
+        
+        return frame 

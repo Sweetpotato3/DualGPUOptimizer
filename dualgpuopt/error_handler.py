@@ -245,8 +245,14 @@ class ErrorHandler:
             severity: Error severity level to trigger callback
             callback: Function to call when error occurs
         """
-        self._callbacks[severity].append(callback)
-        logger.debug(f"Registered error callback for severity {severity.name}")
+        # Support wildcard '*' to register for all severity levels
+        if severity == '*':
+            for sev in ErrorSeverity:
+                self._callbacks[sev].append(callback)
+            logger.debug(f"Registered error callback for all severity levels")
+        else:
+            self._callbacks[severity].append(callback)
+            logger.debug(f"Registered error callback for severity {severity.name}")
         
     def unregister_callback(self, severity: ErrorSeverity, callback: ErrorCallback) -> bool:
         """
@@ -259,6 +265,17 @@ class ErrorHandler:
         Returns:
             True if callback was removed, False if not found
         """
+        # Support wildcard '*' to unregister from all severity levels
+        if severity == '*':
+            removed = False
+            for sev in ErrorSeverity:
+                if callback in self._callbacks[sev]:
+                    self._callbacks[sev].remove(callback)
+                    removed = True
+            if removed:
+                logger.debug(f"Unregistered error callback from all severity levels")
+            return removed
+        
         if callback in self._callbacks[severity]:
             self._callbacks[severity].remove(callback)
             logger.debug(f"Unregistered error callback for severity {severity.name}")

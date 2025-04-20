@@ -1,4 +1,3 @@
-
 ---
 description: Create a high-level overview documentation for projects focused on GPU optimization and management, particularly when dealing with multi-GPU setups for machine learning workloads and model execution
 globs: *.py,*.json
@@ -160,14 +159,14 @@ The DualGPUOptimizer implements specialized logic for managing dual GPU configur
 1. GPU Memory Management and Optimization
 - Dynamic calculation of optimal memory splits between GPUs based on model architecture
 - Context size optimization considering model parameters (layers, heads, dimensions)
-- Token-based memory tracking for preventing OOM conditions 
+- Token-based memory tracking for preventing OOM conditions
 - Memory usage prediction with progressive alerting thresholds
 
 Key files:
 - `dualgpuopt/memory_monitor.py`
 - `dualgpuopt/model_profiles.py`
 
-2. Model Layer Distribution 
+2. Model Layer Distribution
 - Layer performance profiling using weighted sequence analysis
 - Adaptive distribution algorithm balancing layer computational intensity
 - Block optimization to create contiguous layer groups

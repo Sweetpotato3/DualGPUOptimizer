@@ -21,11 +21,11 @@ try:
     from ..batch.smart_batch import optimize_batch_size, BatchStats
     from ..ctx_size import calc_max_ctx, model_params_from_name
     from ..layer_balance import rebalance
-    from ..vram_reset import reset_vram
+    from ..vram_reset import reset_vram, ResetMethod, ResetResult
     from ..mpolicy import autocast, scaler
-    from ..memory_monitor import get_memory_monitor
+    from ..memory_monitor import get_memory_monitor, MemoryAlertLevel, MemoryAlert
     from ..model_profiles import apply_profile, get_model_profile
-    from ..error_handler import get_error_handler, show_error_dialog, ErrorSeverity
+    from ..error_handler import get_error_handler, show_error_dialog, ErrorSeverity, ErrorCategory
     from ..telemetry import get_telemetry_service
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
@@ -274,12 +274,16 @@ class ModelRunner:
             return
             
         try:
-            from dualgpuopt.memory_monitor import get_memory_monitor
+            from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel
             memory_monitor = get_memory_monitor()
             
-            def handle_memory_pressure(gpu_id, used_mb, total_mb, threshold):
+            def handle_memory_alert(alert):
                 """Handle memory pressure event"""
-                pressure_pct = (used_mb / total_mb) * 100
+                gpu_id = alert.gpu_id
+                used_mb = alert.context.get("used_memory", 0) / (1024 * 1024)
+                total_mb = alert.context.get("total_memory", 0) / (1024 * 1024)
+                pressure_pct = (used_mb / total_mb) * 100 if total_mb > 0 else 0
+                
                 self.log_queue.put(
                     f"WARNING: High memory pressure on GPU {gpu_id}: "
                     f"{used_mb:.0f}MB/{total_mb:.0f}MB ({pressure_pct:.1f}%)"
@@ -295,7 +299,7 @@ class ModelRunner:
                     pass
             
             # Register callback for high memory usage
-            memory_monitor.register_callback("high_memory", handle_memory_pressure)
+            memory_monitor.register_alert_callback(MemoryAlertLevel.WARNING, handle_memory_alert)
             
         except ImportError:
             self.logger.warning("Memory monitor not available for OOM prevention")
@@ -522,8 +526,7 @@ class LauncherTab(ttk.Frame):
                 self.memory_monitor = get_memory_monitor()
                 # Register for memory warnings
                 if self.memory_monitor:
-                    # Use register_alert_callback instead of register_callback
-                    self.memory_monitor.register_alert_callback("ui_warning", self._handle_memory_warning)
+                    self.memory_monitor.register_alert_callback(MemoryAlertLevel.WARNING, self._handle_memory_warning)
             except Exception as e:
                 logger.warning(f"Error initializing memory monitor: {e}")
         
@@ -950,15 +953,16 @@ class LauncherTab(ttk.Frame):
                 error_details.traceback_str
             )
 
-    def _handle_memory_warning(self, warning_type, gpu_id, used_mb, total_mb):
+    def _handle_memory_warning(self, alert):
         """Handle memory warning callback from memory monitor
         
         Args:
-            warning_type: Type of warning
-            gpu_id: GPU ID that triggered the warning
-            used_mb: Used memory in MB
-            total_mb: Total memory in MB
+            alert: MemoryAlert object containing warning details
         """
+        gpu_id = alert.gpu_id
+        used_mb = alert.context.get("used_memory", 0) / (1024 * 1024)
+        total_mb = alert.context.get("total_memory", 0) / (1024 * 1024)
+        
         usage_pct = (used_mb / total_mb) * 100 if total_mb > 0 else 0
         message = f"Warning: GPU {gpu_id} memory usage is high: {used_mb:.0f}MB/{total_mb:.0f}MB ({usage_pct:.1f}%)\n"
         

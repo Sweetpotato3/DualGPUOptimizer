@@ -73,6 +73,8 @@ from . import launcher
 from . import theme
 from ..telemetry import get_telemetry_service
 from ..chat_tab import ChatTab  # Add import for the ChatTab
+from .theme_selector import ThemeSelector  # Import theme selector
+from ..services.event_service import event_bus  # Import event bus
 
 # Check for advanced feature dependencies
 try:
@@ -123,8 +125,11 @@ class MainApplication(ttk.Frame):
         # Set minimum window size to prevent UI from becoming too cramped
         self.parent.minsize(800, 600)
         
-        # Apply theme to parent window
-        theme.apply_custom_styling(parent)
+        # Apply theme to parent window from config
+        self._apply_theme()
+        
+        # Subscribe to theme change events
+        event_bus.subscribe("config_changed:theme", self._handle_theme_change)
         
         # Header with status
         header_frame = ttk.Frame(self, padding=10)
@@ -137,10 +142,14 @@ class MainApplication(ttk.Frame):
         title_label = ttk.Label(header_frame, text="Dual GPU Optimizer", style="Heading.TLabel")
         title_label.grid(row=0, column=0, sticky="w")
         
+        # Add theme toggle button to header
+        self.theme_toggle = theme.ThemeToggleButton(header_frame)
+        self.theme_toggle.grid(row=0, column=1, sticky="e", padx=10)
+        
         # Status aligned right
         self.status_var = tk.StringVar(value="Status: Ready")
         status_label = ttk.Label(header_frame, textvariable=self.status_var, 
-                                foreground=theme.THEME_DARK_PURPLE["success"])
+                                foreground=theme.current_theme["success"])
         status_label.grid(row=0, column=2, sticky="e")
         
         # Create a PanedWindow to allow resizing content area
@@ -194,14 +203,24 @@ class MainApplication(ttk.Frame):
         version_label.grid(row=0, column=2, sticky="e")
         
         # Add tokens-per-second meter to status bar
+        self.tps_meter = None
         try:
-            self.tps_meter = ttk.Meter(status_frame, metersize=50, amounttotal=100,
-                                      bootstyle="success", subtext="tok/s",
-                                      textright="", interactive=False)
-            self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
+            # Check if ttkbootstrap is available with Meter widget
+            import ttkbootstrap as ttk_bs
+            if hasattr(ttk_bs, 'Meter'):
+                self.tps_meter = ttk_bs.Meter(status_frame, metersize=50, amounttotal=100,
+                                          bootstyle="success", subtext="tok/s",
+                                          textright="", interactive=False)
+                self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
+            else:
+                # Fallback to regular label if Meter not available
+                self.tps_label = ttk.Label(status_frame, text="0 tok/s")
+                self.tps_label.grid(row=0, column=3, padx=10, sticky="e")
         except Exception as e:
             logger.warning(f"Could not create TPS meter: {e}")
-            self.tps_meter = None
+            # Fallback to regular label
+            self.tps_label = ttk.Label(status_frame, text="0 tok/s")
+            self.tps_label.grid(row=0, column=3, padx=10, sticky="e")
         
         # Start GPU detection
         self.detect_gpus()
@@ -218,8 +237,11 @@ class MainApplication(ttk.Frame):
             while True:
                 kind, val = self.chat_q.get_nowait()
                 self.chat_tab.handle_queue(kind, val)
-                if kind == "tps" and self.tps_meter is not None:
-                    self.tps_meter.configure(amountused=min(val, 100))
+                if kind == "tps":
+                    if self.tps_meter is not None:
+                        self.tps_meter.configure(amountused=min(val, 100))
+                    elif hasattr(self, 'tps_label'):
+                        self.tps_label.configure(text=f"{val:.1f} tok/s")
         except queue.Empty:
             pass
         self.after(40, self._poll)
@@ -297,6 +319,35 @@ class MainApplication(ttk.Frame):
             
         # Ensure all widgets are properly updated
         self.update_idletasks()
+    
+    def _apply_theme(self):
+        """Apply theme from configuration to the application"""
+        try:
+            # Load and apply theme from config
+            theme.load_theme_from_config(self.parent)
+            logger.info(f"Applied theme from config: {theme.current_theme}")
+            
+            # Update status
+            self.status_var.set("Theme applied from config")
+            # Reset status after 3 seconds
+            self.after(3000, lambda: self.status_var.set("Status: Ready"))
+        except Exception as e:
+            logger.error(f"Error applying theme: {e}")
+    
+    def _handle_theme_change(self, theme_name):
+        """Handle theme change events from other components
+        
+        Args:
+            theme_name: Name of the new theme
+        """
+        logger.info(f"Theme change event received: {theme_name}")
+        # Apply the theme to the root window
+        theme.set_theme(self.parent, theme_name)
+        
+        # Update status
+        self.status_var.set(f"Theme changed to {theme_name}")
+        # Reset status after 3 seconds
+        self.after(3000, lambda: self.status_var.set("Status: Ready"))
 
 
 def find_icon():
@@ -359,6 +410,13 @@ def find_icon():
 
 def run():
     """Main entry point for the application"""
+    # Import config service to ensure it's initialized
+    try:
+        from ..services.config_service import config_service
+        logger.info("Config service initialized")
+    except ImportError:
+        logger.warning("Could not import config_service, theme persistence may not work")
+    
     # Check if ttkthemes is available, use ThemedTk if it is
     try:
         from ttkthemes import ThemedTk
@@ -386,8 +444,9 @@ def run():
     except Exception as e:
         logger.warning(f"Failed to load application icon: {e}")
     
-    # Apply theme
-    theme.apply_theme(root)
+    # Apply initial minimal theme (full theme will be applied by MainApplication)
+    theme.fix_dpi_scaling(root)
+    theme.configure_fonts(root)
     
     # Create and configure main application
     app = MainApplication(root)
@@ -395,6 +454,19 @@ def run():
     
     # Handle window close
     def on_closing():
+        # Save theme preference if config service is available
+        try:
+            from ..services.config_service import config_service
+            current_theme_name = next(
+                (name for name, colors in theme.AVAILABLE_THEMES.items() 
+                 if colors == theme.current_theme),
+                "dark_purple"
+            )
+            config_service.set("theme", current_theme_name)
+            logger.info(f"Saved theme preference on exit: {current_theme_name}")
+        except (ImportError, Exception) as e:
+            logger.warning(f"Could not save theme preference on exit: {e}")
+        
         app.destroy()
         root.destroy()
     

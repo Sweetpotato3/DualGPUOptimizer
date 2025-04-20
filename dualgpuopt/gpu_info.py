@@ -45,10 +45,15 @@ def _query_nvidia() -> list[dict]:
             temp = pynvml.nvmlDeviceGetTemperature(h, pynvml.NVML_TEMPERATURE_GPU)
             power = pynvml.nvmlDeviceGetPowerUsage(h) / 1000.0  # Convert from mW to W
             
+            # Get GPU name with proper string handling
+            device_name = pynvml.nvmlDeviceGetName(h)
+            if isinstance(device_name, bytes):
+                device_name = device_name.decode('utf-8')
+            
             gpus.append(
                 {
                     "id": idx,
-                    "name": pynvml.nvmlDeviceGetName(h).decode(),
+                    "name": device_name,
                     "type": "nvidia",
                     "util": util.gpu,
                     "mem_total": mem.total // 1_048_576,

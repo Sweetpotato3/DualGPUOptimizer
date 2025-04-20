@@ -235,14 +235,20 @@ class DashboardView(ttk.Frame):
             return
             
         try:
-            mb_reclaimed, status = reset_vram()
+            # Call reset_vram and get ResetResult object
+            result = reset_vram()
             
-            if mb_reclaimed > 0:
-                messagebox.showinfo("VRAM Reset", f"Successfully reclaimed {mb_reclaimed} MB of VRAM")
-                self.status_label.config(text=f"Status: Reclaimed {mb_reclaimed} MB", foreground="green")
+            # Access the fields directly from the ResetResult object
+            if result.success:
+                if result.memory_reclaimed > 0:
+                    messagebox.showinfo("VRAM Reset", f"Successfully reclaimed {result.memory_reclaimed} MB of VRAM")
+                    self.status_label.config(text=f"Status: Reclaimed {result.memory_reclaimed} MB", foreground="green")
+                else:
+                    messagebox.showinfo("VRAM Reset", "No VRAM was reclaimed")
+                    self.status_label.config(text="Status: No VRAM reclaimed", foreground="orange")
             else:
-                messagebox.showinfo("VRAM Reset", "No VRAM was reclaimed")
-                self.status_label.config(text="Status: No VRAM reclaimed", foreground="orange")
+                messagebox.showwarning("VRAM Reset", f"Reset operation failed: {result.message}")
+                self.status_label.config(text="Status: Reset failed", foreground="red")
                 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to reset VRAM: {e}")
