@@ -1,84 +1,72 @@
 ---
-description: Provides guidance on AI model execution workflows, optimization strategies, and launch parameter configuration across multiple GPUs.
-globs: **/launcher.py,**/gpu_commands.py,**/runner.py,**/model_profiles.py,**/mpolicy.py
+description: Specifies the execution flow and orchestration of LLM models across multiple GPUs, including command generation and memory management.
+globs: **/run_optimizer.py,**/run_standalone.py,**/runner.py,**/optimizer.py,**/execution/*.py,**/launcher/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow encompasses several key subsystems:
+The model execution flow in DualGPUOptimizer centers around orchestrating LLM inference across multiple GPUs with specialized memory management and command generation.
 
-## Launch Parameter Generation
+Core Model Execution Components:
 
-The launcher system generates optimal launch parameters for both llama.cpp and vLLM frameworks:
-
+1. Command Generation System
+- Generates optimized commands for different ML frameworks:
 ```python
-def llama_command(model_path: str, ctx: int, split: str):
-    return f"./main -m {model_path} --gpu-split {split} --ctx-size {ctx}"
-
-def vllm_command(model_path: str, tp: int):
-    return f"--model {model_path} --tensor-parallel-size {tp}"
+llama.cpp: '--gpu-split 7:3 --n-gpu-layers 32' 
+vLLM: '--tensor-parallel-size 2 --max-gpu-memory 0.9'
 ```
+- Automatically determines optimal tensor parallel size based on GPU count
+- Calculates memory fraction values per GPU based on relative VRAM sizes
+- Custom environment variable generation for proper GPU allocation
 
-## GPU Resource Management
+2. Memory Management Flow
+- Per-model memory profiling:
+```python
+llama2-70b:
+  base_usage: 35GB
+  per_batch: 350MB
+  per_token: 18KB
+```
+- Dynamic memory projections for out-of-memory prevention
+- Multi-tier recovery system:
+  1. Cache clearing
+  2. Batch reduction
+  3. Memory offloading
+  4. Process termination
+- Context size validation against available VRAM
 
-The system actively manages GPU resources during model execution:
+3. Layer Distribution 
+- Balanced layer assignment across GPUs based on:
+  - Relative GPU memory capacity
+  - Layer compute intensity
+  - GPU bandwidth characteristics
+- Custom heuristics for MoE model layer distribution
+- Automatic rebalancing on memory pressure
 
-1. Dynamic GPU Split Calculation
-- Analyzes available GPU memory
-- Determines optimal tensor split ratios
-- Configures memory pressure thresholds
-- Maintains reserves for system overhead
+4. Execution Orchestration
+- Framework-specific process launching with optimized parameters
+- Non-blocking output handling for model processes
+- GPU resource monitoring and throttling
+- Process lifecycle management with graceful termination
 
-2. Layer Distribution
-- Profiles layer performance on each GPU
-- Creates optimized device maps for model distribution
-- Handles load balancing across devices
-- Maintains monitoring of layer execution stats
+5. Resource Allocation Flow
+- Automatic GPU capability detection
+- Memory split ratio calculations based on free VRAM
+- Dynamic adjustment of tensor parallel parameters
+- Framework-specific optimization parameters
 
-## Recovery System
+Key Domain Rules:
+- Minimum 2GB free memory required per GPU
+- Context size must not exceed available VRAM
+- Tensor parallel size limited by GPU count
+- MoE models require special layer distribution
 
-1. OOM Prevention
-- Implements tiered recovery approaches:
-  * Cache clearing
-  * Batch size reduction
-  * Memory offloading
-  * Process termination
-
-2. Memory Pressure Monitoring
-- Configurable alert levels (WARNING/CRITICAL/EMERGENCY)
-- Memory usage projection system
-- Rolling history analysis
-- Growth rate modeling with safety factors
-
-## Smart Batch Processing
-
-The batch processing system optimizes workload distribution:
-
-1. Length-aware batch scheduling
-- Groups similar length sequences
-- Adapts batch sizes based on GPU capacity
-- Implements backpressure for OOM prevention
-- Gradual batch size recovery after stability
-
-2. Token Management
-- Maximum token sum per batch (16384)
-- Length threshold-based splitting
-- Backpressure scaling (25-95%)
-- 5-batch stability window
-
-## Framework Integration
-
-1. Mixed Precision Policies
-- Specialized handling for LayerNorm operations
-- Custom autocast context management
-- Framework-specific dtype configurations
-
-2. Model-Specific Optimizations
-- Parameter detection from model names
-- Architecture-based context size calculation
-- Automatic batch size optimization
-- Memory overhead calculation
+File Paths:
+- dualgpuopt/optimizer.py (command/memory optimization)
+- dualgpuopt/runner.py (process management)
+- dualgpuopt/services/gpu_commands.py (command generation)
+- dualgpuopt/launcher/launch_controller.py (execution orchestration)
 
 $END$

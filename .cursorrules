@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level overview documentation focused on core business logic and domain-specific implementations for GPU optimization and machine learning model deployment systems, particularly those involving multi-GPU setups and model inference optimization.
-globs: *.py,*/dualgpuopt/*.py
+description: Creates a high-level overview of dual-GPU optimization systems focused on machine learning model deployment, specifically when reviewing source code that handles GPU resource management, model memory optimization, and multi-GPU coordination
+globs: *.py,*.pyw
 alwaysApply: false
 ---
 
@@ -154,44 +154,38 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized multi-GPU optimization for large language model deployment. The core business logic is organized into several key areas:
+The DualGPUOptimizer project implements specialized logic for coordinating large language model inference across dual GPU setups. The system has several key architectural components:
 
-## GPU Resource Management
-Core implementation in `dualgpuopt/gpu_info.py` and `dualgpuopt/memory_monitor.py`:
-- GPU profiling and capability detection
-- Memory pressure monitoring with configurable thresholds 
-- Model-specific memory usage profiles for common LLMs
-- Automated recovery strategies for out-of-memory conditions
+## Core GPU Management
+The GPU resource manager optimizes memory allocation and tensor splitting across two GPUs, implemented in:
+- `dualgpuopt/gpu_info.py`: Handles real-time GPU metrics and telemetry
+- `dualgpuopt/optimizer.py`: Calculates optimal memory splits and tensor fractions
+- `dualgpuopt/layer_balance.py`: Distributes model layers across GPUs based on performance profiling
 
-## Model Launch Optimization
-Implemented in `dualgpuopt/gui/launcher.py` and `dualgpuopt/layer_balance.py`:
-- Dynamic GPU memory allocation based on model architecture
-- Intelligent layer distribution across multiple GPUs
-- Framework-specific launch parameter optimization
-- Automatic batch size calculation for maximum throughput
+## Memory Optimization
+Memory management logic specifically designed for LLM inference:
+- `dualgpuopt/mpolicy.py`: Mixed precision policies and FP32 preservation for critical ops
+- `dualgpuopt/ctx_size.py`: Context length optimization based on model architecture and GPU memory
+- `dualgpuopt/batch/smart_batch.py`: Length-aware batch scheduling with OOM prevention
+
+## Model Deployment
+Model-specific optimization and launch coordination:
+- `dualgpuopt/model_profiles.py`: Memory requirement calculations for different model architectures
+- `dualgpuopt/commands/gpu_commands.py`: Framework-specific command generation
+- `dualgpuopt/gui/launcher/launch_controller.py`: Process lifecycle management
 
 ## Telemetry and Monitoring
-Handled by `dualgpuopt/telemetry.py`:
-- Real-time GPU metrics collection
-- Memory usage projection and trend analysis
-- PCIe bandwidth monitoring
-- Temperature and power consumption tracking
+Real-time performance tracking and optimization:
+- `dualgpuopt/telemetry.py`: GPU metrics collection and event publishing
+- `dualgpuopt/metrics.py`: Model-specific performance tracking 
+- `dualgpuopt/services/event_bus.py`: Event-driven updates for GPU state changes
 
-## Model Deployment Configuration 
-Core logic in `dualgpuopt/optimizer.py`:
-- Model architecture parameter detection
-- GPU split ratio calculation
-- Memory reservation optimization
-- Framework-specific command generation
+## State Management
+Centralized state handling for GPU optimization:
+- `dualgpuopt/services/state_service.py`: Application state with GPU configuration
+- `dualgpuopt/services/config_service.py`: Persistent GPU and model settings
 
-## Batch Processing System
-Implemented in `dualgpuopt/batch/smart_batch.py`:
-- Length-aware batch scheduling
-- Dynamic batch size optimization
-- Token-based workload distribution
-- Automatic recovery from memory pressure
-
-The system integrates these components to provide automated optimization of LLM deployment across multiple GPUs, with specialized handling for different model architectures and framework requirements.
+The system integrates these components to optimize LLM inference on dual GPU setups through intelligent memory allocation, layer distribution, and dynamic batch size adjustment based on model requirements and hardware constraints.
 
 $END$
 END SPECIFICATION

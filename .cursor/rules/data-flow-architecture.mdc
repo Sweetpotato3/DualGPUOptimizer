@@ -1,6 +1,6 @@
 ---
-description: Describes data flow patterns and architecture for dual GPU optimization system with focus on resource management and model inference
-globs: **/*.py,**/dualgpuopt/**
+description: Documents data flow patterns between components for GPU resource optimization, command generation, and metrics monitoring
+globs: **/*.py,**/services/**,**/commands/**,**/gui/**
 alwaysApply: false
 ---
 
@@ -9,85 +9,62 @@ alwaysApply: false
 
 ## Core Data Flow Components
 
-### Model Parameter Data Flow
-1. Initial parameter detection from model filenames:
-- Architecture parameters extracted (layers, heads, dimensions) 
-- Quantization type identified
-- Framework type determined (llama.cpp vs vLLM)
-
-2. Parameter transformation:
-```
-Model Parameters -> Optimization Parameters -> Launch Configuration
-```
-- Raw parameters converted to device-specific settings
-- Memory requirements calculated per device
-- Launch parameters generated based on framework
-
 ### GPU Resource Data Flow
-1. Primary telemetry collection:
-- Memory utilization metrics
-- Compute utilization data  
-- Temperature/power data
-- PCIe bandwidth metrics
+- GPU memory and utilization metrics flow from NVML/GPU drivers through telemetry service
+- Metrics processed through middleware pipeline before reaching UI components and event bus
+- `gpu_info.py` feeds real-time GPU data to optimization services and dashboard displays
+- Periodic polling ensures metrics stay updated with configurable intervals (500ms-2000ms)
 
-2. Resource optimization pipeline:
-```
-Raw Metrics -> Analysis -> Split Ratios -> Device Maps
-```
-- Real-time metrics processed through profiling system
-- Layer performance data analyzed
-- Optimal split ratios calculated
-- Device maps generated for model deployment
+### Optimization Data Pipeline
+- Model configuration flows from UI inputs to parameter resolver service
+- Parameter resolver generates optimized launch configurations 
+- Launch configurations flow to command generator for framework-specific commands
+- Commands flow back to UI for display and execution
 
-### Optimization Metrics Flow
-1. Performance data collection:
-- Layer execution times
-- Memory pressure metrics
-- Batch processing rates
-- Temperature thresholds
+### Monitoring Metrics Flow
+- GPU metrics flow from telemetry service to event bus subscribers
+- Event bus distributes metrics to:
+  - Dashboard for visualization
+  - Logger for persistence
+  - Optimizer for dynamic adjustments
+- Status updates flow through event system to notify UI components
 
-2. Optimization feedback loop:
-```
-Metrics -> Adjustments -> New Parameters -> Performance Validation
-```
-- Performance metrics trigger automatic adjustments
-- New parameters propagated to launch system
-- Results validated against performance targets
+### State Management Flow
+- Application state managed by centralized state service
+- State changes propagate through event bus to registered components
+- UI components subscribe to relevant state updates
+- Settings persist through configuration service
 
-## Key Integration Points
+## Key Data Flow Paths
 
-### Framework Integration
-1. llama.cpp integration:
+1. GPU Resource Collection Path:
 ```
-Split Configuration -> GPU Commands -> Launch Parameters
+NVML/Drivers -> gpu_info.py -> telemetry.py -> event_bus.py -> Subscribers
 ```
-- GPU split strings generated
-- Layer allocation determined
-- Context size parameters set
 
-2. vLLM integration:
+2. Optimization Configuration Path:
 ```
-Tensor Config -> Parallel Setup -> Launch Config
+UI Input -> parameter_resolver.py -> optimizer.py -> command_generator.py -> UI Display
 ```
-- Tensor parallelism degree set
-- GPU device mapping created
-- Memory utilization parameters configured
 
-### Monitoring Pipeline
-1. System metrics flow:
+3. Metrics Monitoring Path:
 ```
-Raw GPU Data -> Event Bus -> UI Components
+telemetry.py -> event_bus.py -> {dashboard.py, logger.py, optimizer.py}
 ```
-- GPU metrics collected via NVML
-- Data processed through event system
-- Metrics propagated to visualization components
 
-2. Alert propagation:
-```
-Thresholds -> Event Generation -> Handler Execution
-```
-- Performance thresholds monitored
-- Events generated for violations
-- Handlers execute corrective actions
+## Critical Files
+
+### Data Collection
+- `dualgpuopt/gpu_info.py`: GPU resource data collection
+- `dualgpuopt/telemetry.py`: Telemetry processing pipeline
+
+### Data Distribution
+- `dualgpuopt/services/event_bus.py`: Event-based data distribution
+- `dualgpuopt/services/state_service.py`: State management 
+
+### Data Consumption
+- `dualgpuopt/gui/dashboard.py`: Metrics visualization
+- `dualgpuopt/optimizer.py`: Resource optimization
+- `dualgpuopt/commands/gpu_commands.py`: Command generation
 
 $END$

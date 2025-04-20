@@ -1,62 +1,68 @@
 ---
-description: GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies from optimizer.py and gpu_info.py
-globs: 
+description: GPU optimization algorithms and memory management strategies for dual GPU setups with tensor parallel processing
+globs: **/optimizer.py,**/gpu_info.py,**/gpu_models.py,**/layer_balance.py,**/gpu_commands.py,**/memory_monitor.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-### Memory Distribution Algorithm (optimizer.py)
-Calculates optimal GPU memory splits for dual GPU setups based on:
-- Relative GPU memory capacities
-- Model architecture requirements
-- KV cache overhead
-- Safety margins (10% buffer)
-- Tensor parallel slicing ratios
+The gpu-optimization-algorithms aspect focuses on specialized algorithms for managing GPU memory distribution and tensor parallel processing across dual GPU setups.
 
-Core business logic splits model across GPUs using:
+## Core Memory Management System (memory_monitor.py)
+
+GPU Memory Optimization with pre-defined model profiles:
 ```python
-def tensor_split(gpus):
-    total = sum(g.mem_free for g in gpus)
-    return [g.mem_free/total for g in gpus]
+MODEL_PROFILES = {
+  "llama2-70b": {
+    "base_usage": 35GB,
+    "per_batch": 350MB,
+    "per_token": 18KB
+  },
+  "mixtral-8x7b": {
+    "base_usage": 25GB, 
+    "per_batch": 200MB,
+    "per_token": 12KB
+  }
+}
 ```
 
-### Layer Balancing System (layer_balance.py)
-- Profiles each transformer layer's performance on different GPUs
-- Uses weighted profiling with short (64 token) and long (1024 token) sequences 
-- Allocates layers to GPUs based on empirical performance data
-- Optimizes for contiguous layer blocks to minimize cross-GPU communication
+Implements multi-tiered OOM prevention:
+1. Cache clearing
+2. Batch size reduction
+3. Memory offloading
+4. Process termination 
 
-### Batch Size Optimization (batch/smart_batch.py)
-- Dynamic batch sizing based on:
-  - Available GPU memory
-  - Model architecture
-  - Input sequence lengths
-  - Current memory pressure
-- Implements backpressure when approaching memory limits
-- Recovery logic to gradually increase batch size after OOM events
+## Layer Distribution Algorithm (layer_balance.py)
 
-### Memory Monitoring (memory_monitor.py)
-- Multi-tier alert system:
-  - WARNING: 80% memory usage
-  - CRITICAL: 90% memory usage  
-  - EMERGENCY: 95% memory usage
-- Memory usage projection using rolling history
-- Model-specific memory profiles for common architectures
-- Proactive OOM prevention with tiered recovery:
-  1. Cache clearing
-  2. Batch reduction
-  3. Memory offloading
-  4. Process termination
+Optimizes transformer layer distribution across GPUs:
+- Profiles layer performance using short/long sequences
+- Weighted profiling (20% short, 80% long sequences)
+- Prioritizes faster GPU for compute-intensive layers
+- Respects per-GPU VRAM quotas
+- Creates contiguous layer blocks when possible
 
-### GPU Information Tracking (gpu_info.py)
-- Real-time monitoring of:
-  - Memory utilization 
-  - Power consumption
-  - Temperature
-  - PCIe bandwidth
-- Provides mock data generation for testing
-- Correlates metrics for realistic simulation
+## Tensor Parallelism (optimizer.py)
+
+Calculates optimal tensor parallel splits:
+```python
+def calculate_split_ratio(gpu1_mem, gpu2_mem):
+  total = gpu1_mem + gpu2_mem
+  ratio1 = gpu1_mem/total
+  ratio2 = gpu2_mem/total
+  return (ratio1, ratio2)
+```
+
+Memory allocation strategies:
+- Proportional splits based on relative GPU memory
+- Dynamic adjustment for model size
+- Hardware-specific overhead calculations
+- 20% memory safety buffer
+
+## Key Files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py 
+- dualgpuopt/memory_monitor.py
+- dualgpuopt/gpu_info.py
 
 $END$

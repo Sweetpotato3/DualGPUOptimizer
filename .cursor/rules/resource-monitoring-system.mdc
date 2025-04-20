@@ -1,63 +1,72 @@
 ---
-description: Provides implementation details for GPU resource monitoring, telemetry collection, and performance tracking across multi-GPU systems
-globs: **/telemetry.py,**/gpu_info.py,**/metrics.py,**/tray.py,**/dashboard.py
+description: Rule for analyzing GPU resource monitoring and telemetry collection systems in dual GPU optimization applications
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/*monitor*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-GPU Resource Monitoring System for ML workloads with specialized telemetry collection, processing and alerting capabilities.
+The resource monitoring system implements specialized GPU telemetry collection and performance tracking through several key components:
 
-Core Components:
+## Telemetry Collection Engine
+- Located in `dual_gpu_optimizer/dualgpuopt/telemetry.py`
+- Implements real-time GPU metrics collection:
+  - GPU utilization percentage
+  - Memory usage tracking (used/total VRAM)
+  - Temperature monitoring with thresholds
+  - Power consumption tracking
+  - PCIe bandwidth monitoring (RX/TX)
+  - Fan speed monitoring
+- Uses NVML bindings for direct GPU metric access
+- Falls back to mock data generation for testing environments
 
-1. Telemetry Collection Pipeline
-- Streams real-time GPU metrics including:
-  * Memory utilization (total/used/free)
-  * PCIe bandwidth (RX/TX rates)
-  * Power consumption and thermal status
-  * Clock speeds (graphics/memory)
-  * GPU and memory utilization percentages
-- Implements middleware for metrics processing:
-  * EventBusMiddleware for event distribution
-  * LoggingMiddleware for debug information
-- Provides fallback to mock data generation when hardware access fails
+## System Tray Integration 
+- Located in `dual_gpu_optimizer/dualgpuopt/tray.py`
+- Provides real-time GPU status in system tray with:
+  - GPU utilization indicators 
+  - Temperature alerts
+  - Memory pressure warnings
+  - Quick access to optimization controls
 
-2. Performance Monitoring
-- Custom threaded metrics collection with configurable intervals:
-  * 500ms for critical metrics  
-  * 1000ms for standard metrics
-  * 2000ms for background metrics
-- Maintains 60-point historical data buffer for trend analysis
-- Color-coded GPU activity visualization with distinct colors per GPU
+## Resource Alerting System
+- Implements tiered alert levels for GPU resources:
+  - NORMAL: Standard operating conditions
+  - WARNING: Approaching resource limits
+  - CRITICAL: Resource constraints detected
+  - EMERGENCY: Immediate intervention required
+- Configurable thresholds for:
+  - Memory utilization percentage
+  - Temperature limits
+  - Power consumption
+  - PCIe bandwidth saturation
 
-3. Memory Management
-- Implements multi-tier memory alert system:
-  * WARNING (80% utilization)
-  * CRITICAL (90% utilization)
-  * EMERGENCY (95% utilization)
-- Model-specific memory profiles with:
-  * Base memory requirements
-  * Per-batch memory scaling
-  * Growth rate projections
-- Predictive memory consumption modeling using rolling 100-point history
+## Memory Monitoring 
+- Located in `dualgpuopt/memory_monitor.py`
+- Model-specific memory tracking with profiles:
+```python
+llama2-70b:
+  base_usage: 35GB
+  per_batch_usage: 350MB
+  per_token_usage: 18KB
 
-4. Alert Mechanism
-- Real-time threshold monitoring for:
-  * Temperature caps with 100°C limit
-  * Power usage against GPU-specific maximums  
-  * PCIe bandwidth auto-scaling (KB/s-GB/s)
-  * Memory pressure detection
-- Implements recovery strategies:
+mixtral-8x7b:
+  base_usage: 25GB
+  per_batch_usage: 200MB
+  per_token_usage: 12KB
+```
+- OOM prevention with recovery actions:
   1. Cache clearing
   2. Batch size reduction
   3. Memory offloading
   4. Process termination
 
-File Paths:
-- dualgpuopt/telemetry.py: Core telemetry collection
-- dualgpuopt/memory_monitor.py: Memory management system
-- dualgpuopt/gui/dashboard.py: Monitoring visualization
-- dualgpuopt/tray.py: System tray integration
+## Idle Detection System
+- Monitors GPU utilization patterns
+- Configurable idle parameters:
+  - Utilization threshold percentage
+  - Required idle duration
+- Event-based alert mechanism
+- Automated power management responses
 
 $END$

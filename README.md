@@ -113,8 +113,8 @@ If PyTorch is not detected, the application will attempt to install the appropri
 Future development priorities:
 
 1. **Module Refactoring**: Continuing our refactoring initiative for modules >500 lines:
-   - `memory_monitor.py` (769 lines) - In progress
-   - `settings.py` (722 lines) - Planned
+   - ~~`memory_monitor.py` (769 lines) - In progress~~ ✅ Completed
+   - `settings.py` (722 lines) - In progress
    - `error_handler.py` (558 lines) - Planned
    - `theme.py` (549 lines) - Planned
 
