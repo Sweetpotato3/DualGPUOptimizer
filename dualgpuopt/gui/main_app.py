@@ -66,15 +66,49 @@ logging.basicConfig(
 logger = logging.getLogger("DualGPUOpt.MainApp")
 logger.info(f"Starting application with log file at: {log_file}")
 
+# Import UI compatibility modules first to handle missing dependencies
+# This needs to be before other imports to ensure proper initialization
+try:
+    from ..ui.compat import get_themed_tk, get_meter_widget, ScrolledFrame
+    from ..ui.chat_compat import get_chat_tab
+    logger.info("UI compatibility modules loaded successfully")
+except ImportError as e:
+    logger.error(f"Failed to import UI compatibility modules: {e}")
+    # Set up minimal fallbacks if even the compatibility modules fail
+    from tkinter import ttk
+    from tkinter import Tk as get_themed_tk
+    def get_meter_widget(parent, **kwargs):
+        frame = ttk.Frame(parent)
+        ttk.Label(frame, text="0").pack()
+        return frame
+    ScrolledFrame = ttk.Frame
+    def get_chat_tab(master, out_q):
+        frame = ttk.Frame(master)
+        ttk.Label(frame, text="Chat not available").pack()
+        frame.handle_queue = lambda *args: None
+        return frame
+
 # Import our components
-from . import dashboard
-from . import optimizer_tab
-from . import launcher
-from . import theme
-from ..telemetry import get_telemetry_service
-from ..chat_tab import ChatTab  # Add import for the ChatTab
-from .theme_selector import ThemeSelector  # Import theme selector
-from ..services.event_service import event_bus  # Import event bus
+try:
+    from . import dashboard
+    from . import optimizer_tab
+    from . import launcher
+    from . import theme
+    from ..telemetry import get_telemetry_service
+    # We don't import ChatTab directly anymore - using get_chat_tab instead
+    from .theme_selector import ThemeSelector  # Import theme selector
+    try:
+        from ..services.event_service import event_bus  # Import event bus
+    except ImportError:
+        # Create a minimal event bus if the real one isn't available
+        logger.warning("Could not import event_bus, creating minimal implementation")
+        class MinimalEventBus:
+            def subscribe(self, *args, **kwargs): pass
+            def publish(self, *args, **kwargs): pass
+        event_bus = MinimalEventBus()
+except ImportError as e:
+    logger.error(f"Failed to import UI components: {e}")
+    sys.exit(1)
 
 # Check for advanced feature dependencies
 try:
@@ -106,8 +140,20 @@ class MainApplication(ttk.Frame):
         super().__init__(parent, padding=0)
         
         # Start telemetry service
-        self.telemetry = get_telemetry_service()
-        self.telemetry.start()
+        try:
+            self.telemetry = get_telemetry_service()
+            self.telemetry.start()
+        except Exception as e:
+            logger.error(f"Failed to start telemetry service: {e}")
+            # Create a minimal telemetry service that won't break the app
+            class MinimalTelemetry:
+                def __init__(self):
+                    self.running = False
+                def start(self): self.running = True
+                def stop(self): self.running = False
+                def get_metrics(self): return {}
+            self.telemetry = MinimalTelemetry()
+            self.telemetry.start()
         
         # Create chat queue for inter-thread communication
         self.chat_q = queue.Queue()
@@ -159,29 +205,43 @@ class MainApplication(ttk.Frame):
         # Create a container frame for the notebook
         self.notebook_container = ttk.Frame(self.paned)
         self.paned.add(self.notebook_container, weight=85)
-
-
-
-
-
+        
         # Create notebook for tabs with proper padding and expansion
         self.notebook = ttk.Notebook(self.notebook_container)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Add dashboard tab
-        self.dashboard_tab = dashboard.DashboardView(self.notebook)
-        self.notebook.add(self.dashboard_tab, text="Dashboard")
+        try:
+            self.dashboard_tab = dashboard.DashboardView(self.notebook)
+            self.notebook.add(self.dashboard_tab, text="Dashboard")
+        except Exception as e:
+            logger.error(f"Error creating dashboard tab: {e}")
+            self.dashboard_tab = ttk.Frame(self.notebook)
+            ttk.Label(self.dashboard_tab, text="Dashboard unavailable").pack(pady=20)
+            self.notebook.add(self.dashboard_tab, text="Dashboard")
         
         # Add optimizer tab
-        self.optimizer_tab = optimizer_tab.OptimizerTab(self.notebook)
-        self.notebook.add(self.optimizer_tab, text="Optimizer")
+        try:
+            self.optimizer_tab = optimizer_tab.OptimizerTab(self.notebook)
+            self.notebook.add(self.optimizer_tab, text="Optimizer")
+        except Exception as e:
+            logger.error(f"Error creating optimizer tab: {e}")
+            self.optimizer_tab = ttk.Frame(self.notebook)
+            ttk.Label(self.optimizer_tab, text="Optimizer unavailable").pack(pady=20)
+            self.notebook.add(self.optimizer_tab, text="Optimizer")
         
         # Add launcher tab
-        self.launcher_tab = launcher.LauncherTab(self.notebook)
-        self.notebook.add(self.launcher_tab, text="Launcher")
+        try:
+            self.launcher_tab = launcher.LauncherTab(self.notebook)
+            self.notebook.add(self.launcher_tab, text="Launcher")
+        except Exception as e:
+            logger.error(f"Error creating launcher tab: {e}")
+            self.launcher_tab = ttk.Frame(self.notebook)
+            ttk.Label(self.launcher_tab, text="Launcher unavailable").pack(pady=20)
+            self.notebook.add(self.launcher_tab, text="Launcher")
         
-        # Add chat tab
-        self.chat_tab = ChatTab(self.notebook, self.chat_q)
+        # Add chat tab using our compatibility function
+        self.chat_tab = get_chat_tab(self.notebook, self.chat_q)
         self.notebook.add(self.chat_tab, text="Chat")
         
         # Create bottom container for status and metrics
@@ -202,25 +262,11 @@ class MainApplication(ttk.Frame):
         version_label = ttk.Label(status_frame, text="v0.2.0")
         version_label.grid(row=0, column=2, sticky="e")
         
-        # Add tokens-per-second meter to status bar
-        self.tps_meter = None
-        try:
-            # Check if ttkbootstrap is available with Meter widget
-            import ttkbootstrap as ttk_bs
-            if hasattr(ttk_bs, 'Meter'):
-                self.tps_meter = ttk_bs.Meter(status_frame, metersize=50, amounttotal=100,
-                                          bootstyle="success", subtext="tok/s",
-                                          textright="", interactive=False)
-                self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
-            else:
-                # Fallback to regular label if Meter not available
-                self.tps_label = ttk.Label(status_frame, text="0 tok/s")
-                self.tps_label.grid(row=0, column=3, padx=10, sticky="e")
-        except Exception as e:
-            logger.warning(f"Could not create TPS meter: {e}")
-            # Fallback to regular label
-            self.tps_label = ttk.Label(status_frame, text="0 tok/s")
-            self.tps_label.grid(row=0, column=3, padx=10, sticky="e")
+        # Add tokens-per-second meter to status bar using our compatibility function
+        self.tps_meter = get_meter_widget(status_frame, metersize=50, amounttotal=100,
+                                      bootstyle="success", subtext="tok/s",
+                                      textright="", interactive=False)
+        self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
         
         # Start GPU detection
         self.detect_gpus()
@@ -238,13 +284,17 @@ class MainApplication(ttk.Frame):
                 kind, val = self.chat_q.get_nowait()
                 self.chat_tab.handle_queue(kind, val)
                 if kind == "tps":
-                    if self.tps_meter is not None:
+                    try:
                         self.tps_meter.configure(amountused=min(val, 100))
-                    elif hasattr(self, 'tps_label'):
-                        self.tps_label.configure(text=f"{val:.1f} tok/s")
+                    except (AttributeError, Exception) as e:
+                        logger.debug(f"TPS meter update failed: {e}")
         except queue.Empty:
             pass
-        self.after(40, self._poll)
+        except Exception as e:
+            logger.error(f"Error in message polling: {e}")
+        finally:
+            # Continue polling regardless of errors
+            self.after(40, self._poll)
     
     def detect_gpus(self):
         """Detect available GPUs"""
@@ -417,13 +467,8 @@ def run():
     except ImportError:
         logger.warning("Could not import config_service, theme persistence may not work")
     
-    # Check if ttkthemes is available, use ThemedTk if it is
-    try:
-        from ttkthemes import ThemedTk
-        root = ThemedTk(theme="equilux")
-    except ImportError:
-        logger.info("ttkthemes not available, using standard Tk")
-        root = tk.Tk()
+    # Use our compatibility function to get the best available themed Tk window
+    root = get_themed_tk()
     
     root.title("DualGPUOptimizer")
     root.geometry("800x600")

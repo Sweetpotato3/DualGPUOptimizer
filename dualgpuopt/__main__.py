@@ -42,16 +42,57 @@ def main():
         # Enable mock mode if requested
         if args.mock:
             try:
-                # Try both the new and old GPU module structure
-                try:
-                    from dualgpuopt.gpu import set_mock_mode
-                except ImportError:
-                    from dualgpuopt.gpu_info import set_mock_mode
+                # Try different module locations for the set_mock_mode function
+                mock_mode_set = False
+                exceptions = []
                 
-                set_mock_mode(True)
-                logger.info("Mock GPU mode enabled")
-            except ImportError:
-                logger.warning("Could not enable mock GPU mode")
+                # Try the compatibility layer
+                try:
+                    from dualgpuopt.gpu.compat import set_mock_mode
+                    set_mock_mode(True)
+                    mock_mode_set = True
+                    logger.info("Mock GPU mode enabled via compatibility layer")
+                except ImportError as e:
+                    exceptions.append(f"Error importing from compatibility layer: {e}")
+                
+                # Try the refactored module structure
+                if not mock_mode_set:
+                    try:
+                        from dualgpuopt.gpu.mock import set_mock_mode
+                        set_mock_mode(True)
+                        mock_mode_set = True
+                        logger.info("Mock GPU mode enabled via refactored module")
+                    except ImportError as e:
+                        exceptions.append(f"Error importing from refactored module: {e}")
+                
+                # Try the legacy module structure
+                if not mock_mode_set:
+                    try:
+                        from dualgpuopt.gpu import set_mock_mode
+                        set_mock_mode(True)
+                        mock_mode_set = True
+                        logger.info("Mock GPU mode enabled via module init")
+                    except ImportError as e:
+                        exceptions.append(f"Error importing from module init: {e}")
+                
+                # Lastly try the gpu_info module
+                if not mock_mode_set:
+                    try:
+                        from dualgpuopt.gpu_info import set_mock_mode
+                        set_mock_mode(True)
+                        mock_mode_set = True
+                        logger.info("Mock GPU mode enabled via legacy module")
+                    except ImportError as e:
+                        exceptions.append(f"Error importing from legacy module: {e}")
+                
+                # If we still couldn't set mock mode, log all the errors
+                if not mock_mode_set:
+                    logger.warning("Could not enable mock GPU mode. Errors:")
+                    for err in exceptions:
+                        logger.warning(f"  - {err}")
+                    logger.warning("Continuing with real GPU detection...")
+            except Exception as e:
+                logger.warning(f"Could not enable mock GPU mode: {e}")
         
         # Handle CLI mode
         if args.cli:
@@ -82,48 +123,92 @@ def main():
         else:
             logger.info("Starting GUI application")
             
-            # Check for required dependencies before importing GUI
+            # Check for tkinter first
             try:
                 import tkinter as tk
-                # Try to import ttkbootstrap - not required but preferred
-                try:
-                    import ttkbootstrap
-                    logger.info("ttkbootstrap available for enhanced UI")
-                except ImportError:
-                    logger.warning("ttkbootstrap not found - falling back to standard theme")
+                logger.debug("tkinter is available")
+            except ImportError:
+                logger.error("tkinter is not installed - required for GUI mode")
+                logger.error("Please install tkinter (usually available in system packages)")
+                sys.exit(1)
+            
+            # Try to use our compatibility UI module first
+            try:
+                from dualgpuopt.ui import get_themed_tk
+                logger.debug("UI compatibility layer loaded")
                 
-                # Import and run modern GUI
+                # Try to run the application using our compatible run_app
                 try:
                     from dualgpuopt.gui import run_app
                     run_app()
+                    return
                 except ImportError as e:
                     logger.error(f"Failed to import GUI module: {e}")
-                    # Try fallback to basic GUI
-                    try:
-                        # Try multiple possible module paths for backward compatibility
-                        try:
-                            from dualgpuopt.gui.main_app import run
-                        except ImportError:
-                            from dualgpuopt.gui.main_application import run
-                            
-                        logger.info("Using fallback GUI")
-                        run()
-                    except ImportError as e2:
-                        logger.error(f"Failed to import fallback GUI module: {e2}")
-                        
-                        # Last resort fallback - try simple UI
-                        try:
-                            from dualgpuopt.ui.simple import run_simple_ui
-                            logger.info("Using simple UI fallback")
-                            run_simple_ui()
-                        except ImportError:
-                            logger.error("No compatible UI modules found")
-                            sys.exit(1)
-                        
             except ImportError as e:
-                logger.error(f"Failed to initialize GUI: {e}")
-                logger.error("Make sure tkinter is installed")
-                sys.exit(1)
+                logger.warning(f"UI compatibility layer not available: {e}")
+            
+            # Fallback to traditional imports if compatibility layer fails
+            logger.info("Trying alternative GUI initialization methods...")
+            
+            # Try to import ttkbootstrap for enhanced UI
+            try:
+                import ttkbootstrap
+                logger.info("ttkbootstrap available for enhanced UI")
+            except ImportError:
+                logger.warning("ttkbootstrap not found - falling back to standard theme")
+            
+            # Import and run GUI - try multiple paths for backward compatibility
+            gui_errors = []
+            
+            # Attempt 1: Modern GUI via run_app
+            try:
+                from dualgpuopt.gui import run_app
+                run_app()
+                return
+            except ImportError as e:
+                gui_errors.append(f"Failed to import modern GUI module: {e}")
+            except Exception as e:
+                gui_errors.append(f"Error running modern GUI: {e}")
+            
+            # Attempt 2: Legacy main_app.run
+            try:
+                from dualgpuopt.gui.main_app import run
+                logger.info("Using legacy GUI via main_app")
+                run()
+                return
+            except ImportError as e:
+                gui_errors.append(f"Failed to import main_app: {e}")
+            except Exception as e:
+                gui_errors.append(f"Error running main_app: {e}")
+            
+            # Attempt 3: Legacy main_application.run
+            try:
+                from dualgpuopt.gui.main_application import run
+                logger.info("Using legacy GUI via main_application")
+                run()
+                return
+            except ImportError as e:
+                gui_errors.append(f"Failed to import main_application: {e}")
+            except Exception as e:
+                gui_errors.append(f"Error running main_application: {e}")
+            
+            # Attempt 4: Simple UI
+            try:
+                from dualgpuopt.ui.simple import run_simple_ui
+                logger.info("Using simple UI fallback")
+                run_simple_ui()
+                return
+            except ImportError as e:
+                gui_errors.append(f"Failed to import simple UI: {e}")
+            except Exception as e:
+                gui_errors.append(f"Error running simple UI: {e}")
+            
+            # If we get here, all GUI options failed
+            logger.error("All GUI initialization attempts failed:")
+            for err in gui_errors:
+                logger.error(f"  - {err}")
+            logger.error("No compatible UI modules found")
+            sys.exit(1)
     
     except Exception as e:
         logger.error(f"Unhandled exception: {e}", exc_info=True)
