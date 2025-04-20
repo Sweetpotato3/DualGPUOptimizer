@@ -27,6 +27,8 @@ def parse_args():
     parser.add_argument("-e", "--export", help="Export environment variables to file")
     parser.add_argument("-v", "--verbose", action="store_true", help="Enable verbose logging")
     parser.add_argument("--mock", action="store_true", help="Enable mock GPU mode for testing")
+    parser.add_argument("--check-deps", action="store_true", help="Check dependencies and exit")
+    parser.add_argument("--install-deps", action="store_true", help="Install missing dependencies")
     return parser.parse_args()
 
 def main():
@@ -39,58 +41,112 @@ def main():
         logger.debug("Verbose logging enabled")
     
     try:
+        # Import dependency_manager first - will be the same regardless of other imports
+        try:
+            from dualgpuopt.dependency_manager import (
+                initialize_dependency_status, 
+                verify_core_dependencies,
+                print_dependency_status,
+                get_missing_dependencies,
+                install_dependencies,
+                DynamicImporter
+            )
+            logger.debug("Dependency manager imported successfully")
+            
+            # Initialize dependency state
+            initialize_dependency_status()
+            
+            # Handle dependency checking and installation if requested
+            if args.check_deps:
+                print_dependency_status(include_errors=args.verbose)
+                return
+                
+            if args.install_deps:
+                missing = get_missing_dependencies()
+                if missing:
+                    logger.info("Installing missing dependencies...")
+                    success = install_dependencies(missing)
+                    if success:
+                        logger.info("Dependencies installed successfully")
+                    else:
+                        logger.error("Some dependencies could not be installed")
+                else:
+                    logger.info("All dependencies are already installed")
+                return
+            
+            # Verify required dependencies first
+            core_available, critical_missing = verify_core_dependencies()
+            if not core_available:
+                logger.error(f"Critical dependencies missing: {', '.join(critical_missing)}")
+                logger.error("Run with --install-deps to attempt installation")
+                sys.exit(1)
+                
+        except ImportError as e:
+            logger.error(f"Could not import dependency manager: {e}")
+            logger.warning("Continuing with basic dependency checks...")
+        
         # Enable mock mode if requested
         if args.mock:
             try:
-                # Try different module locations for the set_mock_mode function
-                mock_mode_set = False
-                exceptions = []
-                
-                # Try the compatibility layer
+                # Use dependency manager's dynamic importer if available
                 try:
-                    from dualgpuopt.gpu.compat import set_mock_mode
-                    set_mock_mode(True)
-                    mock_mode_set = True
-                    logger.info("Mock GPU mode enabled via compatibility layer")
-                except ImportError as e:
-                    exceptions.append(f"Error importing from compatibility layer: {e}")
-                
-                # Try the refactored module structure
-                if not mock_mode_set:
+                    gpu_compat = DynamicImporter.import_gpu_compat()
+                    gpu_compat["set_mock_mode"](True)
+                    logger.info("Mock GPU mode enabled via dependency manager")
+                except NameError:
+                    # Fallback to the old method
                     try:
-                        from dualgpuopt.gpu.mock import set_mock_mode
-                        set_mock_mode(True)
-                        mock_mode_set = True
-                        logger.info("Mock GPU mode enabled via refactored module")
-                    except ImportError as e:
-                        exceptions.append(f"Error importing from refactored module: {e}")
-                
-                # Try the legacy module structure
-                if not mock_mode_set:
-                    try:
-                        from dualgpuopt.gpu import set_mock_mode
-                        set_mock_mode(True)
-                        mock_mode_set = True
-                        logger.info("Mock GPU mode enabled via module init")
-                    except ImportError as e:
-                        exceptions.append(f"Error importing from module init: {e}")
-                
-                # Lastly try the gpu_info module
-                if not mock_mode_set:
-                    try:
-                        from dualgpuopt.gpu_info import set_mock_mode
-                        set_mock_mode(True)
-                        mock_mode_set = True
-                        logger.info("Mock GPU mode enabled via legacy module")
-                    except ImportError as e:
-                        exceptions.append(f"Error importing from legacy module: {e}")
-                
-                # If we still couldn't set mock mode, log all the errors
-                if not mock_mode_set:
-                    logger.warning("Could not enable mock GPU mode. Errors:")
-                    for err in exceptions:
-                        logger.warning(f"  - {err}")
-                    logger.warning("Continuing with real GPU detection...")
+                        # Try different module locations for the set_mock_mode function
+                        mock_mode_set = False
+                        exceptions = []
+                        
+                        # Try the compatibility layer
+                        try:
+                            from dualgpuopt.gpu.compat import set_mock_mode
+                            set_mock_mode(True)
+                            mock_mode_set = True
+                            logger.info("Mock GPU mode enabled via compatibility layer")
+                        except ImportError as e:
+                            exceptions.append(f"Error importing from compatibility layer: {e}")
+                        
+                        # Try the refactored module structure
+                        if not mock_mode_set:
+                            try:
+                                from dualgpuopt.gpu.mock import set_mock_mode
+                                set_mock_mode(True)
+                                mock_mode_set = True
+                                logger.info("Mock GPU mode enabled via refactored module")
+                            except ImportError as e:
+                                exceptions.append(f"Error importing from refactored module: {e}")
+                        
+                        # Try the legacy module structure
+                        if not mock_mode_set:
+                            try:
+                                from dualgpuopt.gpu import set_mock_mode
+                                set_mock_mode(True)
+                                mock_mode_set = True
+                                logger.info("Mock GPU mode enabled via module init")
+                            except ImportError as e:
+                                exceptions.append(f"Error importing from module init: {e}")
+                        
+                        # Lastly try the gpu_info module
+                        if not mock_mode_set:
+                            try:
+                                from dualgpuopt.gpu_info import set_mock_mode
+                                set_mock_mode(True)
+                                mock_mode_set = True
+                                logger.info("Mock GPU mode enabled via legacy module")
+                            except ImportError as e:
+                                exceptions.append(f"Error importing from legacy module: {e}")
+                        
+                        # If we still couldn't set mock mode, log all the errors
+                        if not mock_mode_set:
+                            logger.warning("Could not enable mock GPU mode. Errors:")
+                            for err in exceptions:
+                                logger.warning(f"  - {err}")
+                            logger.warning("Continuing with real GPU detection...")
+                    except Exception as e:
+                        logger.warning(f"Fallback mock mode setup failed: {e}")
             except Exception as e:
                 logger.warning(f"Could not enable mock GPU mode: {e}")
         
@@ -123,16 +179,31 @@ def main():
         else:
             logger.info("Starting GUI application")
             
-            # Check for tkinter first
+            # Try to use our new dependency manager for tkinter checking
             try:
-                import tkinter as tk
-                logger.debug("tkinter is available")
+                if "DynamicImporter" in locals():
+                    ttk = DynamicImporter.import_ui()
+                    logger.debug("UI module imported via dependency manager")
+                else:
+                    # Check for tkinter directly
+                    import tkinter as tk
+                    logger.debug("tkinter is available")
             except ImportError:
                 logger.error("tkinter is not installed - required for GUI mode")
                 logger.error("Please install tkinter (usually available in system packages)")
                 sys.exit(1)
             
-            # Try to use our compatibility UI module first
+            # First attempt: Try using our direct_app if available
+            try:
+                # Import the direct app launcher which has better dependency handling
+                from dualgpuopt.direct_launcher import run_direct_app
+                logger.info("Using direct application launcher with improved dependency handling")
+                run_direct_app()
+                return
+            except ImportError as e:
+                logger.warning(f"Direct app launcher not available: {e}")
+            
+            # Second attempt: Try modern UI with compatibility layer
             try:
                 from dualgpuopt.ui import get_themed_tk
                 logger.debug("UI compatibility layer loaded")
@@ -202,6 +273,17 @@ def main():
                 gui_errors.append(f"Failed to import simple UI: {e}")
             except Exception as e:
                 gui_errors.append(f"Error running simple UI: {e}")
+            
+            # Last resort: Run the direct app as a module import
+            try:
+                # This will run the direct launcher from run_direct_app.py
+                import run_direct_app
+                logger.info("Running direct app module as last resort")
+                return
+            except ImportError as e:
+                gui_errors.append(f"Failed to import run_direct_app: {e}")
+            except Exception as e:
+                gui_errors.append(f"Error running direct app: {e}")
             
             # If we get here, all GUI options failed
             logger.error("All GUI initialization attempts failed:")

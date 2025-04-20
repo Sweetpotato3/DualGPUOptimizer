@@ -1,0 +1,12 @@
+Collecting ttkbootstrap
+  Using cached ttkbootstrap-1.12.0-py3-none-any.whl.metadata (4.0 kB)
+Collecting ttkthemes
+  Using cached ttkthemes-3.2.2-cp311-cp311-win_amd64.whl
+Collecting ttkwidgets
+  Using cached ttkwidgets-0.13.0-py3-none-any.whl
+Collecting pillow>=9.5 (from ttkbootstrap)
+  Using cached pillow-11.2.1-cp311-cp311-win_amd64.whl.metadata (9.1 kB)
+Using cached ttkbootstrap-1.12.0-py3-none-any.whl (135 kB)
+Using cached pillow-11.2.1-cp311-cp311-win_amd64.whl (2.7 MB)
+Installing collected packages: pillow, ttkwidgets, ttkthemes, ttkbootstrap
+Successfully installed pillow-11.2.1 ttkbootstrap-1.12.0 ttkthemes-3.2.2 ttkwidgets-0.13.0

@@ -1,62 +1,73 @@
 ---
-description: GPU optimization algorithms, memory distribution calculations, and tensor parallel splits for multi-GPU ML model inference
-globs: **/gpu/**,**/optimizer.py,**/gpu_info.py,**/memory/**,**/metrics.py,**/telemetry.py
+description: GPU memory distribution algorithms, tensor parallel splits, and optimization strategies for large language model deployment
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory/*.py,**/batch/*.py,**/services/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Memory Management Components:
+Key algorithms for GPU resource optimization and model distribution:
 
-1. Memory Distribution Calculator (optimizer.py)
-- Calculates optimal memory splits between GPUs for LLM inference:
-  - Base memory reservation (2GB per GPU)
-  - Dynamic ratio based on available VRAM
-  - Safety margin of 10% for system overhead
-  - Tensor parallel overhead factor (20%)
-- Generates framework-specific GPU distribution commands for:
-  - llama.cpp: Percentage-based splits 
-  - vLLM: Tensor parallel size configuration
+1. GPU Memory Split Calculator (optimizer.py)
+```python
+def calculate_gpu_splits():
+    # Calculate optimal memory distribution across GPUs
+    per_token_memory = model.hidden_size * model.num_layers * kv_head_ratio
+    safety_margin = 0.1  # 10% safety buffer
+    vram_per_gpu = get_available_memory() * (1 - safety_margin)
+    
+    return distribute_memory(vram_per_gpu, per_token_memory)
+```
 
-2. Memory Predictor Engine (memory/predictor.py)
-- Dynamic memory growth estimation per model:
-  - Base memory footprint calculation
-  - Per-token growth rate tracking
-  - Batch size memory scaling
-  - KV cache overhead estimation
-- Model-specific profiling rules:
-  - LLaMA models: 120 bytes per token
-  - Mixtral: Additional 20% MoE overhead
-  - Mistral: GQA-adjusted cache calculations
+2. Layer Balance Optimizer (layer_balance.py)
+```python
+def optimize_layer_distribution():
+    # Profile layer performance with dual sequence lengths
+    short_perf = profile_layers(seq_len=64)  # 20% weight
+    long_perf = profile_layers(seq_len=1024) # 80% weight
+    weighted_perf = 0.2 * short_perf + 0.8 * long_perf
+    
+    # Calculate GPU quotas based on performance ratios
+    gpu_quotas = calculate_quotas(weighted_perf)
+    return distribute_layers(gpu_quotas)
+```
 
-3. Layer Balancing System (layer_balance.py)
-- Weighted performance distribution across GPUs:
-  - 20% weight for short sequences (64 tokens)
-  - 80% weight for long sequences (1024 tokens) 
-- Layer block optimization:
-  - Contiguous block formation
-  - Small block merging (<3 layers)
-  - Architecture-aware placement
-  - Embedding/output layer positioning
+3. Memory Usage Predictor (memory/predictor.py)
+- Calculates per-token memory requirements:
+  * Base model memory
+  * KV cache scaling
+  * Activation memory
+  * MoE overhead for expert models
 
-4. Real-time Monitoring (telemetry.py)
-- Critical GPU metrics collection:
-  - Memory allocation tracking
-  - Utilization percentages
-  - Temperature monitoring
-  - Power consumption analysis
-  - PCIe bandwidth utilization
-- OOM prevention through:
-  - Proactive memory reclamation
-  - Load distribution adjustment
-  - Cache clearing triggers
-  - Emergency process termination
+4. Smart Batch Scheduler (batch/smart_batch.py)
+- Groups similar-length sequences
+- Dynamic batch size adjustment
+- OOM prevention with 25% reduction on failure
+- Recovery mechanism with 5-batch success requirement
 
-Importance Scores:
-- Memory Distribution Calculator: 95 (core optimization logic)
-- Memory Predictor Engine: 90 (critical for preventing OOM)
-- Layer Balancing System: 85 (key for multi-GPU performance)
-- Real-time Monitoring: 75 (essential support system)
+Core Business Rules:
+
+1. GPU Memory Management:
+- Minimum 20% model allocation per GPU
+- 10% safety margin for dynamic allocations
+- Non-linear scaling for KV cache memory
+
+2. Layer Distribution:
+- Long sequence performance weighted at 80%
+- Short sequence performance at 20%
+- Contiguous block optimization to reduce transfers
+
+3. Resource Optimization:
+- Automatic tensor parallel sizing
+- Dynamic split ratio calculation
+- Framework-specific command generation
+- Model-aware memory estimation
+
+Key Files:
+- optimizer.py: Core memory distribution logic
+- layer_balance.py: Layer optimization algorithms
+- memory/predictor.py: Memory requirement calculations
+- batch/smart_batch.py: Batch scheduling optimization
 
 $END$

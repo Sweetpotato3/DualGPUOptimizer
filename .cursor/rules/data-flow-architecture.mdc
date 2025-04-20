@@ -1,6 +1,6 @@
 ---
-description: Defines data flow patterns and architectures for GPU optimization systems and model inference pipelines
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
+description: Defines data flow patterns and component interactions for GPU optimization and monitoring in a dual-GPU system
+globs: **/dualgpuopt/**/*,**/dual_gpu_optimizer/**/*,**/*.py
 alwaysApply: false
 ---
 
@@ -10,51 +10,69 @@ alwaysApply: false
 Core Data Flow Components:
 
 1. GPU Telemetry Pipeline
-- Collects real-time GPU metrics through NVML interface
-- Routes performance data through EventBus to visualization components
-- Maintains 60-sample rolling window of historical metrics
-- Key flows: utilization %, memory usage, temperature, power draw
-- File: dualgpuopt/telemetry.py
+- Data Source: GPU hardware metrics via NVML interface
+- Flow: Hardware Metrics -> Telemetry Service -> Event Bus -> Dashboard
+- Key metrics tracked:
+  * GPU utilization percentages
+  * Memory usage (MiB)
+  * Temperature (°C)
+  * Power consumption (W)
+- Event-driven middleware transforms raw telemetry into structured metrics
 
-2. Model Deployment Pipeline
-- Validates model paths and configurations
-- Calculates optimal GPU splits based on VRAM availability
-- Generates framework-specific launch commands
-- Monitors execution state and resource allocation
-- Files: dualgpuopt/optimizer.py, dualgpuopt/runner.py
+2. Model Configuration Flow
+```
+Model Parameters -> Optimizer -> Launch Configuration -> Command Generation
+```
+- Input: Model architecture parameters (layers, heads, context size)
+- Processing: Memory requirement calculations, split ratio optimization
+- Output: Framework-specific launch commands (llama.cpp/vLLM)
 
-3. Memory Management Flow
-- Tracks per-GPU memory allocation and usage
-- Implements OOM prevention through monitoring service
-- Routes memory pressure alerts through event system
-- Triggers cache clearing and recovery procedures
-- Files: dualgpuopt/memory/monitor.py, dualgpuopt/memory/recovery.py
+3. Memory Management Pipeline
+```
+Memory Predictor -> Recovery Service -> Resource Monitor
+```
+- Predictive memory analysis based on model profiles
+- Recovery strategy selection and execution
+- Resource monitoring feedback loop
+- OOM prevention through proactive scaling
 
-4. Event Bus Architecture
-- Central event distribution system for GPU metrics
-- Priority-based event routing (LOW -> CRITICAL)
-- Specialized handlers for:
-  * GPU metrics events
-  * Memory alerts
-  * Model execution status
-- File: dualgpuopt/services/event_bus.py
+4. GPU Split Optimization Flow
+```
+Layer Profiler -> Balance Calculator -> Distribution Optimizer
+```
+- Layer performance profiling with dual sequence lengths
+- Weighted performance ratio calculations
+- Block optimization for contiguous layer placement
+- Cross-GPU communication optimization
 
-5. Configuration Flow
-- Loads model presets and GPU configurations
-- Routes settings changes through state service
-- Persists optimization parameters and hardware profiles
-- Files: dualgpuopt/services/config_service.py
+Key Integration Points:
 
-6. Layer Distribution Pipeline
-- Calculates optimal layer splits across GPUs
-- Routes tensor parallel configurations to model runners
-- Manages model architecture requirements
-- File: dualgpuopt/layer_balance.py
+1. Event Bus Architecture
+- Central event distribution system
+- Priority-based message routing
+- GPU-specific event types
+- Real-time metric propagation
 
-Integration Points:
-- GPU metrics -> EventBus -> Dashboard visualization
-- Model configuration -> Optimizer -> Command generation
-- Memory alerts -> Recovery service -> Resource management
-- Layer distribution -> Model runner -> Execution monitoring
+2. Configuration Service Integration
+```
+User Settings -> Config Service -> State Manager -> Components
+```
+- Persistent GPU profiles
+- Runtime configuration updates
+- State synchronization across components
+
+3. Recovery Pipeline
+```
+Memory Monitor -> Recovery Service -> Resource Manager
+```
+- Progressive recovery strategies
+- Resource reallocation
+- State restoration handling
+
+Critical Data Paths:
+- `/dualgpuopt/telemetry.py`: GPU metrics collection and distribution
+- `/dualgpuopt/memory/predictor.py`: Memory usage prediction
+- `/dualgpuopt/layer_balance.py`: Layer distribution optimization
+- `/dualgpuopt/services/event_bus.py`: Event routing system
 
 $END$

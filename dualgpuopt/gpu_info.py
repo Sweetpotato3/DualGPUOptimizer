@@ -119,34 +119,36 @@ except ImportError:
     logger.warning("Error handler not available, using simplified error handling")
 
 # Apply error handling decorator if available
-def _apply_error_handler(func, component, category=ErrorCategory.GPU_ERROR):
+def _apply_error_handler(component="GPUInfo", category=ErrorCategory.GPU_ERROR):
     """Apply error handling decorator if available"""
-    if error_handler_available:
-        return handle_exceptions(component=component, 
-                                severity=ErrorSeverity.ERROR, 
-                                reraise=False)(func)
-    else:
-        # Simple error handling if dedicated error handler isn't available
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Error in {func.__name__}: {e}")
-                # Return appropriate default values based on function name
-                if "count" in func.__name__:
-                    return 0
-                elif "names" in func.__name__:
-                    return []
-                elif "memory" in func.__name__:
-                    return {"total": 8192, "used": 0, "free": 8192}
-                elif any(x in func.__name__ for x in ["temperature", "power", "util"]):
-                    return 0
-                return None
-        return wrapper
+    def decorator(func):
+        if error_handler_available:
+            return handle_exceptions(component=component, 
+                                    severity=ErrorSeverity.ERROR, 
+                                    reraise=False)(func)
+        else:
+            # Simple error handling if dedicated error handler isn't available
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    logger.error(f"Error in {func.__name__}: {e}")
+                    # Return appropriate default values based on function name
+                    if "count" in func.__name__:
+                        return 0
+                    elif "names" in func.__name__:
+                        return []
+                    elif "memory" in func.__name__:
+                        return {"total": 8192, "used": 0, "free": 8192}
+                    elif any(x in func.__name__ for x in ["temperature", "power", "util"]):
+                        return 0
+                    return None
+            return wrapper
+    return decorator
 
 # Compatibility function for code expecting get_gpu_info
-@_apply_error_handler
+@_apply_error_handler()
 def get_gpu_info() -> List[Dict[str, Any]]:
     """Get GPU information (compatibility function)"""
     return query()
@@ -247,7 +249,7 @@ class GPU:
         return self.power_usage
     
     @classmethod
-    @_apply_error_handler
+    @_apply_error_handler()
     def get_gpus(cls) -> List["GPU"]:
         """Get list of GPU objects"""
         try:
@@ -258,13 +260,13 @@ class GPU:
             return [cls(_generate_mock_gpus(1)[0])]
     
     @classmethod
-    @_apply_error_handler
+    @_apply_error_handler()
     def get_gpu_count(cls) -> int:
         """Get number of GPUs"""
         return get_gpu_count()
     
     @classmethod
-    @_apply_error_handler
+    @_apply_error_handler()
     def get_gpu_names(cls) -> List[str]:
         """Get list of GPU names"""
         return get_gpu_names()

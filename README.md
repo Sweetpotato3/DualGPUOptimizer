@@ -10,6 +10,21 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 
+## New: Enhanced Dependency Management System
+
+DualGPUOptimizer now features a robust dependency management system that:
+
+- **Gracefully Handles Missing Dependencies**: The application will run even with minimal dependencies, falling back to basic functionality
+- **Auto-Detects Available Modules**: Identifies which optional features can be enabled based on installed packages
+- **Provides Clear Installation Instructions**: Shows exactly what to install to enable specific features
+- **Supports Command-Line Installation**: Run `python -m dualgpuopt --install-deps` to install missing dependencies
+- **Includes Fallback UI**: A minimal UI will run even when optional UI packages are unavailable
+
+The dependency system categorizes dependencies into:
+- **Required**: Application won't start without these (e.g., tkinter)
+- **Core**: Application works with fallbacks if missing (e.g., pynvml, numpy)
+- **Optional**: Enhanced functionality when available (e.g., ttkbootstrap, torch)
+
 ## New: Enhanced Error Handling & Recovery System
 
 DualGPUOptimizer now features a comprehensive error handling and recovery system:
@@ -21,7 +36,7 @@ DualGPUOptimizer now features a comprehensive error handling and recovery system
 - **Detailed Logging**: Enhanced logging captures error context for easier troubleshooting
 
 The recovery system includes strategies for:
-- NVML initialization errors 
+- NVML initialization errors
 - GPU memory issues
 - Configuration problems
 - File access failures
@@ -111,15 +126,22 @@ DualGPUOptimizer now supports configuration through environment variables:
    cd DualGPUOptimizer
    ```
 
-2. Create a virtual environment:
+2. Create a virtual environment (recommended):
    ```
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
-3. Install the required dependencies:
+3. Use the dependency installer to install required packages:
    ```
-   pip install -r requirements.txt
+   # Install core dependencies only
+   python install_deps.py --core-only
+   
+   # Install all dependencies including optional ones
+   python install_deps.py --all
+   
+   # Or use the module-based installer
+   python -m dualgpuopt --install-deps
    ```
 
 ## Dependencies
@@ -153,7 +175,7 @@ python run_direct_app.py
 
 This provides a full-featured application with both dashboard and optimizer functionality in a tabbed interface. The application automatically uses the most advanced features available in your environment with helpful fallbacks if certain components aren't available.
 
-### Running in Standard Mode
+### Running with Module Approach
 
 ```
 python -m dualgpuopt
@@ -174,6 +196,8 @@ python -m dualgpuopt --mock
 - `--ctx-size SIZE`: Set context size
 - `--quant METHOD`: Set quantization method (e.g., 'awq', 'gptq')
 - `--export FILE`: Export environment variables to file
+- `--check-deps`: Check dependencies and exit
+- `--install-deps`: Install missing dependencies
 
 ## Key Features
 
@@ -216,9 +240,25 @@ The error recovery system provides:
 
 ### Missing Dependencies
 
-If you encounter errors about missing dependencies, you can install specific packages:
+If you encounter missing dependency errors, use the built-in dependency installer:
 
 ```
+# Check which dependencies are missing
+python -m dualgpuopt --check-deps
+
+# Install missing dependencies
+python -m dualgpuopt --install-deps
+
+# Or use the standalone installer
+python install_deps.py --all
+```
+
+For manual installation of specific package groups:
+
+```
+# For core functionality
+pip install pynvml psutil numpy
+
 # For enhanced UI
 pip install ttkbootstrap ttkthemes ttkwidgets
 
@@ -226,7 +266,7 @@ pip install ttkbootstrap ttkthemes ttkwidgets
 pip install requests sseclient-py
 
 # For advanced GPU features
-pip install torch torchvision torchaudio
+pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
 ```
 
 ### Application Not Starting
@@ -236,7 +276,7 @@ If the main application fails to start:
 1. Try the direct application first: `python run_direct_app.py`
 2. Check the logs in the `logs` directory for specific errors
 3. Run with verbose logging: `python -m dualgpuopt --verbose`
-4. Ensure all core dependencies are installed: `python check_deps.py`
+4. Verify dependencies are installed: `python -m dualgpuopt --check-deps`
 
 ### GPU Detection Issues
 
@@ -268,6 +308,7 @@ If you need to override default behavior:
   - `memory/`: Memory management and monitoring
   - `commands/`: Command generation for different frameworks
   - `error_handler/`: Error handling and recovery system
+  - `dependency_manager.py`: Dependency management system
 
 ### Building from Source
 

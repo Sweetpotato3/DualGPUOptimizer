@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Rule applies when documenting a dual GPU optimization system focusing on memory management, performance monitoring, and LLM model deployment configurations. This overview is relevant for understanding core optimization logic and GPU resource management.
-globs: dualgpuopt/**.py,integrated_app/**.py,dual_gpu_optimizer/**.py
+description: Generate a high-level overview focusing on business logic and domain-specific implementations for GPU optimization and machine learning model deployment systems
+globs: dualgpuopt/*,integrated_app/*,dual_gpu_optimizer/*,*.py
 alwaysApply: false
 ---
 
@@ -154,60 +154,47 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer - GPU Resource Management and LLM Optimization System
+DualGPUOptimizer implements specialized logic for managing and optimizing large language model deployments across multiple GPUs.
 
 Core Business Components:
 
-1. GPU Memory Management
-/dualgpuopt/memory/predictor.py:
-- Model-specific memory profiling for LLMs
-- Memory usage predictions with architecture-aware calculations
-- Dynamic recovery strategies for OOM prevention
-- Pre-configured profiles for popular models (LLaMA, Mistral, Mixtral)
+1. GPU Resource Management (dualgpuopt/gpu_info.py, dualgpuopt/optimizer.py)
+- Intelligent memory distribution across GPUs based on model architecture
+- Custom tensor parallelism calculations for optimal model splitting
+- Adaptive memory management with configurable safety margins
+- Framework-specific optimizations for llama.cpp and vLLM deployments
 
-2. Layer Distribution System 
-/dualgpuopt/layer_balance.py:
-- Intelligent distribution of transformer layers across GPUs
-- Weighted performance profiling across sequence lengths
-- Layer block optimization with contiguity preservation
-- Architecture-aware component placement
+2. Layer Distribution System (dualgpuopt/layer_balance.py)
+- Weighted performance profiling using dual sequence lengths
+- Intelligent block merging for minimizing cross-GPU communication
+- Position-aware layer assignment considering model architecture
+- Heat-based GPU load balancing with contiguous block optimization
 
-3. Smart Batching System
-/dualgpuopt/batch/smart_batch.py:
-- Length-aware inference scheduling
-- Token-based batch size optimization
-- Progressive scale factor adjustment
-- OOM recovery with configurable backpressure
+3. Memory Prediction Engine (dualgpuopt/memory/predictor.py)
+- Model-specific memory profiling with architecture awareness
+- Dynamic batch size calculation based on sequence characteristics
+- Token-aware memory projections with safety margins
+- MoE-specific optimizations for routing overhead
 
-4. Real-time Telemetry
-/dualgpuopt/telemetry.py:
-- Multi-GPU metric collection pipeline
-- Resource utilization monitoring
-- PCIe bandwidth tracking
-- Temperature and power management
+4. Recovery System (dualgpuopt/error_handler/recovery.py)
+- Progressive GPU memory reclamation strategies
+- Tiered error recovery with hardware-specific actions
+- Automatic workload redistribution on failure
+- Cache management with configurable thresholds
 
-5. Model Optimization Interface
-/dualgpuopt/gui/optimizer_tab.py:
-- Model parameter configuration
-- Context size management
-- Framework-specific command generation
-- GPU split optimization
+5. Telemetry System (dualgpuopt/telemetry.py)
+- Real-time GPU metrics collection and analysis
+- Correlated metric generation for mock testing
+- Multi-GPU synchronization and monitoring
+- Framework-specific performance tracking
 
-Key Business Rules:
-- Memory growth rate factor: 1.05
-- Recovery buffer target: 85% usage
-- Temperature thresholds: Warning (80°C), Critical (90°C)
-- Minimum sequence length: 128 tokens
-- Layer distribution quotas based on GPU speed ratios
-- Token-based memory scaling with architecture factors
+The system prioritizes stable model deployment while maximizing GPU utilization through intelligent resource distribution and monitoring. Business logic focuses on optimal workload splitting across GPUs while maintaining model performance and system stability.
 
-Integration Points:
-- llama.cpp and vLLM framework optimization
-- NVIDIA GPU management library (NVML)
-- Mixed precision policy management
-- Multi-GPU tensor parallelism
-
-The system provides comprehensive GPU resource management focused on LLM deployment optimization, with particular emphasis on memory efficiency, workload distribution, and real-time performance monitoring across multiple GPUs.
+Key Integration Points:
+- Framework-specific command generation for model deployment
+- GPU-aware batch processing optimization
+- Memory-safe context length calculations
+- Multi-GPU tensor parallelism coordination
 
 $END$
 END SPECIFICATION

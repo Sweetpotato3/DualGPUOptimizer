@@ -1,61 +1,57 @@
 ---
-description: Technical specification for GPU resource monitoring system including telemetry, metrics collection, and alert mechanisms
-globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/alerts.py,**/tray.py
+description: Rules for implementing GPU resource monitoring, telemetry collection, and alert systems in dual GPU optimization scenarios
+globs: 
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-GPU Resource Monitoring and Telemetry Pipeline
+The resource monitoring system implements real-time GPU telemetry collection and alerting with these key components:
 
-Core Telemetry Components:
+1. GPU Telemetry Collector
+File: dualgpuopt/telemetry.py
+- Collects core GPU metrics on configurable intervals (default 1000ms):
+  * Utilization percentage
+  * Memory usage (used/total/free)
+  * Temperature in Celsius
+  * Power draw in Watts
+  * Fan speeds
+  * Clock speeds (core/memory)
+- Implements exponential backoff on failures (starts at 100ms, caps at 2000ms)
+- Provides mock metrics generation for development/testing
 
-1. GPU Metrics Collection System (telemetry.py):
-- Comprehensive GPU performance monitoring:
-  * Memory utilization tracking (used/free/total)
-  * PCIe bandwidth monitoring (RX/TX rates)
-  * Power consumption analysis
-  * Temperature correlation with workload
-  * Core/Memory clock speed tracking
-- Priority-based event pipeline for metric processing
-- Real-time monitoring with configurable polling intervals
+2. Memory Alert System 
+File: dualgpuopt/memory/alerts.py
+- Defines critical thresholds:
+  * Warning: 80% memory utilization
+  * Critical: 90% memory utilization  
+  * Emergency: 95% memory utilization
+- Triggers automatic recovery actions:
+  * Cache clearing at Warning level
+  * Batch size reduction at Critical
+  * Process termination at Emergency
+- Maintains alert history for trend analysis
 
-2. Alert Management System (tray.py):
-- Multi-level alert thresholds:
-  * Warning: 80% utilization
-  * Critical: 90% utilization
-  * Emergency: 95% utilization
-- Resource underutilization detection:
-  * Idle threshold: <30% utilization for 5+ minutes
-  * Power efficiency monitoring
-  * Temperature-based throttling detection
-- System tray integration for immediate alerts
+3. GPU Monitor
+File: dualgpuopt/gpu/monitor.py
+- Real-time monitoring of dual GPU configurations
+- Tracks synchronized metrics across both GPUs
+- Implements correlated metrics tracking:
+  * Power/Temperature relationship
+  * Memory/Utilization patterns
+  * Clock speed/Performance impact
+- Provides automatic failover to mock mode on hardware issues
 
-3. Metrics Processing Pipeline:
-- GPU-specific event transformation:
-  * Raw telemetry to structured metrics
-  * Automatic unit conversion (mW to W, MB to GB)
-  * Correlation of related metrics (temp vs utilization)
-- Historical data maintenance:
-  * 60-sample rolling window
-  * Trend analysis for predictive alerts
-  * Performance baseline tracking
+4. Metric Collection System
+File: dualgpuopt/metrics.py
+- Maintains 60-second rolling window of GPU metrics
+- Calculates derivative metrics:
+  * Memory pressure index
+  * Thermal throttling risk
+  * Overall GPU health score
+- Implements normalized metric scaling for cross-GPU comparison
 
-4. Resource Optimization Triggers:
-- Automatic intervention points:
-  * Memory pressure detection
-  * Thermal throttling prevention
-  * Power limit optimization
-  * Clock speed adjustment recommendations
-- Recovery action suggestions based on metric patterns
-
-The system provides comprehensive GPU resource monitoring with intelligent alert mechanisms and optimization recommendations specifically designed for dual GPU configurations.
-
-Importance Scores:
-- GPU Metrics Collection: 95 (Core monitoring functionality)
-- Alert Management: 85 (Critical for resource optimization)
-- Metrics Processing: 80 (Essential for decision making)
-- Resource Optimization: 75 (Important for system stability)
+The system focuses on proactive resource management through continuous monitoring and automated intervention based on predefined thresholds and recovery strategies.
 
 $END$

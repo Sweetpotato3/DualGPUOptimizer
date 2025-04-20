@@ -398,33 +398,25 @@ class Optimizer:
 
 
 # Apply error handling decorator if available
-def _apply_error_handler(func, component="Optimizer", severity=ErrorSeverity.ERROR if error_handler_available else None):
-    """Apply error handling decorator if available"""
-    if error_handler_available:
-        return handle_exceptions(component=component, severity=severity, reraise=False)(func)
-    else:
-        # Simple error handling fallback
-        import functools
-        
-        @functools.wraps(func)
-        def wrapper(*args, **kwargs):
-            try:
-                return func(*args, **kwargs)
-            except Exception as e:
-                logger.error(f"Error in {func.__name__}: {e}")
-                # Return appropriate default values based on function signature
-                if func.__name__ == "calculate_gpu_split":
-                    # Return a default split configuration dictionary
-                    return {
-                        "tensor_parallel_size": 2,
-                        "gpu_split": [0.6, 0.4],
-                        "memory_per_gpu": [12 * 1024, 8 * 1024],
-                        "max_context": 4096,
-                        "recommended_context": 2048,
-                        "gpus": []
-                    }
-                return None
-        return wrapper
+def _apply_error_handler(component="Optimizer", severity=ErrorSeverity.ERROR if error_handler_available else None):
+    """Apply error handler decorator if available"""
+    def decorator(func):
+        if error_handler_available:
+            return handle_exceptions(component=component, severity=severity, reraise=False)(func)
+        else:
+            # Simple error handling if dedicated error handler isn't available
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    logger.error(f"Error in {func.__name__}: {e}")
+                    # Return appropriate default values
+                    if func.__name__ == "calculate_gpu_split":
+                        return {"error": str(e), "success": False}
+                    return None
+            return wrapper
+    return decorator
 
 
 # Singleton instance for global access
@@ -444,7 +436,7 @@ def get_optimizer() -> Optimizer:
 
 
 # Compatibility functions for refactored code
-@_apply_error_handler
+@_apply_error_handler()
 def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[str, Any]:
     """Calculate optimal GPU split for a model (compatibility function)
     
@@ -478,4 +470,43 @@ def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[
         "max_context": config.max_context_length,
         "recommended_context": config.recommended_context_length,
         "gpus": gpus
-    } 
+    }
+
+
+@_apply_error_handler()
+def validate_params(params: ModelParameters) -> Tuple[bool, str]:
+    """Validate model parameters
+    
+    Args:
+        params: ModelParameters object
+        
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    # Check basic parameters
+    if params.hidden_size <= 0:
+        return False, "Hidden size must be positive"
+    
+    if params.num_layers <= 0:
+        return False, "Number of layers must be positive"
+    
+    if params.num_heads <= 0:
+        return False, "Number of heads must be positive"
+    
+    # Check if hidden size is divisible by number of heads
+    if params.hidden_size % params.num_heads != 0:
+        return False, f"Hidden size ({params.hidden_size}) must be divisible by number of heads ({params.num_heads})"
+    
+    # Check KV heads if specified
+    if params.kv_heads is not None:
+        if params.kv_heads <= 0:
+            return False, "Number of KV heads must be positive"
+        
+        if params.num_heads % params.kv_heads != 0:
+            return False, f"Number of heads ({params.num_heads}) must be divisible by number of KV heads ({params.kv_heads})"
+    
+    # Check context length
+    if params.context_length is not None and params.context_length <= 0:
+        return False, "Context length must be positive"
+    
+    return True, "" 

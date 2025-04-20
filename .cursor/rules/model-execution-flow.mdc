@@ -1,64 +1,58 @@
 ---
-description: Handles model execution workflow orchestration for dual GPU systems, including command generation, GPU resource allocation, and monitoring.
-globs: **/run_*.py,**/launcher/**,**/optimizer/**,**/gpu/**,**/telemetry.py
+description: Defines how language models are executed across multiple GPUs, including command generation, resource allocation, and monitoring flows
+globs: **/optimizer.py,**/gpu/*.py,**/launcher/*.py,**/memory/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Model Execution Workflow Engine core components:
+Core execution components manage LLM deployment across multiple GPUs:
 
-1. Launch Command Generation
-- Located in: dualgpuopt/gui/launcher/launch_controller.py
-- Generates optimized launch configurations for:
-  * llama.cpp: GPU split ratios, tensor parallelism settings
-  * vLLM: Device mapping, tensor parallel size configuration
-- Handles model-specific parameter mapping:
-  * Context length validation
-  * Layer distribution across GPUs
-  * Memory allocation strategy
-  * KV cache configuration
+1. Model Configuration Resolution
+- Context length calculation based on model architecture and available GPU memory
+- Model size detection from name patterns (7B, 13B, 70B, etc.)
+- Parameter validation including layer count, attention heads, and KV ratios
+- Memory requirement calculation incorporating:
+  * KV cache overhead (default 2x)
+  * Tensor parallelism factors (20%)
+  * System buffer (2GB)
+  * Safety margin (10%)
 
-2. GPU Resource Allocation Flow
-- Located in: dualgpuopt/optimizer.py
-- Memory distribution algorithm:
-  * Calculates per-GPU VRAM quotas 
-  * Reserves system overhead (2GB default)
-  * Adjusts for model architecture requirements
-  * Handles MoE models with expert count scaling
-- Layer distribution logic:
-  * Balances transformer layers across GPUs
-  * Optimizes for latency using profiling data
-  * Maintains architecture coherency requirements
-  * Groups layers into contiguous blocks
+2. GPU Resource Allocation
+- Dynamic GPU split calculation based on available memory
+- Tensor parallel size determination for vLLM
+- Layer distribution optimization across GPUs
+- Memory monitoring and OOM prevention through:
+  * Cache clearing
+  * Batch size reduction
+  * Process termination
 
-3. Model Execution Monitoring
-- Located in: dualgpuopt/telemetry.py
-- Real-time metric collection:
-  * GPU utilization tracking
-  * Memory allocation monitoring
-  * Temperature/power monitoring
-  * Token throughput measurement
-- Implements backpressure detection:
-  * Memory pressure monitoring
-  * OOM prevention system
-  * Cache clearing triggers
-  * Workload rebalancing
+3. Execution Command Generation
+`dualgpuopt/optimizer.py`:
+```python
+def generate_commands():
+    # Generate framework-specific commands
+    llama_cmd = f"--split {gpu_split} --ctx-size {ctx_size}"
+    vllm_cmd = f"--tensor-parallel-size {tp_size} --max-length {ctx_size}"
+```
 
-4. Execution Recovery System
-- Located in: dualgpuopt/memory/recovery.py
-- Progressive intervention strategy:
-  * Cache clearing (Level 1)
-  * Batch size reduction (Level 2)
-  * Layer redistribution (Level 3)
-  * Full model reload (Level 4)
-- Memory optimization rules:
-  * 85% memory utilization target
-  * 20% tensor parallel overhead allowance
-  * 5% minimum free memory requirement
-  * Progressive batch size reduction (25% steps)
+4. Batch Processing Management
+`dualgpuopt/batch/smart_batch.py`:
+- Length-aware sequence batching
+- Adaptive batch size based on GPU memory
+- OOM recovery with 25% reduction steps
+- Backpressure mechanism for overload prevention
 
-The system orchestrates model execution across dual GPU configurations with emphasis on optimal resource utilization and stability through continuous monitoring and adaptive intervention strategies.
+5. Process Monitoring and Recovery
+- Real-time GPU metrics tracking
+- Automatic VRAM reset on high memory pressure
+- Exponential backoff for failed operations
+- Graceful process termination handling
+
+Key execution paths:
+- Model parameter resolution → GPU allocation → Command generation
+- Batch sequence processing → Memory monitoring → Recovery actions
+- Metrics collection → Resource optimization → Process management
 
 $END$

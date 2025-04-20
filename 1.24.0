@@ -1,0 +1,14 @@
+Collecting pynvml
+  Using cached pynvml-12.0.0-py3-none-any.whl.metadata (5.4 kB)
+Collecting psutil
+  Using cached psutil-7.0.0-cp37-abi3-win_amd64.whl.metadata (23 kB)
+Collecting numpy
+  Using cached numpy-2.2.5-cp311-cp311-win_amd64.whl.metadata (60 kB)
+Collecting nvidia-ml-py<13.0.0a0,>=12.0.0 (from pynvml)
+  Using cached nvidia_ml_py-12.570.86-py3-none-any.whl.metadata (8.7 kB)
+Using cached pynvml-12.0.0-py3-none-any.whl (26 kB)
+Using cached psutil-7.0.0-cp37-abi3-win_amd64.whl (244 kB)
+Using cached numpy-2.2.5-cp311-cp311-win_amd64.whl (12.9 MB)
+Using cached nvidia_ml_py-12.570.86-py3-none-any.whl (44 kB)
+Installing collected packages: nvidia-ml-py, pynvml, psutil, numpy
+Successfully installed numpy-2.2.5 nvidia-ml-py-12.570.86 psutil-7.0.0 pynvml-12.0.0
