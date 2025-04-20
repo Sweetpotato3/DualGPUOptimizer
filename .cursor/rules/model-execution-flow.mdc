@@ -1,60 +1,64 @@
 ---
-description: Technical specification for model execution flow including LLM command generation, configuration parameters and GPU resource allocation
-globs: **/optimizer.py,**/launcher/**,**/batch/**,**/gpu/**,**/model_profiles.py
+description: Handles model execution workflow orchestration for dual GPU systems, including command generation, GPU resource allocation, and monitoring.
+globs: **/run_*.py,**/launcher/**,**/optimizer/**,**/gpu/**,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core components managing model execution flow:
+Model Execution Workflow Engine core components:
 
-1. Model Launch Pipeline
-- Command generation for multiple ML frameworks:
-  ```python
-  # llama.cpp command generation 
-  def generate_llama_cpp_cmd(model_path, gpu_split, context_size):
-    return f"llama.cpp --model {model_path} --gpu-split {gpu_split} --ctx-size {context_size}"
-  
-  # vLLM command generation
-  def generate_vllm_cmd(model_path, tp_size, max_tokens):
-    return f"vllm --model {model_path} --tensor-parallel-size {tp_size} --max-tokens {max_tokens}"
-  ```
-- Framework-specific parameter optimization:
-  - Context length scaling based on GPU memory
-  - Tensor parallel size for multi-GPU setups
-  - Memory utilization limits per device
+1. Launch Command Generation
+- Located in: dualgpuopt/gui/launcher/launch_controller.py
+- Generates optimized launch configurations for:
+  * llama.cpp: GPU split ratios, tensor parallelism settings
+  * vLLM: Device mapping, tensor parallel size configuration
+- Handles model-specific parameter mapping:
+  * Context length validation
+  * Layer distribution across GPUs
+  * Memory allocation strategy
+  * KV cache configuration
 
-2. Batch Processing
-- Length-aware sequence batching using SmartBatcher
-- Implements back-pressure via queue depth limits
-- Provides bucket policies for sequence grouping:
-  - Power-of-two bucketing 
-  - Token ratio bucketing
-- OOM recovery with automatic cache clearing
+2. GPU Resource Allocation Flow
+- Located in: dualgpuopt/optimizer.py
+- Memory distribution algorithm:
+  * Calculates per-GPU VRAM quotas 
+  * Reserves system overhead (2GB default)
+  * Adjusts for model architecture requirements
+  * Handles MoE models with expert count scaling
+- Layer distribution logic:
+  * Balances transformer layers across GPUs
+  * Optimizes for latency using profiling data
+  * Maintains architecture coherency requirements
+  * Groups layers into contiguous blocks
 
-3. Resource Allocation
-- Calculates optimal GPU split ratios based on available memory
-- Layer distribution optimization across multiple GPUs
-- Memory reservation policies with fallback mechanisms
+3. Model Execution Monitoring
+- Located in: dualgpuopt/telemetry.py
+- Real-time metric collection:
+  * GPU utilization tracking
+  * Memory allocation monitoring
+  * Temperature/power monitoring
+  * Token throughput measurement
+- Implements backpressure detection:
+  * Memory pressure monitoring
+  * OOM prevention system
+  * Cache clearing triggers
+  * Workload rebalancing
 
-Key file paths:
-```
-dualgpuopt/
-  optimizer.py - Core optimization logic
-  launcher/
-    launch_controller.py - Launch pipeline coordination  
-    parameter_resolver.py - Parameter optimization
-  batch/
-    smart_batch.py - Batching implementation
-  gpu/
-    monitor.py - GPU resource monitoring
-```
+4. Execution Recovery System
+- Located in: dualgpuopt/memory/recovery.py
+- Progressive intervention strategy:
+  * Cache clearing (Level 1)
+  * Batch size reduction (Level 2)
+  * Layer redistribution (Level 3)
+  * Full model reload (Level 4)
+- Memory optimization rules:
+  * 85% memory utilization target
+  * 20% tensor parallel overhead allowance
+  * 5% minimum free memory requirement
+  * Progressive batch size reduction (25% steps)
 
-The system orchestrates model execution by:
-1. Determining optimal configuration parameters
-2. Generating framework-specific launch commands 
-3. Managing batch processing and resource allocation
-4. Monitoring execution and handling recovery
+The system orchestrates model execution across dual GPU configurations with emphasis on optimal resource utilization and stability through continuous monitoring and adaptive intervention strategies.
 
 $END$

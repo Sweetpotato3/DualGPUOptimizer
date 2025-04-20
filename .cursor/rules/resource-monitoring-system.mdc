@@ -1,5 +1,5 @@
 ---
-description: Business logic specification for GPU resource monitoring, telemetry collection, and alert system implementation
+description: Technical specification for GPU resource monitoring system including telemetry, metrics collection, and alert mechanisms
 globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/alerts.py,**/tray.py
 alwaysApply: false
 ---
@@ -7,40 +7,55 @@ alwaysApply: false
 
 # resource-monitoring-system
 
-The resource monitoring system encompasses three core components:
+GPU Resource Monitoring and Telemetry Pipeline
 
-1. GPU Telemetry Collection:
-- Real-time monitoring of GPU utilization, memory usage, temperature, power consumption, PCIe bandwidth and clock speeds
-- Implements middleware pattern for metrics processing with customizable handlers
-- Provides event bus integration for telemetry data publishing as GPUMetricsEvent
-- Includes fallback mock data generation for testing environments
+Core Telemetry Components:
 
-2. Resource Monitoring:
-- Configurable sample history (60 samples) for performance trending
-- Bandwidth threshold monitoring for PCIe with auto-scaling (KB/s to GB/s)
-- Progressive metric display with hardware-specific maximums:
-  * Graphics clock: 2500 MHz cap 
-  * Memory clock: 12000 MHz cap
-  * Temperature: 100°C cap
-  * Power usage: Per-GPU limit
+1. GPU Metrics Collection System (telemetry.py):
+- Comprehensive GPU performance monitoring:
+  * Memory utilization tracking (used/free/total)
+  * PCIe bandwidth monitoring (RX/TX rates)
+  * Power consumption analysis
+  * Temperature correlation with workload
+  * Core/Memory clock speed tracking
+- Priority-based event pipeline for metric processing
+- Real-time monitoring with configurable polling intervals
 
-3. Alert System:
-- Multi-level alert thresholds (WARNING, CRITICAL, EMERGENCY) for:
-  * Memory pressure
-  * Temperature limits
-  * Power consumption
-  * PCIe bandwidth saturation
-- Alert policy management with customizable actions per severity level
-- Recovery strategy orchestration based on alert severity
-- Event publishing for alert state changes
+2. Alert Management System (tray.py):
+- Multi-level alert thresholds:
+  * Warning: 80% utilization
+  * Critical: 90% utilization
+  * Emergency: 95% utilization
+- Resource underutilization detection:
+  * Idle threshold: <30% utilization for 5+ minutes
+  * Power efficiency monitoring
+  * Temperature-based throttling detection
+- System tray integration for immediate alerts
 
-Key Files:
-- `dualgpuopt/telemetry.py`: Core telemetry collection system
-- `dualgpuopt/metrics.py`: Metric processing and storage
-- `dualgpuopt/monitor.py`: Resource monitoring and threshold management
-- `dualgpuopt/alerts.py`: Alert system implementation
-- `dualgpuopt/tray.py`: System tray integration for alert display
+3. Metrics Processing Pipeline:
+- GPU-specific event transformation:
+  * Raw telemetry to structured metrics
+  * Automatic unit conversion (mW to W, MB to GB)
+  * Correlation of related metrics (temp vs utilization)
+- Historical data maintenance:
+  * 60-sample rolling window
+  * Trend analysis for predictive alerts
+  * Performance baseline tracking
 
-The system is specifically designed to handle dual GPU configurations with emphasis on real-time monitoring and alert generation for machine learning workloads.
+4. Resource Optimization Triggers:
+- Automatic intervention points:
+  * Memory pressure detection
+  * Thermal throttling prevention
+  * Power limit optimization
+  * Clock speed adjustment recommendations
+- Recovery action suggestions based on metric patterns
+
+The system provides comprehensive GPU resource monitoring with intelligent alert mechanisms and optimization recommendations specifically designed for dual GPU configurations.
+
+Importance Scores:
+- GPU Metrics Collection: 95 (Core monitoring functionality)
+- Alert Management: 85 (Critical for resource optimization)
+- Metrics Processing: 80 (Essential for decision making)
+- Resource Optimization: 75 (Important for system stability)
 
 $END$

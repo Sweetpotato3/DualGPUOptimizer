@@ -10,6 +10,25 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 
+## New: Enhanced Error Handling & Recovery System
+
+DualGPUOptimizer now features a comprehensive error handling and recovery system:
+
+- **Centralized Error Management**: All errors are processed through a unified handler with severity levels and categorization
+- **Automatic Recovery**: The system attempts to recover from common errors like GPU communication failures
+- **Smart Fallbacks**: When components fail, the application gracefully degrades to alternatives rather than crashing
+- **Environment Variable Configuration**: System behavior can be controlled through environment variables
+- **Detailed Logging**: Enhanced logging captures error context for easier troubleshooting
+
+The recovery system includes strategies for:
+- NVML initialization errors 
+- GPU memory issues
+- Configuration problems
+- File access failures
+- External API communication errors
+
+This robust error handling ensures the application remains functional across different environments and hardware configurations, even when facing unpredictable issues.
+
 ## New: Event-Driven Architecture
 
 The direct application now implements a fully event-driven architecture that:
@@ -58,6 +77,23 @@ DualGPUOptimizer features comprehensive compatibility layers that allow the appl
 - **Simple UI Mode**: Includes a minimal UI that works with just tkinter when other dependencies are unavailable
 
 This ensures the application can run in various environments and gracefully handles missing dependencies.
+
+## Environment Variable Configuration
+
+DualGPUOptimizer now supports configuration through environment variables:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `DUALGPUOPT_MOCK_GPU` | Force mock GPU mode | `false` |
+| `DUALGPUOPT_GPU_COUNT` | Override detected GPU count | Auto-detect |
+| `DUALGPUOPT_POLL_INTERVAL` | Telemetry polling interval (seconds) | `1.0` |
+| `DUALGPUOPT_MOCK_TELEMETRY` | Force mock telemetry data | `false` |
+| `DUALGPUOPT_MAX_RECOVERY` | Maximum recovery attempts | `3` |
+| `DUALGPUOPT_SYSTEM_OVERHEAD` | System memory overhead (MB) | `2048` |
+| `DUALGPUOPT_SAFETY_MARGIN` | Memory safety margin | `0.1` |
+| `DUALGPUOPT_TP_OVERHEAD` | Tensor parallelism overhead | `0.2` |
+| `DUALGPUOPT_KV_CACHE_FACTOR` | KV cache size multiplier | `2.0` |
+| `DUALGPUOPT_MIN_CONTEXT` | Minimum context size | `128` |
 
 ## Installation
 
@@ -169,6 +205,13 @@ The Chat tab offers:
 - Streaming response visualization
 - Token throughput metrics
 
+### Error Recovery System
+The error recovery system provides:
+- Automatic recovery from GPU driver issues
+- Memory pressure detection and mitigation
+- Intelligent fallbacks when components fail
+- Detailed error reporting with context
+
 ## Troubleshooting
 
 ### Missing Dependencies
@@ -200,8 +243,17 @@ If the main application fails to start:
 If the application fails to detect your GPUs:
 
 1. Ensure NVIDIA drivers are installed and up-to-date
-2. Try running in mock mode with `--mock` flag
+2. Try running in mock mode with `--mock` flag or set `DUALGPUOPT_MOCK_GPU=1`
 3. Check that `pynvml` is installed correctly
+4. Check driver logs for GPU-related errors
+
+### Environment Variable Configuration
+
+If you need to override default behavior:
+
+1. Set environment variables before running the application
+2. For permanent changes, add them to your system environment
+3. For testing, use mock mode: `DUALGPUOPT_MOCK_GPU=1 python run_direct_app.py`
 
 ## Development
 
@@ -215,6 +267,7 @@ If the application fails to detect your GPUs:
   - `batch/`: Batch processing logic
   - `memory/`: Memory management and monitoring
   - `commands/`: Command generation for different frameworks
+  - `error_handler/`: Error handling and recovery system
 
 ### Building from Source
 

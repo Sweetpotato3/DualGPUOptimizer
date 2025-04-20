@@ -1,66 +1,62 @@
 ---
-description: Specifies GPU memory optimization algorithms, tensor parallel splits, and model deployment strategies across multiple GPUs.
-globs: **/gpu_info.py,**/optimizer.py,**/gpu/**,**/memory/**,**/batch/**
+description: GPU optimization algorithms, memory distribution calculations, and tensor parallel splits for multi-GPU ML model inference
+globs: **/gpu/**,**/optimizer.py,**/gpu_info.py,**/memory/**,**/metrics.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution System
-- Implements dynamic memory allocation across multiple GPUs based on model architecture and available VRAM
-- Calculates optimal tensor splits using GPU memory ratios and model layer characteristics
-- Supports asymmetric memory configurations with different GPU capacities
-- File: `dualgpuopt/optimizer.py`
+Core GPU Memory Management Components:
 
-## Layer Distribution Engine
-- Distributes model layers across GPUs based on profiled performance metrics
-- Handles MoE (Mixture of Experts) models with specialized expert distribution logic
-- Implements weighted scoring system:
-  * 20% weight for short sequences (64 tokens)
-  * 80% weight for long sequences (1024 tokens)
-- File: `dualgpuopt/layer_balance.py`
+1. Memory Distribution Calculator (optimizer.py)
+- Calculates optimal memory splits between GPUs for LLM inference:
+  - Base memory reservation (2GB per GPU)
+  - Dynamic ratio based on available VRAM
+  - Safety margin of 10% for system overhead
+  - Tensor parallel overhead factor (20%)
+- Generates framework-specific GPU distribution commands for:
+  - llama.cpp: Percentage-based splits 
+  - vLLM: Tensor parallel size configuration
 
-## Context Size Calculator
-- Calculates maximum safe context length based on:
-  * Available GPU memory
-  * Model architecture parameters (layers, heads, dimensions)
-  * MQA/GQA attention patterns
-  * Memory overhead for MoE models
-- File: `dualgpuopt/ctx_size.py`
+2. Memory Predictor Engine (memory/predictor.py)
+- Dynamic memory growth estimation per model:
+  - Base memory footprint calculation
+  - Per-token growth rate tracking
+  - Batch size memory scaling
+  - KV cache overhead estimation
+- Model-specific profiling rules:
+  - LLaMA models: 120 bytes per token
+  - Mixtral: Additional 20% MoE overhead
+  - Mistral: GQA-adjusted cache calculations
 
-## Batch Processing System
-- Length-aware batching queue for inference optimization
-- Implements bucket policies for sequence length grouping:
-  * Power-of-two bucketing
-  * Token ratio-based bucketing
-- Provides back-pressure mechanisms to prevent RAM overflow
-- File: `dualgpuopt/batch/smart_batch.py`
+3. Layer Balancing System (layer_balance.py)
+- Weighted performance distribution across GPUs:
+  - 20% weight for short sequences (64 tokens)
+  - 80% weight for long sequences (1024 tokens) 
+- Layer block optimization:
+  - Contiguous block formation
+  - Small block merging (<3 layers)
+  - Architecture-aware placement
+  - Embedding/output layer positioning
 
-## Memory Recovery System
-- Progressive memory recovery with multiple strategies:
-  * CACHE_ONLY: Lightweight GPU cache clearing
-  * CLOCK_RESET: GPU clock management
-  * FULL_RESET: Comprehensive memory recovery
-  * SYSTEM_CMD: OS-specific reclamation
-- File: `dualgpuopt/memory/recovery.py`
+4. Real-time Monitoring (telemetry.py)
+- Critical GPU metrics collection:
+  - Memory allocation tracking
+  - Utilization percentages
+  - Temperature monitoring
+  - Power consumption analysis
+  - PCIe bandwidth utilization
+- OOM prevention through:
+  - Proactive memory reclamation
+  - Load distribution adjustment
+  - Cache clearing triggers
+  - Emergency process termination
 
-## Memory Usage Predictor
-- Implements memory profiling for common model architectures
-- Projects memory growth using linear regression on usage history
-- Calculates maximum batch sizes and sequence lengths based on available memory
-- File: `dualgpuopt/memory/predictor.py`
-
-## Model Deployment Strategies
-Two primary approaches implemented:
-1. llama.cpp:
-- GPU layer splitting with context size considerations
-- Memory mapping for efficient VRAM utilization
-- Custom split configurations based on GPU capabilities
-
-2. vLLM:
-- Tensor parallel deployment with memory utilization controls
-- Dynamic parallel size determination
-- Memory-aware worker allocation
+Importance Scores:
+- Memory Distribution Calculator: 95 (core optimization logic)
+- Memory Predictor Engine: 90 (critical for preventing OOM)
+- Layer Balancing System: 85 (key for multi-GPU performance)
+- Real-time Monitoring: 75 (essential support system)
 
 $END$

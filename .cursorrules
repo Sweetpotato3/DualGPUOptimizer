@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create a high-level overview for projects focused on GPU optimization and machine learning model deployment, specifically when dealing with dual GPU configurations and model execution management
-globs: *.py
+description: Rule applies when documenting a dual GPU optimization system focusing on memory management, performance monitoring, and LLM model deployment configurations. This overview is relevant for understanding core optimization logic and GPU resource management.
+globs: dualgpuopt/**.py,integrated_app/**.py,dual_gpu_optimizer/**.py
 alwaysApply: false
 ---
 
@@ -154,77 +154,60 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-## Core Domain Components
+DualGPUOptimizer - GPU Resource Management and LLM Optimization System
 
-### GPU Resource Management
-The DualGPUOptimizer implements specialized handling for dual GPU configurations, focusing on:
+Core Business Components:
 
-- Intelligent memory distribution between GPUs based on model requirements
-- Automatic layer balancing for transformer models
-- Dynamic tensor fraction calculation for optimal GPU splits
-- Real-time telemetry collection and monitoring
-- Overclock management with safety constraints
+1. GPU Memory Management
+/dualgpuopt/memory/predictor.py:
+- Model-specific memory profiling for LLMs
+- Memory usage predictions with architecture-aware calculations
+- Dynamic recovery strategies for OOM prevention
+- Pre-configured profiles for popular models (LLaMA, Mistral, Mixtral)
 
-Key files:
-```
-dualgpuopt/optimizer.py
-dualgpuopt/gpu_info.py
-```
+2. Layer Distribution System 
+/dualgpuopt/layer_balance.py:
+- Intelligent distribution of transformer layers across GPUs
+- Weighted performance profiling across sequence lengths
+- Layer block optimization with contiguity preservation
+- Architecture-aware component placement
 
-### Model Execution Optimization
-Provides framework-specific optimizations for running large language models:
+3. Smart Batching System
+/dualgpuopt/batch/smart_batch.py:
+- Length-aware inference scheduling
+- Token-based batch size optimization
+- Progressive scale factor adjustment
+- OOM recovery with configurable backpressure
 
-- Context length calculations based on GPU memory and model architecture
-- Adaptive batching with length-aware scheduling
-- Specialized memory management for different model types (MoE, MQA/GQA)
-- Recovery strategies for out-of-memory conditions
+4. Real-time Telemetry
+/dualgpuopt/telemetry.py:
+- Multi-GPU metric collection pipeline
+- Resource utilization monitoring
+- PCIe bandwidth tracking
+- Temperature and power management
 
-Key files:
-```
-dualgpuopt/batch/smart_batch.py
-dualgpuopt/memory/predictor.py
-```
+5. Model Optimization Interface
+/dualgpuopt/gui/optimizer_tab.py:
+- Model parameter configuration
+- Context size management
+- Framework-specific command generation
+- GPU split optimization
 
-### Performance Monitoring
-Real-time monitoring system for GPU metrics:
+Key Business Rules:
+- Memory growth rate factor: 1.05
+- Recovery buffer target: 85% usage
+- Temperature thresholds: Warning (80°C), Critical (90°C)
+- Minimum sequence length: 128 tokens
+- Layer distribution quotas based on GPU speed ratios
+- Token-based memory scaling with architecture factors
 
-- Multi-GPU telemetry collection (utilization, memory, temperature, power)
-- Event-driven metrics processing pipeline
-- Historical performance tracking with visualization
-- Idle detection and alert system
+Integration Points:
+- llama.cpp and vLLM framework optimization
+- NVIDIA GPU management library (NVML)
+- Mixed precision policy management
+- Multi-GPU tensor parallelism
 
-Key files:
-```
-dualgpuopt/telemetry.py
-dualgpuopt/gui/dashboard.py
-```
-
-### Error Management
-Domain-specific error handling system:
-
-- GPU-focused error categorization (GPU_ERROR, MEMORY_ERROR, PROCESS_ERROR)
-- Hardware-specific error recovery strategies
-- Layer-aware error isolation
-- Graceful degradation paths for GPU failures
-
-Key files:
-```
-dualgpuopt/error_handler/handler.py
-dualgpuopt/error_handler/recovery.py
-```
-
-### Model Profile Management
-Manages model-specific configurations:
-
-- Pre-defined profiles for common LLMs (Llama-2, Mistral, Mixtral)
-- Memory requirement calculations per architecture
-- Layer distribution recommendations
-- Quantization-aware memory estimates
-
-Key files:
-```
-dualgpuopt/model_profiles.py
-```
+The system provides comprehensive GPU resource management focused on LLM deployment optimization, with particular emphasis on memory efficiency, workload distribution, and real-time performance monitoring across multiple GPUs.
 
 $END$
 END SPECIFICATION

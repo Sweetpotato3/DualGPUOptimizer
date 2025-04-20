@@ -1,89 +1,60 @@
 ---
-description: Specification for data flow between GPU resource monitoring, optimization, and telemetry components.
-globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/gui/**/*.py
+description: Defines data flow patterns and architectures for GPU optimization systems and model inference pipelines
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The system implements a multi-layered data flow architecture for GPU resource optimization:
+Core Data Flow Components:
 
-## Core Data Flow Components
+1. GPU Telemetry Pipeline
+- Collects real-time GPU metrics through NVML interface
+- Routes performance data through EventBus to visualization components
+- Maintains 60-sample rolling window of historical metrics
+- Key flows: utilization %, memory usage, temperature, power draw
+- File: dualgpuopt/telemetry.py
 
-1. GPU Resource Telemetry Pipeline
-```
-GPU Hardware/Mock Data 
-  -> Telemetry Service
-    -> Event Bus 
-      -> Dashboard/Monitoring UI
-```
+2. Model Deployment Pipeline
+- Validates model paths and configurations
+- Calculates optimal GPU splits based on VRAM availability
+- Generates framework-specific launch commands
+- Monitors execution state and resource allocation
+- Files: dualgpuopt/optimizer.py, dualgpuopt/runner.py
 
-- Telemetry Service collects GPU metrics (utilization, memory, temperature)
-- Event Bus publishes GPUMetricsEvent with standardized metric format
-- Dashboard subscribes to events for real-time visualization
+3. Memory Management Flow
+- Tracks per-GPU memory allocation and usage
+- Implements OOM prevention through monitoring service
+- Routes memory pressure alerts through event system
+- Triggers cache clearing and recovery procedures
+- Files: dualgpuopt/memory/monitor.py, dualgpuopt/memory/recovery.py
 
-Key file: `dualgpuopt/telemetry.py`
+4. Event Bus Architecture
+- Central event distribution system for GPU metrics
+- Priority-based event routing (LOW -> CRITICAL)
+- Specialized handlers for:
+  * GPU metrics events
+  * Memory alerts
+  * Model execution status
+- File: dualgpuopt/services/event_bus.py
 
-2. Model Optimization Flow
-```
-Model Parameters 
-  -> Optimizer Service
-    -> Layer Balance Calculator
-      -> GPU Split Configuration
-```
+5. Configuration Flow
+- Loads model presets and GPU configurations
+- Routes settings changes through state service
+- Persists optimization parameters and hardware profiles
+- Files: dualgpuopt/services/config_service.py
 
-- Optimizer analyzes model architecture and parameters
-- Layer Balance Calculator determines optimal layer distribution
-- Split Configuration generates commands for model deployment
+6. Layer Distribution Pipeline
+- Calculates optimal layer splits across GPUs
+- Routes tensor parallel configurations to model runners
+- Manages model architecture requirements
+- File: dualgpuopt/layer_balance.py
 
-Key file: `dualgpuopt/optimizer.py`
-
-3. Memory Management Pipeline
-```
-Memory Monitor
-  -> Predictor Service  
-    -> Recovery Service
-      -> Alert System
-```
-
-- Monitor tracks real-time GPU memory usage
-- Predictor estimates memory requirements and growth
-- Recovery Service implements OOM prevention strategies
-
-Key files:
-- `dualgpuopt/memory/monitor.py`
-- `dualgpuopt/memory/predictor.py`
-- `dualgpuopt/memory/recovery.py`
-
-4. Event-Driven State Management
-```
-State Service
-  -> Event Bus
-    -> UI Components
-      -> Config Service
-```
-
-- State Service maintains application configuration
-- Event Bus propagates state changes
-- Config Service persists settings to disk
-
-Key file: `dualgpuopt/services/state_service.py`
-
-5. Error Handling Flow
-```
-Error Handler
-  -> Error Categories
-    -> Recovery Strategies
-      -> UI Alerts
-```
-
-- Categorizes GPU-specific errors (driver, memory, process)
-- Implements recovery strategies per error type
-- Displays user-friendly error messages
-
-Key file: `dualgpuopt/error_handler/handler.py`
-
-The architecture emphasizes event-driven communication between components, with clear separation of GPU resource monitoring, optimization calculation, and user interface updates. Error handling and recovery strategies are integrated throughout the data flow to ensure system reliability.
+Integration Points:
+- GPU metrics -> EventBus -> Dashboard visualization
+- Model configuration -> Optimizer -> Command generation
+- Memory alerts -> Recovery service -> Resource management
+- Layer distribution -> Model runner -> Execution monitoring
 
 $END$
