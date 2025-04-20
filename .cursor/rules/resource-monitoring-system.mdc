@@ -1,75 +1,56 @@
 ---
-description: Handles GPU resource monitoring, telemetry collection, and alert systems for dual GPU optimization
-globs: '**/telemetry.py','**/tray.py','**/metrics.py','**/memory_monitor.py','**/dashboard.py'
+description: Specification for GPU resource monitoring and telemetry collection system with real-time metrics tracking and alert mechanisms
+globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/memory_monitor.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-### GPU Telemetry Collection Engine
+The resource monitoring system provides real-time GPU telemetry collection and metrics tracking with alert capabilities.
 
-Core telemetry system that monitors GPU metrics including:
-- Memory utilization and VRAM pressure tracking
-- Temperature and power consumption thresholds
-- GPU/Memory clock speeds
-- PCIe bandwidth utilization
-- Fan speeds and thermal conditions
+Core Components:
 
-Implementation prioritizes:
-1. Real-time metrics collection via NVML
-2. Memory pressure detection with configurable thresholds (80%, 90%, 95%)
-3. Multi-level alert system with severity classification
-4. Historical metrics tracking for trend analysis
+### GPU Telemetry Collection
+- Implements NVML-based polling generator for GPU metrics
+- Collects utilization, memory usage, PCIe throughput, temperature, power usage, fan speed, clock speeds
+- Provides configurable update intervals for different metrics
+- Maintains rolling window of historical data (60 sample points)
 
-### Memory Management and OOM Prevention
+### Memory Monitoring System 
+- Defines four alert levels: Normal, Warning, Critical, Emergency
+- Tracks per-model memory profiles including:
+  - Base memory usage
+  - Per-batch memory growth
+  - Per-token memory requirements
+- Implements predictive OOM prevention using historical patterns
+- Progressive threshold monitoring with customizable trigger points
 
-Memory monitor implements hierarchical recovery strategies:
-1. Cache clearing when memory pressure exceeds 80%
-2. Batch size reduction at 90% threshold
-3. Memory offloading at 95% threshold 
-4. Process termination as last resort
+### Resource Optimization
+- Calculates maximum safe batch sizes based on:
+  - Model memory profiles
+  - Available VRAM
+  - Growth patterns
+  - Safety margins
+- Provides memory-aware context size recommendations
+- Implements batch size auto-adjustment based on memory pressure
 
-Model-specific memory profiles track:
-- Base memory requirements per architecture
-- Token-level memory scaling factors
-- Batch processing overhead
-- KV cache growth patterns
+### Alert System
+- Progressive alert thresholds for:
+  - Memory utilization
+  - Temperature limits  
+  - Power consumption
+  - Performance degradation
+- Four-tier recovery strategy:
+  1. Cache clearing
+  2. Batch reduction
+  3. Memory offloading
+  4. Process termination
 
-### Dashboard Visualization System
-
-Real-time visualization components:
-- Multi-GPU line charts with 60-sample history
-- Dynamic progress bars with color-coded thresholds
-- Adaptive bandwidth formatting (KB/s → MB/s → GB/s)
-- Temperature warning indicators
-
-Implementation in dashboard.py handles:
-- GPU-specific color coding for metrics
-- Automatic grid scaling based on sample count
-- Intelligent label placement for readability
-- Configurable update intervals per metric type
-
-### Alert Mechanism
-
-Four-level alert system:
-1. Normal: Below 80% memory utilization
-2. Warning: 80-90% utilization
-3. Critical: 90-95% utilization  
-4. Emergency: Above 95% utilization
-
-Each level triggers specific actions:
-- Status updates to system tray
-- Memory optimization recommendations
-- Automatic intervention based on severity
-- Event logging for post-analysis
-
-Relevant paths:
-```
-dualgpuopt/telemetry.py
-dualgpuopt/memory_monitor.py
-dualgpuopt/gui/dashboard.py
-dualgpuopt/tray.py
-```
+Relevant File Paths:
+- `dualgpuopt/telemetry.py`
+- `dualgpuopt/memory_monitor.py`
+- `dualgpuopt/metrics.py`
+- `dualgpuopt/gpu_info.py`
 
 $END$

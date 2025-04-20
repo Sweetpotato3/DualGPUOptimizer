@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Use this overview for documenting the core business logic of GPU optimization systems that manage dual GPU configurations for ML model inference, focusing on memory management, layer balancing, and hardware monitoring
-globs: *.py,*.hpp,*.cpp
+description: Applies when documenting high-level architecture and organization of dual GPU optimization system for language model inference, focusing on GPU resource management, model parameter optimization, and memory monitoring
+globs: *.py,*/*.py
 alwaysApply: false
 ---
 
@@ -154,46 +154,39 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized logic for managing dual GPU configurations in machine learning inference scenarios, with three core business components:
+The DualGPUOptimizer system enables efficient deployment of large language models across dual GPU setups through several interconnected core components:
 
-1. GPU Memory Management and Optimization
-- Dynamic calculation of optimal memory splits between GPUs based on model architecture
-- Context size optimization considering model parameters (layers, heads, dimensions)
-- Token-based memory tracking for preventing OOM conditions
-- Memory usage prediction with progressive alerting thresholds
+## GPU Resource Management 
+Located in `dualgpuopt/gpu_info.py`, this component:
+- Tracks real-time GPU metrics including utilization, memory usage, temperature, power
+- Implements platform-specific detection for NVIDIA/Apple GPUs
+- Provides mock GPU simulation with correlated metrics for testing
 
-Key files:
-- `dualgpuopt/memory_monitor.py`
-- `dualgpuopt/model_profiles.py`
+## Model Parameter Optimization
+Implemented in `dualgpuopt/optimizer.py` and `dualgpuopt/layer_balance.py`:
+- Calculates optimal context sizes based on model architecture and GPU memory
+- Determines layer distribution across GPUs using performance profiling
+- Handles model-specific memory patterns for different architectures (MQA, GQA, MoE)
 
-2. Model Layer Distribution
-- Layer performance profiling using weighted sequence analysis
-- Adaptive distribution algorithm balancing layer computational intensity
-- Block optimization to create contiguous layer groups
-- MoE model handling with expert distribution logic
+## Memory Management System
+Core logic in `dualgpuopt/memory_monitor.py`:
+- Implements model-specific memory profiles with pre-configured settings
+- Provides progressive memory alerts with four severity levels
+- Executes hierarchical recovery strategies (cache clearing, batch reduction, offloading)
 
-Key files:
-- `dualgpuopt/layer_balance.py`
-- `dualgpuopt/optimizer.py`
+## GPU Telemetry Collection
+Located in `dualgpuopt/telemetry.py`:
+- Collects comprehensive GPU metrics including utilization, memory, temperature
+- Implements middleware pipeline for processing telemetry data
+- Provides mock data generation for testing environments
 
-3. Hardware Monitoring and Control
-- Real-time GPU metrics collection (utilization, temperature, power)
-- Multi-level alerting system with configurable thresholds
-- Progressive intervention for memory pressure events
-- Overclocking profile management with safety constraints
+## Launch Configuration Generation
+Implemented in `dualgpuopt/gui/launcher.py`:
+- Generates optimized launch configurations for llama.cpp and vLLM
+- Calculates tensor parallel splits based on available GPU memory
+- Handles framework-specific parameter optimization
 
-Key files:
-- `dualgpuopt/telemetry.py`
-- `dualgpuopt/gui/settings.py`
-
-The system integrates these components to provide automated optimization of large language model inference across multiple GPUs while maintaining stability and performance. Core workflows include:
-
-- Dynamic memory allocation based on model requirements
-- Intelligent layer distribution for optimal throughput
-- Proactive monitoring and intervention for stability
-- Safe overclocking management with profile support
-
-The business logic focuses on maximizing GPU utilization while preventing out-of-memory conditions and maintaining hardware safety through careful resource management and monitoring.
+The system architecture emphasizes modularity between GPU monitoring, memory management, and model optimization components while maintaining specialized handling for different model architectures and frameworks.
 
 $END$
 END SPECIFICATION

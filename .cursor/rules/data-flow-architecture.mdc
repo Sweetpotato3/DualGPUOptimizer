@@ -1,56 +1,67 @@
 ---
-description: Documents the data flow patterns and component interactions for GPU resource management and optimization
+description: Documents data flow between components including GPU resource data, optimization parameters and monitoring metrics
 globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py,integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
-# data-flow-architecture
+# data-flow-architecture 
 
-Key Data Flow Components:
+## Core Data Flow Components
 
-1. Telemetry Collection Pipeline
-- GPUMetricsEvent system captures real-time GPU metrics
-- Metrics flow from NVML through telemetry service to dashboard
-- Event bus dispatches metrics to registered subscribers
-- Flow: GPU Hardware → NVML → Telemetry Service → Event Bus → Dashboard
+### GPU Telemetry Pipeline
+File: dualgpuopt/telemetry.py
+- Real-time GPU metrics collection via NVML
+- Metrics include utilization, memory usage, temperature, power draw
+- Publishing metrics to event bus for consumption by UI components  
+- Fallback to mock telemetry data when hardware access unavailable
 
-2. Model Optimization Pipeline  
-- Model parameters flow from launcher to optimizer
-- Optimizer calculates GPU splits and tensor parallel configurations
-- Results flow to framework-specific command generators
-- Flow: Model Config → Optimizer → Command Generator → Runner
+### State Management Service 
+File: dualgpuopt/services/state_service.py
+- Centralized state store for GPU configurations and model parameters
+- Event-driven updates with selective notification to subscribers
+- Persists state to disk for configuration continuity
+- Maintains GPU allocation ratios and optimization parameters
 
-3. Memory Management Pipeline
-- Memory monitor tracks VRAM usage across GPUs
-- Predictive OOM prevention with alert levels (Normal → Warning → Critical → Emergency) 
-- Memory alerts trigger hierarchical recovery actions
-- Flow: Memory Monitor → Alert System → Recovery Actions
+### Model Parameter Flow
+File: dualgpuopt/gui/launcher.py
+- Extracts model architecture details from filenames 
+- Calculates optimal context sizes based on GPU resources
+- Propagates tensor split configurations to runner components
+- Manages framework-specific launch parameters
 
-4. Resource Distribution Pipeline
-- Layer balance optimizer analyzes model architecture
-- Generates per-GPU layer distribution plans
-- Distributes tensors based on memory availability ratios
-- Flow: Model Architecture → Layer Balancer → GPU Distribution
+### Memory Monitor Pipeline
+File: dualgpuopt/memory_monitor.py
+- Tracks model-specific memory consumption patterns
+- Projects future memory needs using historical data
+- Implements four-level alert system for memory pressure
+- Triggers automatic recovery strategies when thresholds exceeded
 
-5. Configuration Flow
-- GPU profiles and settings flow from config service
-- State changes propagate through event bus to subscribers 
-- Settings persist to disk for restoration
-- Flow: Config Service → State Service → Event Bus → Components
+### Optimization Data Flow
+File: dualgpuopt/optimizer.py
+- Calculates GPU split ratios based on available VRAM
+- Generates framework-specific optimization commands
+- Propagates tensor parallel configurations
+- Manages memory quota distribution between GPUs
 
-Key File Paths:
-```
-dualgpuopt/
-  telemetry.py          # Metric collection pipeline
-  memory_monitor.py     # Memory tracking pipeline
-  layer_balance.py      # Resource distribution
-  optimizer.py          # Model optimization flow
-  services/
-    config_service.py   # Configuration pipeline
-    state_service.py    # State management flow
-```
+### Layer Balance Pipeline
+File: dualgpuopt/layer_balance.py
+- Profiles layer performance across GPUs
+- Calculates weighted ratios for layer assignment
+- Dynamically rebalances layers based on runtime metrics
+- Optimizes for contiguous layer blocks per GPU
 
-The data flow architecture focuses on real-time GPU metric collection, model optimization, memory management, and resource distribution across multiple GPUs. The event bus provides decoupled communication between components.
+### Dashboard Data Pipeline
+File: dualgpuopt/gui/dashboard.py
+- Subscribes to real-time GPU telemetry
+- Processes metrics for visualization
+- Maintains rolling window of performance history
+- Correlates cross-GPU performance metrics
+
+Key integration points:
+- Event bus enables decoupled metric flow between components
+- State service provides centralized configuration distribution
+- Memory monitor feeds optimization decisions
+- Telemetry pipeline drives visualization updates
 
 $END$

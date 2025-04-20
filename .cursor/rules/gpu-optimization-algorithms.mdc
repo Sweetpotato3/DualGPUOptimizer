@@ -1,54 +1,71 @@
 ---
-description: Specification for GPU memory distribution algorithms, tensor parallel splits calculation and memory allocation strategies
-globs: **/gpu_info.py,**/optimizer.py,**/gpu_commands.py,**/layer_balance.py,**/memory_monitor.py
+description: Specification for GPU optimization algorithms and memory management patterns for dual GPU systems
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## GPU Memory Split Optimization
+## GPU Resource Management
 
-Core algorithm for distributing model layers and memory across multiple GPUs:
+### Memory Distribution Algorithm
+Located in `optimizer.py`:
+- Dynamic tensor split calculation based on available VRAM ratios between GPUs
+- Automatic reservation of 2GB system memory buffer per GPU
+- Progressive memory allocation with 90% max utilization target
+- Fallback memory redistribution if primary GPU exceeds 95% utilization
 
-1. Memory Distribution Algorithm:
-```python
-def calculate_gpu_splits(gpus):
-  total_mem = sum(g.mem_total for g in gpus)
-  splits = [round(g.mem_total/total_mem, 3) for g in gpus]
-  return splits
-```
+### Layer Balancing System
+Located in `layer_balance.py`:
+- Layer distribution optimization across dual GPUs using latency profiling
+- 20/80 weighted performance ratio between short/long sequences
+- Contiguous layer block formation to minimize cross-GPU communication
+- Automatic layer redistribution when temperature threshold exceeded
 
-2. Tensor Parallel Size Calculation:
-- For N GPUs, calculates optimal tensor parallel size based on:
-  - Total available VRAM across GPUs
-  - Model size and parameter count 
-  - Communication overhead between GPUs
-  - Framework-specific requirements (vLLM vs llama.cpp)
+### Memory Optimization
+Located in `gpu_info.py`:
+- Model parameter chunking based on per-layer memory footprint
+- KV cache memory allocation with sliding window optimization
+- Tensor parallel split calculation considering:
+  * Individual GPU VRAM capacity
+  * Model architecture requirements
+  * Dynamic batch size scaling
 
-3. Layer Balancing:
-- Uses weighted performance profiling with two sequence lengths:
-  - Short sequences (64 tokens) weighted at 20%
-  - Long sequences (1024 tokens) weighted at 80%
-- Groups layers into contiguous blocks to minimize GPU switching
-- Accounts for temperature and power limits when distributing compute
+### Batch Processing
+Located in `batch/smart_batch.py`:
+- Length-aware sequence batching with token ratio optimization
+- Dynamic batch size adjustment based on:
+  * Available GPU memory
+  * Current utilization levels
+  * Temperature thresholds
+  * Model size parameters
 
-4. Memory Reservation:
-- Reserves fixed 2GB buffer per GPU for system overhead
-- Additional 5% reservation for dynamic allocations
-- Framework-specific memory optimizations:
-  - vLLM: 90% memory utilization target
-  - llama.cpp: Variable based on quantization
+### VRAM Management
+Located in `optimizer.py`:
+- Progressive memory reclamation strategy:
+  1. Cache clearing
+  2. Gradient cleanup
+  3. Hidden state compression
+  4. Emergency model offloading
+- Memory pressure detection with 3-level warning system
+- Automatic batch size reduction when approaching memory limits
 
-5. Model-Specific Optimizations:
-- MoE models: Additional 5% memory for expert routing
-- Attention patterns: Adjusts for sliding window vs full attention
-- Quantization: Accounts for precision (FP16/INT8/INT4)
+### Performance Optimization
+Located in `layer_balance.py`:
+- Inter-GPU bandwidth monitoring for optimal layer placement
+- Dynamic layer migration based on:
+  * GPU temperature gradients
+  * Memory pressure levels
+  * PCIe bandwidth utilization
+  * Processing latency measurements
 
-File paths containing core GPU optimization logic:
-- dualgpuopt/optimizer.py 
-- dualgpuopt/memory_monitor.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/gpu_info.py
+Importance scores:
+- Memory Distribution Algorithm: 95 (core optimization logic)
+- Layer Balancing System: 90 (critical performance component)
+- Memory Optimization: 85 (key resource management)
+- Batch Processing: 80 (workflow optimization)
+- VRAM Management: 85 (resource stability)
+- Performance Optimization: 75 (supporting optimization)
 
 $END$

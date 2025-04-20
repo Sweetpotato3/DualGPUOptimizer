@@ -1,55 +1,76 @@
 ---
-description: Specification for GPU-accelerated model execution flows, command generation, and resource allocation in ML inference
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
+description: Specifies how large language models are executed across multiple GPUs, including memory allocation, batch processing, and resource optimization.
+globs: **/optimizer.py,**/launcher.py,**/memory_monitor.py,**/layer_balance.py,**/batch/*.py,**/commands/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Execution Flow Components:
+## Core Execution Components
 
-1. Model Launch Orchestration (`dualgpuopt/gui/launcher.py`):
-- Generates optimized commands for different ML frameworks:
-```python
-def get_llama_command(model_path, ctx_size, split):
-    return f"--model {model_path} --gpu-split {split} --ctx-size {ctx_size}"
+1. Model Runtime Optimization System (launcher.py)
+- Dynamic GPU resource allocation based on available VRAM/model size
+- Intelligent layer distribution across GPUs using performance profiling
+- Framework-specific command generation for llama.cpp and vLLM
+- Implements automated parameter tuning based on model architecture
 
-def get_vllm_command(model_path, tensor_parallel):
-    return f"--model {model_path} --tensor-parallel-size {tensor_parallel}"
-```
-- Handles model parameter detection from filenames
-- Implements dynamic context size optimization
-- Controls GPU resource allocation
+2. Memory Management System (memory_monitor.py)
+- Model-specific memory profiles with pre-configured settings
+- Predictive OOM prevention using historical usage patterns
+- Multi-level memory alert system with progressive thresholds
+- Automatic recovery strategies: cache clearing, batch reduction, offloading
 
-2. Memory Management (`dualgpuopt/memory_monitor.py`):
-- Tracks per-token and per-batch memory patterns
-- Defines model-specific memory profiles:
-  - Llama2: Base + KV cache scaling
-  - Mixtral: Expert gating overhead
-  - Mistral: Sliding window attention
-- Implements four-level alert system (Normal/Warning/Critical/Emergency)
+3. Layer Distribution (layer_balance.py)
+- Performance-based layer distribution across GPUs
+- Balancing algorithm considers sequence length profiles
+- Creates contiguous layer blocks to minimize inter-GPU communication
+- Handles MoE architecture-specific layer allocation
 
-3. GPU Layer Distribution (`dualgpuopt/layer_balance.py`):
-- Calculates optimal layer distribution across GPUs
-- Uses weighted performance profiling (20% short sequences, 80% long sequences)
-- Maintains contiguous layer blocks to minimize cross-GPU communication
-- Assigns input embeddings to first GPU, output components to second GPU
+4. Smart Batching System (batch/smart_batch.py)
+- Length-aware batching with dynamic resizing
+- Back-pressure mechanism prevents GPU memory overflow 
+- Token ratio-based bucketing for workload distribution
+- Handles asynchronous batch processing with future-based results
 
-4. Model Parameter Configuration (`dualgpuopt/ctx_size.py`):
-- Calculates safe context lengths based on:
-  - Available GPU memory
-  - Model architecture (layers, heads, hidden size)
-  - MoE factor for expert models
-  - Quantization settings
-- Implements model-specific overrides for popular architectures
+5. Command Generation (commands/gpu_commands.py)
+- Framework-specific optimization parameters
+- GPU split configuration for tensor parallelism
+- Memory-aware command generation
+- Environment variable optimization for multi-GPU setups
 
-5. Command Generation and Resource Allocation:
-- Produces framework-specific launch commands
-- Sets environment variables for GPU visibility
-- Configures tensor parallel sizes
-- Manages GPU memory thresholds
+## Execution Flow
 
-Critical execution paths include model initialization, layer distribution calculation, memory monitoring, and dynamic resource reallocation based on monitoring alerts.
+1. Model Startup
+- Extract model parameters from filename
+- Calculate optimal context size and batch parameters
+- Distribute model layers across GPUs
+- Configure framework-specific launch parameters
+
+2. Runtime Optimization
+- Monitor GPU memory usage and performance metrics
+- Adjust batch sizes dynamically based on memory pressure
+- Balance layer distribution based on runtime profiling
+- Implement preventive OOM handling
+
+3. Recovery Handling
+- Progressive memory recovery strategies
+- Dynamic batch size adjustment
+- Automated cache management
+- Process restart handling with state preservation
+
+## Key Integration Points
+
+- Memory Monitor ↔ Layer Balancer
+- Smart Batcher ↔ Memory Monitor
+- Command Generator ↔ Runtime Optimizer
+- Framework Interface ↔ Memory Management
+
+Importance Scores:
+- Model Runtime Optimization: 95
+- Memory Management: 90
+- Layer Distribution: 85
+- Smart Batching: 80
+- Command Generation: 75
 
 $END$

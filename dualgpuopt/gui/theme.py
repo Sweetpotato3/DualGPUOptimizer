@@ -221,7 +221,7 @@ def load_theme_from_config(root):
     
     Args:
         root: The root Tk window
-        
+    
     Returns:
         The name of the loaded theme
     """
