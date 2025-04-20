@@ -16,7 +16,10 @@ def query() -> List[Dict[str, Any]]:
         List of dictionaries with GPU information
     """
     if MOCK_MODE:
-        return generate_mock_gpus()
+        print("Query: Using MOCK_MODE")
+        result = generate_mock_gpus()
+        print(f"Query: Mock GPUs: {[gpu['name'] for gpu in result]}")
+        return result
     
     if IS_NVIDIA:
         return _query_nvidia()

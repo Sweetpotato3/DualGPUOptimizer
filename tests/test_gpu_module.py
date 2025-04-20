@@ -59,12 +59,16 @@ class TestGpuModule(unittest.TestCase):
             }
         ]
         
+        # Print test GPUs to verify data
+        print(f"SETUP test_gpus: {[gpu['name'] for gpu in self.test_gpus]}")
+        
         # Set mock mode
         self.original_mock_mode = get_mock_mode()
         set_mock_mode(True)
         
         # Create direct patch for generate_mock_gpus
         def mock_generate(*args, **kwargs):
+            print(f"Mock generate returning: {[gpu['name'] for gpu in self.test_gpus]}")
             return self.test_gpus
             
         # Apply the patch
@@ -129,6 +133,9 @@ class TestGpuModule(unittest.TestCase):
         """Test query function"""
         # Test with mocked data
         gpus = query()
+        
+        # Debug print
+        print(f"GPU NAMES: {[gpu['name'] for gpu in gpus]}")
         
         # Should return mock GPUs with our test data
         self.assertEqual(len(gpus), 2)
