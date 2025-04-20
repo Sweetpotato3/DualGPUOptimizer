@@ -69,6 +69,16 @@ The application will function with graceful fallbacks when optional dependencies
 
 ## Usage
 
+### Running the Direct Application (Recommended)
+
+For the most reliable startup that avoids import complexity:
+
+```
+python run_direct_app.py
+```
+
+This provides a simplified interface that works regardless of optional dependencies and demonstrates the functioning of the compatibility layers.
+
 ### Running in Standard Mode
 
 ```
@@ -137,6 +147,15 @@ pip install requests sseclient-py
 # For advanced GPU features
 pip install torch torchvision torchaudio
 ```
+
+### Application Not Starting
+
+If the main application fails to start:
+
+1. Try the direct application first: `python run_direct_app.py`
+2. Check the logs in the `logs` directory for specific errors
+3. Run with verbose logging: `python -m dualgpuopt --verbose`
+4. Ensure all core dependencies are installed: `python check_deps.py`
 
 ### GPU Detection Issues
 
