@@ -1,6 +1,6 @@
 ---
-description: Defines data flow patterns and integrations for dual-GPU optimization system components
-globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py
+description: Documents data flow patterns for GPU optimization and model inference across dual GPU setups
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
@@ -9,52 +9,55 @@ alwaysApply: false
 
 Core Data Flow Components:
 
-1. GPU Telemetry Pipeline
-- GPU metrics flow from NVML through telemetry service to dashboard
-- Real-time metrics include utilization, memory, temperature, power
-- Event bus middleware transforms raw telemetry into standardized events
-- Metrics aggregated into 60-sample rolling history buffers 
-- Path: `dualgpuopt/telemetry.py` -> `dualgpuopt/gui/dashboard.py`
+1. GPU Metrics Pipeline (Importance: 95)
+- Location: dualgpuopt/telemetry.py
+- Collects real-time GPU performance data:
+  * Memory utilization
+  * Temperature
+  * Power consumption
+  * Clock speeds
+  * PCIe bandwidth
+- Implements event-driven metrics distribution through EventBus
+- Features telemetry middleware for data transformation and normalization
+- Handles graceful degradation with mock data generation
 
-2. Model Configuration Flow
-- Model parameters flow from preset definitions to optimization engine
-- Parameters include context size, layer count, attention heads
-- Optimization engine generates framework-specific commands
-- Memory constraints validated against available GPU resources
-- Path: `dualgpuopt/ctx_size.py` -> `dualgpuopt/optimizer.py`
+2. Model Layer Distribution Flow (Importance: 90)
+- Location: dualgpuopt/layer_balance.py 
+- Directs transformer layer assignments across GPUs based on:
+  * Per-layer performance profiles
+  * Memory quotas
+  * GPU capability differentials
+- Employs weighted performance metrics:
+  * Short sequences (64 tokens): 20% weight
+  * Long sequences (1024 tokens): 80% weight
+- Optimizes data movement through contiguous block formation
 
-3. Layer Distribution Pipeline
-- Layer performance metrics collected through profiling system
-- Metrics feed into layer balancing algorithm for distribution
-- Distribution ratios flow to command generation system
-- Path: `dualgpuopt/layer_balance.py` -> `dualgpuopt/commands/gpu_commands.py`
+3. Memory Management Pipeline (Importance: 85)
+- Location: dualgpuopt/memory_monitor.py
+- Implements tiered alert system for memory pressure:
+  * NORMAL → WARNING → CRITICAL → EMERGENCY
+- Tracks per-process memory consumption
+- Provides hierarchical recovery flows:
+  1. Cache clearing
+  2. Batch reduction
+  3. Memory offloading
+  4. Process termination
 
-4. Memory Management Flow  
-- GPU memory availability flows from info service
-- Memory requirements calculated by context size calculator
-- Results flow to memory split optimizer
-- Final allocations distributed to framework launch system
-- Path: `dualgpuopt/gpu_info.py` -> `dualgpuopt/optimizer.py`
+4. Optimization Parameter Flow (Importance: 80)
+- Location: dualgpuopt/optimizer.py
+- Calculates and distributes:
+  * Tensor parallel fractions
+  * GPU memory splits
+  * Context length limits
+  * Framework-specific parameters
+- Routes optimization parameters to framework-specific deployment handlers
 
-5. Resource Monitoring Pipeline
-- GPU metrics flow from telemetry service to event bus
-- Event bus distributes to multiple consumers:
-  - Dashboard visualization
-  - Optimization engine
-  - Resource alerting system
-- Path: `dualgpuopt/telemetry.py` -> `dualgpuopt/services/event_bus.py`
+5. Framework Command Generation (Importance: 75)
+- Location: dualgpuopt/commands/gpu_commands.py
+- Generates framework-specific deployment commands
+- Routes environment variables and GPU configurations
+- Handles command validation and error reporting flow
 
-Integration Points:
-- Framework adapters for llama.cpp and vLLM
-- NVML integration for GPU metrics
-- PyTorch tensor operations for memory calculations
-- Event system for asynchronous metric distribution
-
-Domain-Specific Data:
-- GPU performance metrics
-- Model architecture parameters  
-- Layer performance profiles
-- Memory allocation mappings
-- Resource utilization history
+The system implements a multi-layered data flow architecture optimizing GPU resource utilization for large language model inference, with particular emphasis on dual GPU configurations and dynamic resource management.
 
 $END$

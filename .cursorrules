@@ -138,8 +138,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Generate high-level documentation overviews for GPU optimization and management systems, particularly focusing on dual-GPU setups and machine learning workload management
-globs: *.py,*.code-workspace
+description: Applies to creating high-level technical overviews of dual GPU optimization systems focusing on LLM deployment, business logic organization, and domain-specific implementations. Targets files containing core optimization algorithms, GPU management, and ML framework integration.
+globs: *.py,*.cpp,*.h
 alwaysApply: false
 ---
 
@@ -155,37 +155,43 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning workloads across dual GPU configurations. The core business logic is organized into four main areas:
+The DualGPUOptimizer implements a comprehensive optimization system for deploying large language models across dual GPU configurations.
 
-1. GPU Memory Management (Importance: 95)
-Core management layer in `dualgpuopt/optimizer.py`:
-- Smart memory splits between GPUs using relative VRAM capacity
-- Dynamic context size calculation incorporating model architecture parameters
-- Specialized memory quotas for different model types (Llama-2, Mistral, Mixtral)
-- Layer balancing optimization across GPUs with performance profiling
+Core Business Components:
 
-2. Inference Optimization (Importance: 90)
-Implemented in `dualgpuopt/batch/smart_batch.py`:
-- Length-aware batch scheduling with memory heuristics
-- Token-based batch splitting with backpressure mechanisms
-- Automatic OOM recovery with cache management
-- Framework-specific optimizations for llama.cpp and vLLM
+1. Layer Balancing System (dualgpuopt/gui/launcher.py)
+- Dynamically distributes model layers across GPUs using performance profiling
+- Weighted performance metrics (64 tokens: 0.2, 1024 tokens: 0.8)
+- Generates device maps for optimal layer placement
 
-3. GPU Telemetry System (Importance: 85)
-Centralized in `dualgpuopt/telemetry.py`:
-- Real-time GPU metrics collection including utilization, memory, temperature
-- PCIe bandwidth monitoring for inter-GPU communication
-- Power consumption and clock speed tracking
-- Fault-tolerant monitoring with mock data fallback
+2. Memory Management (dualgpuopt/memory_monitor.py)
+- Model-specific memory profiling with base requirements and growth projections
+- Multi-tiered alert system (NORMAL, WARNING, CRITICAL, EMERGENCY)
+- OOM prevention with hierarchical recovery approaches
+- Pre-configured profiles for major LLM architectures
 
-4. Resource Optimization (Importance: 80)
-Controlled through `dualgpuopt/services/config_service.py`:
-- GPU overclocking parameter management
-- Idle detection thresholds and timing
-- Dynamic fan speed control with auto/manual modes
-- Temperature-based throttling rules
+3. GPU Resource Optimization (dualgpuopt/optimizer.py)
+- Calculates tensor splits based on relative GPU memory capacities
+- Framework-specific command generation for llama.cpp and vLLM
+- Dynamic context size optimization based on model architecture
 
-The system integrates these components through an event-driven architecture, maintaining GPU state synchronization and providing real-time optimization of machine learning workloads across multiple GPUs. Core innovation lies in the automated balancing of transformer layers and memory allocation across heterogeneous GPU configurations.
+4. Smart Batching System (dualgpuopt/batch/smart_batch.py)
+- Length-aware inference scheduling with backpressure mechanisms
+- Dynamic batch size adjustment based on sequence lengths
+- Memory-aware workload distribution
+
+5. Telemetry Service (dualgpuopt/telemetry.py)
+- Real-time GPU metrics collection and monitoring
+- Comprehensive performance tracking (utilization, memory, temperature)
+- Fault-tolerant operation with mock data generation
+
+Integration Points:
+- Model layer distribution connects with framework-specific optimizers
+- Memory monitor feeds into batching system for workload management
+- Telemetry service provides feedback for optimization adjustments
+- GPU commands interface with both llama.cpp and vLLM deployments
+
+The system emphasizes intelligent resource distribution for LLM inference while maintaining stability through comprehensive monitoring and dynamic optimization strategies.
 
 $END$
 END SPECIFICATION

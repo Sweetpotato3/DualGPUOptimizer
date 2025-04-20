@@ -1,54 +1,58 @@
 ---
-description: Technical documentation for GPU optimization algorithms, memory allocation and tensor parallel computations
-globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
+description: Technical specification for GPU optimization algorithms, memory management, and tensor parallelism calculations.
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory_monitor.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution System
+Core GPU Memory Distribution Logic (optimizer.py):
+- Calculates optimal tensor parallel splits based on relative GPU memory capacities
+- Formula: tensor_fraction = gpu_memory / max_gpu_memory
+- Implements differentiated memory allocation strategies for llama.cpp and vLLM frameworks
+- Dynamically adjusts memory utilization thresholds (default 0.9 for vLLM)
 Importance: 95
 
-Core GPU memory allocation logic implemented in optimizer.py:
-- Calculates tensor parallel fractions based on relative GPU memory capacities 
-- Memory split optimization using available/total memory ratios
-- Implements dynamic safety margins based on model architecture
-- Model-specific memory requirement formulas for different LLM types
-- Memory overhead calculations including tensor parallelism (20%) and system reserve (2GB)
-
-## Layer Distribution Engine 
+Layer Balancing System (layer_balance.py):
+- Distributes model layers across GPUs using weighted performance profiling:
+  - Short sequences (64 tokens): 20% weight
+  - Long sequences (1024 tokens): 80% weight
+- Optimizes layer placement based on GPU memory quotas and reserve ratios
+- Handles embedding and output layer special cases
 Importance: 90
 
-Layer balancing algorithms in layer_balance.py:
-- Distributes transformer layers across GPUs based on performance profiling
-- Uses weighted execution time analysis combining:
-  - Short sequence profiling (64 tokens, 20% weight)
-  - Long sequence profiling (1024 tokens, 80% weight)
-- Implements quota-based GPU allocation with configurable reserve ratios
-- Prioritizes high-performance-differential layers to faster GPU within memory constraints
-
-## Context Size Calculator
+Context Size Calculator (ctx_size.py):
+- Computes maximum safe context length using formula:
+  bytes_per_token = 2 * layers * KV_heads * dimension * (bits/8) * MoE_factor
+- Includes specialized handling for:
+  - MoE (Mixture of Experts) models with scaling factors
+  - Grouped Query Attention architectures
+  - Different quantization levels (4-bit, 8-bit)
 Importance: 85
 
-Context window optimization in ctx_size.py:
-- Calculates maximum safe token window based on:
-  - Layer count 
-  - KV head dimensions
-  - Hidden layer size
-  - MoE architecture factor
+Memory Monitor System:
+- Implements model-specific memory profiles with:
+  - Base memory requirements tracking
+  - Per-batch memory consumption
+  - Per-token memory usage rates
+  - Growth rate projections
+- Four-tier alert system (NORMAL, WARNING, CRITICAL, EMERGENCY)
+- Hierarchical OOM prevention:
+  1. Cache clearing
+  2. Batch size reduction
+  3. Memory offloading
+  4. Process termination
+Importance: 88
+
+Smart Batching Logic:
+- Groups sequences by length similarity for optimal throughput
+- Dynamic batch size adjustment based on:
   - Available GPU memory
-- Contains model-specific parameter mappings for major LLM architectures
-- Implements safety margins for stable operation
-
-## GPU Resource Monitor
-Importance: 80
-
-Hardware telemetry collection in gpu_info.py:
-- Tracks real-time GPU utilization metrics
-- Monitors memory allocation and fragmentation
-- Calculates memory bandwidth consumption
-- Reports PCIe throughput between GPUs
-- Provides idle GPU detection with configurable thresholds
+  - Model size requirements
+  - Sequence length distribution
+- OOM recovery with 25% batch size reduction
+- Progressive recovery with 10% increases after successful processing
+Importance: 82
 
 $END$

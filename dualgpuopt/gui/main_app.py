@@ -9,7 +9,48 @@ import time
 import logging
 import sys
 import os
+import tempfile
 from pathlib import Path
+
+# Determine log directory - use temp directory or user home
+def get_log_directory():
+    """Get an appropriate directory for log files"""
+    try:
+        # First try to use the same directory as the executable/script
+        if getattr(sys, 'frozen', False):
+            # We're running in a PyInstaller bundle
+            base_dir = Path(sys._MEIPASS).parent
+        else:
+            # We're running in a normal Python environment
+            base_dir = Path(__file__).parent.parent.parent
+            
+        # Try to create a logs directory
+        logs_dir = base_dir / "logs"
+        logs_dir.mkdir(exist_ok=True)
+        
+        # Test if we can write to it
+        test_file = logs_dir / "write_test.tmp"
+        try:
+            test_file.write_text("test")
+            test_file.unlink()  # Delete the test file
+            return logs_dir
+        except (PermissionError, OSError):
+            # Fall back to other options if we can't write to the logs directory
+            pass
+            
+        # Try user home directory
+        user_dir = Path.home() / "DualGPUOptimizer" / "logs"
+        user_dir.mkdir(parents=True, exist_ok=True)
+        return user_dir
+    except Exception as e:
+        # Use temp directory as last resort
+        temp_dir = Path(tempfile.gettempdir()) / "DualGPUOptimizer"
+        temp_dir.mkdir(exist_ok=True)
+        return temp_dir
+
+# Get log directory and configure logging
+log_dir = get_log_directory()
+log_file = log_dir / "dualgpuopt.log"
 
 # Configure logging
 logging.basicConfig(
@@ -17,16 +58,18 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler('dualgpuopt.log')
+        logging.FileHandler(log_file)
     ]
 )
 
 logger = logging.getLogger("DualGPUOpt.MainApp")
+logger.info(f"Starting application with log file at: {log_file}")
 
 # Import our components
 from . import dashboard
 from . import optimizer_tab
 from . import launcher
+from . import theme
 from ..telemetry import get_telemetry_service
 
 # Check for advanced feature dependencies
@@ -66,6 +109,9 @@ class MainApplication(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)
         
+        # Apply theme to parent window
+        theme.apply_custom_styling(parent)
+        
         # Header with status
         header_frame = ttk.Frame(self, padding=10)
         header_frame.grid(row=0, column=0, sticky="ew")
@@ -74,7 +120,7 @@ class MainApplication(ttk.Frame):
         title_label.pack(side=tk.LEFT)
         
         self.status_var = tk.StringVar(value="Status: Ready")
-        status_label = ttk.Label(header_frame, textvariable=self.status_var, foreground="green")
+        status_label = ttk.Label(header_frame, textvariable=self.status_var, foreground=theme.THEME_DARK_PURPLE["success"])
         status_label.pack(side=tk.RIGHT)
         
         # Create notebook for tabs
@@ -138,28 +184,95 @@ class MainApplication(ttk.Frame):
         super().destroy()
 
 
+def find_icon():
+    """Find the application icon in various locations
+    
+    Returns:
+        Path to the icon file, or None if not found
+    """
+    # Check multiple locations for the icon
+    potential_paths = []
+    
+    # If running in PyInstaller bundle
+    if getattr(sys, 'frozen', False):
+        # Running in PyInstaller bundle
+        base_dir = Path(sys._MEIPASS)
+        exe_dir = Path(sys.executable).parent
+        
+        potential_paths.extend([
+            base_dir / "dualgpuopt" / "resources" / "icon.png",
+            base_dir / "dualgpuopt" / "resources" / "icon.ico",
+            base_dir / "resources" / "icon.png",
+            base_dir / "resources" / "icon.ico",
+            exe_dir / "dualgpuopt" / "resources" / "icon.png",
+            exe_dir / "dualgpuopt" / "resources" / "icon.ico",
+            exe_dir / "resources" / "icon.png",
+            exe_dir / "resources" / "icon.ico",
+            exe_dir / "icon.png",
+            exe_dir / "icon.ico"
+        ])
+    else:
+        # Running in development mode
+        current_dir = Path(__file__).parent
+        root_dir = current_dir.parent.parent
+        
+        potential_paths.extend([
+            current_dir / "resources" / "icon.png",
+            current_dir.parent / "resources" / "icon.png",
+            root_dir / "dualgpuopt" / "resources" / "icon.png",
+            root_dir / "assets" / "icon.png",
+            root_dir / "dualgpuopt" / "resources" / "icon.ico",
+            root_dir / "assets" / "icon.ico",
+            Path("dualgpuopt") / "resources" / "icon.png",
+            Path("dualgpuopt") / "resources" / "icon.ico",
+            Path("assets") / "icon.png",
+            Path("assets") / "icon.ico",
+            Path("icon.png"),
+            Path("icon.ico")
+        ])
+    
+    # Check each path and return the first one that exists
+    for path in potential_paths:
+        if path.exists():
+            logger.info(f"Found icon at: {path}")
+            return path
+    
+    # No icon found
+    logger.warning("No icon found in any of the expected locations")
+    return None
+
+
 def run():
     """Main entry point for the application"""
-    root = tk.Tk()
+    # Check if ttkthemes is available, use ThemedTk if it is
+    try:
+        from ttkthemes import ThemedTk
+        root = ThemedTk(theme="equilux")
+    except ImportError:
+        logger.info("ttkthemes not available, using standard Tk")
+        root = tk.Tk()
+    
     root.title("DualGPUOptimizer")
     root.geometry("800x600")
     
     # Set application icon
     try:
-        # Look for icon in various locations
-        icon_paths = [
-            Path("assets/icon.png"),
-            Path(__file__).parent / "assets" / "icon.png",
-            Path(__file__).parent.parent.parent / "assets" / "icon.png"
-        ]
-        
-        for icon_path in icon_paths:
-            if icon_path.exists():
+        icon_path = find_icon()
+        if icon_path:
+            # Use PhotoImage for PNG or TkImage for ICO
+            if icon_path.suffix.lower() == '.png':
                 icon = tk.PhotoImage(file=str(icon_path))
                 root.iconphoto(True, icon)
-                break
+            elif icon_path.suffix.lower() == '.ico' and not getattr(sys, 'frozen', False):
+                # In development mode, try to use the .ico file directly
+                root.iconbitmap(str(icon_path))
+        else:
+            logger.warning("No application icon found")
     except Exception as e:
         logger.warning(f"Failed to load application icon: {e}")
+    
+    # Apply theme
+    theme.apply_theme(root)
     
     # Create and configure main application
     app = MainApplication(root)

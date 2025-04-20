@@ -1,59 +1,57 @@
 ---
-description: Handles model execution flow optimization, command generation and GPU memory allocation for dual-GPU language model inference
-globs: dualgpuopt/runner.py,dualgpuopt/gpu_info.py,dualgpuopt/ctx_size.py,dualgpuopt/optimizer.py
+description: Handles model execution workflow configuration and GPU resource allocation for LLM deployment
+globs: **/launcher.py,**/runner.py,**/optimizer.py,**/gpu_info.py,**/commands/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core execution flow logic revolves around:
+Core Model Execution Components:
 
-1. Command Generation Pipeline (dualgpuopt/optimizer.py)
-- Framework-specific parameter generation:
-  * llama.cpp: GPU split ratios and layer distributions
-  * vLLM: Tensor parallel sizing and memory allocation
-- Automatic optimization based on detected GPU capabilities:
-  * Memory availability checks
-  * Layer performance profiling
-  * Split ratios based on relative GPU power
-  * Tensor parallel configuration for different model architectures
+1. Framework-Specific Command Generation (80/100)
+- Generates optimized command lines for different ML frameworks:
+  * llama.cpp: GPU layer splits and context size parameters
+  * vLLM: Tensor parallel size and memory utilization config
+- Located in: dualgpuopt/launcher.py, dualgpuopt/commands/gpu_commands.py
 
-2. Context Size Management (dualgpuopt/ctx_size.py)
-- Model-specific window size calculation incorporating:
+2. Memory Management Strategy (95/100)
+- Implements progressive memory management:
+  * OOM detection with automatic recovery
+  * Memory pressure monitoring with thresholds
+  * CUDA cache clearing on threshold breach
+  * Dynamic batch size adjustment based on memory availability
+- Located in: dualgpuopt/memory_monitor.py
+
+3. GPU Layer Distribution (90/100)
+- Dynamic layer balancing across multiple GPUs using:
+  * Performance weights (64 tokens: 0.2, 1024 tokens: 0.8)
+  * Memory quota-based distribution
+  * Contiguous block formation to minimize transitions
+- Located in: dualgpuopt/layer_balance.py
+
+4. Model Parameter Analysis (85/100)
+- Extracts model parameters from filenames:
   * Layer count and dimensions
-  * KV head configuration 
-  * MoE architecture factors
-  * Per-token memory requirements
-  * Safety margins and reserved memory
-- Token window validation against GPU memory constraints
+  * KV head configuration
+  * Context size optimization
+  * Batch size calculations
+- Located in: dualgpuopt/optimizer.py
 
-3. Layer Distribution System (dualgpuopt/runner.py)  
-- Performance-based layer distribution:
-  * Profiling of layer execution times
-  * Weighted scoring based on sequence lengths 
-  * Quota-based allocation with reserve margins
-  * Priority assignment for high-impact layers
-- Dynamic rebalancing based on runtime metrics
+5. Process Management (75/100)
+- Non-blocking subprocess handling for model inference
+- Specialized management for llama.cpp and vLLM processes
+- Thread-safe output streaming
+- Located in: dualgpuopt/runner.py
 
-4. Memory Split Optimization (dualgpuopt/optimizer.py)
-- Optimal memory distribution calculations:
-  * KV cache requirements per token
-  * Tensor parallelism overhead allocation
-  * System reserve margins
-  * Model-specific safety buffers
-- Split configurations proportional to GPU capabilities
+6. Resource Monitoring (70/100)
+- Real-time metrics collection:
+  * Tokens/second throughput
+  * GPU memory pressure
+  * Temperature and utilization
+  * Performance degradation detection
+- Located in: dualgpuopt/telemetry.py
 
-Key Domain Rules:
-- Layer distribution must respect per-GPU memory quotas
-- Split ratios account for relative GPU performance differences
-- Memory allocation includes safety margins for stability
-- Token windows validated against available GPU memory
-
-Importance Scores:
-- Command Generation Pipeline: 95 (Core execution optimization)
-- Context Size Management: 90 (Critical for model stability)
-- Layer Distribution: 85 (Key performance optimization)
-- Memory Split Optimization: 90 (Essential resource management)
+The system employs a layered approach to model execution, with specialized handling for different frameworks and dynamic resource allocation based on GPU capabilities and model requirements.
 
 $END$

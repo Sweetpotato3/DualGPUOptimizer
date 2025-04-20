@@ -1,60 +1,67 @@
 ---
-description: Specialized GPU resource monitoring and telemetry collection system for dual-GPU optimization scenarios
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/dashboard.py
+description: Resource monitoring configuration and telemetry system setup for collecting GPU performance and memory metrics.
+globs: */telemetry.py,*/metrics.py,*/tray.py,*/memory_monitor.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Real-time GPU Telemetry Collection System
+The resource monitoring system implements GPU performance telemetry and memory tracking through these key components:
 
-1. GPU Performance Metrics Collection (telemetry.py)
-Core metrics gathered:
-- GPU utilization percentage
-- Memory utilization (used/total/free)
-- Temperature monitoring with thresholds (70°C orange, 80°C red)
-- Power consumption tracking
-- Graphics/Memory clock speeds
-- PCIe bandwidth utilization 
-- Fan speed percentages
+## GPU Telemetry Service (telemetry.py) 
+Importance: 95
 
-2. Metrics Processing Pipeline (metrics.py)
-- Continuous polling system with configurable intervals:
-  - Critical metrics: 500ms
-  - Standard metrics: 1000ms
-  - Background metrics: 2000ms
-- Event-driven update architecture
-- 60-point rolling history for trend analysis
-- Automatic unit scaling for bandwidth metrics (KB/s to GB/s)
+Core collection system for real-time GPU performance metrics:
 
-3. Resource Alert System (tray.py)
-- Idle GPU detection with configurable thresholds
-- Default 30% utilization threshold
-- 5-minute monitoring window
-- Progressive alert stages based on duration
-- Auto-shutdown capability for idle resources
+- Comprehensive metric gathering:
+  - GPU utilization percentages 
+  - Memory usage and allocation
+  - Temperature with thresholds (70°C warning, 80°C critical)
+  - Power consumption curves
+  - Fan speeds and clock rates
+  - PCIe bandwidth utilization
 
-4. Multi-GPU Dashboard (dashboard.py)
-- Synchronized visualization of dual GPU metrics
-- Color-coded status indicators:
-  - Green: Normal operation
-  - Orange: Warning thresholds
-  - Red: Critical thresholds
-  - Blue: Idle state
-- Dynamic grid system for temporal reference
-- Hardware-specific maximums:
-  - Graphics clock: 2500 MHz
-  - Memory clock: 12000 MHz
-  - Temperature: 100°C
-  - Power: GPU-specific TDP
+- Four-level alert classification:
+  - NORMAL: Within expected parameters
+  - WARNING: Approaching limits
+  - CRITICAL: Resource constraints
+  - EMERGENCY: Imminent failure conditions
 
-Business Rules:
-- Memory warnings trigger at <256MB available
-- Temperature warnings staged at 70°C and 80°C
-- Power monitoring normalized to card-specific TDP
-- Idle detection requires sustained low utilization
-- Alert system requires manual acknowledgment
-- Metrics history maintains exactly 60 data points
+## Memory Monitor (memory_monitor.py)
+Importance: 90
+
+Memory profiling and OOM prevention system:
+
+- Model-specific memory profiles:
+  - Base memory requirements
+  - Per-batch consumption rates  
+  - Per-token tracking
+  - Growth projections
+  - Recovery buffer specs
+
+- Four-tier recovery strategy:
+  1. Cache clearing
+  2. Batch size reduction 
+  3. Memory offloading
+  4. Process termination
+
+- Model architectures supported:
+  - Llama2 (7B, 13B, 70B)
+  - Mistral-7B
+  - Mixtral-8x7B
+
+## System Tray Integration (tray.py)
+Importance: 65
+
+System tray monitoring interface providing:
+
+- Real-time GPU metric display
+- Memory pressure indicators
+- Temperature warnings
+- Utilization graphs
+- Quick actions for memory recovery
+
+The monitoring system focuses on preventing OOM conditions while maximizing throughput for large language models through comprehensive telemetry collection and memory profiling.
 
 $END$

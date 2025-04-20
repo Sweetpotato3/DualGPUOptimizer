@@ -55,10 +55,13 @@ def check_and_install_torch():
             print(f"Failed to install PyTorch: {e}")
             return False
 
-# Import and run the application
-if __name__ == "__main__":
+def main():
+    """Main entry point function that can be imported and called from elsewhere"""
     # Add multiprocessing support
     multiprocessing.freeze_support()
+    
+    # Print working directory for diagnostic purposes
+    print(f"Current working directory: {os.getcwd()}")
     
     # Check and install PyTorch if needed
     torch_installed = check_and_install_torch()
@@ -110,4 +113,8 @@ if __name__ == "__main__":
         print(f"Error launching application: {e}")
         import traceback
         traceback.print_exc()
-        input("Press Enter to exit...") 
+        input("Press Enter to exit...")
+
+# Import and run the application
+if __name__ == "__main__":
+    main() 
