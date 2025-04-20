@@ -1,56 +1,63 @@
 ---
-description: Specification for GPU resource monitoring and telemetry collection system with real-time metrics tracking and alert mechanisms
-globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/memory_monitor.py,**/dashboard.py
+description: Provides implementation details for GPU resource monitoring, telemetry collection, and performance tracking across multi-GPU systems
+globs: **/telemetry.py,**/gpu_info.py,**/metrics.py,**/tray.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system provides real-time GPU telemetry collection and metrics tracking with alert capabilities.
+GPU Resource Monitoring System for ML workloads with specialized telemetry collection, processing and alerting capabilities.
 
 Core Components:
 
-### GPU Telemetry Collection
-- Implements NVML-based polling generator for GPU metrics
-- Collects utilization, memory usage, PCIe throughput, temperature, power usage, fan speed, clock speeds
-- Provides configurable update intervals for different metrics
-- Maintains rolling window of historical data (60 sample points)
+1. Telemetry Collection Pipeline
+- Streams real-time GPU metrics including:
+  * Memory utilization (total/used/free)
+  * PCIe bandwidth (RX/TX rates)
+  * Power consumption and thermal status
+  * Clock speeds (graphics/memory)
+  * GPU and memory utilization percentages
+- Implements middleware for metrics processing:
+  * EventBusMiddleware for event distribution
+  * LoggingMiddleware for debug information
+- Provides fallback to mock data generation when hardware access fails
 
-### Memory Monitoring System 
-- Defines four alert levels: Normal, Warning, Critical, Emergency
-- Tracks per-model memory profiles including:
-  - Base memory usage
-  - Per-batch memory growth
-  - Per-token memory requirements
-- Implements predictive OOM prevention using historical patterns
-- Progressive threshold monitoring with customizable trigger points
+2. Performance Monitoring
+- Custom threaded metrics collection with configurable intervals:
+  * 500ms for critical metrics  
+  * 1000ms for standard metrics
+  * 2000ms for background metrics
+- Maintains 60-point historical data buffer for trend analysis
+- Color-coded GPU activity visualization with distinct colors per GPU
 
-### Resource Optimization
-- Calculates maximum safe batch sizes based on:
-  - Model memory profiles
-  - Available VRAM
-  - Growth patterns
-  - Safety margins
-- Provides memory-aware context size recommendations
-- Implements batch size auto-adjustment based on memory pressure
+3. Memory Management
+- Implements multi-tier memory alert system:
+  * WARNING (80% utilization)
+  * CRITICAL (90% utilization)
+  * EMERGENCY (95% utilization)
+- Model-specific memory profiles with:
+  * Base memory requirements
+  * Per-batch memory scaling
+  * Growth rate projections
+- Predictive memory consumption modeling using rolling 100-point history
 
-### Alert System
-- Progressive alert thresholds for:
-  - Memory utilization
-  - Temperature limits  
-  - Power consumption
-  - Performance degradation
-- Four-tier recovery strategy:
+4. Alert Mechanism
+- Real-time threshold monitoring for:
+  * Temperature caps with 100°C limit
+  * Power usage against GPU-specific maximums  
+  * PCIe bandwidth auto-scaling (KB/s-GB/s)
+  * Memory pressure detection
+- Implements recovery strategies:
   1. Cache clearing
-  2. Batch reduction
+  2. Batch size reduction
   3. Memory offloading
   4. Process termination
 
-Relevant File Paths:
-- `dualgpuopt/telemetry.py`
-- `dualgpuopt/memory_monitor.py`
-- `dualgpuopt/metrics.py`
-- `dualgpuopt/gpu_info.py`
+File Paths:
+- dualgpuopt/telemetry.py: Core telemetry collection
+- dualgpuopt/memory_monitor.py: Memory management system
+- dualgpuopt/gui/dashboard.py: Monitoring visualization
+- dualgpuopt/tray.py: System tray integration
 
 $END$

@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Applies when documenting high-level architecture and organization of dual GPU optimization system for language model inference, focusing on GPU resource management, model parameter optimization, and memory monitoring
-globs: *.py,*/*.py
+description: Create high-level overview documentation focused on core business logic and domain-specific implementations for GPU optimization and machine learning model deployment systems, particularly those involving multi-GPU setups and model inference optimization.
+globs: *.py,*/dualgpuopt/*.py
 alwaysApply: false
 ---
 
@@ -154,39 +154,44 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system enables efficient deployment of large language models across dual GPU setups through several interconnected core components:
+The DualGPUOptimizer system implements specialized multi-GPU optimization for large language model deployment. The core business logic is organized into several key areas:
 
-## GPU Resource Management 
-Located in `dualgpuopt/gpu_info.py`, this component:
-- Tracks real-time GPU metrics including utilization, memory usage, temperature, power
-- Implements platform-specific detection for NVIDIA/Apple GPUs
-- Provides mock GPU simulation with correlated metrics for testing
+## GPU Resource Management
+Core implementation in `dualgpuopt/gpu_info.py` and `dualgpuopt/memory_monitor.py`:
+- GPU profiling and capability detection
+- Memory pressure monitoring with configurable thresholds 
+- Model-specific memory usage profiles for common LLMs
+- Automated recovery strategies for out-of-memory conditions
 
-## Model Parameter Optimization
-Implemented in `dualgpuopt/optimizer.py` and `dualgpuopt/layer_balance.py`:
-- Calculates optimal context sizes based on model architecture and GPU memory
-- Determines layer distribution across GPUs using performance profiling
-- Handles model-specific memory patterns for different architectures (MQA, GQA, MoE)
+## Model Launch Optimization
+Implemented in `dualgpuopt/gui/launcher.py` and `dualgpuopt/layer_balance.py`:
+- Dynamic GPU memory allocation based on model architecture
+- Intelligent layer distribution across multiple GPUs
+- Framework-specific launch parameter optimization
+- Automatic batch size calculation for maximum throughput
 
-## Memory Management System
-Core logic in `dualgpuopt/memory_monitor.py`:
-- Implements model-specific memory profiles with pre-configured settings
-- Provides progressive memory alerts with four severity levels
-- Executes hierarchical recovery strategies (cache clearing, batch reduction, offloading)
+## Telemetry and Monitoring
+Handled by `dualgpuopt/telemetry.py`:
+- Real-time GPU metrics collection
+- Memory usage projection and trend analysis
+- PCIe bandwidth monitoring
+- Temperature and power consumption tracking
 
-## GPU Telemetry Collection
-Located in `dualgpuopt/telemetry.py`:
-- Collects comprehensive GPU metrics including utilization, memory, temperature
-- Implements middleware pipeline for processing telemetry data
-- Provides mock data generation for testing environments
+## Model Deployment Configuration 
+Core logic in `dualgpuopt/optimizer.py`:
+- Model architecture parameter detection
+- GPU split ratio calculation
+- Memory reservation optimization
+- Framework-specific command generation
 
-## Launch Configuration Generation
-Implemented in `dualgpuopt/gui/launcher.py`:
-- Generates optimized launch configurations for llama.cpp and vLLM
-- Calculates tensor parallel splits based on available GPU memory
-- Handles framework-specific parameter optimization
+## Batch Processing System
+Implemented in `dualgpuopt/batch/smart_batch.py`:
+- Length-aware batch scheduling
+- Dynamic batch size optimization
+- Token-based workload distribution
+- Automatic recovery from memory pressure
 
-The system architecture emphasizes modularity between GPU monitoring, memory management, and model optimization components while maintaining specialized handling for different model architectures and frameworks.
+The system integrates these components to provide automated optimization of LLM deployment across multiple GPUs, with specialized handling for different model architectures and framework requirements.
 
 $END$
 END SPECIFICATION

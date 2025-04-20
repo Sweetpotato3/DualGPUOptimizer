@@ -1,76 +1,84 @@
 ---
-description: Specifies how large language models are executed across multiple GPUs, including memory allocation, batch processing, and resource optimization.
-globs: **/optimizer.py,**/launcher.py,**/memory_monitor.py,**/layer_balance.py,**/batch/*.py,**/commands/*.py
+description: Provides guidance on AI model execution workflows, optimization strategies, and launch parameter configuration across multiple GPUs.
+globs: **/launcher.py,**/gpu_commands.py,**/runner.py,**/model_profiles.py,**/mpolicy.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Execution Components
+The model execution flow encompasses several key subsystems:
 
-1. Model Runtime Optimization System (launcher.py)
-- Dynamic GPU resource allocation based on available VRAM/model size
-- Intelligent layer distribution across GPUs using performance profiling
-- Framework-specific command generation for llama.cpp and vLLM
-- Implements automated parameter tuning based on model architecture
+## Launch Parameter Generation
 
-2. Memory Management System (memory_monitor.py)
-- Model-specific memory profiles with pre-configured settings
-- Predictive OOM prevention using historical usage patterns
-- Multi-level memory alert system with progressive thresholds
-- Automatic recovery strategies: cache clearing, batch reduction, offloading
+The launcher system generates optimal launch parameters for both llama.cpp and vLLM frameworks:
 
-3. Layer Distribution (layer_balance.py)
-- Performance-based layer distribution across GPUs
-- Balancing algorithm considers sequence length profiles
-- Creates contiguous layer blocks to minimize inter-GPU communication
-- Handles MoE architecture-specific layer allocation
+```python
+def llama_command(model_path: str, ctx: int, split: str):
+    return f"./main -m {model_path} --gpu-split {split} --ctx-size {ctx}"
 
-4. Smart Batching System (batch/smart_batch.py)
-- Length-aware batching with dynamic resizing
-- Back-pressure mechanism prevents GPU memory overflow 
-- Token ratio-based bucketing for workload distribution
-- Handles asynchronous batch processing with future-based results
+def vllm_command(model_path: str, tp: int):
+    return f"--model {model_path} --tensor-parallel-size {tp}"
+```
 
-5. Command Generation (commands/gpu_commands.py)
-- Framework-specific optimization parameters
-- GPU split configuration for tensor parallelism
-- Memory-aware command generation
-- Environment variable optimization for multi-GPU setups
+## GPU Resource Management
 
-## Execution Flow
+The system actively manages GPU resources during model execution:
 
-1. Model Startup
-- Extract model parameters from filename
-- Calculate optimal context size and batch parameters
-- Distribute model layers across GPUs
-- Configure framework-specific launch parameters
+1. Dynamic GPU Split Calculation
+- Analyzes available GPU memory
+- Determines optimal tensor split ratios
+- Configures memory pressure thresholds
+- Maintains reserves for system overhead
 
-2. Runtime Optimization
-- Monitor GPU memory usage and performance metrics
-- Adjust batch sizes dynamically based on memory pressure
-- Balance layer distribution based on runtime profiling
-- Implement preventive OOM handling
+2. Layer Distribution
+- Profiles layer performance on each GPU
+- Creates optimized device maps for model distribution
+- Handles load balancing across devices
+- Maintains monitoring of layer execution stats
 
-3. Recovery Handling
-- Progressive memory recovery strategies
-- Dynamic batch size adjustment
-- Automated cache management
-- Process restart handling with state preservation
+## Recovery System
 
-## Key Integration Points
+1. OOM Prevention
+- Implements tiered recovery approaches:
+  * Cache clearing
+  * Batch size reduction
+  * Memory offloading
+  * Process termination
 
-- Memory Monitor ↔ Layer Balancer
-- Smart Batcher ↔ Memory Monitor
-- Command Generator ↔ Runtime Optimizer
-- Framework Interface ↔ Memory Management
+2. Memory Pressure Monitoring
+- Configurable alert levels (WARNING/CRITICAL/EMERGENCY)
+- Memory usage projection system
+- Rolling history analysis
+- Growth rate modeling with safety factors
 
-Importance Scores:
-- Model Runtime Optimization: 95
-- Memory Management: 90
-- Layer Distribution: 85
-- Smart Batching: 80
-- Command Generation: 75
+## Smart Batch Processing
+
+The batch processing system optimizes workload distribution:
+
+1. Length-aware batch scheduling
+- Groups similar length sequences
+- Adapts batch sizes based on GPU capacity
+- Implements backpressure for OOM prevention
+- Gradual batch size recovery after stability
+
+2. Token Management
+- Maximum token sum per batch (16384)
+- Length threshold-based splitting
+- Backpressure scaling (25-95%)
+- 5-batch stability window
+
+## Framework Integration
+
+1. Mixed Precision Policies
+- Specialized handling for LayerNorm operations
+- Custom autocast context management
+- Framework-specific dtype configurations
+
+2. Model-Specific Optimizations
+- Parameter detection from model names
+- Architecture-based context size calculation
+- Automatic batch size optimization
+- Memory overhead calculation
 
 $END$

@@ -1,71 +1,62 @@
 ---
-description: Specification for GPU optimization algorithms and memory management patterns for dual GPU systems
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/batch/*.py
+description: GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies from optimizer.py and gpu_info.py
+globs: 
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## GPU Resource Management
+### Memory Distribution Algorithm (optimizer.py)
+Calculates optimal GPU memory splits for dual GPU setups based on:
+- Relative GPU memory capacities
+- Model architecture requirements
+- KV cache overhead
+- Safety margins (10% buffer)
+- Tensor parallel slicing ratios
 
-### Memory Distribution Algorithm
-Located in `optimizer.py`:
-- Dynamic tensor split calculation based on available VRAM ratios between GPUs
-- Automatic reservation of 2GB system memory buffer per GPU
-- Progressive memory allocation with 90% max utilization target
-- Fallback memory redistribution if primary GPU exceeds 95% utilization
+Core business logic splits model across GPUs using:
+```python
+def tensor_split(gpus):
+    total = sum(g.mem_free for g in gpus)
+    return [g.mem_free/total for g in gpus]
+```
 
-### Layer Balancing System
-Located in `layer_balance.py`:
-- Layer distribution optimization across dual GPUs using latency profiling
-- 20/80 weighted performance ratio between short/long sequences
-- Contiguous layer block formation to minimize cross-GPU communication
-- Automatic layer redistribution when temperature threshold exceeded
+### Layer Balancing System (layer_balance.py)
+- Profiles each transformer layer's performance on different GPUs
+- Uses weighted profiling with short (64 token) and long (1024 token) sequences 
+- Allocates layers to GPUs based on empirical performance data
+- Optimizes for contiguous layer blocks to minimize cross-GPU communication
 
-### Memory Optimization
-Located in `gpu_info.py`:
-- Model parameter chunking based on per-layer memory footprint
-- KV cache memory allocation with sliding window optimization
-- Tensor parallel split calculation considering:
-  * Individual GPU VRAM capacity
-  * Model architecture requirements
-  * Dynamic batch size scaling
+### Batch Size Optimization (batch/smart_batch.py)
+- Dynamic batch sizing based on:
+  - Available GPU memory
+  - Model architecture
+  - Input sequence lengths
+  - Current memory pressure
+- Implements backpressure when approaching memory limits
+- Recovery logic to gradually increase batch size after OOM events
 
-### Batch Processing
-Located in `batch/smart_batch.py`:
-- Length-aware sequence batching with token ratio optimization
-- Dynamic batch size adjustment based on:
-  * Available GPU memory
-  * Current utilization levels
-  * Temperature thresholds
-  * Model size parameters
-
-### VRAM Management
-Located in `optimizer.py`:
-- Progressive memory reclamation strategy:
+### Memory Monitoring (memory_monitor.py)
+- Multi-tier alert system:
+  - WARNING: 80% memory usage
+  - CRITICAL: 90% memory usage  
+  - EMERGENCY: 95% memory usage
+- Memory usage projection using rolling history
+- Model-specific memory profiles for common architectures
+- Proactive OOM prevention with tiered recovery:
   1. Cache clearing
-  2. Gradient cleanup
-  3. Hidden state compression
-  4. Emergency model offloading
-- Memory pressure detection with 3-level warning system
-- Automatic batch size reduction when approaching memory limits
+  2. Batch reduction
+  3. Memory offloading
+  4. Process termination
 
-### Performance Optimization
-Located in `layer_balance.py`:
-- Inter-GPU bandwidth monitoring for optimal layer placement
-- Dynamic layer migration based on:
-  * GPU temperature gradients
-  * Memory pressure levels
-  * PCIe bandwidth utilization
-  * Processing latency measurements
-
-Importance scores:
-- Memory Distribution Algorithm: 95 (core optimization logic)
-- Layer Balancing System: 90 (critical performance component)
-- Memory Optimization: 85 (key resource management)
-- Batch Processing: 80 (workflow optimization)
-- VRAM Management: 85 (resource stability)
-- Performance Optimization: 75 (supporting optimization)
+### GPU Information Tracking (gpu_info.py)
+- Real-time monitoring of:
+  - Memory utilization 
+  - Power consumption
+  - Temperature
+  - PCIe bandwidth
+- Provides mock data generation for testing
+- Correlates metrics for realistic simulation
 
 $END$
