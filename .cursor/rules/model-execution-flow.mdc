@@ -1,72 +1,44 @@
 ---
-description: Specifies the execution flow and orchestration of LLM models across multiple GPUs, including command generation and memory management.
-globs: **/run_optimizer.py,**/run_standalone.py,**/runner.py,**/optimizer.py,**/execution/*.py,**/launcher/*.py
+description: Defines LLM execution workflows, command generation, and GPU resource allocation patterns
+globs: **/optimizer.py,**/launcher/**,**/executor/**,**/gpu_commands.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow in DualGPUOptimizer centers around orchestrating LLM inference across multiple GPUs with specialized memory management and command generation.
+Key execution workflow components:
 
-Core Model Execution Components:
+1. LLM Launch Pipeline (dualgpuopt/gui/launcher/launch_controller.py):
+- Model size detection based on name patterns (70B, 13B, 7B, Mixtral)
+- Framework-specific command generation for llama.cpp and vLLM
+- Dynamic GPU memory allocation and tensor parallelism configuration
+- OOM recovery through CUDA cache clearing
 
-1. Command Generation System
-- Generates optimized commands for different ML frameworks:
-```python
-llama.cpp: '--gpu-split 7:3 --n-gpu-layers 32' 
-vLLM: '--tensor-parallel-size 2 --max-gpu-memory 0.9'
-```
-- Automatically determines optimal tensor parallel size based on GPU count
-- Calculates memory fraction values per GPU based on relative VRAM sizes
-- Custom environment variable generation for proper GPU allocation
+2. Resource Management (dualgpuopt/memory/monitor.py):
+- KV cache size calculation: context_size * 8 bytes * layers * kv_heads * hidden_size
+- Model weight requirement estimates based on parameter count
+- Memory split optimization across multiple GPUs
+- Memory allocation safety buffer maintains 10% headroom
 
-2. Memory Management Flow
-- Per-model memory profiling:
-```python
-llama2-70b:
-  base_usage: 35GB
-  per_batch: 350MB
-  per_token: 18KB
-```
-- Dynamic memory projections for out-of-memory prevention
-- Multi-tier recovery system:
-  1. Cache clearing
-  2. Batch reduction
-  3. Memory offloading
-  4. Process termination
-- Context size validation against available VRAM
+3. Batch Processing (dualgpuopt/batch/smart_batch.py):
+- Length-aware inference scheduling with backpressure mechanism
+- Dynamic batch size adjustments based on sequence length distribution
+- OOM recovery reduces batch size by 25% after failures
+- Gradual recovery increases batch size by 10% after 5 successful batches
 
-3. Layer Distribution 
-- Balanced layer assignment across GPUs based on:
-  - Relative GPU memory capacity
-  - Layer compute intensity
-  - GPU bandwidth characteristics
-- Custom heuristics for MoE model layer distribution
-- Automatic rebalancing on memory pressure
+4. Layer Distribution (dualgpuopt/layer_balance.py):
+- Performance-based layer assignment across GPUs
+- Block optimization creates contiguous layer groups
+- Special handling for embedding and output layers
+- Layer distribution validation ensures split ratios match assignments
 
-4. Execution Orchestration
-- Framework-specific process launching with optimized parameters
-- Non-blocking output handling for model processes
-- GPU resource monitoring and throttling
-- Process lifecycle management with graceful termination
+5. Framework Integration:
+- llama.cpp: GPU split ratios and layer distribution 
+- vLLM: Tensor parallel size and GPU device mapping
+- Mixed precision policies for LayerNorm and attention components
+- Framework-specific parameter validation and constraints
 
-5. Resource Allocation Flow
-- Automatic GPU capability detection
-- Memory split ratio calculations based on free VRAM
-- Dynamic adjustment of tensor parallel parameters
-- Framework-specific optimization parameters
-
-Key Domain Rules:
-- Minimum 2GB free memory required per GPU
-- Context size must not exceed available VRAM
-- Tensor parallel size limited by GPU count
-- MoE models require special layer distribution
-
-File Paths:
-- dualgpuopt/optimizer.py (command/memory optimization)
-- dualgpuopt/runner.py (process management)
-- dualgpuopt/services/gpu_commands.py (command generation)
-- dualgpuopt/launcher/launch_controller.py (execution orchestration)
+The execution flow prioritizes efficient resource utilization while maintaining stable model inference across multiple GPUs. Core logic emphasizes memory management, layer distribution optimization, and framework-specific deployment patterns.
 
 $END$

@@ -1,70 +1,86 @@
 ---
-description: Documents data flow patterns between components for GPU resource optimization, command generation, and metrics monitoring
-globs: **/*.py,**/services/**,**/commands/**,**/gui/**
+description: Documents data flow patterns for GPU optimization and model execution across system components
+globs: *.py,**/dualgpuopt/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
+The data flow architecture implements specialized flows for GPU resource optimization and model execution:
+
 ## Core Data Flow Components
 
-### GPU Resource Data Flow
-- GPU memory and utilization metrics flow from NVML/GPU drivers through telemetry service
-- Metrics processed through middleware pipeline before reaching UI components and event bus
-- `gpu_info.py` feeds real-time GPU data to optimization services and dashboard displays
-- Periodic polling ensures metrics stay updated with configurable intervals (500ms-2000ms)
+1. GPU Telemetry Pipeline
+- Source: `dualgpuopt/telemetry.py`
+- Collects real-time GPU metrics including:
+  * Memory utilization
+  * Power consumption 
+  * Temperature
+  * Fan speeds
+  * Clock rates
+- Publishes through event bus to monitoring components
+- Maintains 60-sample rolling window for trend analysis
 
-### Optimization Data Pipeline
-- Model configuration flows from UI inputs to parameter resolver service
-- Parameter resolver generates optimized launch configurations 
-- Launch configurations flow to command generator for framework-specific commands
-- Commands flow back to UI for display and execution
+2. Model Parameter Flow
+- Source: `dualgpuopt/gui/launcher/parameter_resolver.py`
+- Routes model configuration data:
+  * Context size calculations
+  * GPU memory split ratios
+  * Layer distribution mappings
+  * Tensor parallelism settings
+- Validates parameters against hardware constraints
+- Generates framework-specific launch configurations
 
-### Monitoring Metrics Flow
-- GPU metrics flow from telemetry service to event bus subscribers
-- Event bus distributes metrics to:
-  - Dashboard for visualization
-  - Logger for persistence
-  - Optimizer for dynamic adjustments
-- Status updates flow through event system to notify UI components
+3. Memory Management Pipeline 
+- Source: `dualgpuopt/memory/monitor.py`
+- Tracks GPU memory allocation patterns
+- Maintains usage thresholds and alerts
+- Coordinates memory reclamation during OOM events
+- Routes memory metrics to optimization components
 
-### State Management Flow
-- Application state managed by centralized state service
-- State changes propagate through event bus to registered components
-- UI components subscribe to relevant state updates
-- Settings persist through configuration service
+4. Optimization Event Flow
+- Source: `dualgpuopt/services/event_bus.py`
+- Handles bi-directional flow of:
+  * GPU configuration changes
+  * Performance metrics
+  * Resource allocation decisions
+  * Alert conditions
+- Prioritizes critical GPU operations
 
-## Key Data Flow Paths
+## Key Integration Points
 
-1. GPU Resource Collection Path:
-```
-NVML/Drivers -> gpu_info.py -> telemetry.py -> event_bus.py -> Subscribers
-```
+1. Model Launch Flow
+- Source: `dualgpuopt/gui/launcher/launch_controller.py`
+- Coordinates data flow between:
+  * Parameter validation
+  * Resource allocation
+  * Model initialization
+  * Performance monitoring
 
-2. Optimization Configuration Path:
-```
-UI Input -> parameter_resolver.py -> optimizer.py -> command_generator.py -> UI Display
-```
+2. Batch Processing Pipeline
+- Source: `dualgpuopt/batch/smart_batch.py`
+- Manages flow of:
+  * Sequence length metrics
+  * Batch size calculations
+  * Memory usage projections
+  * Performance feedback
 
-3. Metrics Monitoring Path:
-```
-telemetry.py -> event_bus.py -> {dashboard.py, logger.py, optimizer.py}
-```
+3. Layer Distribution Flow
+- Source: `dualgpuopt/layer_balance.py`
+- Routes layer assignments between GPUs based on:
+  * Performance profiling data
+  * Memory availability
+  * Hardware capabilities
+  * Model architecture
 
-## Critical Files
-
-### Data Collection
-- `dualgpuopt/gpu_info.py`: GPU resource data collection
-- `dualgpuopt/telemetry.py`: Telemetry processing pipeline
-
-### Data Distribution
-- `dualgpuopt/services/event_bus.py`: Event-based data distribution
-- `dualgpuopt/services/state_service.py`: State management 
-
-### Data Consumption
-- `dualgpuopt/gui/dashboard.py`: Metrics visualization
-- `dualgpuopt/optimizer.py`: Resource optimization
-- `dualgpuopt/commands/gpu_commands.py`: Command generation
+Importance Scores:
+- GPU Telemetry Pipeline: 95 - Critical for optimization decisions
+- Model Parameter Flow: 90 - Core model execution configuration
+- Memory Management: 85 - Essential resource coordination
+- Optimization Events: 80 - Key system coordination
+- Launch Flow: 75 - Model execution orchestration
+- Batch Processing: 70 - Performance optimization
+- Layer Distribution: 70 - Resource utilization
 
 $END$
