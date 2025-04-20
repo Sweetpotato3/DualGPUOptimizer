@@ -1,63 +1,66 @@
 ---
-description: Documents GPU optimization algorithms for memory distribution and tensor parallel splits
-globs: **/gpu_info.py,**/optimizer.py,**/metrics.py,**/memory/*.py,**/batch/*.py,**/layer_balance.py
+description: Specifies GPU memory optimization algorithms, tensor parallel splits, and model deployment strategies across multiple GPUs.
+globs: **/gpu_info.py,**/optimizer.py,**/gpu/**,**/memory/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-The GPU optimization system implements sophisticated algorithms for memory distribution and tensor parallel computation across multiple GPUs.
+## Memory Distribution System
+- Implements dynamic memory allocation across multiple GPUs based on model architecture and available VRAM
+- Calculates optimal tensor splits using GPU memory ratios and model layer characteristics
+- Supports asymmetric memory configurations with different GPU capacities
+- File: `dualgpuopt/optimizer.py`
 
-## Memory Distribution Logic
-Located in `optimizer.py` and `gpu_info.py`, the system:
+## Layer Distribution Engine
+- Distributes model layers across GPUs based on profiled performance metrics
+- Handles MoE (Mixture of Experts) models with specialized expert distribution logic
+- Implements weighted scoring system:
+  * 20% weight for short sequences (64 tokens)
+  * 80% weight for long sequences (1024 tokens)
+- File: `dualgpuopt/layer_balance.py`
 
-1. Calculates optimal memory splits for tensor parallelism based on:
-- Available GPU memory ratios
-- Model architecture requirements  
-- KV cache overhead per layer
-- Attention mechanism memory patterns
-- Expert layer distribution (for MoE models)
+## Context Size Calculator
+- Calculates maximum safe context length based on:
+  * Available GPU memory
+  * Model architecture parameters (layers, heads, dimensions)
+  * MQA/GQA attention patterns
+  * Memory overhead for MoE models
+- File: `dualgpuopt/ctx_size.py`
 
-2. Implements batch size optimization:
-- Estimates per-token memory usage
-- Considers model weight footprint
-- Accounts for activation memory
-- Handles gradient accumulation memory
-- Adjusts for quantization effects
+## Batch Processing System
+- Length-aware batching queue for inference optimization
+- Implements bucket policies for sequence length grouping:
+  * Power-of-two bucketing
+  * Token ratio-based bucketing
+- Provides back-pressure mechanisms to prevent RAM overflow
+- File: `dualgpuopt/batch/smart_batch.py`
 
-3. Layer distribution algorithm:
-```python
-def optimize_layer_distribution(gpus, model_config):
-    memory_ratios = [g.get_available_memory() for g in gpus]
-    layer_counts = distribute_layers(model_config.num_layers, memory_ratios)
-    return generate_device_map(layer_counts)
-```
+## Memory Recovery System
+- Progressive memory recovery with multiple strategies:
+  * CACHE_ONLY: Lightweight GPU cache clearing
+  * CLOCK_RESET: GPU clock management
+  * FULL_RESET: Comprehensive memory recovery
+  * SYSTEM_CMD: OS-specific reclamation
+- File: `dualgpuopt/memory/recovery.py`
 
-## Tensor Parallel Split Calculator
-The tensor parallel split logic calculates optimal fractions based on:
-- GPU memory capacities
-- Model parallel degree
-- Memory buffer requirements
-- Inter-GPU bandwidth
-- Load balancing factors
+## Memory Usage Predictor
+- Implements memory profiling for common model architectures
+- Projects memory growth using linear regression on usage history
+- Calculates maximum batch sizes and sequence lengths based on available memory
+- File: `dualgpuopt/memory/predictor.py`
 
-Core split calculation:
-```python
-split_ratios = [
-    round(gpu.memory / max_gpu_memory, 3) 
-    for gpu in available_gpus
-]
-```
+## Model Deployment Strategies
+Two primary approaches implemented:
+1. llama.cpp:
+- GPU layer splitting with context size considerations
+- Memory mapping for efficient VRAM utilization
+- Custom split configurations based on GPU capabilities
 
-## Memory Management 
-Memory optimization strategies include:
-- Dynamic KV cache pruning
-- Gradient checkpointing triggers
-- Memory defragmentation
-- Cache clearing thresholds
-- OOM prevention heuristics
-
-The system continuously monitors GPU memory pressure and applies optimization strategies based on configurable thresholds.
+2. vLLM:
+- Tensor parallel deployment with memory utilization controls
+- Dynamic parallel size determination
+- Memory-aware worker allocation
 
 $END$

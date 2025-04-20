@@ -1,47 +1,60 @@
 ---
-description: Specification for model execution flows including command generation, resource allocation, and GPU optimization patterns.
-globs: **/launcher/*,**/optimizer/*,**/gpu/*,**/commands/*,**/executor/*
+description: Technical specification for model execution flow including LLM command generation, configuration parameters and GPU resource allocation
+globs: **/optimizer.py,**/launcher/**,**/batch/**,**/gpu/**,**/model_profiles.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Launch Command Generation
-- **Llama.cpp Commands**: Generates GPU split and layer allocation commands based on VRAM availability and model requirements. Handles context length optimization and GPU specific parameters.
-- **vLLM Commands**: Configures tensor parallelism settings and GPU memory usage ratios. Generates deployment commands with optimized throughput settings.
+Core components managing model execution flow:
 
-## Resource Allocation System 
-- Dynamic VRAM distribution across GPUs based on model size and architecture
-- Implements context window scaling based on available GPU memory
-- Automatic tensor parallel size determination from GPU count and VRAM capacity
-- Layer placement optimization for multi-GPU setups
+1. Model Launch Pipeline
+- Command generation for multiple ML frameworks:
+  ```python
+  # llama.cpp command generation 
+  def generate_llama_cpp_cmd(model_path, gpu_split, context_size):
+    return f"llama.cpp --model {model_path} --gpu-split {gpu_split} --ctx-size {context_size}"
+  
+  # vLLM command generation
+  def generate_vllm_cmd(model_path, tp_size, max_tokens):
+    return f"vllm --model {model_path} --tensor-parallel-size {tp_size} --max-tokens {max_tokens}"
+  ```
+- Framework-specific parameter optimization:
+  - Context length scaling based on GPU memory
+  - Tensor parallel size for multi-GPU setups
+  - Memory utilization limits per device
 
-## Model Architecture Handling
-The system adapts execution parameters based on model architectures:
-- Mixture of Experts (MoE) models: Applies 1.05x memory overhead factor
-- Attention patterns: Adjusts memory usage for MQA (0.25x) and GQA (0.5x)
-- Per-model memory profiling for optimal GPU split ratios
+2. Batch Processing
+- Length-aware sequence batching using SmartBatcher
+- Implements back-pressure via queue depth limits
+- Provides bucket policies for sequence grouping:
+  - Power-of-two bucketing 
+  - Token ratio bucketing
+- OOM recovery with automatic cache clearing
 
-## Memory Management
-- Token-based memory estimation using architecture-specific formulas:
-```
-bytes_per_token = KV_OVERHEAD * layers * kv_heads * (hidden_size/heads) * dtype_size * expert_count
-```
-- Dynamic batch size adjustment based on available memory
-- Memory recovery strategies including cache clearing and workload redistribution
-
-## Launch Process Management 
-- Environment initialization with GPU-specific variables
-- Process monitoring with OOM detection and recovery
-- Telemetry collection for token throughput and GPU utilization
-- Graceful shutdown handling with resource cleanup
+3. Resource Allocation
+- Calculates optimal GPU split ratios based on available memory
+- Layer distribution optimization across multiple GPUs
+- Memory reservation policies with fallback mechanisms
 
 Key file paths:
-- dualgpuopt/gui/launcher/launch_controller.py 
-- dualgpuopt/gui/launcher/parameter_resolver.py
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/memory/predictor.py
-- dualgpuopt/optimizer.py
+```
+dualgpuopt/
+  optimizer.py - Core optimization logic
+  launcher/
+    launch_controller.py - Launch pipeline coordination  
+    parameter_resolver.py - Parameter optimization
+  batch/
+    smart_batch.py - Batching implementation
+  gpu/
+    monitor.py - GPU resource monitoring
+```
+
+The system orchestrates model execution by:
+1. Determining optimal configuration parameters
+2. Generating framework-specific launch commands 
+3. Managing batch processing and resource allocation
+4. Monitoring execution and handling recovery
 
 $END$

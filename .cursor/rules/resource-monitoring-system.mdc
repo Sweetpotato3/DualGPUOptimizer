@@ -1,60 +1,46 @@
 ---
-description: Specification for implementing resource monitoring and telemetry systems in applications with GPU metrics tracking
-globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/tray.py,**/memory/*.py
+description: Business logic specification for GPU resource monitoring, telemetry collection, and alert system implementation
+globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/alerts.py,**/tray.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The telemetry system implements specialized GPU resource monitoring with the following key components:
+The resource monitoring system encompasses three core components:
 
-## GPU Metrics Collection
-- Real-time monitoring of core GPU metrics:
-  - Utilization percentage (processing and memory)
-  - VRAM usage tracking
-  - Power consumption levels
-  - Temperature monitoring with thresholds
-  - PCIe bandwidth metrics
-  - Clock speeds (graphics and memory)
-  
-## Alert Mechanism
-- Multi-level threshold-based alerting:
-  - CRITICAL: 95% memory usage
-  - WARNING: 80% memory usage 
-  - EMERGENCY: Memory usage above safe threshold
-- Temperature alerts at 80°C (warning) and 90°C (danger)
-- Notification delivery through system tray
-- Alert persistence and acknowledgment tracking
+1. GPU Telemetry Collection:
+- Real-time monitoring of GPU utilization, memory usage, temperature, power consumption, PCIe bandwidth and clock speeds
+- Implements middleware pattern for metrics processing with customizable handlers
+- Provides event bus integration for telemetry data publishing as GPUMetricsEvent
+- Includes fallback mock data generation for testing environments
 
-## Memory Management
-- Dynamic memory tracking with utilization projection
-- Pre-emptive OOM prevention through:
-  - Cache clearing when reaching thresholds
-  - Memory reclamation strategies
-  - Workload redistribution
-- Historical memory usage patterns tracking
+2. Resource Monitoring:
+- Configurable sample history (60 samples) for performance trending
+- Bandwidth threshold monitoring for PCIe with auto-scaling (KB/s to GB/s)
+- Progressive metric display with hardware-specific maximums:
+  * Graphics clock: 2500 MHz cap 
+  * Memory clock: 12000 MHz cap
+  * Temperature: 100°C cap
+  * Power usage: Per-GPU limit
 
-## Telemetry Pipeline
-File: dualgpuopt/telemetry.py
-- Custom middleware system for telemetry processing
-- Real-time metrics publishing to event bus
-- Configurable polling intervals:
-  - Fast: 500ms for critical metrics
-  - Standard: 1000ms for general metrics
-  - Slow: 2000ms for non-critical data
+3. Alert System:
+- Multi-level alert thresholds (WARNING, CRITICAL, EMERGENCY) for:
+  * Memory pressure
+  * Temperature limits
+  * Power consumption
+  * PCIe bandwidth saturation
+- Alert policy management with customizable actions per severity level
+- Recovery strategy orchestration based on alert severity
+- Event publishing for alert state changes
 
-## Resource Visualization 
-File: dualgpuopt/tray.py
-- System tray integration for resource monitoring
-- Color-coded status indicators
-- Compact GPU metrics display
-- Quick access to memory management controls
+Key Files:
+- `dualgpuopt/telemetry.py`: Core telemetry collection system
+- `dualgpuopt/metrics.py`: Metric processing and storage
+- `dualgpuopt/monitor.py`: Resource monitoring and threshold management
+- `dualgpuopt/alerts.py`: Alert system implementation
+- `dualgpuopt/tray.py`: System tray integration for alert display
 
-Key file paths implementing this functionality:
-- dualgpuopt/telemetry.py
-- dualgpuopt/memory/monitor.py
-- dualgpuopt/memory/metrics.py
-- dualgpuopt/tray.py
+The system is specifically designed to handle dual GPU configurations with emphasis on real-time monitoring and alert generation for machine learning workloads.
 
 $END$

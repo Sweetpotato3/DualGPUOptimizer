@@ -10,9 +10,23 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 
-## New: Graceful Fallbacks for Dependencies
+## New: Comprehensive Dashboard in Direct Application
 
-DualGPUOptimizer now features comprehensive compatibility layers that allow the application to run even when certain dependencies are missing:
+The direct application now features the full GPU dashboard from the main application, providing:
+
+- Enhanced GPU metrics visualization with progress bars
+- Temperature monitoring with color-coded warnings
+- Power usage tracking with limit indicators
+- PCIe bandwidth monitoring
+- GPU clock speed visualization
+- Memory reset capabilities when available
+- Graceful fallback to basic monitoring when dashboard component is unavailable
+
+This integration brings the powerful monitoring dashboard from the full application to the simplified direct launcher, making it easier to monitor your GPU resources without launching the full application.
+
+## Graceful Fallbacks for Dependencies
+
+DualGPUOptimizer features comprehensive compatibility layers that allow the application to run even when certain dependencies are missing:
 
 - **UI Compatibility**: Falls back to simpler UI components when ttkbootstrap or other UI enhancements aren't available
 - **GPU Monitoring**: Provides mock GPU data when pynvml is not installed
@@ -71,13 +85,13 @@ The application will function with graceful fallbacks when optional dependencies
 
 ### Running the Direct Application (Recommended)
 
-For the most reliable startup that avoids import complexity:
+For the most reliable startup with the comprehensive GPU dashboard:
 
 ```
 python run_direct_app.py
 ```
 
-This provides a simplified interface that works regardless of optional dependencies and demonstrates the functioning of the compatibility layers.
+This provides a simplified interface with the full dashboard that works regardless of optional dependencies and automatically uses the most advanced monitoring features available in your environment.
 
 ### Running in Standard Mode
 

@@ -1,67 +1,89 @@
 ---
-description: Analyze data flow between components and implement GPU resource data, optimization parameters, monitoring metrics in DualGPUOptimizer
-globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
+description: Specification for data flow between GPU resource monitoring, optimization, and telemetry components.
+globs: **/dualgpuopt/**/*.py,**/services/**/*.py,**/gui/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The DualGPUOptimizer implements a multi-layered data flow architecture for managing GPU resources and optimizing model execution:
+The system implements a multi-layered data flow architecture for GPU resource optimization:
 
 ## Core Data Flow Components
 
-1. GPU Telemetry Pipeline
-- GPU metrics flow from hardware through NVML to TelemetryService
-- Metrics include: utilization, memory usage, temperature, power, clocks 
-- Service publishes metrics to EventBus for dashboard consumption
-- File: `dualgpuopt/telemetry.py`
-
-2. Model Parameter Flow
-- Model configuration flows from UI through ParameterResolver
-- Resolver calculates optimal parameters based on GPU capabilities
-- Parameters flow to LaunchController for model execution
-- File: `dualgpuopt/gui/launcher/parameter_resolver.py`
-
-3. Optimization Pipeline
-- GPU split ratios flow from Optimizer to CommandGenerator
-- Memory requirements flow from ModelValidator to Optimizer
-- Generated commands flow to ProcessMonitor for execution
-- File: `dualgpuopt/optimizer.py`
-
-4. Memory Management Flow
-- Memory usage metrics flow from Monitor to MemoryPredictor
-- Predictions trigger RecoveryManager actions when thresholds exceeded
-- Recovery commands flow back to affected GPUs
-- Files:
-  - `dualgpuopt/memory/predictor.py`
-  - `dualgpuopt/memory/recovery.py`
-
-5. Event Distribution System
-- GPU metrics flow through EventBus to subscribed components
-- State changes propagate via StateService to UI components
-- Error events flow through ErrorHandler to UI notifications
-- Files:
-  - `dualgpuopt/services/event_bus.py`
-  - `dualgpuopt/services/state_service.py`
-
-## Key Data Transformations
-
-1. Model Parameter Optimization
+1. GPU Resource Telemetry Pipeline
 ```
-UI Input -> ParameterResolver -> Optimizer -> CommandGenerator -> Execution
+GPU Hardware/Mock Data 
+  -> Telemetry Service
+    -> Event Bus 
+      -> Dashboard/Monitoring UI
 ```
 
-2. GPU Metric Processing
+- Telemetry Service collects GPU metrics (utilization, memory, temperature)
+- Event Bus publishes GPUMetricsEvent with standardized metric format
+- Dashboard subscribes to events for real-time visualization
+
+Key file: `dualgpuopt/telemetry.py`
+
+2. Model Optimization Flow
 ```
-Hardware -> NVML -> TelemetryService -> EventBus -> Dashboard
+Model Parameters 
+  -> Optimizer Service
+    -> Layer Balance Calculator
+      -> GPU Split Configuration
 ```
 
-3. Memory Management
+- Optimizer analyzes model architecture and parameters
+- Layer Balance Calculator determines optimal layer distribution
+- Split Configuration generates commands for model deployment
+
+Key file: `dualgpuopt/optimizer.py`
+
+3. Memory Management Pipeline
 ```
-Monitor -> Predictor -> RecoveryManager -> GPU Actions
+Memory Monitor
+  -> Predictor Service  
+    -> Recovery Service
+      -> Alert System
 ```
 
-The architecture emphasizes real-time data flow for GPU monitoring and optimization, with clear separation between data collection, processing, and visualization components.
+- Monitor tracks real-time GPU memory usage
+- Predictor estimates memory requirements and growth
+- Recovery Service implements OOM prevention strategies
+
+Key files:
+- `dualgpuopt/memory/monitor.py`
+- `dualgpuopt/memory/predictor.py`
+- `dualgpuopt/memory/recovery.py`
+
+4. Event-Driven State Management
+```
+State Service
+  -> Event Bus
+    -> UI Components
+      -> Config Service
+```
+
+- State Service maintains application configuration
+- Event Bus propagates state changes
+- Config Service persists settings to disk
+
+Key file: `dualgpuopt/services/state_service.py`
+
+5. Error Handling Flow
+```
+Error Handler
+  -> Error Categories
+    -> Recovery Strategies
+      -> UI Alerts
+```
+
+- Categorizes GPU-specific errors (driver, memory, process)
+- Implements recovery strategies per error type
+- Displays user-friendly error messages
+
+Key file: `dualgpuopt/error_handler/handler.py`
+
+The architecture emphasizes event-driven communication between components, with clear separation of GPU resource monitoring, optimization calculation, and user interface updates. Error handling and recovery strategies are integrated throughout the data flow to ensure system reliability.
 
 $END$
