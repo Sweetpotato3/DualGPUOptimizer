@@ -22,16 +22,16 @@ try:
     from dualgpuopt.gpu.info import query, get_gpu_count, get_gpu_names
     from dualgpuopt.gpu.mock import set_mock_mode, get_mock_mode, generate_mock_gpus
     from dualgpuopt.gpu.monitor import get_memory_info, get_utilization, get_temperature, get_power_usage
-    
+
     # Override with environment variables if set
     if ENV_MOCK_GPU:
         set_mock_mode(True)
         logger.info("Mock GPU mode enabled via environment variable")
-    
+
     # Use environment-specified GPU count if provided
     if ENV_GPU_COUNT > 0:
         logger.info(f"Using environment-specified GPU count: {ENV_GPU_COUNT}")
-        
+
     logger.info("Successfully imported refactored GPU module")
 except ImportError as e:
     logger.error(f"Failed to import refactored GPU module: {e}")
@@ -40,29 +40,29 @@ except ImportError as e:
     IS_MAC = False
     MOCK_MODE = ENV_MOCK_GPU or True
     NVML_INITIALIZED = False
-    
+
     def query() -> List[Dict[str, Any]]:
         """Fallback query function that returns mock data"""
         return _generate_mock_gpus(ENV_GPU_COUNT if ENV_GPU_COUNT > 0 else 2)
-        
+
     def get_gpu_count() -> int:
         """Fallback GPU count function"""
         return ENV_GPU_COUNT if ENV_GPU_COUNT > 0 else len(query())
-        
+
     def get_gpu_names() -> List[str]:
         """Fallback GPU names function"""
         return [gpu["name"] for gpu in query()]
-        
+
     def set_mock_mode(enabled: bool) -> None:
         """Fallback to enable/disable mock mode"""
         global MOCK_MODE
         MOCK_MODE = enabled
         logger.info(f"Mock GPU mode {'enabled' if enabled else 'disabled'}")
-        
+
     def get_mock_mode() -> bool:
         """Get current mock mode status"""
         return MOCK_MODE
-        
+
     def get_memory_info(gpu_id: int = 0) -> Dict[str, int]:
         """Fallback memory info function"""
         try:
@@ -76,10 +76,10 @@ except ImportError as e:
                 }
         except Exception as e:
             logger.error(f"Error getting memory info (fallback): {e}")
-        
+
         # Default safe values
         return {"total": 8192, "used": 0, "free": 8192}
-        
+
     def get_utilization(gpu_id: int = 0) -> int:
         """Fallback utilization function"""
         try:
@@ -89,7 +89,7 @@ except ImportError as e:
         except Exception as e:
             logger.error(f"Error getting utilization (fallback): {e}")
         return 0
-        
+
     def get_temperature(gpu_id: int = 0) -> float:
         """Fallback temperature function"""
         try:
@@ -99,7 +99,7 @@ except ImportError as e:
         except Exception as e:
             logger.error(f"Error getting temperature (fallback): {e}")
         return 0.0
-        
+
     def get_power_usage(gpu_id: int = 0) -> float:
         """Fallback power usage function"""
         try:
@@ -123,8 +123,8 @@ def _apply_error_handler(component="GPUInfo", category=ErrorCategory.GPU_ERROR):
     """Apply error handling decorator if available"""
     def decorator(func):
         if error_handler_available:
-            return handle_exceptions(component=component, 
-                                    severity=ErrorSeverity.ERROR, 
+            return handle_exceptions(component=component,
+                                    severity=ErrorSeverity.ERROR,
                                     reraise=False)(func)
         else:
             # Simple error handling if dedicated error handler isn't available
@@ -156,15 +156,15 @@ def get_gpu_info() -> List[Dict[str, Any]]:
 # Generate mock GPU data with configurable count
 def _generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
     """Generate mock GPU data for testing
-    
+
     Args:
         count: Number of mock GPUs to generate
-        
+
     Returns:
         List of GPU dictionaries with mock data
     """
     import random
-    
+
     gpus = []
     for i in range(count):
         # Create different tiers of GPUs
@@ -186,12 +186,12 @@ def _generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
             mem_total = 12 * 1024  # 12 GB
             mem_used = random.randint(1 * 1024, 4 * 1024)  # 1-4 GB used
             power_limit = 170
-            
+
         # Generate other values
         utilization = random.randint(5, 80)
         temperature = 40 + int(utilization / 2)
         power_usage = (power_limit * utilization / 100) + random.randint(-20, 20)
-        
+
         gpus.append({
             "id": i,
             "name": name,
@@ -205,7 +205,7 @@ def _generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
             "clock_sm": random.randint(1500, 2000),
             "clock_memory": random.randint(8000, 10000),
         })
-    
+
     return gpus
 
 # Mock GPU class for compatibility
@@ -222,12 +222,12 @@ class GPU:
         self.power_usage = gpu_data.get("power_usage", 0.0)
         self.clock_sm = gpu_data.get("clock_sm", 0)
         self.clock_memory = gpu_data.get("clock_memory", 0)
-    
+
     @property
     def mem_free(self) -> int:
         """Get free memory in MB"""
         return self.mem_total - self.mem_used
-    
+
     def get_memory_info(self) -> Dict[str, int]:
         """Get memory information"""
         return {
@@ -235,19 +235,19 @@ class GPU:
             "used": self.mem_used,
             "free": self.mem_free
         }
-    
+
     def get_utilization(self) -> int:
         """Get GPU utilization"""
         return self.util
-    
+
     def get_temperature(self) -> float:
         """Get GPU temperature"""
         return self.temperature
-    
+
     def get_power_usage(self) -> float:
         """Get power usage in watts"""
         return self.power_usage
-    
+
     @classmethod
     @_apply_error_handler()
     def get_gpus(cls) -> List["GPU"]:
@@ -258,13 +258,13 @@ class GPU:
             logger.error(f"Error getting GPU objects: {e}")
             # Return at least one mock GPU as fallback
             return [cls(_generate_mock_gpus(1)[0])]
-    
+
     @classmethod
     @_apply_error_handler()
     def get_gpu_count(cls) -> int:
         """Get number of GPUs"""
         return get_gpu_count()
-    
+
     @classmethod
     @_apply_error_handler()
     def get_gpu_names(cls) -> List[str]:
@@ -272,4 +272,4 @@ class GPU:
         return get_gpu_names()
 
 # For backward compatibility - re-export the _generate_mock_gpus function
-generate_mock_gpus = _generate_mock_gpus 
+generate_mock_gpus = _generate_mock_gpus

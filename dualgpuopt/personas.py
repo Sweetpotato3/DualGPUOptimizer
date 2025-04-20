@@ -42,32 +42,32 @@ DEFAULT_PERSONAS = {
 
 def get_personas_path():
     """Get the path to the personas file
-    
+
     Returns:
         Path: Path to the personas file
     """
     # Try to use home directory for configuration
     home_dir = Path.home() / ".dualgpuopt"
-    
+
     # Create directory if it doesn't exist
     try:
         home_dir.mkdir(exist_ok=True)
         return home_dir / "personas.json"
     except Exception as e:
         logger.warning(f"Failed to create config directory in home: {e}")
-        
+
     # Fallback to current directory if home directory is not accessible
     return Path("personas.json")
 
 def list_personas() -> Dict:
     """Get all available personas
-    
+
     Returns:
         dict: Dictionary of persona configurations
     """
     personas_path = get_personas_path()
     personas = DEFAULT_PERSONAS.copy()
-    
+
     try:
         if personas_path.exists():
             with open(personas_path, "r") as f:
@@ -76,15 +76,15 @@ def list_personas() -> Dict:
                 logger.info(f"Loaded {len(user_personas)} custom personas from {personas_path}")
     except Exception as e:
         logger.error(f"Error loading personas: {e}")
-    
+
     return personas
 
 def get_persona(name: str) -> Optional[Dict]:
     """Get a specific persona by name
-    
+
     Args:
         name: Name of the persona to get
-        
+
     Returns:
         dict: Persona configuration or None if not found
     """
@@ -93,16 +93,16 @@ def get_persona(name: str) -> Optional[Dict]:
 
 def add_persona(name: str, config: Dict) -> bool:
     """Add or update a persona
-    
+
     Args:
         name: Name of the persona
         config: Persona configuration
-        
+
     Returns:
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
-    
+
     try:
         # Load existing personas first
         if personas_path.exists():
@@ -114,14 +114,14 @@ def add_persona(name: str, config: Dict) -> bool:
                     personas = {}
         else:
             personas = {}
-        
+
         # Add or update the persona
         personas[name] = config
-        
+
         # Save back to file
         with open(personas_path, "w") as f:
             json.dump(personas, f, indent=2)
-            
+
         logger.info(f"Added/updated persona: {name}")
         return True
     except Exception as e:
@@ -130,40 +130,40 @@ def add_persona(name: str, config: Dict) -> bool:
 
 def delete_persona(name: str) -> bool:
     """Delete a persona
-    
+
     Args:
         name: Name of the persona to delete
-        
+
     Returns:
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
-    
+
     try:
         # Load existing personas
         if not personas_path.exists():
             logger.warning(f"Personas file does not exist")
             return False
-            
+
         with open(personas_path, "r") as f:
             try:
                 personas = json.load(f)
             except json.JSONDecodeError:
                 logger.warning(f"Invalid personas file")
                 return False
-        
+
         # Check if persona exists
         if name not in personas:
             logger.warning(f"Persona {name} not found")
             return False
-            
+
         # Delete the persona
         del personas[name]
-        
+
         # Save back to file
         with open(personas_path, "w") as f:
             json.dump(personas, f, indent=2)
-            
+
         logger.info(f"Deleted persona: {name}")
         return True
     except Exception as e:
@@ -172,19 +172,19 @@ def delete_persona(name: str) -> bool:
 
 def reset_to_defaults() -> bool:
     """Reset personas to defaults
-    
+
     Returns:
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
-    
+
     try:
         # Save default personas to file
         with open(personas_path, "w") as f:
             json.dump(DEFAULT_PERSONAS, f, indent=2)
-            
+
         logger.info(f"Reset personas to defaults")
         return True
     except Exception as e:
         logger.error(f"Error resetting personas: {e}")
-        return False 
+        return False

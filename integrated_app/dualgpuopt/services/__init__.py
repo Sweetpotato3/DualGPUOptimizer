@@ -1,1 +1,1 @@
-"""Services for DualGPUOptimizer.""" 
+"""Services for DualGPUOptimizer."""

@@ -1,1 +1,1 @@
-"""GUI tests package.""" 
+"""GUI tests package."""

@@ -19,4 +19,4 @@ from dualgpuopt.memory.predictor import DEFAULT_PROFILES, initialize_memory_prof
 from dualgpuopt.memory.compat import *
 
 # Module version
-__version__ = "1.0.0" 
+__version__ = "1.0.0"

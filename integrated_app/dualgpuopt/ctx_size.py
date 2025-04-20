@@ -24,7 +24,7 @@ def calc_max_ctx(
 ) -> int:
     """
     Calculate the maximum safe context size based on GPU parameters.
-    
+
     Parameters
     ----------
     gpus
@@ -41,7 +41,7 @@ def calc_max_ctx(
         > 1.0 for Mixtral gating cache (~1.05)
     reserve_gb
         Amount of memory in GB to reserve for other operations
-        
+
     Returns
     -------
     int
@@ -51,39 +51,39 @@ def calc_max_ctx(
         n_layers * n_kv_heads * head_dim * (precision_bits // 8) * 2 * moe_factor
     )
     free_mib = sum(g.mem_free for g in gpus) - reserve_gb * 1024
-    
+
     if free_mib <= 0:
         logger.warning("Not enough free memory, defaulting to 2048 context size")
         return 2048
-        
+
     return int((free_mib * 1024**2) // bytes_per_tok)
 
 
 def model_params_from_name(model_name: str) -> tuple[int, int, int, float]:
     """
     Estimate model parameters from a model name.
-    
+
     Args:
         model_name: Name of the model file
-        
+
     Returns:
         Tuple of (n_layers, n_kv_heads, head_dim, moe_factor)
     """
     model_name = model_name.lower()
-    
+
     # Default values
     n_layers = 32
     n_kv_heads = 8
     head_dim = 128
     moe_factor = 1.0
-    
+
     # Mixtral parameters
     if "mixtral" in model_name:
         n_layers = 32
         n_kv_heads = 8
         head_dim = 128
         moe_factor = 1.05
-    
+
     # Llama 2 parameters
     elif "llama-2" in model_name or "llama2" in model_name:
         if "7b" in model_name:
@@ -98,11 +98,11 @@ def model_params_from_name(model_name: str) -> tuple[int, int, int, float]:
             n_layers = 80
             n_kv_heads = 8
             head_dim = 128
-    
+
     # Mistral parameters
     elif "mistral" in model_name:
         n_layers = 32
         n_kv_heads = 8
         head_dim = 128
-            
-    return n_layers, n_kv_heads, head_dim, moe_factor 
+
+    return n_layers, n_kv_heads, head_dim, moe_factor

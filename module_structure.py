@@ -35,30 +35,30 @@ Level 6 (Application):
 RECOMMENDED_IMPORT_ORDER = [
     # Level 1
     "gui_constants",
-    
+
     # Level 2
     "logconfig",
     "gpu_info",
     "configio",
-    
+
     # Level 3
     "metrics",
-    "telemetry", 
+    "telemetry",
     "optimizer",
     "layer_balance",
     "ctx_size",
     "mpolicy",
-    
+
     # Level 4
     "services.state_service",
     "services.event_bus",
     "commands.gpu_commands",
-    
+
     # Level 5
     "gui.dashboard",
     "gui.launcher",
     "gui.optimizer_tab",
-    
+
     # Level 6
     "__main__"
 ]
@@ -89,4 +89,4 @@ INTEGRATION_PHASES = [
         "name": "Phase 6: Main Application",
         "modules": ["__main__"]
     }
-] 
+]

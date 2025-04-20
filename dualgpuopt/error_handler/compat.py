@@ -21,4 +21,4 @@ __all__ = [
     'get_error_handler',
     'install_global_handler',
     'show_error_dialog',
-] 
+]

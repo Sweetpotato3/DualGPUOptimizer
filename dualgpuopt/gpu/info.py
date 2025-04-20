@@ -11,7 +11,7 @@ from dualgpuopt.gpu.mock import generate_mock_gpus
 
 def query() -> List[Dict[str, Any]]:
     """Query GPU information with platform detection
-    
+
     Returns:
         List of dictionaries with GPU information
     """
@@ -20,14 +20,14 @@ def query() -> List[Dict[str, Any]]:
         result = generate_mock_gpus()
         print(f"Query: Mock GPUs: {[gpu['name'] for gpu in result]}")
         return result
-    
+
     if IS_NVIDIA:
         return _query_nvidia()
     return _query_mac()
 
 def get_gpu_count() -> int:
     """Get the number of available GPUs
-    
+
     Returns:
         Number of available GPUs
     """
@@ -35,7 +35,7 @@ def get_gpu_count() -> int:
 
 def get_gpu_names() -> List[str]:
     """Get the names of available GPUs
-    
+
     Returns:
         List of GPU names
     """
@@ -43,29 +43,29 @@ def get_gpu_names() -> List[str]:
 
 def _query_nvidia() -> List[Dict[str, Any]]:
     """Query NVIDIA GPUs using NVML
-    
+
     Returns:
         List of dictionaries with NVIDIA GPU information
     """
     if MOCK_MODE or not NVML_INITIALIZED:
         return generate_mock_gpus()
-    
+
     try:
         import pynvml
         gpus: List[Dict[str, Any]] = []
-        
+
         for idx in range(pynvml.nvmlDeviceGetCount()):
             h = pynvml.nvmlDeviceGetHandleByIndex(idx)
             util = pynvml.nvmlDeviceGetUtilizationRates(h)
             mem = pynvml.nvmlDeviceGetMemoryInfo(h)
             temp = pynvml.nvmlDeviceGetTemperature(h, pynvml.NVML_TEMPERATURE_GPU)
             power = pynvml.nvmlDeviceGetPowerUsage(h) / 1000.0  # Convert from mW to W
-            
+
             # Get GPU name with proper string handling
             device_name = pynvml.nvmlDeviceGetName(h)
             if isinstance(device_name, bytes):
                 device_name = device_name.decode('utf-8')
-            
+
             gpus.append(
                 {
                     "id": idx,
@@ -87,13 +87,13 @@ def _query_nvidia() -> List[Dict[str, Any]]:
 
 def _query_mac() -> List[Dict[str, Any]]:
     """Query Apple GPUs using powermetrics
-    
+
     Returns:
         List of dictionaries with Apple GPU information
     """
     if MOCK_MODE:
         return generate_mock_gpus()
-    
+
     try:
         import subprocess
         import json
@@ -127,4 +127,4 @@ def _query_mac() -> List[Dict[str, Any]]:
         ]
     except Exception as e:
         logger.warning(f"powermetrics failed: {e}")
-        return generate_mock_gpus() 
+        return generate_mock_gpus()

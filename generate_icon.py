@@ -45,8 +45,8 @@ except Exception as e:
         img_16 = img.resize((16, 16), Image.LANCZOS)
         img_32 = img.resize((32, 32), Image.LANCZOS)
         img_48 = img.resize((48, 48), Image.LANCZOS)
-        
+
         img_16.save(ico_path, format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
         print(f"ICO icon created at {ico_path} (alternative method)")
     except Exception as e2:
-        print(f"Failed to create ICO file (alternative method): {e2}") 
+        print(f"Failed to create ICO file (alternative method): {e2}")

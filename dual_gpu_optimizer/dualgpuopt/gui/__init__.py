@@ -12,7 +12,7 @@ __all__ = ["run_app"]
 def run_app(mock_mode: bool = False, theme: str = None):
     """
     Run the DualGPUOptimizer application.
-    
+
     Args:
         mock_mode: Whether to use mock GPU data
         theme: Optional theme name to use

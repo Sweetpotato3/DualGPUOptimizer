@@ -29,7 +29,7 @@ class GPUMemoryStats:
     cached_memory: int = 0           # Memory used for caching
     process_memory: Dict[int, int] = None  # Memory used by each process
     timestamp: float = None          # When stats were collected
-    
+
     def __post_init__(self):
         """Initialize optional fields if not provided"""
         if self.process_memory is None:
@@ -40,7 +40,7 @@ class GPUMemoryStats:
     def usage_percent(self) -> float:
         """Calculate memory usage as percentage"""
         return (self.used_memory / self.total_memory) * 100 if self.total_memory > 0 else 0
-    
+
     def get_memory(self, unit: MemoryUnit = MemoryUnit.GB) -> Dict[str, float]:
         """Get memory values in specified unit"""
         divisor = {
@@ -49,7 +49,7 @@ class GPUMemoryStats:
             MemoryUnit.MB: 1024 * 1024,
             MemoryUnit.GB: 1024 * 1024 * 1024
         }[unit]
-        
+
         return {
             "total": self.total_memory / divisor,
             "used": self.used_memory / divisor,
@@ -57,7 +57,7 @@ class GPUMemoryStats:
             "reserved": self.reserved_memory / divisor,
             "cached": self.cached_memory / divisor
         }
-    
+
     def as_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
         return {
@@ -70,4 +70,4 @@ class GPUMemoryStats:
             "usage_percent": self.usage_percent(),
             "process_memory": self.process_memory,
             "timestamp": self.timestamp
-        } 
+        }

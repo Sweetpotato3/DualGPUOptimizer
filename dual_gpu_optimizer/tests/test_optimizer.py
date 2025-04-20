@@ -64,9 +64,9 @@ def test_llama_command():
     model_path = "models/llama-7b.gguf"
     ctx_size = 4096
     split = "24,10"
-    
+
     command = llama_command(model_path, ctx_size, split)
-    
+
     assert model_path in command
     assert f"--gpu-split {split}" in command
     assert f"--ctx-size {ctx_size}" in command
@@ -77,9 +77,9 @@ def test_vllm_command():
     """Test vLLM command generation."""
     model_path = "Mistral-7B-Instruct-v0.1"
     num_gpus = 3
-    
+
     command = vllm_command(model_path, num_gpus)
-    
+
     assert model_path in command
     assert f"--tensor-parallel-size {num_gpus}" in command
     assert "--dtype float16" in command
@@ -88,18 +88,18 @@ def test_vllm_command():
 def test_make_env_file(mock_gpus, tmp_path):
     """Test environment file creation."""
     env_file = tmp_path / "env.sh"
-    
+
     # Create env file
     result = make_env_file(mock_gpus, env_file)
-    
+
     # Check result is the path
     assert result == env_file
-    
+
     # Check file exists
     assert env_file.exists()
-    
+
     # Check content
     content = env_file.read_text()
     assert "CUDA_VISIBLE_DEVICES=0,1,2" in content
     assert "NCCL_P2P_DISABLE=0" in content
-    assert "OMP_NUM_THREADS" in content 
+    assert "OMP_NUM_THREADS" in content

@@ -22,7 +22,7 @@ def enable_mock_mode():
     """Enable mock mode for testing without GPUs"""
     global MOCK_MODE
     MOCK_MODE = True
-    
+
 def disable_mock_mode():
     """Disable mock mode"""
     global MOCK_MODE
@@ -30,4 +30,4 @@ def disable_mock_mode():
 
 def is_mock_mode_enabled():
     """Check if mock mode is enabled."""
-    return MOCK_MODE 
+    return MOCK_MODE

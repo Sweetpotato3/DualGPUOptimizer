@@ -13,7 +13,7 @@ class Runner:
     def __init__(self, cmd: str, workdir: str|pathlib.Path=".") -> None:
         """
         Initialize a Runner for managing subprocess execution.
-        
+
         Args:
             cmd: Command string to execute
             workdir: Working directory for command execution
@@ -30,7 +30,7 @@ class Runner:
         """
         if self.proc:
             return
-            
+
         self.proc = subprocess.Popen(
             shlex.split(self.cmd),
             cwd=self.cwd,
@@ -57,12 +57,12 @@ class Runner:
         """
         if self.proc and self.proc.poll() is None:
             self.proc.terminate()
-            
+
     def is_running(self) -> bool:
         """
         Check if the subprocess is still running.
-        
+
         Returns:
             bool: True if process is running, False otherwise
         """
-        return self.proc is not None and self.proc.poll() is None 
+        return self.proc is not None and self.proc.poll() is None

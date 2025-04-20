@@ -1,69 +1,56 @@
 ---
-description: Defines resource monitoring capabilities for tracking GPU utilization, memory, and performance metrics across multiple GPUs.
-globs: **/telemetry.py,**/gpu_info.py,**/monitor.py,**/metrics.py,**/alerts.py
+description: Resource monitoring system for GPU metrics collection, utilization tracking, and alerting in dual GPU optimization scenarios
+globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/tray.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and metric tracking through several key components:
+Core Components:
 
-### Telemetry Collection
-`dualgpuopt/telemetry.py`:
-- Real-time GPU metrics collection including:
-  - GPU utilization percentage 
-  - Memory usage and availability
-  - Temperature monitoring
-  - Power consumption
-  - Fan speeds
-  - Clock speeds (core and memory)
-  - PCIe bandwidth metrics
-- Custom middleware pipeline for metric processing
-- Event-driven update system with configurable polling intervals
-- Automatic failover to mock data after 3 consecutive errors
-- Exponential backoff for NVML failures
+1. GPU Telemetry System
+- Multi-layer metrics collection for dual GPU monitoring:
+  * Memory utilization with MB/GB auto-scaling
+  * Temperature monitoring with 100°C threshold
+  * Power draw tracking against TDP limits
+  * Fan speed percentage
+  * Core/Memory clock speeds
+  * PCIe bandwidth utilization
+- Importance Score: 95
 
-### Memory Management & Alerts
-`dualgpuopt/memory/alerts.py`:
-- Memory alert system with severity levels:
-  - NORMAL: Within safe thresholds
-  - WARNING: Above warning threshold 
-  - CRITICAL: Near maximum capacity
-  - EMERGENCY: Risk of OOM
-- Memory usage prediction based on:
-  - Current utilization trends
-  - Model-specific memory profiles
-  - Growth rate projections
-- Recovery strategy triggers:
-  - Cache clearing
-  - Batch size reduction
-  - Model offloading
-  - Process termination
+2. Early Warning System
+- Proactive OOM detection using memory growth patterns
+- Temperature threshold alerts:
+  * Warning: 80°C
+  * Critical: 90°C
+  * Emergency: 95°C
+- Power limit monitoring with TDP percentage tracking
+- Importance Score: 85
 
-### GPU Performance Tracking
-`dualgpuopt/metrics.py`:
-- Specialized metrics for dual GPU setups:
-  - Per-GPU utilization correlation
-  - Memory bandwidth between GPUs
-  - Thermal throttling detection
-  - Power limit tracking
-- Historical data collection with 60-sample rolling window
-- GPU-specific color coding for metric visualization
-- Automatic unit conversion for bandwidth metrics
+3. Resource History Management
+- Rolling 60-sample history window for trend analysis
+- Per-GPU metric correlation tracking:
+  * Temperature impact on fan speeds
+  * Load impact on power consumption
+  * Memory pressure indicators
+- Importance Score: 75
 
-### Dashboard Integration
-`dualgpuopt/gui/dashboard.py`:
-- Real-time visualization of GPU metrics
-- Color-coded temperature warnings
-- Per-GPU performance graphs
-- Status indicators for:
-  - Memory pressure
-  - Thermal conditions
-  - Power consumption
-  - PCIe utilization
-- VRAM reset functionality with status feedback
+4. Alert Generation Pipeline
+- Progressive alert system based on severity:
+  * INFO: Status changes, normal operations
+  * WARNING: Resource pressure or thermal concerns
+  * CRITICAL: Immediate intervention required
+- Automatic recovery recommendations based on alert type
+- Importance Score: 80
 
-The monitoring system focuses on providing comprehensive GPU resource tracking with emphasis on dual-GPU configurations, ensuring optimal performance through early warning detection and automated recovery strategies.
+Key File Paths:
+```
+dualgpuopt/telemetry.py - Core metrics collection system
+dualgpuopt/gpu/monitor.py - GPU state monitoring implementation
+dualgpuopt/memory/metrics.py - Memory-specific telemetry
+```
+
+The system provides real-time monitoring and alerting for dual GPU optimization scenarios with emphasis on preventing resource exhaustion and thermal issues while maintaining optimal performance characteristics.
 
 $END$

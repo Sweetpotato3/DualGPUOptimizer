@@ -40,4 +40,4 @@ def init_tray(app_frame):
             else:
                 idle_for = 0
     threading.Thread(target=watcher, daemon=True).start()
-    threading.Thread(target=icon.run, daemon=True).start() 
+    threading.Thread(target=icon.run, daemon=True).start()

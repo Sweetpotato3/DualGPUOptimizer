@@ -18,7 +18,7 @@ from dualgpuopt.error_handler.logging import (
     configure_logging, get_error_logger, log_exception, log_system_info
 )
 from dualgpuopt.error_handler.ui import (
-    show_error_dialog, show_warning_dialog, 
+    show_error_dialog, show_warning_dialog,
     create_error_status_widget, register_ui_callbacks
 )
 
@@ -28,26 +28,26 @@ __all__ = [
     'ErrorCategory',
     'ErrorDetails',
     'ErrorSeverity',
-    
+
     # Decorators
     'handle_exceptions',
     'track_errors',
     'category_exceptions',
-    
+
     # Handler
     'ErrorHandler',
     'get_error_handler',
     'install_global_handler',
-    
+
     # Logging
     'configure_logging',
     'get_error_logger',
     'log_exception',
     'log_system_info',
-    
+
     # UI
     'show_error_dialog',
     'show_warning_dialog',
     'create_error_status_widget',
     'register_ui_callbacks',
-] 
+]

@@ -1,51 +1,70 @@
 ---
-description: Documents the unique model execution flows, command generation, and GPU resource allocation in dual-GPU optimizer solutions.
-globs: **/optimizer.py,**/launcher*.py,**/gpu_info.py,**/gpu/**,**/commands/**
+description: Manages execution flows and resource allocation for large language model deployment across multiple GPUs.
+globs: **/gpu/*.py,**/gpu/**/*.py,**/optimizer/*.py,**/runner/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized GPU management and model deployment across multiple GPUs:
+Core LLM Execution Components:
 
-## Command Generation System (dualgpuopt/optimizer.py)
-- Generates framework-specific commands for llama.cpp and vLLM execution
-- Computes optimal tensor splits based on relative GPU memory capacities and model requirements
-- Calculates appropriate memory fractions for balanced distribution between GPUs
-- Configures framework-specific parameters like context length, batch size and tensor parallelism
+1. GPU Split Configuration (optimizer.py)
+- Generates optimal GPU memory splits based on:
+  * Model architecture parameters 
+  * Available GPU memory
+  * Tensor parallel configurations
+  * Requested context length
+- Dynamically adjusts splits between 0.25 and 0.75 ratios
+- Handles asymmetric GPU memory scenarios
 
-## Launcher Orchestration (dualgpuopt/gui/launcher/launch_controller.py)
-- Manages model deployment processes across GPUs
-- Validates model compatibility with available GPU configurations
-- Handles launch sequence orchestration with failure recovery
-- Monitors execution metrics like GPU utilization and memory usage
-- Implements graceful shutdown and error handling
+2. Execution Flow Management (runner.py)
+- Pipeline orchestration for model loading and inference:
+  1. Initial GPU memory validation
+  2. Model weight distribution
+  3. KV cache allocation
+  4. Inference process initialization
+- Provides framework-specific launch parameters for:
+  * llama.cpp: GPU split, layer distribution
+  * vLLM: Tensor parallel size, memory fraction
 
-## Resource Allocation Flow
-- Analyzes GPU capabilities including VRAM size and compute capability
-- Generates optimal layer distribution across GPUs based on profiling
-- Calculates safe maximum context sizes per device
-- Manages VRAM quotas and overflow handling
-- Monitors memory pressure with warning thresholds
+3. Resource Management (batch/smart_batch.py)
+- Length-aware batch scheduling with:
+  * Dynamic batch size adjustment
+  * Token count tracking per sequence
+  * Memory pressure monitoring
+  * OOM prevention through backpressure
+- Recovery logic with 25% batch reduction on OOM
 
-## Framework-Specific Optimizations
-- llama.cpp:
-  - GPU layer split ratios based on relative memory capacity
-  - Layer offloading between devices
-  - Tensor parallel size configuration
-  
-- vLLM: 
-  - Memory utilization percentage allocation
-  - Tensor parallel configuration
-  - KV cache management across GPUs
-
-Key file paths:
+4. Framework-Specific Command Generation
+- llama.cpp execution:
+```python
+command = [
+    f"--tensor-split {split_ratio}",
+    f"--ctx-size {context_length}",
+    f"--batch-size {batch_size}"
+]
 ```
-dualgpuopt/optimizer.py
-dualgpuopt/gui/launcher/launch_controller.py
-dualgpuopt/gui/launcher/parameter_resolver.py
-dualgpuopt/gpu/monitor.py
+- vLLM deployment:
+```python
+command = [
+    f"--tensor-parallel-size {gpu_count}",
+    f"--max-num-batched-tokens {tokens_per_batch}",
+    f"--gpu-memory-utilization {mem_fraction}"
+]
 ```
+
+File Paths:
+```
+dualgpuopt/optimizer.py - Split calculation logic
+dualgpuopt/runner.py - Execution orchestration 
+dualgpuopt/batch/smart_batch.py - Batch management
+```
+
+Importance Scores:
+- GPU Split Configuration: 95 (Core resource allocation)
+- Execution Flow Management: 90 (Critical orchestration)
+- Resource Management: 85 (Key optimization)
+- Command Generation: 75 (Framework integration)
 
 $END$

@@ -49,4 +49,4 @@ class GradientBar(ttk.Canvas):
             new_w = int(self._w*self._val/100)
             self._img = utility.gradient_image(max(new_w,1), self._h, self._grad)
             self.itemconfigure(self._img_id, image=self._img)
-        self.after(16,self._tick) 
+        self.after(16,self._tick)

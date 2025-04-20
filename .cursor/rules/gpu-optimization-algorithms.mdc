@@ -1,98 +1,82 @@
 ---
-description: Specification for GPU optimization algorithms, memory management, and tensor parallel splitting calculations
-globs: **/optimizer.py,**/gpu_info.py,**/gpu/*.py,**/memory/*.py
+description: Handles GPU memory distribution, tensor parallelism, and optimization algorithms for ML model deployment
+globs: **/gpu/**,**/optimizer/**,**/memory/**,**/layer_balance.py,**/batch/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Management and Distribution
+## Core GPU Memory Distribution (Importance: 95)
 
-The optimizer implements specialized memory management for dual GPU configurations:
+Memory distribution algorithm calculates optimal splits across multiple GPUs based on:
+- Available VRAM per GPU
+- Model architecture requirements (layers, heads, hidden size)
+- KV cache memory scaling factors
+- Quantization impacts (INT8, INT4, GPTQ variants)
 
-1. Memory Split Calculation:
-```python
-memory_split = max_gpu_memory * tensor_fraction
+Key files:
 ```
-- Calculates optimal memory distribution across GPUs
-- Accounts for model size, batch size, and KV cache requirements
-- Implements safety margins to prevent OOM conditions
-- Adjusts splits based on relative GPU memory capacities
+dualgpuopt/optimizer.py
+dualgpuopt/memory/predictor.py
+```
 
-File: `dualgpuopt/optimizer.py`
+## Layer Balancing System (Importance: 90)
 
-2. Layer Distribution:
-- Balances transformer layers across GPUs based on memory requirements
-- Factors in KV cache sizing for attention mechanisms
-- Handles special cases for MoE (Mixture of Experts) architectures
-- Provides fallback distribution for asymmetric GPU configurations
+Intelligent layer distribution across GPUs using:
+- Weighted profiling (20% short sequences, 80% long sequences)
+- Performance quota allocation with reserve ratios
+- Block merging optimization for contiguous memory access
+- Input embedding placement optimization
 
-File: `dualgpuopt/layer_balance.py`
+Key files:
+```
+dualgpuopt/layer_balance.py
+```
 
-3. Context Length Optimization:
-- Dynamic calculation of maximum safe context length
-- Adjusts for model architecture (hidden size, layers, heads)
-- Accounts for MQA/GQA attention reduction factors
-- Implements architecture-specific memory estimation
+## Batch Processing Optimization (Importance: 85)
 
-File: `dualgpuopt/ctx_size.py`
+Length-aware sequence batching with:
+- Dynamic batch sizing based on GPU memory constraints
+- Token-based grouping with 16,384 maximum tokens per batch
+- Automatic OOM recovery with 25% reduction steps
+- Backpressure mechanism for memory management
 
-## Memory Monitoring and Recovery
+Key files:
+```
+dualgpuopt/batch/smart_batch.py
+```
 
-1. Memory Alert System:
-- Triggers alerts at configurable memory thresholds
-- Implements exponential backoff for recovery attempts
-- Provides memory reclamation strategies:
-  - CUDA cache clearing
-  - Gradient checkpointing
-  - Layer offloading
-  - Batch size reduction
+## Memory Recovery Strategy (Importance: 80)
 
-File: `dualgpuopt/memory/monitor.py`
+Hierarchical recovery system for OOM prevention:
+1. CUDA cache clearing
+2. Batch size reduction
+3. Memory offloading
+4. Process termination
 
-2. Memory Usage Prediction:
-- Projects memory requirements based on:
-  - Model architecture parameters
-  - Batch size and sequence length
-  - Attention mechanism type
-  - Number of experts in MoE models
+Implements memory growth projection with 5-minute historical window and 85% recovery buffer target.
 
-File: `dualgpuopt/memory/predictor.py`
+Key files:
+```
+dualgpuopt/memory/recovery.py
+```
 
-## Tensor Parallel Optimization
+## Model-Specific Optimization (Importance: 75)
 
-1. Split Calculation:
-- Determines optimal tensor parallel size based on:
-  - Available GPU memory
-  - Model hidden dimensions
-  - Number of attention heads
-  - MoE gating factors
+Predefined memory profiles for common LLM architectures:
+- LLaMA2 (7B, 13B, 70B variants)
+- Mistral-7B
+- Mixtral-8x7B
 
-2. Memory Efficiency:
-- Implements gradient synchronization optimization
-- Manages activation checkpointing for memory efficiency
-- Provides tensor parallel awareness for optimizer state
+Custom scaling factors for:
+- Per-token memory requirements
+- Batch size multipliers
+- Expert count overhead (MoE models)
 
-File: `dualgpuopt/optimizer.py`
-
-## Model Architecture Detection
-
-1. Architecture Parameter Extraction:
-- Pattern matching for common model configurations
-- Automatic detection of:
-  - Hidden size
-  - Number of layers
-  - Attention heads
-  - KV heads
-  - MoE configurations
-
-2. Memory Requirement Calculation:
-- Per-token memory estimation
-- Activation memory modeling
-- KV cache sizing
-- Optimizer state requirements
-
-File: `dualgpuopt/ctx_size.py`
+Key files:
+```
+dualgpuopt/model_profiles.py
+```
 
 $END$

@@ -7,4 +7,4 @@ try:
     from .smart_batch import optimize_batch_size
     __all__ = ['optimize_batch_size']
 except ImportError:
-    __all__ = [] 
+    __all__ = []

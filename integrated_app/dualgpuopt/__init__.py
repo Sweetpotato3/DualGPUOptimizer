@@ -15,4 +15,4 @@ else:
     MOCK_MODE = False
 
 # Initialize logger
-logger = logging.getLogger("dualgpuopt") 
+logger = logging.getLogger("dualgpuopt")

@@ -17,8 +17,8 @@ logger = logging.getLogger("DualGPUOpt.MemoryPredictor")
 
 class MemoryProfile:
     """Memory usage profile for a specific model or workload"""
-    
-    def __init__(self, 
+
+    def __init__(self,
                 name: str,
                 base_usage: int,                  # Base memory usage in bytes
                 per_batch_usage: int,             # Additional memory per batch item in bytes
@@ -27,7 +27,7 @@ class MemoryProfile:
                 recovery_buffer: float = 0.85):   # Target usage after OOM recovery
         """
         Initialize memory profile
-        
+
         Args:
             name: Profile name
             base_usage: Base memory usage in bytes
@@ -43,77 +43,77 @@ class MemoryProfile:
         self.growth_rate = growth_rate
         self.recovery_buffer = recovery_buffer
         self.usage_history: List[Tuple[float, int]] = []  # (timestamp, bytes)
-        
+
     def estimate_usage(self, batch_size: int, token_count: int) -> int:
         """Estimate memory usage for given batch size and token count"""
         return self.base_usage + (self.per_batch_usage * batch_size) + (self.per_token_usage * token_count)
-    
+
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
         """Calculate maximum batch size given available memory and token count"""
         if self.per_batch_usage <= 0:
             return 1  # Avoid division by zero
-            
+
         # Calculate memory available for batches
         batch_memory = available_memory - self.base_usage - (self.per_token_usage * token_count)
-        
+
         # Calculate max batch size and apply safety factor
         max_batch = int(batch_memory / self.per_batch_usage)
         return max(1, max_batch)  # Ensure at least batch size 1
-    
+
     def max_sequence_length(self, available_memory: int, batch_size: int) -> int:
         """Calculate maximum sequence length given available memory and batch size"""
         if self.per_token_usage <= 0:
             return 2048  # Default to reasonable value
-            
+
         # Calculate memory available for tokens
         token_memory = available_memory - self.base_usage - (self.per_batch_usage * batch_size)
-        
+
         # Calculate max sequence length
         max_length = int(token_memory / self.per_token_usage)
         return max(128, max_length)  # Ensure reasonable minimum
-    
+
     def update_history(self, memory_usage: int):
         """Update usage history with current memory usage"""
         self.usage_history.append((time.time(), memory_usage))
-        
+
         # Keep last 100 data points
         if len(self.usage_history) > 100:
             self.usage_history = self.usage_history[-100:]
-    
+
     def project_growth(self, time_horizon: float = 60.0) -> Optional[int]:
         """Project memory growth over time horizon in seconds"""
         if len(self.usage_history) < 5:
             return None  # Not enough data
-            
+
         # Extract times and usages
         times, usages = zip(*self.usage_history)
         times = np.array(times)
         usages = np.array(usages)
-        
+
         # Calculate time differences from now
         current_time = time.time()
         time_diffs = current_time - times
-        
+
         # Filter to recent history (last 5 minutes)
         recent_mask = time_diffs < 300
         if np.sum(recent_mask) < 3:
             return None  # Not enough recent data
-            
+
         # Fit linear model to recent data
         times_filtered = times[recent_mask]
         usages_filtered = usages[recent_mask]
-        
+
         try:
             # Simple linear regression
             times_norm = times_filtered - np.min(times_filtered)
             if np.max(times_norm) == 0:
                 return usages_filtered[-1]  # No time variation, return last value
-                
+
             slope, intercept = np.polyfit(times_norm, usages_filtered, 1)
-            
+
             # Project memory usage
             projected_usage = intercept + slope * (time_horizon)
-            
+
             # Apply growth factor to account for non-linear growth
             return int(projected_usage * self.growth_rate)
         except:
@@ -158,8 +158,8 @@ DEFAULT_PROFILES = {
 def initialize_memory_profiles():
     """Initialize default memory profiles"""
     from dualgpuopt.memory.monitor import get_memory_monitor
-    
+
     monitor = get_memory_monitor()
     for profile in DEFAULT_PROFILES.values():
         monitor.register_profile(profile)
-    logger.info(f"Initialized {len(DEFAULT_PROFILES)} default memory profiles") 
+    logger.info(f"Initialized {len(DEFAULT_PROFILES)} default memory profiles")

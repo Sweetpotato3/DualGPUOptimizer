@@ -40,4 +40,4 @@ try:
     print(f"THEME: {constants.THEME}")
     print(f"GPU_COLORS: {constants.GPU_COLORS}")
 except Exception as e:
-    print(f"\nError with module import: {e}") 
+    print(f"\nError with module import: {e}")

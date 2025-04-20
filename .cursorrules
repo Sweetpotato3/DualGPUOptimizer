@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Apply when documenting high-level business logic organization for GPU optimization and management systems, particularly focused on dual-GPU setups with machine learning model deployment capabilities
-globs: *.py,*.cpp,*.h
+description: Creates a high-level overview for projects with GPU optimization functionality, focusing on dual-GPU setups and ML model deployment. Applies to codebases handling GPU resource management, model inference, and hardware monitoring.
+globs: *.py,src/gpu/*.py,src/ml/*.py
 alwaysApply: false
 ---
 
@@ -154,47 +154,56 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer project implements specialized GPU management and optimization logic across several core domains:
+DualGPUOptimizer: GPU Resource Management System for ML Model Deployment
 
-1. GPU Memory Management and Optimization
-- Split calculation for tensor parallel processing across dual GPUs
-- Smart context length determination based on model parameters
-- Layer distribution optimization for multi-GPU deployments
-- Located in: `dualgpuopt/optimizer.py`, `dualgpuopt/layer_balance.py`
+Core Components:
 
-2. Model Deployment Orchestration 
+1. GPU Memory Management (Score: 95)
+- Adaptive memory allocation across dual GPUs
+- Model-specific memory profiling for LLMs (LLaMA2, Mistral, Mixtral)
+- Dynamic split ratio calculation based on available VRAM
+- Intelligent layer distribution with performance profiling
+- Implemented in: dualgpuopt/memory/predictor.py, dualgpuopt/layer_balance.py
+
+2. GPU Telemetry System (Score: 90)
+- Real-time monitoring of GPU metrics (utilization, temperature, power)
+- Multi-GPU performance correlation
+- Predictive memory usage modeling
+- Automatic failover with mock data generation
+- Implemented in: dualgpuopt/telemetry.py
+
+3. Smart Batch Processing (Score: 85)
+- Length-aware sequence batching for inference optimization
+- Dynamic batch size adjustment based on GPU memory
+- Automatic OOM recovery with backpressure mechanism
+- Implemented in: dualgpuopt/batch/smart_batch.py
+
+4. Model Deployment Optimization (Score: 80)
 - Framework-specific command generation (llama.cpp, vLLM)
-- Model parameter validation and configuration
-- Batch size optimization and memory monitoring
-- Located in: `dualgpuopt/commands/gpu_commands.py`
+- Tensor parallel configuration for multi-GPU setups
+- Context size optimization based on model architecture
+- Implemented in: dualgpuopt/gui/optimizer_tab.py
 
-3. GPU Telemetry and Monitoring
-- Real-time metrics collection (utilization, memory, temperature)
-- Event-driven update system with priority handling
-- Configurable alert thresholds for critical metrics
-- Located in: `dualgpuopt/telemetry.py`
+5. Error Recovery System (Score: 75)
+- GPU-specific error classification and handling
+- Hierarchical recovery strategies
+- Memory reclamation with progressive fallback
+- Implemented in: dualgpuopt/error_handler/recovery.py
 
-4. Memory Management and Recovery
-- VRAM usage prediction and monitoring
-- OOM prevention with multi-strategy recovery
-- Memory profile management for different model types
-- Located in: `dualgpuopt/memory/predictor.py`, `dualgpuopt/memory/recovery.py`
+Core Business Rules:
+1. Minimum 2GB free memory required per GPU
+2. Dynamic GPU split calculation based on available memory
+3. Automatic tensor parallel size determination by GPU count
+4. Memory safety margins: 15% for operations, 20% for recovery
+5. OOM recovery triggers at 95% memory utilization
 
-5. Launch Control and Process Management
-- Model launch orchestration across GPUs
-- Parameter resolution for optimal configurations
-- Process monitoring and error recovery
-- Located in: `dualgpuopt/gui/launcher/launch_controller.py`
+Integration Points:
+- GPU metrics event system for real-time monitoring
+- Memory predictor service for allocation optimization
+- Layer balancing system for model deployment
+- Error recovery coordination across components
 
-The system integrates these components through an event-driven architecture, with centralized state management handling configuration and runtime parameters. Core business logic focuses on optimizing large language model deployment across heterogeneous GPU configurations while maintaining performance and stability.
-
-Key Integration Points:
-- Memory Monitor interfaces with Launch Controller for OOM prevention
-- Telemetry Service provides metrics to Dashboard and Optimizer
-- Command Generator consumes optimization parameters for framework-specific deployment
-- Layer Balancer coordinates with Memory Monitor for optimal distribution
-
-Each component implements domain-specific optimizations for dual-GPU setups, with particular emphasis on machine learning model deployment and monitoring.
+The system optimizes large language model deployment across multiple GPUs through intelligent resource allocation, real-time monitoring, and automated recovery mechanisms.
 
 $END$
 END SPECIFICATION

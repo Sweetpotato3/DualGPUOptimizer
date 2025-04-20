@@ -1,66 +1,49 @@
 ---
-description: Defines data flow and message passing between system components for GPU optimization functions
-globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py
+description: Specification for analyzing data flow architecture in dual GPU optimization systems with focus on memory management and telemetry
+globs: **/*.py,**/dual_gpu_optimizer/**
 alwaysApply: false
 ---
 
 
-# data-flow-architecture 
+# data-flow-architecture
 
-The data flow architecture centers around GPU resource data, model configuration parameters, and performance metrics:
+The data flow architecture centers around three primary domains:
 
-## Core Data Flows
+## GPU Metrics Flow (Importance: 95)
+- Telemetry service collects raw GPU metrics (utilization, memory, temperature, power)
+- Metrics flow through event bus system with priority-based routing
+- Dashboard components receive metrics via observer pattern
+- Real-time visualization components update based on metric events
+- Key paths: dualgpuopt/telemetry.py → services/event_bus.py → gui/dashboard.py
 
-1. GPU Telemetry Pipeline
-- `dualgpuopt/telemetry.py` collects GPU metrics (utilization, memory, temperature)
-- Data flows to `dualgpuopt/gui/dashboard.py` for visualization
-- `GPUMetricsEvent` published through event bus for real-time updates
-- Metrics cached in `MemoryMonitor` for OOM prevention
+## Model Optimization Flow (Importance: 90)
+- Layer balancer determines optimal layer distribution across GPUs 
+- Memory predictor calculates requirements and constraints
+- Layer assignments flow to model launcher for execution
+- GPU split configurations generated and applied
+- Key paths: dualgpuopt/layer_balance.py → memory/predictor.py → optimizer.py
 
-2. Optimization Parameter Flow  
-- `dualgpuopt/optimizer.py` calculates GPU split ratios and tensor parallel configurations
-- Parameters flow to `dualgpuopt/launcher.py` for model execution
-- Model configuration validated through `ModelValidator`
-- Results published as optimization events
+## Memory Management Flow (Importance: 85)
+- Memory monitor tracks GPU VRAM usage and allocation
+- OOM detection triggers recovery workflow
+- Recovery actions flow through error handler to affected components
+- Memory reclamation results feed back to monitoring system
+- Key paths: dualgpuopt/memory/monitor.py → error_handler/recovery.py → memory/metrics.py
 
-3. Memory Management Pipeline
-- `dualgpuopt/memory/monitor.py` tracks GPU memory usage
-- Alerts flow through `MemoryAlertCallback` when thresholds exceeded
-- Recovery actions triggered through `RecoveryManager`
-- Usage history maintained for prediction
+## Resource Control Flow (Importance: 80)
+- GPU commands flow through command system with rollback capability
+- Parameter changes trigger validation and safety checks
+- Configuration updates propagate through state service
+- Settings persistence ensures state consistency
+- Key paths: dualgpuopt/commands/gpu_commands.py → services/state_service.py
 
-4. State Management Flow
-- `dualgpuopt/services/state_service.py` maintains centralized application state
-- State changes published as events through event bus
-- UI components subscribe to relevant state updates
-- Configuration persisted to disk through state service
+## Alert Flow (Importance: 75)
+- GPU metrics exceed thresholds trigger alert generation
+- Alerts flow through event system to UI components
+- Alert status tracked in state service
+- Recovery recommendations generated based on alert type
+- Key paths: dualgpuopt/error_handler/base.py → services/event_bus.py
 
-5. Error Handling Pipeline 
-- `dualgpuopt/error_handler` collects error telemetry
-- Errors categorized and severity determined
-- Recovery strategies selected and executed
-- Results published through error events
-
-## Key Integration Points
-
-1. Event Bus Hub (`dualgpuopt/services/event_bus.py`)
-- Central message broker for system events
-- Handles GPU metrics, optimization results, errors
-- Provides typed events with priority dispatch
-- Enables decoupled communication between components
-
-2. State Service (`dualgpuopt/services/state_service.py`) 
-- Manages application configuration state
-- Handles persistence of settings
-- Publishes state change events
-- Provides subscription interface for state updates
-
-3. Memory Monitor (`dualgpuopt/memory/monitor.py`)
-- Tracks GPU memory usage across components
-- Issues alerts on memory pressure
-- Triggers recovery actions
-- Maintains usage history for predictions
-
-The data flow architecture focuses on efficient distribution of GPU resource data, optimization parameters, and monitoring metrics while maintaining decoupled components through event-based communication.
+The architecture emphasizes real-time monitoring and optimization of dual GPU configurations, with specific focus on memory management and performance optimization for machine learning workloads.
 
 $END$

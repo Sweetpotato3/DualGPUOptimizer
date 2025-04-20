@@ -16,15 +16,15 @@ def copy_constants_file():
     current_dir = pathlib.Path(__file__).parent.resolve()
     constants_src = current_dir / "gui_constants.py"
     constants_dst = current_dir / "dual_gpu_optimizer" / "dualgpuopt" / "gui" / "constants.py"
-    
+
     # Make sure constants.py exists
     if not constants_src.exists():
         print(f"Error: {constants_src} not found")
         return False
-    
+
     # Make sure destination directory exists
     constants_dst.parent.mkdir(parents=True, exist_ok=True)
-    
+
     # Copy the file
     try:
         shutil.copy2(constants_src, constants_dst)
@@ -37,16 +37,16 @@ def copy_constants_file():
 def copy_module_files():
     """Create a directory structure for PyInstaller with flattened imports."""
     temp_dir = pathlib.Path(tempfile.mkdtemp())
-    
+
     try:
         # Get paths
         current_dir = pathlib.Path(__file__).parent.resolve()
         package_dir = current_dir / "dual_gpu_optimizer" / "dualgpuopt"
-        
+
         # Create destination directory
         temp_package_dir = temp_dir / "dualgpuopt"
         temp_package_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Copy all files from package directory to temp directory
         for item in package_dir.glob("**/*"):
             if item.is_file():
@@ -58,7 +58,7 @@ def copy_module_files():
                 dst_path.parent.mkdir(parents=True, exist_ok=True)
                 # Copy the file
                 shutil.copy2(item, dst_path)
-        
+
         # Create a simplified __main__.py that imports only what's needed
         main_py = temp_package_dir / "__main__.py"
         with open(main_py, "w") as f:
@@ -83,7 +83,7 @@ logger = logging.getLogger("dualgpuopt.startup")
 try:
     # Try to import GUI application
     from dualgpuopt.gui.app import DualGpuApp, run_app
-    
+
     logger.info("Starting application...")
     run_app()
 except Exception as e:
@@ -92,10 +92,10 @@ except Exception as e:
     traceback.print_exc()
     sys.exit(1)
 """)
-        
+
         print(f"Module files copied to {temp_dir}")
         return temp_dir
-    
+
     except Exception as e:
         print(f"Error copying module files: {e}")
         shutil.rmtree(temp_dir, ignore_errors=True)
@@ -105,10 +105,10 @@ def build_with_pyinstaller(temp_dir):
     """Build the application with PyInstaller."""
     # Get paths
     current_dir = pathlib.Path(__file__).parent.resolve()
-    
+
     # Path to PyInstaller script
     pyinstaller_script = temp_dir / "dualgpuopt" / "__main__.py"
-    
+
     # Create PyInstaller command
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -122,9 +122,9 @@ def build_with_pyinstaller(temp_dir):
         "--hidden-import", "dualgpuopt.gui.constants",
         str(pyinstaller_script)
     ]
-    
+
     print(f"Running PyInstaller command: {' '.join(cmd)}")
-    
+
     try:
         subprocess.run(cmd, check=True, cwd=current_dir)
         print("PyInstaller build completed successfully")
@@ -142,27 +142,27 @@ def main():
     if not copy_constants_file():
         print("Failed to copy constants file")
         return 1
-    
+
     # Copy module files to temp directory
     temp_dir = copy_module_files()
     if not temp_dir:
         print("Failed to copy module files")
         return 1
-    
+
     try:
         # Build with PyInstaller
         if not build_with_pyinstaller(temp_dir):
             print("PyInstaller build failed")
             return 1
-        
+
         print("\nBuild completed successfully!")
         print("You can find the executable in the 'dist' directory.")
         return 0
-    
+
     finally:
         # Clean up temp directory
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

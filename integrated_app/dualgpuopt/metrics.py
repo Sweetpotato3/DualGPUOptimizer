@@ -21,4 +21,4 @@ except ModuleNotFoundError:  # pragma: no cover
     Counter = Histogram = _noop  # type: ignore[misc,assignment]
 
 BATCH_LAT = Histogram("dgp_batch_latency_ms", "End‑to‑end batch time", ["bucket"])
-QUEUE_DEPTH = Counter("dgp_enqueued_total", "Requests enqueued", ["bucket"]) 
+QUEUE_DEPTH = Counter("dgp_enqueued_total", "Requests enqueued", ["bucket"])

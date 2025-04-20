@@ -20,13 +20,13 @@ from gui.test_overclocking_frame import TestOverclockingFrame
 def create_test_suite():
     """Create a test suite containing all settings tests."""
     test_suite = unittest.TestSuite()
-    
+
     # Add test cases for settings module
     test_suite.addTest(unittest.makeSuite(TestSettingsTab))
     test_suite.addTest(unittest.makeSuite(TestAppearanceFrame))
     test_suite.addTest(unittest.makeSuite(TestApplicationSettingsFrame))
     test_suite.addTest(unittest.makeSuite(TestOverclockingFrame))
-    
+
     return test_suite
 
 
@@ -35,6 +35,6 @@ if __name__ == "__main__":
     runner = unittest.TextTestRunner(verbosity=2)
     test_suite = create_test_suite()
     result = runner.run(test_suite)
-    
+
     # Exit with a non-zero code if tests failed
-    sys.exit(not result.wasSuccessful()) 
+    sys.exit(not result.wasSuccessful())

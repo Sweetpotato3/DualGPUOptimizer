@@ -32,4 +32,4 @@ THEME = DARK_THEME
 
 # Print confirmation when this module is imported directly
 if __name__ != "__main__":
-    print(f"Standalone constants module loaded: {APP_NAME} v{APP_VERSION}") 
+    print(f"Standalone constants module loaded: {APP_NAME} v{APP_VERSION}")

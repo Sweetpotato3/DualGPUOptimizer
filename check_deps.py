@@ -40,10 +40,10 @@ ALL_DEPS = {**CORE_DEPS, **UI_DEPS, **CHAT_DEPS, **ML_DEPS}
 
 def check_dependency(name: str) -> bool:
     """Check if a dependency is installed
-    
+
     Args:
         name: Name of the dependency
-        
+
     Returns:
         True if installed, False otherwise
     """
@@ -58,73 +58,73 @@ def check_dependency(name: str) -> bool:
 
 def get_missing_dependencies() -> Dict[str, List[str]]:
     """Get missing dependencies by category
-    
+
     Returns:
         Dictionary with categories as keys and lists of missing dependencies as values
     """
     missing = {}
-    
+
     # Check core dependencies
     core_missing = [name for name in CORE_DEPS if not check_dependency(name)]
     if core_missing:
         missing["core"] = core_missing
-    
+
     # Check UI dependencies
     ui_missing = [name for name in UI_DEPS if not check_dependency(name)]
     if ui_missing:
         missing["ui"] = ui_missing
-    
+
     # Check chat dependencies
     chat_missing = [name for name in CHAT_DEPS if not check_dependency(name)]
     if chat_missing:
         missing["chat"] = chat_missing
-    
+
     # Check ML dependencies
     ml_missing = [name for name in ML_DEPS if not check_dependency(name)]
     if ml_missing:
         missing["ml"] = ml_missing
-    
+
     return missing
 
 def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
     """Get pip installation commands for missing dependencies
-    
+
     Args:
         missing_deps: Dictionary with categories as keys and lists of missing dependencies as values
-        
+
     Returns:
         List of pip install commands
     """
     commands = []
-    
+
     # Build installation commands by category
     if "core" in missing_deps:
         core_packages = " ".join(CORE_DEPS[name]["package"] for name in missing_deps["core"] if name != "tkinter")
         if core_packages:
             commands.append(f"pip install {core_packages}")
-    
+
     if "ui" in missing_deps:
         ui_packages = " ".join(UI_DEPS[name]["package"] for name in missing_deps["ui"])
         if ui_packages:
             commands.append(f"pip install {ui_packages}")
-    
+
     if "chat" in missing_deps:
         chat_packages = " ".join(CHAT_DEPS[name]["package"] for name in missing_deps["chat"])
         if chat_packages:
             commands.append(f"pip install {chat_packages}")
-    
+
     if "ml" in missing_deps:
         ml_packages = " ".join(ML_DEPS[name]["package"] for name in missing_deps["ml"])
         if ml_packages:
             commands.append(f"pip install {ml_packages}")
-    
+
     return commands
 
 def print_dependency_status() -> None:
     """Print status of all dependencies"""
     print("\nDualGPUOptimizer Dependency Check")
     print("===============================\n")
-    
+
     # Check Python version
     py_version = platform.python_version()
     print(f"Python version: {py_version}")
@@ -132,7 +132,7 @@ def print_dependency_status() -> None:
         print("  ❌ Python 3.8+ is recommended. Some features may not work correctly.")
     else:
         print("  ✅ Python version is compatible.")
-    
+
     print("\nCore Dependencies:")
     for name, info in CORE_DEPS.items():
         if check_dependency(name):
@@ -142,28 +142,28 @@ def print_dependency_status() -> None:
                 print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
             else:
                 print(f"  ❌ {name}: {info['description']} - FALLBACK available but features limited")
-    
+
     print("\nUI Dependencies:")
     for name, info in UI_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
             print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic UI")
-    
+
     print("\nChat Dependencies:")
     for name, info in CHAT_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
             print(f"  ❌ {name}: {info['description']} - FALLBACK available with limited chat")
-    
+
     print("\nMachine Learning Dependencies:")
     for name, info in ML_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
             print(f"  ❌ {name}: {info['description']} - OPTIONAL for advanced features")
-    
+
     # Check for missing dependencies
     missing = get_missing_dependencies()
     if missing:
@@ -173,7 +173,7 @@ def print_dependency_status() -> None:
             print(f"  {cmd}")
     else:
         print("\nAll dependencies are installed! ✅")
-    
+
     print("\nApplication Status:")
     if "core" in missing and "tkinter" in missing["core"]:
         print("  ❌ Application cannot run: tkinter is required")
@@ -181,17 +181,17 @@ def print_dependency_status() -> None:
         print("  ⚠️ Application can run with limited functionality")
     else:
         print("  ✅ Core functionality available")
-    
+
     if "ui" in missing:
         print("  ⚠️ Basic UI available (enhanced UI features disabled)")
     else:
         print("  ✅ Enhanced UI available")
-    
+
     if "chat" in missing:
         print("  ⚠️ Chat functionality limited")
     else:
         print("  ✅ Chat functionality available")
-    
+
     if "ml" in missing:
         print("  ⚠️ Advanced ML features disabled")
     else:
@@ -200,7 +200,7 @@ def print_dependency_status() -> None:
 def main() -> None:
     """Main function"""
     print_dependency_status()
-    
+
     # If running with --install flag, try to install missing dependencies
     if len(sys.argv) > 1 and sys.argv[1] == "--install":
         missing = get_missing_dependencies()
@@ -210,7 +210,7 @@ def main() -> None:
             for cmd in commands:
                 print(f"Running: {cmd}")
                 subprocess.run(cmd, shell=True)
-            
+
             # Check again
             print("\nChecking dependencies after installation...")
             print_dependency_status()
@@ -218,4 +218,4 @@ def main() -> None:
             print("\nAll dependencies are already installed.")
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -10,23 +10,23 @@ from pathlib import Path
 
 class BundleTest(unittest.TestCase):
     """Test PyInstaller bundle integrity"""
-    
+
     def test_meipass_exists(self):
         """Verify _MEIPASS exists when run from bundle"""
         if getattr(sys, 'frozen', False):
             self.assertTrue(hasattr(sys, '_MEIPASS'))
             meipass = Path(sys._MEIPASS)
             self.assertTrue(meipass.exists())
-    
+
     def test_cuda_dlls_present(self):
         """Verify CUDA DLLs are present when packaged"""
         if getattr(sys, 'frozen', False):
             meipass = Path(sys._MEIPASS)
-            
+
             # Check for at least one CUDA DLL
             cuda_dlls = list(meipass.glob("cublas*.dll")) + list(meipass.glob("cudart*.dll"))
             self.assertTrue(len(cuda_dlls) > 0, "No CUDA DLLs found in bundle")
-    
+
     def test_gui_constants_importable(self):
         """Verify gui.constants can be imported"""
         try:
@@ -37,4 +37,4 @@ class BundleTest(unittest.TestCase):
 
 
 if __name__ == "__main__":
-    unittest.main() 
+    unittest.main()

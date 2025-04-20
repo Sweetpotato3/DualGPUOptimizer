@@ -64,10 +64,10 @@ AVAILABLE_THEMES = {
 
 def get_theme_by_name(theme_name):
     """Get a theme by name
-    
+
     Args:
         theme_name: Name of the theme
-        
+
     Returns:
         The theme dict or the default theme if not found
     """
@@ -75,10 +75,10 @@ def get_theme_by_name(theme_name):
 
 def update_current_theme(theme_name):
     """Update the current theme
-    
+
     Args:
         theme_name: Name of the theme to set as current
-        
+
     Returns:
         The theme dict that was set
     """
@@ -86,4 +86,4 @@ def update_current_theme(theme_name):
     theme = get_theme_by_name(theme_name)
     current_theme = theme
     logger.debug(f"Updated current theme to {theme_name}")
-    return theme 
+    return theme

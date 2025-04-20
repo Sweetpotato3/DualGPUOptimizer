@@ -37,8 +37,8 @@ class ErrorCategory(Enum):
 
 class ErrorDetails:
     """Container for detailed error information"""
-    
-    def __init__(self, 
+
+    def __init__(self,
                 exception: Optional[Exception] = None,
                 component: str = "unknown",
                 severity: ErrorSeverity = ErrorSeverity.ERROR,
@@ -50,7 +50,7 @@ class ErrorDetails:
                 timestamp: float = None):
         """
         Initialize error details
-        
+
         Args:
             exception: The original exception
             component: Component or module where the error occurred
@@ -75,95 +75,95 @@ class ErrorDetails:
         )
         self.context = context or {}
         self.timestamp = timestamp or time.time()
-        
+
     def _detect_category(self, exception: Optional[Exception]) -> ErrorCategory:
         """Detect error category based on exception type"""
         if exception is None:
             return ErrorCategory.UNKNOWN_ERROR
-            
+
         ex_type = type(exception).__name__.lower()
-        
+
         # GPU and CUDA errors
         if any(kw in ex_type for kw in ["cuda", "gpu", "nvml", "driver"]):
             return ErrorCategory.GPU_ERROR
-            
+
         # Memory errors
         if any(kw in ex_type for kw in ["memory", "outofmemory", "oom"]) or isinstance(exception, MemoryError):
             return ErrorCategory.MEMORY_ERROR
-            
+
         # File errors
         if any(kw in ex_type for kw in ["file", "io", "path", "notfound"]) or isinstance(exception, (IOError, FileNotFoundError)):
             return ErrorCategory.FILE_ERROR
-            
+
         # Network errors
         if any(kw in ex_type for kw in ["network", "connection", "timeout", "http"]):
             return ErrorCategory.NETWORK_ERROR
-            
+
         # Config errors
         if any(kw in ex_type for kw in ["config", "setting", "option"]):
             return ErrorCategory.CONFIG_ERROR
-            
+
         # Process errors
         if any(kw in ex_type for kw in ["process", "subprocess", "thread", "runtime"]):
             return ErrorCategory.PROCESS_ERROR
-            
+
         # GUI errors
         if any(kw in ex_type for kw in ["gui", "ui", "window", "widget", "tk"]):
             return ErrorCategory.GUI_ERROR
-            
+
         # API errors
         if any(kw in ex_type for kw in ["api", "http", "response", "request"]):
             return ErrorCategory.API_ERROR
-            
+
         # Validation errors
         if any(kw in ex_type for kw in ["validation", "invalid", "typeerror", "valueerror"]) or isinstance(exception, (ValueError, TypeError)):
             return ErrorCategory.VALIDATION_ERROR
-            
+
         # Default to internal error for known Python exceptions
         if isinstance(exception, Exception) and exception.__class__.__module__ == "builtins":
             return ErrorCategory.INTERNAL_ERROR
-            
+
         return ErrorCategory.UNKNOWN_ERROR
-        
+
     def _generate_user_message(self) -> str:
         """Generate a user-friendly error message"""
         if self.severity == ErrorSeverity.INFO:
             return self.message
-            
+
         if self.severity == ErrorSeverity.WARNING:
             return f"Warning: {self.message}"
-            
+
         if self.severity == ErrorSeverity.ERROR:
             return f"An error occurred in {self.component}: {self.message}"
-            
+
         if self.severity == ErrorSeverity.CRITICAL:
             return f"Critical error in {self.component}. Please check the logs for details."
-            
+
         if self.severity == ErrorSeverity.FATAL:
             return f"Fatal error: {self.message}. The application may need to restart."
-            
+
         return f"Unexpected error in {self.component}"
-        
+
     def format_for_log(self) -> str:
         """Format the error details for logging"""
         timestamp_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.timestamp))
-        
+
         # Basic info
         lines = [
             f"[{timestamp_str}] {self.severity.name} in {self.component}",
             f"Category: {self.category.name}",
             f"Message: {self.message}"
         ]
-        
+
         # Add context if available
         if self.context:
             lines.append("Context:")
             for key, value in self.context.items():
                 lines.append(f"  {key}: {value}")
-                
+
         # Add traceback if available
         if self.traceback_str:
             lines.append("Traceback:")
             lines.append(self.traceback_str)
-            
-        return "\n".join(lines) 
+
+        return "\n".join(lines)

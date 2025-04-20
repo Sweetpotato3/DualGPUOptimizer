@@ -29,4 +29,4 @@ finally:
         os.remove(test_file)
 
 print("\nNow try running the build again with:")
-print("python build.py") 
+print("python build.py")

@@ -159,15 +159,15 @@ DualGPUOptimizer now supports configuration through environment variables:
    ```
    # Install core dependencies only
    python install_deps.py --core-only
-   
+
    # Install all dependencies including optional ones
    python install_deps.py --all
-   
+
    # Install specific dependency categories
    python install_deps.py --ui-only
    python install_deps.py --chat-only
    python install_deps.py --ml-only
-   
+
    # Or use the module-based installer
    python -m dualgpuopt --install-deps
    ```

@@ -13,10 +13,10 @@ def main():
     Build the application with PyInstaller bypassing the torch hook.
     """
     print("Building DualGPUOptimizer application...")
-    
+
     # Get the absolute path of the nvml.dll
     nvml_path = os.path.abspath("C:\\Windows\\System32\\nvml.dll")
-    
+
     # Get the absolute path of the assets and presets directories
     root_dir = Path(__file__).parent
     app_dir = root_dir / "dual_gpu_optimizer" / "dualgpuopt"
@@ -24,7 +24,7 @@ def main():
     presets_dir = os.path.abspath(app_dir / "presets")
     icon_path = os.path.abspath(app_dir / "assets" / "app_icon.ico")
     main_py = os.path.abspath(app_dir / "__main__.py")
-    
+
     # Run PyInstaller with explicit parameters
     cmd = [
         "pyinstaller",
@@ -67,16 +67,16 @@ def main():
         "--exclude-module=torch.utils.tensorboard",
         main_py
     ]
-    
+
     print(f"Running command: {' '.join(cmd)}")
     result = subprocess.run(cmd, check=False)
-    
+
     if result.returncode != 0:
         print("❌ Build failed!")
         sys.exit(1)
-    
+
     print("✅ Build completed successfully!")
     print(f"Application is available at: {os.path.abspath('dist/DualGPUOptimizer')}")
 
 if __name__ == "__main__":
-    main() 
+    main()

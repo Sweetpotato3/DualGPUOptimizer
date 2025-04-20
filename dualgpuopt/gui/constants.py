@@ -13,7 +13,7 @@ STATUS_DURATION = 5000  # duration to show status messages in ms
 VRAM_WARN_MB = 256     # minimum MB reclaimed to show as success
 
 # Asset paths - use relative path from this file
-ASSET_DIR = Path(__file__).parent / "assets" 
+ASSET_DIR = Path(__file__).parent / "assets"
 
 # UI metrics
 UPDATE_INTERVAL = 1000  # GUI update interval in ms
@@ -31,4 +31,4 @@ COLORS = {
     "dark": "#2c3e50",
     "text": "#2c3e50",
     "background": "#ecf0f1"
-} 
+}

@@ -20,7 +20,7 @@ class MemoryAlertLevel(Enum):
 
 class MemoryAlert:
     """Memory alert notification with context and recommendations"""
-    
+
     def __init__(self,
                 level: MemoryAlertLevel,
                 gpu_id: int,
@@ -32,7 +32,7 @@ class MemoryAlert:
                 context: Dict[str, Any] = None):
         """
         Initialize memory alert
-        
+
         Args:
             level: Alert severity level
             gpu_id: GPU device ID
@@ -51,11 +51,11 @@ class MemoryAlert:
         self.timestamp = timestamp or time.time()
         self.recommendations = recommendations or []
         self.context = context or {}
-        
+
     def __str__(self) -> str:
         """String representation of the alert"""
         return f"[GPU {self.gpu_id}] {self.level.name}: {self.message} ({self.current_usage:.1f}% > {self.threshold:.1f}%)"
 
 
 # Type for memory alert callbacks
-MemoryAlertCallback = Callable[[MemoryAlert], None] 
+MemoryAlertCallback = Callable[[MemoryAlert], None]

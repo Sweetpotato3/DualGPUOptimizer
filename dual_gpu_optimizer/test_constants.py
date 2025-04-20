@@ -10,4 +10,4 @@ try:
     print(f"THEME: {THEME}")
     print(f"GPU_COLORS: {GPU_COLORS}")
 except Exception as e:
-    print(f"Error importing constants: {e}") 
+    print(f"Error importing constants: {e}")

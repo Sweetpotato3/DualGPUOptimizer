@@ -41,15 +41,15 @@ MOCK_MODE = not NVML_INITIALIZED
 # GPU mock data generation for fallback
 def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
     """Generate mock GPU data for testing or when real data is unavailable
-    
+
     Args:
         count: Number of mock GPUs to generate
-        
+
     Returns:
         List of dictionaries with mock GPU data
     """
     mock_gpus = []
-    
+
     # Create the specified number of mock GPUs
     for i in range(count):
         # Alternate between high and low memory GPUs for testing multi-GPU scenarios
@@ -67,7 +67,7 @@ def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
             mem_used = 10240
             clock_sm = 1725
             clock_memory = 7000
-        
+
         # Create the mock GPU entry
         gpu = {
             "id": i,
@@ -83,9 +83,9 @@ def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
             "pcie_tx": 12.5,
             "pcie_rx": 8.2,
         }
-        
+
         mock_gpus.append(gpu)
-    
+
     return mock_gpus
 
 # GPU Metric class for type hints
@@ -104,18 +104,18 @@ class GpuMetric:
     @classmethod
     def get_all_metrics(cls) -> List[str]:
         """Get list of all available metrics
-        
+
         Returns:
             List of metric names
         """
-        return [cls.UTILIZATION, cls.MEMORY_TOTAL, cls.MEMORY_USED, 
-                cls.TEMPERATURE, cls.POWER_USAGE, cls.CLOCK_SM, 
+        return [cls.UTILIZATION, cls.MEMORY_TOTAL, cls.MEMORY_USED,
+                cls.TEMPERATURE, cls.POWER_USAGE, cls.CLOCK_SM,
                 cls.CLOCK_MEMORY, cls.PCIE_TX, cls.PCIE_RX]
 
 # Function to get whether mock mode is active
 def is_mock_mode() -> bool:
     """Get the current state of mock mode
-    
+
     Returns:
         True if mock mode is active
     """
@@ -124,7 +124,7 @@ def is_mock_mode() -> bool:
 # Function to set mock mode
 def set_mock_mode(enabled: bool = True) -> None:
     """Enable or disable mock mode
-    
+
     Args:
         enabled: Whether to enable mock mode
     """
@@ -135,16 +135,16 @@ def set_mock_mode(enabled: bool = True) -> None:
 # Re-initialize NVML (useful after changing mock mode)
 def reinit_nvml() -> bool:
     """Reinitialize NVML
-    
+
     Returns:
         True if initialization was successful
     """
     global NVML_INITIALIZED
-    
+
     # Skip if in mock mode or pynvml is not available
     if MOCK_MODE or not DEPENDENCIES["pynvml"]["available"]:
         return False
-    
+
     try:
         # Shutdown if already initialized
         if NVML_INITIALIZED:
@@ -152,7 +152,7 @@ def reinit_nvml() -> bool:
                 pynvml.nvmlShutdown()
             except Exception:
                 pass
-        
+
         # Initialize NVML
         pynvml.nvmlInit()
         NVML_INITIALIZED = True
@@ -161,4 +161,4 @@ def reinit_nvml() -> bool:
     except Exception as e:
         logger.error(f"Failed to reinitialize NVML: {e}")
         NVML_INITIALIZED = False
-        return False 
+        return False

@@ -140,7 +140,7 @@ def run_app() -> None:
         logger.warning(f"Failed to import modern UI: {e}")
     except Exception as e:
         logger.error(f"Error running modern UI: {e}", exc_info=True)
-    
+
     # Fall back to legacy UI if modern UI fails
     try:
         logger.info("Loading legacy UI implementation")
@@ -155,4 +155,4 @@ def run_app() -> None:
         sys.exit(1)
     except Exception as e:
         logger.error(f"Error running legacy UI: {e}", exc_info=True)
-        sys.exit(1) 
+        sys.exit(1)
