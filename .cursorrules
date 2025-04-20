@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level technical documentation focused on the main architectural overview and business logic organization for GPU optimization and monitoring systems, specifically dual-GPU configurations for ML model deployment.
-globs: *.py
+description: For documenting high-level system architecture and business logic organization in GPU optimization software, particularly focusing on dual-GPU model management and performance monitoring
+globs: *.py,*.md
 alwaysApply: false
 ---
 
@@ -154,47 +154,36 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer is a specialized system for managing and optimizing dual GPU configurations, primarily focused on large language model deployment and monitoring.
+The DualGPUOptimizer system implements specialized GPU optimization for machine learning model deployment across dual GPU configurations. The core business logic is organized into four main domains:
 
-Core Domain Components:
+1. GPU Resource Management & Optimization (Importance: 95)
+- Memory allocation strategies using tensor fractions calculations
+- Real-time GPU metrics monitoring including utilization, temperature, power
+- Specialized batch processing system with length-aware inference scheduling
+- Custom overclocking profile management with safety constraints
+- File: dualgpuopt/optimizer.py
 
-1. GPU Memory Management System
-- Memory prediction and allocation strategies in `dualgpuopt/memory/predictor.py`
-- Recovery mechanisms for OOM scenarios in `dualgpuopt/memory/recovery.py`
-- Dynamic batch size adjustment based on model requirements
-- Layer balancing algorithms for multi-GPU distribution
+2. Model Layer Distribution (Importance: 90) 
+- Layer balancing algorithms for transformer model deployment
+- Performance-based distribution across GPUs using weighted profiling
+- Adaptive block optimization to minimize cross-device transfers
+- Specialized MoE model handling with expert-specific overhead calculations
+- File: dualgpuopt/layer_balance.py
 
-2. Model Optimization Engine
-- Model-specific memory profiling in `dualgpuopt/model_profiles.py`
+3. Memory Management System (Importance: 85)
+- Predictive memory growth projection using model-specific profiles
+- Hierarchical memory recovery strategies for OOM prevention
+- Context size calculations based on model architecture parameters
+- Dynamic batch size optimization with back-pressure control
+- Files: dualgpuopt/memory/predictor.py, dualgpuopt/memory/recovery.py
+
+4. Framework Integration (Importance: 80)
 - Framework-specific command generation (llama.cpp, vLLM)
-- Context size optimization based on GPU capabilities
-- Tensor parallelism configuration for distributed models
+- Cross-framework parameter mapping and optimization
+- GPU split configuration management for tensor parallelism
+- File: dualgpuopt/commands/gpu_commands.py
 
-3. GPU Monitoring Infrastructure
-- Real-time telemetry collection in `dualgpuopt/telemetry.py`
-- Multi-metric tracking (temperature, power, memory, utilization)
-- Idle detection system with configurable thresholds
-- PCIe bandwidth and clock speed monitoring
-
-4. Batch Processing System
-- Length-aware inference scheduling in `dualgpuopt/batch/smart_batch.py`
-- Dynamic batch size calculations based on sequence lengths
-- Back-pressure mechanisms for memory management
-- Automatic OOM recovery with cache purging
-
-5. Layer Distribution Logic
-- Performance-based layer assignment in `dualgpuopt/layer_balance.py`
-- Weighted profiling across sequence lengths
-- Block optimization for contiguous layer groups
-- Special handling for embedding and output layers
-
-Integration Points:
-- GPU command generation through `dualgpuopt/commands/gpu_commands.py`
-- Event-driven metrics pipeline in `dualgpuopt/services/event_bus.py`
-- State management via `dualgpuopt/services/state_service.py`
-- Configuration handling in `dualgpuopt/services/config_service.py`
-
-The system implements specialized algorithms for GPU resource optimization, focusing on memory management, layer distribution, and performance monitoring for large language model deployment across multiple GPUs.
+The system utilizes an event-driven architecture for GPU telemetry collection and metric processing, with specialized handling of GPU-specific error conditions and performance monitoring. The core optimization logic focuses on balancing computational load while minimizing cross-device communication overhead.
 
 $END$
 END SPECIFICATION

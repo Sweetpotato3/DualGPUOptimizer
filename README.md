@@ -86,9 +86,42 @@ The DualGPUOptimizer consists of several key components:
 - Follows a modular architecture with separation of concerns
 - Recently completed refactoring of `launcher.py` into smaller, focused components
 - Completed refactoring of `settings.py` into a modular structure with separate components for appearance, overclocking, and application settings
+- Completed refactoring of `error_handler.py` into a modular structure with base definitions, core handler, decorators, UI components, and logging
 - Added comprehensive documentation and unit tests for refactored components
 - Ongoing initiative to refactor large modules (>500 lines) for improved maintainability
 - See `dualgpuopt/REFACTORING.md` for details on the refactoring strategy
+
+## Refactoring Progress and Testing Status
+
+### Completed Refactorings
+- ✅ `memory_monitor.py` (769 lines) - Refactored into multiple components
+- ✅ `settings.py` (722 lines) - Refactored into appearance, overclocking, and application settings components
+- ✅ `error_handler.py` (558 lines) - Refactored into base, handler, decorators, UI, and logging components
+
+### Test Results for Refactored Modules
+- ✅ **Error Handler Module**: All 10 tests pass successfully
+- ⚠️ **Settings Module**: Tests require fixing merge conflicts in constants.py
+- ⚠️ **Memory Module**: No dedicated test files found
+- ⚠️ **Launcher Module**: No dedicated test files found
+
+### Next Steps
+1. **Module Refactoring**: Continue with remaining modules >500 lines:
+   - `theme.py` (549 lines) - Next priority
+
+2. **Testing Improvements**:
+   - Fix import issues and merge conflicts in existing tests
+   - Add unit tests for memory and launcher modules
+   - Implement test coverage reports
+
+3. **Code Quality**: Fix linter issues related to trailing whitespace
+
+4. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
+
+5. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
+
+6. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
+
+7. **Documentation Improvements**: Detailed API docs and usage examples
 
 ## Supported Models
 
@@ -109,31 +142,6 @@ The application requires PyTorch with CUDA support:
 - Python 3.11 or earlier: PyTorch 2.3.1 with CUDA 12.2
 
 If PyTorch is not detected, the application will attempt to install the appropriate version automatically.
-
-## Next Steps
-
-Future development priorities:
-
-1. **Module Refactoring**: Continuing our refactoring initiative for modules >500 lines:
-   - ~~`memory_monitor.py` (769 lines)~~ ✅ Completed
-   - ~~`settings.py` (722 lines)~~ ✅ Completed
-   - `error_handler.py` (558 lines) - In progress
-   - `theme.py` (549 lines) - Planned
-
-2. **Code Quality**: Fix linter issues related to trailing whitespace
-
-3. **Testing Improvements**: 
-   - ✅ Added unit tests for settings components
-   - Add unit tests for remaining refactored components
-   - Implement test coverage reports
-
-4. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
-
-5. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
-
-6. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
-
-7. **Documentation Improvements**: Detailed API docs and usage examples
 
 ## License
 

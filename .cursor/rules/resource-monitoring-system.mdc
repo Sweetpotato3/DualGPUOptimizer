@@ -1,57 +1,57 @@
 ---
-description: Specification for GPU resource monitoring, metrics collection, and performance telemetry implementation in dual GPU systems.
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/monitor.py,**/gpu_info.py
+description: Specification for GPU resource monitoring, telemetry collection, and alerting system implementation
+globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/alerts.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry and performance tracking for dual GPU configurations:
+The GPU resource monitoring system implements specialized telemetry collection and visualization for dual GPU setups:
 
-Core GPU Metrics Collection:
-- Real-time monitoring of GPU utilization percentages
-- Memory usage tracking (used/total/free)
-- PCIe bandwidth monitoring (RX/TX rates) 
-- Temperature and power consumption
-- Clock speeds (graphics/memory)
-- Fan speeds and thermal thresholds
+Core Telemetry Collection (telemetry.py):
+- Real-time GPU metrics tracking:
+  * Memory utilization percentages
+  * PCIe bandwidth (RX/TX rates)
+  * Temperature thresholds
+  * Power consumption vs limits
+  * Clock speeds (SM/Memory)
+- Mock GPU data generation with realistic hardware patterns
+- Metric correlation logic (utilization impacts power/temp)
 
-Telemetry Processing Pipeline:
-- Event-driven metrics collection with configurable intervals
-- Middleware processing chain for raw GPU data transformation
-- Custom aggregation for multi-GPU synchronization
-- Alert triggering based on configurable thresholds:
-  * Temperature warning at 80°C
-  * Memory usage warning at 90%
-  * Power limit warnings
-  * Idle detection after 5 minutes below 30% usage
+Alert Management System (alerts.py):
+- Multi-level severity classification:
+  * WARNING: Memory usage >80%
+  * CRITICAL: Temperature >80°C
+  * EMERGENCY: VRAM <256MB free
+- Progressive alert escalation based on duration
+- GPU-specific recovery recommendations
 
-Performance History Management:
-- Rolling 60-sample metrics history per GPU
-- Correlated metrics tracking:
-  * Utilization affects temperature (35°C base + scaled range)
-  * Power usage scales between GPU min/max based on load
-  * Clock speeds scale with utilization (500-2500MHz range)
-- Mock data generation maintains realistic correlations for testing
+Performance Dashboard (dashboard.py):
+- 60-sample rolling history buffer
+- Dynamic progress bar scaling based on GPU capabilities:
+  * Power scaled to GPU TDP
+  * Clocks normalized to max speeds
+  * Memory relative to total VRAM
+- Color-coded visualization:
+  * Primary GPU: Purple (#7E57C2)
+  * Secondary GPU: Light Purple (#AB47BC) 
+  * Temperature: Orange (#FFA726)
+  * Power: Cyan (#26C6DA)
 
-Alert System:
-- Four-tier severity classification:
-  * NORMAL: Standard operation
-  * WARNING: Approaching thresholds
-  * CRITICAL: Thresholds exceeded
-  * EMERGENCY: Immediate action required
-- Contextual recommendations based on alert type
-- Progressive intervention triggers
+Monitoring Configuration:
+- Update intervals:
+  * Standard: 1000ms
+  * Fast mode: 500ms
+  * Slow mode: 2000ms
+- Metric thresholds:
+  * Idle detection: <30% utilization
+  * Temperature warning: 80°C
+  * Power warning: 90% TDP
 
-Key Files:
-- dualgpuopt/telemetry.py: Core telemetry collection
-- dualgpuopt/metrics.py: Metrics processing pipeline
-- dualgpuopt/gpu_info.py: GPU detection and monitoring
-- dualgpuopt/memory/monitor.py: Memory tracking system
-
-The system emphasizes maintaining consistent monitoring across dual GPU configurations while providing early warning detection and automated interventions for resource optimization.
-
-Importance Score: 85 - Critical for dual GPU optimization but utilizes some standard monitoring patterns
+Key Paths:
+- dual_gpu_optimizer/dualgpuopt/telemetry.py
+- dual_gpu_optimizer/dualgpuopt/metrics.py
+- dual_gpu_optimizer/dualgpuopt/gui/dashboard.py
 
 $END$

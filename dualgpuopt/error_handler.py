@@ -1,19 +1,39 @@
 """
-Centralized error handling system for DualGPUOptimizer.
+Error handling system for DualGPUOptimizer.
 
-This module provides a standardized way to handle, log, and recover from errors
-across the application, with severity levels and optional callbacks.
+This module has been refactored into a package structure for better
+maintainability. This file provides backward compatibility with existing code.
+
+The new module structure is:
+- error_handler/base.py: Core error types
+- error_handler/handler.py: ErrorHandler implementation
+- error_handler/decorators.py: Exception handling decorators
+- error_handler/ui.py: User interface components
+- error_handler/logging.py: Logging configuration
 """
 
-import functools
 import logging
+import warnings
+
+# Show deprecation warning
+warnings.warn(
+    "Importing directly from error_handler.py is deprecated. "
+    "Please import from dualgpuopt.error_handler instead.",
+    DeprecationWarning,
+    stacklevel=2
+)
+
+# Re-export everything from the compatibility layer
+from dualgpuopt.error_handler.compat import *
+
+# Initialize module-level logger for backward compatibility
+logger = logging.getLogger("DualGPUOpt.ErrorHandler")
+
+import functools
 import sys
 import traceback
 from enum import Enum, auto
 from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
-
-# Initialize module-level logger
-logger = logging.getLogger("DualGPUOpt.ErrorHandler")
 
 
 class ErrorSeverity(Enum):

@@ -1,44 +1,65 @@
 ---
-description: Defines LLM execution workflows, command generation, and GPU resource allocation patterns
-globs: **/optimizer.py,**/launcher/**,**/executor/**,**/gpu_commands.py,**/gpu_info.py
+description: Documents the execution flow and orchestration of LLM models across multiple GPUs, including memory management and resource allocation.
+globs: **/runner.py,**/optimizer.py,**/gpu_commands.py,**/smart_batch.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Key execution workflow components:
+The model execution flow implements specialized orchestration for running large language models across multiple GPUs:
 
-1. LLM Launch Pipeline (dualgpuopt/gui/launcher/launch_controller.py):
-- Model size detection based on name patterns (70B, 13B, 7B, Mixtral)
-- Framework-specific command generation for llama.cpp and vLLM
-- Dynamic GPU memory allocation and tensor parallelism configuration
-- OOM recovery through CUDA cache clearing
+Core Execution Pipeline:
 
-2. Resource Management (dualgpuopt/memory/monitor.py):
-- KV cache size calculation: context_size * 8 bytes * layers * kv_heads * hidden_size
-- Model weight requirement estimates based on parameter count
-- Memory split optimization across multiple GPUs
-- Memory allocation safety buffer maintains 10% headroom
+1. Model Resource Calculation
+- Layer-aware distribution based on transformer architecture
+- Memory requirement estimation using:
+  * Base model weights
+  * KV cache scaling factor (2.0x)
+  * Tensor parallelism overhead (20%)
+  * System overhead buffer (2GB)
+- GPU split ratio optimization considering:
+  * Available VRAM per device
+  * Model architecture requirements
+  * Minimum 20% allocation per GPU rule
 
-3. Batch Processing (dualgpuopt/batch/smart_batch.py):
-- Length-aware inference scheduling with backpressure mechanism
-- Dynamic batch size adjustments based on sequence length distribution
-- OOM recovery reduces batch size by 25% after failures
-- Gradual recovery increases batch size by 10% after 5 successful batches
+2. Smart Batching System
+- Length-aware inference scheduling using:
+  * Token count bucketing (threshold: 256 tokens)
+  * Dynamic batch sizing based on sequence lengths
+  * Back-pressure system for OOM prevention
+  * Automatic retry mechanism with configurable scale factor
+- Two primary bucket strategies:
+  * Power-of-two scaling for llama.cpp
+  * Token ratio optimization for vLLM
 
-4. Layer Distribution (dualgpuopt/layer_balance.py):
-- Performance-based layer assignment across GPUs
-- Block optimization creates contiguous layer groups
-- Special handling for embedding and output layers
-- Layer distribution validation ensures split ratios match assignments
+3. Layer Distribution Algorithm
+- Performance-weighted profiling:
+  * Short sequences (64 tokens): 20% weight
+  * Long sequences (1024 tokens): 80% weight
+- Layer assignment rules:
+  * Input embeddings to first GPU
+  * Output components to second GPU
+  * Contiguous block optimization
+  * Cross-device transfer minimization
 
-5. Framework Integration:
-- llama.cpp: GPU split ratios and layer distribution 
-- vLLM: Tensor parallel size and GPU device mapping
-- Mixed precision policies for LayerNorm and attention components
-- Framework-specific parameter validation and constraints
+4. Framework-Specific Command Generation
+- llama.cpp:
+  * GPU split string configuration 
+  * Context size parameters
+  * Layer distribution mapping
+- vLLM:
+  * Tensor parallel size settings
+  * Memory allocation ratios
+  * Quantization configuration
 
-The execution flow prioritizes efficient resource utilization while maintaining stable model inference across multiple GPUs. Core logic emphasizes memory management, layer distribution optimization, and framework-specific deployment patterns.
+File Paths:
+- dualgpuopt/optimizer.py: Core optimization logic
+- dualgpuopt/batch/smart_batch.py: Batching system
+- dualgpuopt/layer_balance.py: Layer distribution
+- dualgpuopt/commands/gpu_commands.py: Command generation
+
+Importance Score: 95
+Rationale: Core business logic for ML model execution orchestration across GPUs
 
 $END$

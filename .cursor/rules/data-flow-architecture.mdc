@@ -1,86 +1,63 @@
 ---
-description: Documents data flow patterns for GPU optimization and model execution across system components
-globs: *.py,**/dualgpuopt/**/*.py
+description: Technical specification for data flow and communication patterns in a dual GPU optimization system for machine learning models.
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The data flow architecture implements specialized flows for GPU resource optimization and model execution:
+Core Data Flow Components:
 
-## Core Data Flow Components
+1. GPU Metrics Pipeline
+- Event-driven architecture for real-time GPU telemetry
+- Components communicate through GPUMetricsEvent objects containing:
+  * Utilization percentages
+  * Memory allocation status
+  * Temperature/power readings
+  * Clock speeds
+- Event priority system (CRITICAL to LOW) for resource monitoring
+- Implementations in:
+  * dualgpuopt/telemetry.py
+  * dualgpuopt/services/event_bus.py
 
-1. GPU Telemetry Pipeline
-- Source: `dualgpuopt/telemetry.py`
-- Collects real-time GPU metrics including:
-  * Memory utilization
-  * Power consumption 
-  * Temperature
-  * Fan speeds
-  * Clock rates
-- Publishes through event bus to monitoring components
-- Maintains 60-sample rolling window for trend analysis
+2. Memory Management Pipeline
+- Memory prediction and allocation system across GPUs 
+- Tracks model-specific parameters:
+  * Base memory requirements
+  * Per-batch memory scaling
+  * Token-based consumption
+- Recovery strategy pipeline:
+  1. Cache clearing
+  2. Batch size reduction
+  3. Model offloading
+- Implementations in:
+  * dualgpuopt/memory/predictor.py
+  * dualgpuopt/memory/recovery.py
 
-2. Model Parameter Flow
-- Source: `dualgpuopt/gui/launcher/parameter_resolver.py`
-- Routes model configuration data:
-  * Context size calculations
-  * GPU memory split ratios
-  * Layer distribution mappings
-  * Tensor parallelism settings
-- Validates parameters against hardware constraints
-- Generates framework-specific launch configurations
+3. Optimization Data Flow
+- Layer balancing optimization pipeline
+- Performance profiling across GPUs using timing measurements
+- Distribution algorithm pipeline:
+  1. Performance quota calculation
+  2. Layer assignment prioritization
+  3. Block optimization for contiguous layers
+- Implementations in:
+  * dualgpuopt/layer_balance.py
+  * dualgpuopt/optimizer.py
 
-3. Memory Management Pipeline 
-- Source: `dualgpuopt/memory/monitor.py`
-- Tracks GPU memory allocation patterns
-- Maintains usage thresholds and alerts
-- Coordinates memory reclamation during OOM events
-- Routes memory metrics to optimization components
+4. Model Parameter Flow
+- Framework-specific command generation pipeline
+- Model configuration data flow:
+  * Context size parameters
+  * Layer counts and dimensions
+  * GPU split configurations
+  * Tensor parallel settings
+- Implementations in:
+  * dualgpuopt/gui/launcher/parameter_resolver.py
+  * dualgpuopt/commands/gpu_commands.py
 
-4. Optimization Event Flow
-- Source: `dualgpuopt/services/event_bus.py`
-- Handles bi-directional flow of:
-  * GPU configuration changes
-  * Performance metrics
-  * Resource allocation decisions
-  * Alert conditions
-- Prioritizes critical GPU operations
-
-## Key Integration Points
-
-1. Model Launch Flow
-- Source: `dualgpuopt/gui/launcher/launch_controller.py`
-- Coordinates data flow between:
-  * Parameter validation
-  * Resource allocation
-  * Model initialization
-  * Performance monitoring
-
-2. Batch Processing Pipeline
-- Source: `dualgpuopt/batch/smart_batch.py`
-- Manages flow of:
-  * Sequence length metrics
-  * Batch size calculations
-  * Memory usage projections
-  * Performance feedback
-
-3. Layer Distribution Flow
-- Source: `dualgpuopt/layer_balance.py`
-- Routes layer assignments between GPUs based on:
-  * Performance profiling data
-  * Memory availability
-  * Hardware capabilities
-  * Model architecture
-
-Importance Scores:
-- GPU Telemetry Pipeline: 95 - Critical for optimization decisions
-- Model Parameter Flow: 90 - Core model execution configuration
-- Memory Management: 85 - Essential resource coordination
-- Optimization Events: 80 - Key system coordination
-- Launch Flow: 75 - Model execution orchestration
-- Batch Processing: 70 - Performance optimization
-- Layer Distribution: 70 - Resource utilization
+Data Flow Architecture Score: 95
+Justification: Critical system component managing core business data flow between GPU optimization components
 
 $END$
