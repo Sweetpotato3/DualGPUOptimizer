@@ -5,20 +5,27 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, filedialog, messagebox
 import queue
 import threading
+from concurrent.futures import ThreadPoolExecutor
 import os
 import sys
 import logging
 import json
 from pathlib import Path
 from typing import Dict, List, Optional, Callable, Any, Tuple
+import re
+import time
+import subprocess
 
-# Import our advanced optimization modules
+# Import our optimization modules
 try:
-    from ..batch.smart_batch import optimize_batch_size, SmartBatcher, BatchStats
+    from ..batch.smart_batch import optimize_batch_size, BatchStats
     from ..ctx_size import calc_max_ctx, model_params_from_name
-    from ..layer_balance import rebalance, LayerProfiler
-    from ..vram_reset import reset_vram, ResetMethod, ResetResult
+    from ..layer_balance import rebalance
+    from ..vram_reset import reset_vram
     from ..mpolicy import autocast, scaler
+    from ..memory_monitor import get_memory_monitor
+    from ..model_profiles import apply_profile, get_model_profile
+    from ..error_handler import get_error_handler, show_error_dialog
     from ..telemetry import get_telemetry_service
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
@@ -30,250 +37,286 @@ logger = logging.getLogger("DualGPUOpt.LauncherTab")
 
 
 class ModelRunner:
-    """Handles running model inference commands and capturing output"""
+    """Runs model inference processes with improved error handling and OOM detection"""
     
-    def __init__(self, log_queue: queue.Queue):
+    def __init__(self, log_queue):
         """Initialize model runner
         
         Args:
-            log_queue: Queue for sending output back to the GUI
+            log_queue: Queue for GUI communication
         """
-        self.log_queue = log_queue
         self.process = None
-        self.stop_event = threading.Event()
-        self.batch_stats = []
+        self.log_queue = log_queue
+        self.running = False
+        self.logger = logging.getLogger("DualGPUOpt.ModelRunner")
         
-        # Set up smart batcher if available
+        # Initialize smart batcher if advanced features available
         self.smart_batcher = None
         if ADVANCED_FEATURES_AVAILABLE:
             try:
-                self.smart_batcher = SmartBatcher(
-                    max_batch_size=32,
-                    adaptive_sizing=True,
-                    oom_recovery=True
-                )
-            except Exception as e:
-                logger.error(f"Failed to initialize SmartBatcher: {e}")
+                from dualgpuopt.batch.smart_batch import optimize_batch_size
+                self.smart_batcher = optimize_batch_size
+            except ImportError:
+                self.logger.warning("Smart batching module not available")
     
-    def start(self, command: str, env: Optional[Dict[str, str]] = None, 
-              use_layer_balancing: bool = False, use_mixed_precision: bool = True) -> None:
-        """Start running a model command
+    def start(self, command, env=None, cwd=None):
+        """Execute the model command
         
         Args:
             command: Command string to execute
-            env: Optional environment variables
-            use_layer_balancing: Whether to enable layer balancing optimization
-            use_mixed_precision: Whether to enable mixed precision
+            env: Environment variables dict
+            cwd: Working directory
+            
+        Returns:
+            bool: True if started successfully
         """
-        import subprocess
-        import sys
-        
         if self.process and self.process.poll() is None:
-            self.log_queue.put("Process already running. Stop it first.\n")
-            return
+            self.log_queue.put("Error: Model already running")
+            return False
         
-        # Reset stop event
-        self.stop_event.clear()
+        # Reset state
+        self.running = True
         
-        # Add current environment to any custom values
-        full_env = os.environ.copy()
+        # Copy environment if provided
         if env:
+            full_env = os.environ.copy()
             full_env.update(env)
-        
-        # Add layer balancing env variables if requested
-        if use_layer_balancing:
-            dev_map_path = Path("device_map.json")
-            if dev_map_path.exists():
-                full_env["TENSOR_PARALLEL_DEVICE_MAP"] = str(dev_map_path.resolve())
-                self.log_queue.put(f"Using device map: {dev_map_path.resolve()}\n")
-            else:
-                self.log_queue.put("Warning: Layer balancing enabled but no device_map.json found\n")
-        
-        # Add mixed precision env variables if requested
-        if use_mixed_precision:
-            full_env["MIXED_PRECISION"] = "1"
-            full_env["DTYPE"] = "float16"
-            if "llama.cpp" in command or "./main" in command:
-                # Ensure llama.cpp uses FP16
-                if "--dtype" not in command:
-                    command += " --dtype float16"
-        
-        self.log_queue.put(f"Starting command: {command}\n")
-        
-        # First, try to reset VRAM to ensure maximum available memory
+        else:
+            full_env = None
+            
+        # Prepare for layer balancing and mixed precision if available
         if ADVANCED_FEATURES_AVAILABLE:
-            try:
-                result = reset_vram(method=ResetMethod.FULL_RESET)
-                if result.memory_reclaimed > 0:
-                    self.log_queue.put(f"Reset VRAM: {result.memory_reclaimed} MB reclaimed\n")
-            except Exception as e:
-                self.log_queue.put(f"VRAM reset failed: {e}\n")
+            if env and "LAYER_BALANCE" in env and env["LAYER_BALANCE"] == "1":
+                try:
+                    from dualgpuopt.layer_balance import setup_layer_balancing
+                    setup_layer_balancing()
+                    self.log_queue.put("Layer balancing activated")
+                except ImportError:
+                    self.log_queue.put("Warning: Layer balancing module not available")
+                    
+            # Add model-specific optimizations if applicable
+            if env and "MODEL_PATH" in env:
+                try:
+                    from dualgpuopt.model_profiles import apply_profile
+                    apply_profile(env["MODEL_PATH"])
+                    self.log_queue.put(f"Applied optimization profile for {os.path.basename(env['MODEL_PATH'])}")
+                except (ImportError, ValueError) as e:
+                    self.log_queue.put(f"Warning: Could not apply model profile: {str(e)}")
+            
+            # Reset VRAM if memory monitor is enabled
+            if env and "MEMORY_MONITOR" in env and env["MEMORY_MONITOR"] == "1":
+                try:
+                    from dualgpuopt.vram_reset import reset_vram
+                    reset_vram()
+                    self.log_queue.put("VRAM reset completed")
+                except ImportError:
+                    self.log_queue.put("Warning: VRAM reset module not available")
+        
+        # Log the command
+        self.log_queue.put(f"Executing: {command}")
         
         # Start the process
         try:
             self.process = subprocess.Popen(
                 command,
-                shell=True,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
-                env=full_env,
+                text=True,
+                bufsize=1,
                 universal_newlines=True,
-                bufsize=1
+                env=full_env,
+                cwd=cwd,
+                shell=True
             )
             
-            # Start reading output
-            threading.Thread(target=self._read_output, daemon=True).start()
+            # Start output reader thread
+            thread = threading.Thread(target=self._read_output)
+            thread.daemon = True
+            thread.start()
             
-            # Start monitoring for OOM
-            if ADVANCED_FEATURES_AVAILABLE and self.smart_batcher:
-                threading.Thread(target=self._monitor_oom, daemon=True).start()
+            # Monitor OOM with memory monitor if available
+            if ADVANCED_FEATURES_AVAILABLE and env and "MEMORY_MONITOR" in env:
+                self._monitor_oom()
+                
+            return True
             
         except Exception as e:
-            self.log_queue.put(f"Error starting process: {e}\n")
+            # Use error handler if available
+            if ADVANCED_FEATURES_AVAILABLE:
+                try:
+                    from dualgpuopt.error_handler import get_error_handler
+                    error_handler = get_error_handler()
+                    error_handler.handle_error(e, "Failed to start model")
+                except ImportError:
+                    pass
+            
+            self.running = False
+            error_msg = f"Error starting process: {str(e)}"
+            self.logger.error(error_msg, exc_info=True)
+            self.log_queue.put(error_msg)
+            return False
     
-    def _read_output(self) -> None:
-        """Read process output and send to log queue"""
+    def stop(self):
+        """Stop the running model process"""
         if not self.process:
             return
             
-        for line in iter(self.process.stdout.readline, ''):
-            if self.stop_event.is_set():
-                break
-            
-            # Process OOM errors and other special patterns
-            if "CUDA out of memory" in line or "OOM" in line:
-                self._handle_oom_error(line)
-            elif "tokens per second" in line:
-                self._track_performance(line)
+        self.running = False
+        
+        # Terminate process
+        try:
+            if self.process.poll() is None:
+                # Try graceful termination first
+                self.process.terminate()
                 
-            self.log_queue.put(line)
-            
-        if self.process.poll() is not None:
-            self.log_queue.put(f"\nProcess ended with code {self.process.returncode}\n")
+                # Wait up to 5 seconds
+                for _ in range(50):
+                    if self.process.poll() is not None:
+                        break
+                    time.sleep(0.1)
+                    
+                # Force kill if still running
+                if self.process.poll() is None:
+                    self.process.kill()
+                    
+            self.log_queue.put("Process stopped")
+        except Exception as e:
+            self.log_queue.put(f"Error stopping process: {str(e)}")
     
-    def _handle_oom_error(self, oom_line: str) -> None:
-        """Handle CUDA out of memory error
-        
-        Args:
-            oom_line: The error line containing OOM
-        """
-        logger.warning(f"OOM detected: {oom_line.strip()}")
-        
-        if not ADVANCED_FEATURES_AVAILABLE or not self.smart_batcher:
+    def _read_output(self):
+        """Read and process output from the model process"""
+        if not self.process:
             return
             
         try:
-            # Record OOM event
-            stats = BatchStats(
-                tokens_in=0,
-                tokens_out=0,
-                processing_time=0.1,
-                oom_events=1
-            )
-            self.smart_batcher.record_batch_stats(stats)
-            
-            # Try to recover
-            self.smart_batcher.reset_cache()
-            self.log_queue.put("OOM detected: Reducing batch size and clearing cache\n")
-            
-            # Update environment for next run
-            if self.process:
-                reduced_batch = max(1, int(32 * self.smart_batcher.current_scale_factor))
-                self.log_queue.put(f"Next batch size will be reduced to {reduced_batch}\n")
+            for line in iter(self.process.stdout.readline, ''):
+                if not self.running:
+                    break
+                    
+                # Skip empty lines
+                if not line.strip():
+                    continue
+                    
+                # Check for OOM errors
+                if 'out of memory' in line.lower() or 'cuda error' in line.lower():
+                    self._handle_oom_error(line)
+                
+                # Track performance metrics
+                self._track_performance(line)
+                    
+                # Add to log queue
+                self.log_queue.put(line.strip())
+                
+            # Process completed
+            if self.process.poll() is not None:
+                exit_code = self.process.returncode
+                if exit_code != 0:
+                    self.log_queue.put(f"Process exited with code {exit_code}")
+                else:
+                    self.log_queue.put("Process completed successfully")
+                    
+                self.running = False
+                
         except Exception as e:
-            logger.error(f"Error handling OOM: {e}")
+            if ADVANCED_FEATURES_AVAILABLE:
+                try:
+                    from dualgpuopt.error_handler import get_error_handler
+                    error_handler = get_error_handler()
+                    error_handler.handle_error(e, "Error reading process output")
+                except ImportError:
+                    pass
+            
+            self.log_queue.put(f"Error reading process output: {str(e)}")
+            self.running = False
     
-    def _track_performance(self, perf_line: str) -> None:
-        """Track inference performance
+    def _handle_oom_error(self, error_line):
+        """Handle out-of-memory errors from the process
         
         Args:
-            perf_line: Line with performance information
+            error_line: The line containing the OOM error
         """
-        try:
-            # Parse tokens/sec information
-            import re
-            matches = re.search(r'(\d+\.?\d*) tokens per second', perf_line)
-            if matches:
-                tokens_per_sec = float(matches.group(1))
-                self.batch_stats.append(tokens_per_sec)
-                
-                # Keep only last 10 measurements
-                if len(self.batch_stats) > 10:
-                    self.batch_stats.pop(0)
-                
-                # Log average performance
-                if len(self.batch_stats) >= 3:
-                    avg_tps = sum(self.batch_stats) / len(self.batch_stats)
-                    logger.debug(f"Average tokens/sec: {avg_tps:.1f}")
-        except Exception as e:
-            logger.error(f"Error tracking performance: {e}")
+        self.log_queue.put("CRITICAL: GPU out of memory detected!")
+        
+        # Try to recover by clearing CUDA cache
+        if ADVANCED_FEATURES_AVAILABLE:
+            try:
+                import torch
+                if torch.cuda.is_available():
+                    self.log_queue.put("Attempting to clear CUDA cache...")
+                    torch.cuda.empty_cache()
+                    self.log_queue.put("CUDA cache cleared")
+            except (ImportError, Exception) as e:
+                self.log_queue.put(f"Failed to clear CUDA cache: {str(e)}")
+        
+        # Log error details
+        self.logger.error(f"OOM error detected: {error_line}")
     
-    def _monitor_oom(self) -> None:
-        """Monitor for out of memory conditions"""
+    def _track_performance(self, line):
+        """Track performance metrics from process output
+        
+        Args:
+            line: Output line from process
+        """
+        # Example performance tracking for llama.cpp
+        if "tok/s" in line:
+            try:
+                # Extract tokens per second 
+                match = re.search(r'(\d+\.\d+) tok/s', line)
+                if match:
+                    tokens_per_sec = float(match.group(1))
+                    self.logger.info(f"Performance: {tokens_per_sec:.2f} tok/s")
+            except Exception:
+                pass
+    
+    def _monitor_oom(self):
+        """Register callback for memory pressure and monitor OOM conditions"""
         if not ADVANCED_FEATURES_AVAILABLE:
             return
             
-        telemetry = get_telemetry_service()
-        telemetry.start()
-        
         try:
-            while not self.stop_event.is_set() and self.process and self.process.poll() is None:
-                # Check GPU memory pressure
-                metrics = telemetry.get_metrics()
-                
-                for gpu_id, metric in metrics.items():
-                    memory_percent = metric.memory_percent
-                    # If memory usage is extremely high (>95%), proactively reset cache
-                    if memory_percent > 95:
-                        logger.warning(f"GPU {gpu_id} memory usage critical at {memory_percent:.1f}%")
-                        if self.smart_batcher:
-                            self.smart_batcher.reset_cache()
-                            logger.info("Proactively cleared cache due to high memory usage")
-                
-                # Sleep before next check
-                import time
-                time.sleep(2.0)
-                
-        except Exception as e:
-            logger.error(f"Error in OOM monitor: {e}")
-        finally:
-            telemetry.stop()
-    
-    def stop(self) -> None:
-        """Stop the running process"""
-        if not self.process or self.process.poll() is not None:
-            return
+            from dualgpuopt.memory_monitor import get_memory_monitor
+            memory_monitor = get_memory_monitor()
             
-        self.stop_event.set()
-        self.log_queue.put("Stopping process...\n")
+            def handle_memory_pressure(gpu_id, used_mb, total_mb, threshold):
+                """Handle memory pressure event"""
+                pressure_pct = (used_mb / total_mb) * 100
+                self.log_queue.put(
+                    f"WARNING: High memory pressure on GPU {gpu_id}: "
+                    f"{used_mb:.0f}MB/{total_mb:.0f}MB ({pressure_pct:.1f}%)"
+                )
+                
+                # Try to alleviate pressure by clearing CUDA cache
+                try:
+                    import torch
+                    if torch.cuda.is_available():
+                        self.log_queue.put("Clearing CUDA cache to prevent OOM...")
+                        torch.cuda.empty_cache()
+                except (ImportError, Exception):
+                    pass
+            
+            # Register callback for high memory usage
+            memory_monitor.register_callback("high_memory", handle_memory_pressure)
+            
+        except ImportError:
+            self.logger.warning("Memory monitor not available for OOM prevention")
+            
+    def is_running(self):
+        """Check if the process is still running
         
-        try:
-            import signal
-            if sys.platform == "win32":
-                self.process.terminate()
-            else:
-                self.process.send_signal(signal.SIGTERM)
-                
-            # Give it a moment to terminate
-            import time
-            time.sleep(0.5)
+        Returns:
+            bool: True if running
+        """
+        if not self.process:
+            return False
             
-            # Force kill if still running
-            if self.process.poll() is None:
-                self.process.kill()
-                
-        except Exception as e:
-            self.log_queue.put(f"Error stopping process: {e}\n")
+        return self.process.poll() is None
 
 
 class LauncherTab(ttk.Frame):
     """Tab for launching models with optimized settings"""
     
     def __init__(self, parent):
-        """Initialize launcher tab
-        
-        Args:
-            parent: Parent widget
+        """Initialize launcher tab with improved threading
         """
         super().__init__(parent, padding=15)
         
@@ -375,23 +418,14 @@ class LauncherTab(ttk.Frame):
         )
         layer_balance_check.grid(row=0, column=1, padx=(0, 15), sticky="w")
         
-        # Smart batching toggle
-        self.smart_batch_var = tk.BooleanVar(value=True)
-        smart_batch_check = ttk.Checkbutton(
-            adv_options,
-            text="Smart Batching",
-            variable=self.smart_batch_var
-        )
-        smart_batch_check.grid(row=0, column=2, padx=(0, 15), sticky="w")
-        
-        # Memory monitor toggle
+        # Memory monitoring toggle
         self.memory_monitor_var = tk.BooleanVar(value=True)
         memory_monitor_check = ttk.Checkbutton(
             adv_options,
             text="Memory Monitor",
             variable=self.memory_monitor_var
         )
-        memory_monitor_check.grid(row=0, column=3, padx=(0, 15), sticky="w")
+        memory_monitor_check.grid(row=0, column=2, padx=(0, 15), sticky="w")
         
         # Launch controls
         control_frame = ttk.Frame(options_frame)
@@ -461,12 +495,34 @@ class LauncherTab(ttk.Frame):
         )
         copy_btn.grid(row=0, column=1, padx=(5, 0))
         
+        # Initialize enhanced functionality
+        # Set up queue for thread-safe communication
+        self.task_queue = queue.Queue()
+        self.result_queue = queue.Queue()
+        
+        # Create thread pool for background tasks
+        self.thread_pool = ThreadPoolExecutor(max_workers=4)
+        
+        # Initialize error handler
+        if ADVANCED_FEATURES_AVAILABLE:
+            self.error_handler = get_error_handler()
+            # Register UI callback
+            self.error_handler.register_callback('*', self._handle_error)
+            
+            # Initialize memory monitor
+            self.memory_monitor = get_memory_monitor()
+            # Register memory warning callback
+            self.memory_monitor.register_callback("ui_warning", self._handle_memory_warning)
+            # Start the memory monitor
+            self.memory_monitor.start()
+        
         # Initialize runner and queue
         self.log_queue = queue.Queue()
         self.runner = ModelRunner(self.log_queue)
         
         # Start queue processing
         self.after(100, self._process_log_queue)
+        self.after(100, self._process_result_queue)
         
         # Update command preview when settings change
         for var in [self.framework_var, self.model_path_var, self.gpu_split_var, 
@@ -763,10 +819,6 @@ class LauncherTab(ttk.Frame):
         layer_balancing = self.layer_balance_var.get() and ADVANCED_FEATURES_AVAILABLE
         
         # Apply smart batching if enabled
-        if self.smart_batch_var.get() and ADVANCED_FEATURES_AVAILABLE:
-            env["SMART_BATCHING"] = "1"
-            
-        # Apply memory monitoring if enabled
         if self.memory_monitor_var.get() and ADVANCED_FEATURES_AVAILABLE:
             env["MEMORY_MONITOR"] = "1"
         
@@ -803,6 +855,18 @@ class LauncherTab(ttk.Frame):
         
         # Schedule next processing
         self.after(100, self._process_log_queue)
+    
+    def _process_result_queue(self) -> None:
+        """Process pending result messages from the runner"""
+        try:
+            while True:
+                message = self.result_queue.get_nowait()
+                self._append_log(message)
+        except queue.Empty:
+            pass
+        
+        # Schedule next processing
+        self.after(100, self._process_result_queue)
     
     def _append_log(self, message: str) -> None:
         """Append message to log text

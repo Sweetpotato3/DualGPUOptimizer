@@ -13,42 +13,57 @@ logger = logging.getLogger("DualGPUOpt.SmartBatch")
 
 def optimize_batch_size(
     gpu_memory_gb: float, 
-    model_size_gb: float
+    model_size_gb: float,
+    model_type: str = None
 ) -> int:
-    """Calculate optimal batch size based on available GPU memory
+    """Calculate optimal batch size based on model-specific memory requirements
     
     Args:
         gpu_memory_gb: Available GPU memory in GB
         model_size_gb: Model size in GB
-        
+        model_type: Optional model type for specific configurations
+    
     Returns:
         Optimal batch size
     """
-    # Enhanced heuristic with better overhead estimation
-    # Reserve memory for model overhead, KV cache expansion, and system buffers
-    model_overhead_factor = 0.15  # 15% for model overhead
-    kv_cache_factor = 0.20       # 20% for KV cache
-    system_reserve_gb = 1.0      # 1 GB fixed reserve
+    # Get model-specific parameters
+    try:
+        from ..model_profiles import MODEL_PROFILES
+        
+        # Default profile if no model type specified
+        if model_type is None or model_type not in MODEL_PROFILES:
+            model_type = "default"
+            
+        # Get profile parameters
+        profile = MODEL_PROFILES.get(model_type, MODEL_PROFILES["default"])
+        per_token_memory = profile.get("per_token_memory", 2.0)
+        overhead_factor = profile.get("overhead_factor", 0.15)
+        
+    except ImportError:
+        # Fallback to reasonable defaults if profiles not available
+        logger.warning("Model profiles not available, using default parameters")
+        per_token_memory = 2.0
+        overhead_factor = 0.15
     
-    available_memory = gpu_memory_gb - model_size_gb * (1 + model_overhead_factor) - system_reserve_gb
+    # Calculate available memory with model-specific overhead
+    system_reserve_gb = 1.0  # 1 GB fixed reserve
+    available_memory = gpu_memory_gb - (model_size_gb * (1 + overhead_factor)) - system_reserve_gb
     
     # Calculate memory needed per sequence in batch
-    # This now considers sequence length impact more accurately
-    token_memory_mb = 2  # Memory per token in MB (for fp16)
     avg_seq_length = 512  # Reasonable default
-    per_sequence_gb = (token_memory_mb * avg_seq_length) / 1024 * (1 + kv_cache_factor)
+    per_sequence_gb = (per_token_memory * avg_seq_length) / 1024
     
-    # Calculate and clamp batch size
+    # Calculate batch size with safety margin
     if available_memory <= 0 or per_sequence_gb <= 0:
         return 1
     
-    batch_size = int(available_memory / per_sequence_gb)
+    raw_batch_size = int(available_memory / per_sequence_gb)
     
-    # Clamp and ensure it's a power of 2 for optimal GPU utilization
-    batch_size = max(1, min(batch_size, 64))
-    batch_size = 2 ** int(math.log2(batch_size))
+    # Apply reasonable bounds, allowing non-power-of-2 for flexibility
+    batch_size = max(1, min(raw_batch_size, 64))
     
-    logger.info(f"Optimized batch size: {batch_size} for {gpu_memory_gb:.1f}GB GPU with {model_size_gb:.1f}GB model")
+    logger.info(f"Optimized batch size: {batch_size} for {model_type} model " 
+               f"({gpu_memory_gb:.1f}GB GPU, {model_size_gb:.1f}GB model)")
     return batch_size
 
 
