@@ -1,59 +1,60 @@
 ---
-description: Resource monitoring system specification for GPU monitoring, memory tracking and alerts in dual GPU setups
-globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/gpu_info.py,**/tray.py
+description: Specification for implementing resource monitoring and telemetry systems in applications with GPU metrics tracking
+globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/tray.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized telemetry collection and analysis for dual GPU configurations:
+The telemetry system implements specialized GPU resource monitoring with the following key components:
 
 ## GPU Metrics Collection
-
-- Real-time monitoring of key GPU metrics:
-  - GPU utilization tracking per core
-  - VRAM usage and availability
-  - Temperature monitoring with warning thresholds 
-  - Power consumption tracking
-  - Fan speed monitoring
-  - Clock speeds (SM and Memory)
-  - PCIe bandwidth utilization
-
-- Custom update intervals:
-  - 1000ms standard interval for regular metrics
-  - 500ms critical interval for temperature/power
-  - Configurable thresholds for different metrics
-
-## Alert Mechanism 
-
-- Multi-level alerting system:
-  - Temperature alerts at 80°C warning, 90°C critical
-  - Memory usage alerts at 80%, 90%, 95% thresholds
-  - Power limit warnings at 95% TDP
-  - Fan speed alerts for suboptimal cooling
-
-- Alert propagation through event bus system
-- User notifications via system tray
-- Configurable alert thresholds and recovery actions
-
-## Memory Tracking
-
-- VRAM usage monitoring:
-  - Per-process memory tracking
-  - Reserved vs used memory tracking
-  - Memory fragmentation detection
-  - Automatic VRAM recovery triggers
+- Real-time monitoring of core GPU metrics:
+  - Utilization percentage (processing and memory)
+  - VRAM usage tracking
+  - Power consumption levels
+  - Temperature monitoring with thresholds
+  - PCIe bandwidth metrics
+  - Clock speeds (graphics and memory)
   
-- Memory pressure prediction:
-  - Usage trend analysis
-  - OOM prevention through early warnings
-  - Configurable safety margins
+## Alert Mechanism
+- Multi-level threshold-based alerting:
+  - CRITICAL: 95% memory usage
+  - WARNING: 80% memory usage 
+  - EMERGENCY: Memory usage above safe threshold
+- Temperature alerts at 80°C (warning) and 90°C (danger)
+- Notification delivery through system tray
+- Alert persistence and acknowledgment tracking
 
-Relevant file paths:
-- dualgpuopt/telemetry.py - Core telemetry collection
-- dualgpuopt/metrics.py - Metric processing and analysis
-- dualgpuopt/gpu_info.py - GPU information gathering
-- dualgpuopt/tray.py - System tray notifications
+## Memory Management
+- Dynamic memory tracking with utilization projection
+- Pre-emptive OOM prevention through:
+  - Cache clearing when reaching thresholds
+  - Memory reclamation strategies
+  - Workload redistribution
+- Historical memory usage patterns tracking
+
+## Telemetry Pipeline
+File: dualgpuopt/telemetry.py
+- Custom middleware system for telemetry processing
+- Real-time metrics publishing to event bus
+- Configurable polling intervals:
+  - Fast: 500ms for critical metrics
+  - Standard: 1000ms for general metrics
+  - Slow: 2000ms for non-critical data
+
+## Resource Visualization 
+File: dualgpuopt/tray.py
+- System tray integration for resource monitoring
+- Color-coded status indicators
+- Compact GPU metrics display
+- Quick access to memory management controls
+
+Key file paths implementing this functionality:
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory/monitor.py
+- dualgpuopt/memory/metrics.py
+- dualgpuopt/tray.py
 
 $END$

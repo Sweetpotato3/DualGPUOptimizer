@@ -1,52 +1,67 @@
 ---
-description: Analyze and document data flow between components, including GPU resource data, optimization parameters, and monitoring metrics
-globs: dualgpuopt/**,dual_gpu_optimizer/**,integrated_app/**,hooks/**,*.py
+description: Analyze data flow between components and implement GPU resource data, optimization parameters, monitoring metrics in DualGPUOptimizer
+globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The data flow architecture comprises several key streams:
+The DualGPUOptimizer implements a multi-layered data flow architecture for managing GPU resources and optimizing model execution:
 
-1. GPU Telemetry Flow
-- Telemetry service collects GPU metrics (utilization, memory, temperature)
-- Data flows through event bus to dashboard components
-- Dashboard updates visualization components at configurable intervals (500ms-1000ms)
-- Telemetry data cached in rolling 60-sample history for trend analysis
+## Core Data Flow Components
 
-2. Model Optimization Flow
-- Model parameters and configurations flow from UI inputs to optimizer
-- Optimizer calculates GPU splits and generates framework-specific commands 
-- Commands flow to launcher component for execution
-- Status and errors flow back through event bus to UI
+1. GPU Telemetry Pipeline
+- GPU metrics flow from hardware through NVML to TelemetryService
+- Metrics include: utilization, memory usage, temperature, power, clocks 
+- Service publishes metrics to EventBus for dashboard consumption
+- File: `dualgpuopt/telemetry.py`
 
-3. Memory Management Flow 
-- Memory monitor tracks GPU memory usage in real-time
-- Usage data flows to predictor component for OOM prevention
-- Recovery strategies triggered based on memory thresholds
-- Recovery commands flow back to model execution components
+2. Model Parameter Flow
+- Model configuration flows from UI through ParameterResolver
+- Resolver calculates optimal parameters based on GPU capabilities
+- Parameters flow to LaunchController for model execution
+- File: `dualgpuopt/gui/launcher/parameter_resolver.py`
 
-4. Configuration Flow
-- Settings flow from UI components to state service
-- State changes propagate through event bus to subscribed components
-- Config persisted to disk and loaded on startup
-- Theme and appearance settings flow to UI components
+3. Optimization Pipeline
+- GPU split ratios flow from Optimizer to CommandGenerator
+- Memory requirements flow from ModelValidator to Optimizer
+- Generated commands flow to ProcessMonitor for execution
+- File: `dualgpuopt/optimizer.py`
 
-Key Data Paths:
+4. Memory Management Flow
+- Memory usage metrics flow from Monitor to MemoryPredictor
+- Predictions trigger RecoveryManager actions when thresholds exceeded
+- Recovery commands flow back to affected GPUs
+- Files:
+  - `dualgpuopt/memory/predictor.py`
+  - `dualgpuopt/memory/recovery.py`
+
+5. Event Distribution System
+- GPU metrics flow through EventBus to subscribed components
+- State changes propagate via StateService to UI components
+- Error events flow through ErrorHandler to UI notifications
+- Files:
+  - `dualgpuopt/services/event_bus.py`
+  - `dualgpuopt/services/state_service.py`
+
+## Key Data Transformations
+
+1. Model Parameter Optimization
 ```
-GPU Metrics -> Event Bus -> Dashboard
-Model Config -> Optimizer -> Launcher
-Memory Usage -> Predictor -> Recovery
-Settings -> State Service -> Components
+UI Input -> ParameterResolver -> Optimizer -> CommandGenerator -> Execution
 ```
 
-File Paths Containing Core Flow Logic:
-- dualgpuopt/telemetry.py: GPU metric collection and distribution
-- dualgpuopt/services/event_bus.py: Central event distribution
-- dualgpuopt/memory/predictor.py: Memory usage prediction
-- dualgpuopt/services/state_service.py: Configuration state management
+2. GPU Metric Processing
+```
+Hardware -> NVML -> TelemetryService -> EventBus -> Dashboard
+```
 
-The architecture emphasizes real-time data flow for GPU monitoring and optimization, with the event bus providing decoupled communication between components.
+3. Memory Management
+```
+Monitor -> Predictor -> RecoveryManager -> GPU Actions
+```
+
+The architecture emphasizes real-time data flow for GPU monitoring and optimization, with clear separation between data collection, processing, and visualization components.
 
 $END$

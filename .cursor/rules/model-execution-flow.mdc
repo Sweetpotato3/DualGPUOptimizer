@@ -1,63 +1,47 @@
 ---
-description: Documents how model execution is coordinated across GPUs, including command generation and resource allocation flows
-globs: **/optimizer.py,**/runner.py,**/launcher*.py,**/commands/*.py,**/gpu/*.py
+description: Specification for model execution flows including command generation, resource allocation, and GPU optimization patterns.
+globs: **/launcher/*,**/optimizer/*,**/gpu/*,**/commands/*,**/executor/*
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized logic for running large language models across multiple GPUs:
+## Launch Command Generation
+- **Llama.cpp Commands**: Generates GPU split and layer allocation commands based on VRAM availability and model requirements. Handles context length optimization and GPU specific parameters.
+- **vLLM Commands**: Configures tensor parallelism settings and GPU memory usage ratios. Generates deployment commands with optimized throughput settings.
 
-## Command Generation System
-- Generates framework-specific commands for model execution:
-  ```python
-  # llama.cpp format
-  ./main -m <model> --split {gpu_splits} --mul-mat-q --gpu-layers {layer_count}
-  
-  # vLLM format 
-  python -m vllm.entrypoints.api_server --model <model> --tensor-parallel-size {gpu_count}
-  ```
+## Resource Allocation System 
+- Dynamic VRAM distribution across GPUs based on model size and architecture
+- Implements context window scaling based on available GPU memory
+- Automatic tensor parallel size determination from GPU count and VRAM capacity
+- Layer placement optimization for multi-GPU setups
 
-- Layer distribution calculation splits model across GPUs:
-  ```python
-  total_memory = sum(gpu.mem_free_mb for gpu in gpus)
-  split = [int((gpu.mem_free_mb / total_memory) * 100) for gpu in gpus]
-  ```
+## Model Architecture Handling
+The system adapts execution parameters based on model architectures:
+- Mixture of Experts (MoE) models: Applies 1.05x memory overhead factor
+- Attention patterns: Adjusts memory usage for MQA (0.25x) and GQA (0.5x)
+- Per-model memory profiling for optimal GPU split ratios
 
-## Resource Management
-- Memory split optimization assigns memory quotas based on:
-  - Available VRAM per GPU
-  - Model size and architecture
-  - Context length requirements
-  - Batch size configuration
+## Memory Management
+- Token-based memory estimation using architecture-specific formulas:
+```
+bytes_per_token = KV_OVERHEAD * layers * kv_heads * (hidden_size/heads) * dtype_size * expert_count
+```
+- Dynamic batch size adjustment based on available memory
+- Memory recovery strategies including cache clearing and workload redistribution
 
-- Dynamic adjustment of tensor parallel size based on:
-  - GPU count
-  - Per-GPU memory availability  
-  - Model architecture constraints
+## Launch Process Management 
+- Environment initialization with GPU-specific variables
+- Process monitoring with OOM detection and recovery
+- Telemetry collection for token throughput and GPU utilization
+- Graceful shutdown handling with resource cleanup
 
-## Model Launch Controller
-- Validates hardware requirements:
-  - Minimum 2GB free memory per GPU
-  - Compatible GPU architectures
-  - Valid model checkpoint path
-
-- Handles framework-specific launch flows:
-  - llama.cpp: Layer distribution, memory splits
-  - vLLM: Tensor parallelism, memory efficiency
-
-## Flow Orchestration 
-1. Hardware validation and resource analysis
-2. Memory quota calculation and GPU split determination
-3. Framework-specific parameter generation
-4. Launch command construction
-5. Model execution monitoring
-
-File paths containing core execution logic:
-- dualgpuopt/optimizer.py
-- dualgpuopt/runner.py
+Key file paths:
+- dualgpuopt/gui/launcher/launch_controller.py 
+- dualgpuopt/gui/launcher/parameter_resolver.py
 - dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/gui/launcher.py
+- dualgpuopt/memory/predictor.py
+- dualgpuopt/optimizer.py
 
 $END$

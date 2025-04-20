@@ -309,4 +309,41 @@ def get_optimizer() -> Optimizer:
     global _optimizer
     if _optimizer is None:
         _optimizer = Optimizer()
-    return _optimizer 
+    return _optimizer
+
+
+# Compatibility functions for refactored code
+def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[str, Any]:
+    """Calculate optimal GPU split for a model (compatibility function)
+    
+    Args:
+        model_params: Model parameters, or None to use default parameters
+        
+    Returns:
+        Dictionary with split configuration
+    """
+    optimizer = get_optimizer()
+    
+    # Use default parameters if none provided
+    if model_params is None:
+        model_params = ModelParameters(
+            name="Default Model",
+            context_length=8192,
+            hidden_size=4096,
+            num_layers=32,
+            num_heads=32
+        )
+    
+    # Get GPU info and calculate split
+    gpus = optimizer.get_gpu_info()
+    config = optimizer.optimize_gpu_split(model_params, gpus)
+    
+    # Convert to dictionary format expected by older code
+    return {
+        "tensor_parallel_size": config.tensor_parallel_size,
+        "gpu_split": config.gpu_split,
+        "memory_per_gpu": config.memory_per_gpu,
+        "max_context": config.max_context_length,
+        "recommended_context": config.recommended_context_length,
+        "gpus": gpus
+    } 

@@ -1,55 +1,63 @@
 ---
-description: Specifications for GPU memory allocation, tensor parallelism, and layer distribution algorithms in the DualGPUOptimizer project.
-globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/ctx_size.py,dualgpuopt/layer_balance.py,dualgpuopt/memory/**
+description: Documents GPU optimization algorithms for memory distribution and tensor parallel splits
+globs: **/gpu_info.py,**/optimizer.py,**/metrics.py,**/memory/*.py,**/batch/*.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Split and Layer Distribution
+The GPU optimization system implements sophisticated algorithms for memory distribution and tensor parallel computation across multiple GPUs.
 
-The optimizer implements specialized algorithms for GPU memory allocation and model layer distribution across multiple GPUs:
+## Memory Distribution Logic
+Located in `optimizer.py` and `gpu_info.py`, the system:
 
-1. Memory Split Calculator:
-- Calculates optimal memory splits between GPUs based on relative VRAM capacity
-- Implements weighted ratios to account for NVLink/PCIe bandwidth differences  
-- Handles asymmetric GPU configurations with different VRAM sizes
-- Produces tensor parallel fractions for framework-specific commands
+1. Calculates optimal memory splits for tensor parallelism based on:
+- Available GPU memory ratios
+- Model architecture requirements  
+- KV cache overhead per layer
+- Attention mechanism memory patterns
+- Expert layer distribution (for MoE models)
 
-2. Layer Distribution Engine:
-- Performs latency-aware layer distribution across GPUs
-- Uses dual sequence length profiling (64 and 1024 tokens)
-- Applies weighted scoring (20% short, 80% long sequences)
-- Creates contiguous layer blocks to minimize communication overhead
+2. Implements batch size optimization:
+- Estimates per-token memory usage
+- Considers model weight footprint
+- Accounts for activation memory
+- Handles gradient accumulation memory
+- Adjusts for quantization effects
 
-3. Dynamic Context Size Optimizer:
-- Calculates safe context lengths based on:
-  - Model architecture (MQA/GQA factors)
-  - KV cache scaling requirements
-  - MoE expert count overhead
-  - Reserved memory buffer (2GB default)
-- Implements model-specific memory estimation heuristics
-- Handles different precision requirements (FP16/INT8/INT4)
-
-4. Memory Usage Predictor:
-- Maintains rolling window of memory usage patterns
-- Projects future memory requirements using linear regression
-- Applies architecture-specific growth factors
-- Triggers recovery strategies at configurable thresholds
-
-## Critical Paths
-
-```
-dualgpuopt/
-  optimizer.py         - Memory split and tensor parallel calculations
-  layer_balance.py    - Layer distribution algorithms
-  ctx_size.py         - Context length optimization
-  memory/
-    predictor.py      - Memory usage prediction
-    recovery.py       - OOM recovery strategies
+3. Layer distribution algorithm:
+```python
+def optimize_layer_distribution(gpus, model_config):
+    memory_ratios = [g.get_available_memory() for g in gpus]
+    layer_counts = distribute_layers(model_config.num_layers, memory_ratios)
+    return generate_device_map(layer_counts)
 ```
 
-The core optimization algorithms focus on efficient distribution of model layers and memory across heterogeneous GPU configurations while maintaining optimal performance characteristics.
+## Tensor Parallel Split Calculator
+The tensor parallel split logic calculates optimal fractions based on:
+- GPU memory capacities
+- Model parallel degree
+- Memory buffer requirements
+- Inter-GPU bandwidth
+- Load balancing factors
+
+Core split calculation:
+```python
+split_ratios = [
+    round(gpu.memory / max_gpu_memory, 3) 
+    for gpu in available_gpus
+]
+```
+
+## Memory Management 
+Memory optimization strategies include:
+- Dynamic KV cache pruning
+- Gradient checkpointing triggers
+- Memory defragmentation
+- Cache clearing thresholds
+- OOM prevention heuristics
+
+The system continuously monitors GPU memory pressure and applies optimization strategies based on configurable thresholds.
 
 $END$

@@ -2,6 +2,15 @@
 
 A Tkinter GUI application for optimizing and managing dual GPU setups for large language model inference.
 
+## Latest Updates
+
+The application has been fully fixed and is now functional with the following improvements:
+
+- ✅ **GPU Module Compatibility Layer**: Added backward compatibility for the refactored GPU module structure
+- ✅ **UI Dependencies**: Fixed compatibility issues with ttkbootstrap and implemented graceful fallbacks
+- ✅ **Entry Points**: Improved application initialization with better error handling
+- ✅ **Missing Functions**: Added compatibility functions for `calculate_gpu_split` in the optimizer module
+
 ## Requirements
 
 - Python 3.12 or higher
@@ -44,7 +53,14 @@ Do NOT use backslash (\) as it can cause PowerShell to send the root directory "
 ## Running the application
 
 ```bash
+# Standard run
 python run_optimizer.py
+
+# Run with mock GPU mode (no NVIDIA hardware required)
+python -m dualgpuopt --mock
+
+# Run with verbose logging
+python -m dualgpuopt -v
 ```
 
 ## Building executable
@@ -88,6 +104,8 @@ The DualGPUOptimizer consists of several key components:
 - Completed refactoring of `settings.py` into a modular structure with separate components for appearance, overclocking, and application settings
 - Completed refactoring of `error_handler.py` into a modular structure with base definitions, core handler, decorators, UI components, and logging
 - Added comprehensive documentation and unit tests for refactored components
+- Implemented lazy loading in the GUI module to avoid circular imports
+- Optimized dependency management with standardized requirements
 - Ongoing initiative to refactor large modules (>500 lines) for improved maintainability
 - See `dualgpuopt/REFACTORING.md` for details on the refactoring strategy
 
@@ -96,6 +114,31 @@ The DualGPUOptimizer consists of several key components:
 ### Recent Refactorings
 
 Since the project start, we've been focused on modularizing the codebase to improve maintainability and testability. Recent work includes:
+
+- ✅ **GPU Module**: Completed the compatibility layer for the refactored GPU module structure
+  - Added backward compatibility for code expecting `get_gpu_info` and `GPU` class
+  - Created fallback implementations for all GPU functions
+  - Fixed mock mode integration between old and new module structures
+
+- ✅ **UI Module**: Fixed compatibility issues with ttkbootstrap
+  - Created compatibility wrapper for environments where ttkbootstrap Window class is not available
+  - Implemented graceful fallbacks for different UI frameworks
+  - Enhanced error handling to avoid crashes from missing dependencies
+
+- ✅ **Entry Points**: Improved the application entry points
+  - Added support for mock GPU mode from command line
+  - Enhanced error handling for missing dependencies 
+  - Implemented multiple fallback UI options
+
+- ✅ **GUI Module**: Resolved circular import issues by implementing lazy loading for components
+  - Converted direct imports to on-demand imports using importlib 
+  - Added forward declarations and accessor functions
+  - Fixed constants module to be independently importable
+
+- ✅ **Dependencies**: Fixed and standardized all project dependencies
+  - Resolved conflicts in requirements.txt
+  - Fixed PEP 508 compliance issues in pyproject.toml
+  - Ensured compatibility with Python 3.12+
 
 - ✅ **GPU Module**: Refactored `gpu_info.py` into a modular structure with distinct components:
   - `gpu/info.py`: Core GPU querying functionality
@@ -153,6 +196,17 @@ The application requires PyTorch with CUDA support:
 - Python 3.11 or earlier: PyTorch 2.3.1 with CUDA 12.2
 
 If PyTorch is not detected, the application will attempt to install the appropriate version automatically.
+
+## Mock Mode
+
+For development or testing without NVIDIA hardware, the application provides a mock GPU mode:
+
+```bash
+# Run the application with mock GPU mode
+python -m dualgpuopt --mock
+```
+
+This simulates dual NVIDIA GPUs (RTX 4090 and RTX 4080) with realistic metrics for development and testing purposes.
 
 ## License
 

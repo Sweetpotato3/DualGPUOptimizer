@@ -19,19 +19,57 @@ from tkinter import ttk, messagebox, filedialog
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.constants import *
-    from ttkbootstrap.style import Bootstyle
+    
+    # Check if Window class is available (newer versions of ttkbootstrap)
+    if hasattr(ttk, 'Window'):
+        TTKBOOTSTRAP_WINDOW_AVAILABLE = True
+    else:
+        TTKBOOTSTRAP_WINDOW_AVAILABLE = False
+        
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
     from tkinter.constants import *
     TTKBOOTSTRAP_AVAILABLE = False
+    TTKBOOTSTRAP_WINDOW_AVAILABLE = False
+
+# Compatibility class for environments without ttk.Window
+class TtkWindow:
+    """Compatibility wrapper for environments where ttkbootstrap.Window is not available"""
+    def __init__(self, title="", themename="", size=(800, 600), resizable=(True, True), alpha=1.0, **kwargs):
+        """Create a tkinter root window with ttkbootstrap-like initialization"""
+        self.root = tk.Tk()
+        self.root.title(title)
+        self.root.geometry(f"{size[0]}x{size[1]}")
+        self.root.resizable(*resizable)
+        
+        # Apply themename if ttkbootstrap is available
+        if TTKBOOTSTRAP_AVAILABLE and hasattr(ttk, 'Style'):
+            self.style = ttk.Style()
+            if hasattr(self.style, 'theme_use'):
+                try:
+                    self.style.theme_use(themename)
+                except Exception as e:
+                    logger.warning(f"Could not set theme {themename}: {e}")
+    
+    def __getattr__(self, name):
+        """Delegate attribute access to the root window"""
+        return getattr(self.root, name)
+    
+    def pack(self, *args, **kwargs):
+        """Pack this window (no-op for root window)"""
+        pass
+    
+    def destroy(self):
+        """Destroy the root window"""
+        self.root.destroy()
 
 # Import components - some may be unavailable in certain environments
 try:
     from dualgpuopt.gui.dashboard import DashboardView
     from dualgpuopt.gui.optimizer_tab import OptimizerTab
     from dualgpuopt.gui.launcher import LauncherTab
-    from dualgpuopt.gui.chat_tab import ChatTab
+    from dualgpuopt.chat_tab import ChatTab
     CHAT_AVAILABLE = True
 except ImportError:
     CHAT_AVAILABLE = False
@@ -41,21 +79,30 @@ logger = logging.getLogger("DualGPUOpt.ModernUI")
 
 # Import GPU detection functionality
 try:
-    from dualgpuopt.gpu_info import get_gpu_info, GPUInfo
+    from dualgpuopt.gpu_info import get_gpu_info, GPU
 except ImportError as e:
     logger.error(f"Failed to import GPU detection module: {e}")
     
     # Mock GPU info for development without GPU detection
-    class GPUInfo:
+    class GPU:
         def __init__(self, name: str = "Mock GPU", memory: int = 8192):
             self.name = name
-            self.memory_total = memory
+            self.mem_total = memory
             
-    def get_gpu_info() -> List[GPUInfo]:
-        return [GPUInfo("Mock GPU 1", 8192), GPUInfo("Mock GPU 2", 10240)]
+    def get_gpu_info() -> List[GPU]:
+        return [GPU({"name": "Mock GPU 1", "mem_total": 8192}), 
+                GPU({"name": "Mock GPU 2", "mem_total": 10240})]
 
-class ModernApp(ttk.Window):
-    """Modern application window using ttkbootstrap for DualGPUOptimizer"""
+# Select appropriate window class
+if TTKBOOTSTRAP_WINDOW_AVAILABLE:
+    logger.info("Using ttkbootstrap Window class")
+    WindowClass = ttk.Window
+else:
+    logger.info("Using compatibility Window class")
+    WindowClass = TtkWindow
+
+class ModernApp(WindowClass):
+    """Modern application window for DualGPUOptimizer"""
     
     def __init__(self, master=None, **kwargs):
         """Initialize modern UI window with ttkbootstrap styling"""
@@ -63,7 +110,7 @@ class ModernApp(ttk.Window):
         # Get theme from kwargs or use default
         theme = kwargs.pop('theme', 'cyborg')
         
-        # Initialize ttkbootstrap window
+        # Initialize window
         super().__init__(
             title="DualGPUOptimizer",
             themename=theme,
@@ -73,8 +120,15 @@ class ModernApp(ttk.Window):
             **kwargs
         )
         
-        # Set window icon
-        self.iconbitmap(default=self._find_application_icon())
+        # For compatibility layer, we need to get the actual window object
+        if not TTKBOOTSTRAP_WINDOW_AVAILABLE:
+            self.window = self.root
+        else:
+            self.window = self
+        
+        # Set window icon if method exists
+        if hasattr(self, 'iconbitmap'):
+            self.iconbitmap(default=self._find_application_icon())
         
         # Set initial window size and position
         self.center_window(1200, 800)
@@ -83,8 +137,8 @@ class ModernApp(ttk.Window):
         self.tabs = {}
         self.current_tab = None
         
-        # Create main container
-        self.main_frame = ttk.Frame(self)
+        # Create main container - use correct parent
+        self.main_frame = ttk.Frame(self.window)
         self.main_frame.pack(fill='both', expand=True)
         
         # Create sidebar for navigation
@@ -97,7 +151,7 @@ class ModernApp(ttk.Window):
         # Add status bar at the bottom
         self.status_var = tk.StringVar(value="Ready")
         self.status_bar = ttk.Label(
-            self, 
+            self.window, 
             textvariable=self.status_var,
             relief='sunken', 
             anchor='w',
@@ -109,7 +163,10 @@ class ModernApp(ttk.Window):
         self.setup_gpu_detection()
         
         # Setup close handlers
-        self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        if hasattr(self, 'protocol'):
+            self.protocol("WM_DELETE_WINDOW", self.on_closing)
+        else:
+            self.window.protocol("WM_DELETE_WINDOW", self.on_closing)
         
         # Start monitoring thread
         self.monitoring_active = True
@@ -485,7 +542,12 @@ def run_modern_app():
         
         # Create and run application
         app = ModernApp(theme="cyborg")
-        app.mainloop()
+        
+        # For compatibility with both window classes
+        if TTKBOOTSTRAP_WINDOW_AVAILABLE:
+            app.mainloop()
+        else:
+            app.root.mainloop()
         
     except Exception as e:
         logger.error(f"Error starting modern UI: {e}", exc_info=True)
