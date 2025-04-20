@@ -48,20 +48,60 @@ class Bubble(ttk.Frame):
         align = "right" if is_user else "left"
         
         # Create styled outer frame
-        outer = _bubble_frame(self, align)
+        self.outer = _bubble_frame(self, align)
         
         # Position the bubble with proper alignment and fill behavior
         if is_user:
-            outer.pack(anchor="e", pady=6, padx=(50, 10), fill="x")
+            self.outer.pack(anchor="e", pady=6, padx=(50, 10), fill="x")
         else:
-            outer.pack(anchor="w", pady=6, padx=(10, 50), fill="x")
+            self.outer.pack(anchor="w", pady=6, padx=(10, 50), fill="x")
+        
+        # Create content area with a Frame to hold both HTML and resize handle
+        content_frame = ttk.Frame(self.outer)
+        content_frame.pack(fill="both", expand=True)
+        content_frame.columnconfigure(0, weight=1)
+        content_frame.rowconfigure(0, weight=1)
         
         # Create the HTML content widget
-        self.html = HTMLLabel(outer, html=text_md, width=0, background=outer.cget("background"))
-        self.html.pack(fill="both", expand=True)
+        self.html = HTMLLabel(content_frame, html=text_md, width=0, background=self.outer.cget("background"))
+        self.html.grid(row=0, column=0, sticky="nsew")
+        
+        # Add resize handle in the bottom right
+        resize_style = "info.TButton" if not is_user else "secondary.TButton"
+        self.resize_handle = ttk.Button(content_frame, text="↔", width=2, style=resize_style)
+        self.resize_handle.grid(row=1, column=0, sticky="se", padx=2, pady=2)
+        
+        # Track original and current height for resizing
+        self.original_height = None
+        self.current_height = None
+        
+        # Bind drag events for resizing
+        self.resize_handle.bind("<ButtonPress-1>", self._start_resize)
+        self.resize_handle.bind("<B1-Motion>", self._resize)
+        self.resize_handle.bind("<ButtonRelease-1>", self._end_resize)
         
         # Bind to window resize for responsive layout adjustments
         self.bind("<Configure>", self._on_resize)
+    
+    def _start_resize(self, event):
+        """Start tracking resize operation"""
+        self.resize_y = event.y
+        # Store current height
+        self.current_height = self.html.winfo_height()
+        if not self.original_height:
+            self.original_height = self.current_height
+    
+    def _resize(self, event):
+        """Handle resize during mouse drag"""
+        diff_y = event.y - self.resize_y
+        # Calculate new height and apply min/max constraints
+        new_height = max(50, min(500, self.current_height + diff_y))
+        self.html.configure(height=new_height)
+    
+    def _end_resize(self, event):
+        """End resize operation"""
+        # Store new height
+        self.current_height = self.html.winfo_height()
     
     def _on_resize(self, event=None):
         """Handle resize events to adjust text wrapping
@@ -74,4 +114,10 @@ class Bubble(ttk.Frame):
         if parent_width > 10:  # Only adjust if we have a real width
             # Set the wraplength to a percentage of the parent width
             wrap_width = int(parent_width * 0.95)  # 95% of container width
-            self.html.config(wraplength=wrap_width) 
+            self.html.config(wraplength=wrap_width)
+    
+    def reset_size(self):
+        """Reset to original size"""
+        if self.original_height:
+            self.html.configure(height=self.original_height)
+            self.current_height = self.original_height 

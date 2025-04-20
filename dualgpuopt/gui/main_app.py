@@ -143,9 +143,17 @@ class MainApplication(ttk.Frame):
                                 foreground=theme.THEME_DARK_PURPLE["success"])
         status_label.grid(row=0, column=2, sticky="e")
         
+        # Create a PanedWindow to allow resizing content area
+        self.paned = ttk.PanedWindow(self, orient=tk.VERTICAL)
+        self.paned.grid(row=1, column=0, sticky="nsew")
+        
+        # Create a container frame for the notebook
+        self.notebook_container = ttk.Frame(self.paned)
+        self.paned.add(self.notebook_container, weight=85)
+        
         # Create notebook for tabs with proper padding and expansion
-        self.notebook = ttk.Notebook(self)
-        self.notebook.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
+        self.notebook = ttk.Notebook(self.notebook_container)
+        self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
         # Add dashboard tab
         self.dashboard_tab = dashboard.DashboardView(self.notebook)
@@ -163,9 +171,13 @@ class MainApplication(ttk.Frame):
         self.chat_tab = ChatTab(self.notebook, self.chat_q)
         self.notebook.add(self.chat_tab, text="Chat")
         
+        # Create bottom container for status and metrics
+        self.bottom_container = ttk.Frame(self.paned)
+        self.paned.add(self.bottom_container, weight=15)
+        
         # Status bar with proper structure for multiple elements
-        status_frame = ttk.Frame(self, relief="sunken", padding=(10, 5))
-        status_frame.grid(row=2, column=0, sticky="ew")
+        status_frame = ttk.Frame(self.bottom_container, relief="sunken", padding=(10, 5))
+        status_frame.pack(fill=tk.BOTH, expand=True)
         status_frame.columnconfigure(1, weight=1)  # Middle space expands
         
         # GPU count indicator on left
@@ -179,8 +191,8 @@ class MainApplication(ttk.Frame):
         
         # Add tokens-per-second meter to status bar
         try:
-            self.tps_meter = ttk.Meter(status_frame, metersize=50, amounttotal=100, 
-                                      bootstyle="success", subtext="tok/s", 
+            self.tps_meter = ttk.Meter(status_frame, metersize=50, amounttotal=100,
+                                      bootstyle="success", subtext="tok/s",
                                       textright="", interactive=False)
             self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
         except Exception as e:
@@ -253,6 +265,17 @@ class MainApplication(ttk.Frame):
             # Get current window dimensions
             width = self.parent.winfo_width()
             height = self.parent.winfo_height()
+            
+            # Adjust vertical paned window proportions based on window height
+            if height > 800:
+                # For taller windows, give more space to the main content
+                self.paned.sashpos(0, int(height * 0.85))
+            elif height > 600:
+                # For medium height windows
+                self.paned.sashpos(0, int(height * 0.8))
+            else:
+                # For smaller windows
+                self.paned.sashpos(0, int(height * 0.75))
             
             # Adjust padding based on window size
             if width < 1000:

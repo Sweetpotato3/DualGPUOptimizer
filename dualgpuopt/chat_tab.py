@@ -22,7 +22,26 @@ class ChatTab(ttk.Frame):
         
         # Build interface components
         self._build_header()
+        
+        # Create a horizontal paned window for resizable chat layout
+        self.h_paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
+        self.h_paned.grid(row=1, column=0, sticky="nsew")
+        
+        # Main chat area container
+        self.chat_container = ttk.Frame(self.h_paned)
+        self.h_paned.add(self.chat_container, weight=75)
+        
+        # Sidebar for metrics and history
+        self.sidebar = ttk.Frame(self.h_paned)
+        self.h_paned.add(self.sidebar, weight=25)
+        
+        # Build chat canvas in the main container
         self._build_canvas()
+        
+        # Build sidebar content
+        self._build_sidebar()
+        
+        # Build composer area
         self._build_composer()
         
         # State variables
@@ -69,8 +88,8 @@ class ChatTab(ttk.Frame):
     def _build_canvas(self):
         """Build the scrollable message area"""
         # Create scrolled frame with autohide scrollbar
-        sf = ScrolledFrame(self, autohide=True)
-        sf.grid(row=1, column=0, sticky="nsew")
+        sf = ScrolledFrame(self.chat_container, autohide=True)
+        sf.grid(row=0, column=0, sticky="nsew")
         
         # Create message container frame
         self.msg_frame = ttk.Frame(sf)
@@ -84,8 +103,8 @@ class ChatTab(ttk.Frame):
 
     def _build_composer(self):
         """Build the message composer area"""
-        bottom = ttk.Frame(self)
-        bottom.grid(row=2, column=0, sticky="ew", pady=(10, 0))
+        bottom = ttk.Frame(self.chat_container)
+        bottom.grid(row=1, column=0, sticky="ew", pady=(10, 0))
         bottom.columnconfigure(0, weight=1)  # Text area should expand
         
         # Message input with larger height and placeholder
@@ -128,8 +147,8 @@ class ChatTab(ttk.Frame):
         regen_btn.pack(fill="x", expand=True)
         
         # Token rate meter below the composer
-        meter_frame = ttk.Frame(self)
-        meter_frame.grid(row=3, column=0, sticky="ew", pady=(5, 0))
+        meter_frame = ttk.Frame(self.chat_container)
+        meter_frame.grid(row=2, column=0, sticky="ew", pady=(5, 0))
         meter_frame.columnconfigure(0, weight=1)  # Left space expands
         
         # Status indicators on the right
@@ -146,6 +165,58 @@ class ChatTab(ttk.Frame):
             self.meter = None
             self.token_label = ttk.Label(meter_frame, text="0 tokens")
             self.token_label.pack(side="right", padx=(0, 15))
+
+    def _build_sidebar(self):
+        """Build the sidebar with chat metrics and history"""
+        # Create a styled frame for the sidebar
+        sidebar_frame = ttk.LabelFrame(self.sidebar, text="Chat Metrics", padding=10)
+        sidebar_frame.pack(fill="both", expand=True, padx=5, pady=5)
+        
+        # Add metrics display
+        metrics_frame = ttk.Frame(sidebar_frame)
+        metrics_frame.pack(fill="x", pady=5)
+        
+        # Token count display
+        ttk.Label(metrics_frame, text="Total Tokens:").grid(row=0, column=0, sticky="w", pady=2)
+        self.total_tokens_var = tk.StringVar(value="0")
+        ttk.Label(metrics_frame, textvariable=self.total_tokens_var).grid(row=0, column=1, sticky="e", pady=2)
+        
+        # Messages count
+        ttk.Label(metrics_frame, text="Messages:").grid(row=1, column=0, sticky="w", pady=2)
+        self.message_count_var = tk.StringVar(value="0")
+        ttk.Label(metrics_frame, textvariable=self.message_count_var).grid(row=1, column=1, sticky="e", pady=2)
+        
+        # Generation speed
+        ttk.Label(metrics_frame, text="Speed:").grid(row=2, column=0, sticky="w", pady=2)
+        self.speed_var = tk.StringVar(value="0 tok/s")
+        ttk.Label(metrics_frame, textvariable=self.speed_var).grid(row=2, column=1, sticky="e", pady=2)
+        
+        # History section
+        history_frame = ttk.LabelFrame(sidebar_frame, text="History", padding=5)
+        history_frame.pack(fill="both", expand=True, pady=10)
+        
+        # Listbox for chat history
+        self.history_list = tk.Listbox(history_frame, height=10)
+        self.history_list.pack(fill="both", expand=True)
+        
+        # Add some sample history items
+        for i in range(1, 4):
+            self.history_list.insert(tk.END, f"Chat {i}")
+        
+        # Bind double click to reload chat
+        self.history_list.bind("<Double-1>", self._load_history)
+        
+        # Action buttons
+        btn_frame = ttk.Frame(sidebar_frame)
+        btn_frame.pack(fill="x", pady=5)
+        
+        # Export button
+        ttk.Button(btn_frame, text="Export Chat", 
+                  command=self._export_chat).pack(side="left", padx=2)
+        
+        # Clear history button
+        ttk.Button(btn_frame, text="Clear History", 
+                  command=self._clear_history).pack(side="right", padx=2)
 
     # ------------ actions --------------
     def _append(self, md: str, user=False):
@@ -238,21 +309,58 @@ class ChatTab(ttk.Frame):
                 try:
                     current_text = self.token_label.cget("text")
                     current_count = int(current_text.split()[0])
-                    self.token_label.configure(text=f"{current_count + 1} tokens")
+                    new_count = current_count + 1
+                    self.token_label.configure(text=f"{new_count} tokens")
+                    
+                    # Update sidebar metrics
+                    if hasattr(self, 'total_tokens_var'):
+                        self.total_tokens_var.set(str(new_count))
                 except (ValueError, IndexError):
                     # If parsing fails, reset counter
                     self.token_label.configure(text="1 tokens")
+                    if hasattr(self, 'total_tokens_var'):
+                        self.total_tokens_var.set("1")
                     
         elif kind == "chat_end":
             # Handle end of streaming
-            pass
+            # Update message count in sidebar
+            if hasattr(self, 'message_count_var'):
+                try:
+                    current = int(self.message_count_var.get())
+                    self.message_count_var.set(str(current + 1))
+                except ValueError:
+                    self.message_count_var.set("1")
             
         elif kind == "tps" and self.meter is not None: 
             # Update tokens per second meter
             self.meter.configure(amountused=min(val, 100))
+            
+            # Update speed in sidebar
+            if hasattr(self, 'speed_var'):
+                self.speed_var.set(f"{int(val)} tok/s")
 
     def _clear(self):
         for w in self.msg_frame.winfo_children(): w.destroy()
+
+    def _load_history(self, event=None):
+        """Load a previous chat from history"""
+        # Get selected item
+        if self.history_list.curselection():
+            idx = self.history_list.curselection()[0]
+            selected = self.history_list.get(idx)
+            # In a real implementation, this would load the chat
+            # For now, just show a message
+            self._append(f"<i>Loading {selected}...</i>")
+    
+    def _export_chat(self):
+        """Export the current chat to a file"""
+        # In a real implementation, this would save to a file
+        # For now, just show a message
+        self._append("<i>Chat exported to file...</i>")
+    
+    def _clear_history(self):
+        """Clear the chat history"""
+        self.history_list.delete(0, tk.END)
 
     # ------------ responsive layout --------------
     def _on_resize(self, event=None):
@@ -268,4 +376,19 @@ class ChatTab(ttk.Frame):
         if width < 600:
             self.entry.configure(height=2)  # Smaller height for narrow windows
         else:
-            self.entry.configure(height=4)  # Taller for wider windows 
+            self.entry.configure(height=4)  # Taller for wider windows
+        
+        # Adjust horizontal pane position based on window width
+        try:
+            if width > 1200:
+                # For wide windows, show more of the chat area
+                self.h_paned.sashpos(0, int(width * 0.75))
+            elif width > 800:
+                # Medium width
+                self.h_paned.sashpos(0, int(width * 0.7))
+            else:
+                # For narrow windows, minimize the sidebar
+                self.h_paned.sashpos(0, int(width * 0.8))
+        except (tk.TclError, AttributeError) as e:
+            # Handle case where sash may not be available yet
+            pass 
