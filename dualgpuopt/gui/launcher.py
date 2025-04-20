@@ -580,11 +580,11 @@ class LauncherTab(ttk.Frame):
             self.log_text.insert(tk.END, f"Analyzing model: {model_name}\n")
             
             # Get model params
-            n_layers, n_kv_heads, head_dim, moe_factor = model_params_from_name(model_name)
+            layers, heads, kv_heads, hidden_size, moe_factor = model_params_from_name(model_name)
             
             self.log_text.insert(tk.END, 
-                                f"Model parameters: {n_layers} layers, {n_kv_heads} KV heads, "
-                                f"{head_dim} head dim, MoE factor: {moe_factor}\n")
+                                f"Model parameters: {layers} layers, {kv_heads} KV heads, "
+                                f"{hidden_size} hidden size, MoE factor: {moe_factor}\n")
             
             # Calculate optimal context size 
             telemetry = get_telemetry_service()
@@ -603,11 +603,13 @@ class LauncherTab(ttk.Frame):
             if available_memory:
                 # Calculate optimal context size
                 ctx_size = calc_max_ctx(
-                    n_layers=n_layers,
-                    n_kv_heads=n_kv_heads, 
-                    head_dim=head_dim,
-                    moe_factor=moe_factor,
-                    available_memory=available_memory
+                    gpu_vram_mb=min(available_memory),  # Use smallest GPU's available memory
+                    model_params_b=model_name_to_params(model_name),
+                    kv_heads=kv_heads,
+                    heads=heads,
+                    layers=layers,
+                    hidden_size=hidden_size,
+                    moe_expert_count=1 if moe_factor <= 1 else int(moe_factor * 10)
                 )
                 
                 # Round to nearest 1024
@@ -617,17 +619,7 @@ class LauncherTab(ttk.Frame):
                 
                 # Calculate optimal batch size
                 total_vram = sum(metric.memory_total for _, metric in metrics.items()) / 1024  # GB
-                model_size = 0
-                
-                # Estimate model size based on filename patterns
-                if "7b" in model_name:
-                    model_size = 7
-                elif "13b" in model_name:
-                    model_size = 13
-                elif "70b" in model_name:
-                    model_size = 70
-                elif "llama" in model_name or "mistral" in model_name:
-                    model_size = 7  # Default for LLaMA/Mistral
+                model_size = model_name_to_params(model_name)
                 
                 if model_size > 0:
                     batch_size = optimize_batch_size(total_vram, model_size)
@@ -926,6 +918,31 @@ class LauncherTab(ttk.Frame):
         
         # Reset status after 2 seconds
         self.after(2000, lambda: self.status_var.set("Ready"))
+
+def model_name_to_params(model_name: str) -> float:
+    """Extract model size in billions from model name
+    
+    Args:
+        model_name: Model name or path
+        
+    Returns:
+        Model size in billions of parameters
+    """
+    # Estimate model size based on filename patterns
+    if "70b" in model_name:
+        return 70.0
+    elif "13b" in model_name:
+        return 13.0
+    elif "7b" in model_name:
+        return 7.0
+    elif "mixtral" in model_name:
+        return 46.7  # Mixtral 8x7B
+    elif "mistral" in model_name:
+        return 7.0  # Mistral 7B
+    elif "llama" in model_name:
+        return 7.0  # Default for LLaMA if no size specified
+    else:
+        return 7.0  # Default fallback
 
 
 # Standalone test

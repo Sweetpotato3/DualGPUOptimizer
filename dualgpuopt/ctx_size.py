@@ -3,7 +3,7 @@ Context size calculator for large language models
 Provides functions to calculate optimal context sizes based on GPU memory
 """
 import logging
-from typing import Dict, Tuple, Optional, List
+from typing import Tuple, Optional
 
 logger = logging.getLogger("DualGPUOpt.CtxSize")
 
@@ -63,7 +63,8 @@ def calc_max_ctx(
                 kv_heads *  # Number of KV heads
                 (hidden_size // heads) *  # Head dimension
                 dtype_size *  # Size of data type in bytes
-                moe_expert_count  # Expert count for MoE models
+                moe_expert_count *  # Expert count for MoE models
+                attn_factor  # Attention type factor (MQA/GQA/standard)
             )
             
             # Maximum context size calculation
@@ -100,6 +101,62 @@ def calc_max_ctx(
         logger.error(f"Error calculating max context size: {e}")
         # Return a conservative default if calculation fails
         return 2048
+
+def model_params_from_name(model_name: str) -> Tuple[Optional[int], Optional[int], Optional[int], Optional[int], Optional[float]]:
+    """Extract model parameters from a model name
+    
+    Args:
+        model_name: Name of the model, can include path
+        
+    Returns:
+        Tuple of (layers, heads, kv_heads, hidden_size, moe_factor)
+    """
+    # Default values
+    layers = None
+    heads = None
+    kv_heads = None
+    hidden_size = None
+    moe_factor = 1.0
+    
+    # Extract base name from path
+    import os
+    basename = os.path.basename(model_name).lower()
+    
+    # Common model patterns
+    model_configs = {
+        "llama-2-7b": (32, 32, 32, 4096, 1.0),
+        "llama-2-13b": (40, 40, 40, 5120, 1.0),
+        "llama-2-70b": (80, 64, 8, 8192, 1.0),  # GQA
+        "llama-3-8b": (32, 32, 8, 4096, 1.0),   # GQA
+        "llama-3-70b": (80, 64, 8, 8192, 1.0),  # GQA
+        "mistral-7b": (32, 32, 8, 4096, 1.0),   # GQA
+        "mixtral-8x7b": (32, 32, 8, 4096, 1.5), # MoE
+        "phi-2": (32, 32, 32, 2560, 1.0),
+        "qwen": (32, 32, 32, 4096, 1.0),
+    }
+    
+    # Try to match the model name with known configurations
+    for key, config in model_configs.items():
+        if key in basename:
+            layers, heads, kv_heads, hidden_size, moe_factor = config
+            logger.info(f"Found model parameters for {key}: {config}")
+            return layers, heads, kv_heads, hidden_size, moe_factor
+    
+    # Special case for detecting model size from name if not matched above
+    for size_marker in ["7b", "13b", "70b", "8b"]:
+        if size_marker in basename:
+            if "70b" in basename:
+                return 80, 64, 8, 8192, 1.0  # Large model with GQA
+            elif "13b" in basename:
+                return 40, 40, 40, 5120, 1.0  # Medium model
+            elif "8x7b" in basename or "mixtral" in basename:
+                return 32, 32, 8, 4096, 1.5   # MoE model
+            else:  # 7b or 8b
+                return 32, 32, 8, 4096, 1.0   # Small model with GQA
+    
+    # If no match found, log warning and return None values
+    logger.warning(f"Unable to determine model parameters from name: {model_name}")
+    return layers, heads, kv_heads, hidden_size, moe_factor
         
 def estimate_vram_usage(
     context_size: int,

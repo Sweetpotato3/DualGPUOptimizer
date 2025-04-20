@@ -368,3 +368,115 @@ def get_model_profile(model_name: str, quantization: Optional[str] = None) -> Mo
             result.base_memory = profile.base_memory * quant_type.value
     
     return result 
+
+def apply_profile(model_name: str, gpu_specs: Dict[str, float], 
+                 quantization: Optional[str] = None) -> Dict[str, Union[float, str, List]]:
+    """
+    Apply a model profile to calculate optimal settings for the given GPU configuration.
+    
+    Args:
+        model_name: Name of the model to profile
+        gpu_specs: Dictionary mapping GPU IDs to available VRAM in GB
+        quantization: Optional quantization type (e.g., "int8", "int4", "q4_k_m")
+        
+    Returns:
+        Dictionary containing:
+        - memory_required: Total memory required by the model (GB)
+        - max_batch_size: Recommended maximum batch size
+        - split_ratio: Recommended GPU split ratio for tensor parallelism
+        - device_map: Suggested device map for model layers
+    """
+    profile = get_model_profile(model_name, quantization)
+    
+    # Sort GPUs by available memory (descending)
+    sorted_gpus = sorted(gpu_specs.items(), key=lambda x: x[1], reverse=True)
+    
+    # Calculate total available memory across all GPUs
+    total_vram = sum(vram for _, vram in sorted_gpus)
+    
+    # Calculate memory required for the model
+    memory_required = profile.base_memory
+    
+    # If we have exactly two GPUs, use the recommended split
+    if len(sorted_gpus) == 2:
+        primary_gpu, primary_vram = sorted_gpus[0]
+        secondary_gpu, secondary_vram = sorted_gpus[1]
+        
+        # Get recommended split ratio
+        primary_pct, secondary_pct = profile.recommend_gpu_split(primary_vram, secondary_vram)
+        
+        # Create device map (simplified - actual implementation would be more nuanced)
+        device_map = {}
+        
+        # Distribute layers based on the recommended percentages
+        total_layers = profile.num_layers
+        primary_layers = int(total_layers * primary_pct)
+        
+        # Simple device mapping strategy (would be more complex in reality)
+        for i in range(total_layers):
+            if i < primary_layers:
+                device_map[f"layer.{i}"] = int(primary_gpu)
+            else:
+                device_map[f"layer.{i}"] = int(secondary_gpu)
+        
+        # Calculate maximum batch size with sequence length 1024
+        # For simplicity, we use the smaller GPU's capacity here
+        sequence_length = 1024
+        max_batch = profile.calculate_max_batch_size(min(primary_vram, secondary_vram), sequence_length)
+        
+        return {
+            "memory_required": memory_required,
+            "max_batch_size": max_batch,
+            "split_ratio": (primary_pct, secondary_pct),
+            "device_map": device_map
+        }
+    
+    # For single GPU or more than two GPUs
+    if len(sorted_gpus) == 1:
+        # Single GPU configuration
+        max_vram = sorted_gpus[0][1]
+        max_batch = profile.calculate_max_batch_size(max_vram, 1024)
+        
+        return {
+            "memory_required": memory_required,
+            "max_batch_size": max_batch,
+            "split_ratio": (1.0, 0.0),
+            "device_map": {f"layer.{i}": 0 for i in range(profile.num_layers)}
+        }
+    else:
+        # More than two GPUs - create a multi-GPU distribution
+        # This is a simplified version for >2 GPUs
+        gpu_count = len(sorted_gpus)
+        total_layers = profile.num_layers
+        
+        # Calculate layers per GPU (distribute evenly for simplicity)
+        layers_per_gpu = total_layers // gpu_count
+        extra_layers = total_layers % gpu_count
+        
+        # Create device map
+        device_map = {}
+        current_layer = 0
+        
+        for i, (gpu_id, vram) in enumerate(sorted_gpus):
+            # Assign extra layers to the GPUs with more VRAM
+            layer_count = layers_per_gpu + (1 if i < extra_layers else 0)
+            
+            for j in range(layer_count):
+                if current_layer < total_layers:
+                    device_map[f"layer.{current_layer}"] = int(gpu_id)
+                    current_layer += 1
+        
+        # Calculate maximum batch size based on minimum VRAM
+        min_vram = min(vram for _, vram in sorted_gpus)
+        max_batch = profile.calculate_max_batch_size(min_vram, 1024)
+        
+        # Calculate distribution percentages
+        gpu_percentages = tuple(count / total_layers for count in [sum(1 for gpu in device_map.values() if int(gpu) == int(gpu_id)) 
+                                                                  for gpu_id, _ in sorted_gpus])
+        
+        return {
+            "memory_required": memory_required,
+            "max_batch_size": max_batch,
+            "split_ratio": gpu_percentages,
+            "device_map": device_map
+        } 

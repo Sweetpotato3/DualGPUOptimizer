@@ -71,10 +71,27 @@ The DualGPUOptimizer consists of several key components:
 - Implements layer distribution algorithms for transformer models
 - Supports framework-specific command generation for llama.cpp and vLLM
 
+### Model Profiles and Memory Management
+- Maintains detailed profiles for popular LLM models (Llama 2, Mistral, Mixtral)
+- Estimates memory requirements based on model architecture and quantization
+- Recommends optimal GPU splits for different VRAM configurations
+- Applies model-specific optimizations using the `apply_profile` function
+
 ### Execution Management
 - Controls model execution across multiple GPUs
 - Provides real-time resource monitoring through an interactive dashboard
 - Implements idle detection and optimization alerts
+
+## Supported Models
+
+The application includes built-in profiles for various language models:
+
+- **Llama 2 Family**: 7B, 13B, and 70B parameter variants
+- **Mistral 7B**: With sliding window attention support
+- **Mixtral 8x7B**: With Mixture-of-Experts architecture support
+- **Custom Models**: User-defined model parameters
+
+Each profile contains memory estimates, optimal batch sizes, and layer distribution recommendations specifically tuned for dual-GPU setups.
 
 ## PyTorch Compatibility
 
@@ -84,6 +101,17 @@ The application requires PyTorch with CUDA support:
 - Python 3.11 or earlier: PyTorch 2.3.1 with CUDA 12.2
 
 If PyTorch is not detected, the application will attempt to install the appropriate version automatically.
+
+## Next Steps
+
+Future development priorities:
+
+1. **Code Cleanup**: Fix linter issues related to trailing whitespace
+2. **Improved Error Handling**: Better error reporting when `calc_max_ctx` or other functions are missing
+3. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
+4. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
+5. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
+6. **Documentation Improvements**: Detailed API docs and usage examples
 
 ## License
 

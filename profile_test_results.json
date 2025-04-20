@@ -1,0 +1,486 @@
+{
+  "llama2-7b": {
+    "24.0GB+24.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 157,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 273,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 326,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      }
+    },
+    "24.0GB+12.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 74,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 127,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 8,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 61,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB+8.0GB+8.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 8,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 61,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      }
+    }
+  },
+  "llama2-13b": {
+    "24.0GB+24.0GB": {
+      "none": {
+        "memory_required": 26.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 40
+      },
+      "int8": {
+        "memory_required": 13.0,
+        "max_batch_size": 111,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 40
+      },
+      "q4_k_m": {
+        "memory_required": 7.0200000000000005,
+        "max_batch_size": 174,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 40
+      }
+    },
+    "24.0GB+12.0GB": {
+      "none": {
+        "memory_required": 26.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 40
+      },
+      "int8": {
+        "memory_required": 13.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 40
+      },
+      "q4_k_m": {
+        "memory_required": 7.0200000000000005,
+        "max_batch_size": 47,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 40
+      }
+    },
+    "8.0GB": {
+      "none": {
+        "memory_required": 26.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 40
+      },
+      "int8": {
+        "memory_required": 13.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 40
+      },
+      "q4_k_m": {
+        "memory_required": 7.0200000000000005,
+        "max_batch_size": 5,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 40
+      }
+    },
+    "8.0GB+8.0GB+8.0GB": {
+      "none": {
+        "memory_required": 26.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.35,
+          0.325,
+          0.325
+        ],
+        "layer_count": 40
+      },
+      "int8": {
+        "memory_required": 13.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.35,
+          0.325,
+          0.325
+        ],
+        "layer_count": 40
+      },
+      "q4_k_m": {
+        "memory_required": 7.0200000000000005,
+        "max_batch_size": 5,
+        "split_ratio": [
+          0.35,
+          0.325,
+          0.325
+        ],
+        "layer_count": 40
+      }
+    }
+  },
+  "mixtral-8x7b": {
+    "24.0GB+24.0GB": {
+      "none": {
+        "memory_required": 94.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 47.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 25.380000000000003,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      }
+    },
+    "24.0GB+12.0GB": {
+      "none": {
+        "memory_required": 94.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 47.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 25.380000000000003,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB": {
+      "none": {
+        "memory_required": 94.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 47.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 25.380000000000003,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB+8.0GB+8.0GB": {
+      "none": {
+        "memory_required": 94.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 47.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 25.380000000000003,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      }
+    }
+  },
+  "mistral-7b": {
+    "24.0GB+24.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 157,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 273,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 326,
+        "split_ratio": [
+          0.5,
+          0.5
+        ],
+        "layer_count": 32
+      }
+    },
+    "24.0GB+12.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 74,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 127,
+        "split_ratio": [
+          0.6666666666666666,
+          0.3333333333333333
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 8,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 61,
+        "split_ratio": [
+          1.0,
+          0.0
+        ],
+        "layer_count": 32
+      }
+    },
+    "8.0GB+8.0GB+8.0GB": {
+      "none": {
+        "memory_required": 14.0,
+        "max_batch_size": 0,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "int8": {
+        "memory_required": 7.0,
+        "max_batch_size": 8,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      },
+      "q4_k_m": {
+        "memory_required": 3.7800000000000002,
+        "max_batch_size": 61,
+        "split_ratio": [
+          0.34375,
+          0.34375,
+          0.3125
+        ],
+        "layer_count": 32
+      }
+    }
+  }
+}
