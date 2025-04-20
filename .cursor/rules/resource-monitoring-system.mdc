@@ -1,67 +1,55 @@
 ---
-description: Specification for GPU resource monitoring, telemetry collection, and alert system implementation
-globs: **/telemetry.py,**/metrics.py,**/gpu_info.py,**/tray.py,**/monitoring/*.py
+description: Specification for implementing GPU resource monitoring, telemetry collection, and alert systems for dual-GPU optimization
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## GPU Telemetry Collection
-- Comprehensive real-time GPU metrics tracking:
-  - Memory utilization and availability
-  - Power consumption against limits
-  - Temperature with alert thresholds
-  - PCIe bandwidth utilization 
-  - Fan speeds and clock rates
-- Location: `dualgpuopt/telemetry.py`
+The resource monitoring system implements specialized GPU telemetry collection and analysis with real-time metric tracking.
 
-## Resource Alert System
-- Multi-tier alert system with configurable thresholds:
-  - WARNING: Temperature > 80°C, Memory > 85%
-  - CRITICAL: Temperature > 90°C, Memory > 95%
-  - EMERGENCY: Temperature > 95°C, Memory > 98%
-- Location: `dualgpuopt/metrics.py`
+Core Components:
 
-## GPU Performance Profiling
-- Sequence length weighted profiling:
-  - Short sequences (64 tokens): 20% weight
-  - Long sequences (1024 tokens): 80% weight
-- Memory pressure monitoring with configurable thresholds
-- Location: `dualgpuopt/gpu_info.py`
+1. Telemetry Collection Engine
+- GPU-specific metrics gathered:
+  * Memory utilization (total/used/free)
+  * Core/Memory clock speeds
+  * Temperature readings
+  * Power consumption levels
+  * Fan speeds
+  * PCIe bandwidth utilization
+- Implementation in dualgpuopt/telemetry.py leverages NVML for direct hardware access
+- Rolling 60-sample history window maintained per metric
 
-## Memory Management System
-Key model memory profiles:
-```python
-MEMORY_PROFILES = {
-  'llama2-7b': {'base': 7GB, 'batch': 50MB, 'token': 3KB},
-  'llama2-13b': {'base': 13GB, 'batch': 100MB, 'token': 5KB},
-  'llama2-70b': {'base': 35GB, 'batch': 350MB, 'token': 18KB},
-  'mistral-7b': {'base': 8GB, 'batch': 55MB, 'token': 3KB},
-  'mixtral-8x7b': {'base': 25GB, 'batch': 200MB, 'token': 12KB}
-}
-```
+2. Alert Mechanism (Importance: 85)
+- Multi-tiered warning system with configurable thresholds:
+  * Temperature: Warning at 80°C, Critical at 90°C
+  * Memory: Warning at 90% utilization
+  * Power: Alert when exceeding TDP
+- Custom alert routing through event bus system
+- Idle detection with 30-second threshold
 
-## Resource Monitoring Dashboard
-- Real-time visualization of GPU metrics:
-  - GPU/Memory utilization charts
-  - Temperature tracking with color alerts
-  - Power consumption monitoring
-  - Clock speed monitoring
-- Location: `dualgpuopt/gui/dashboard.py`
+3. Metric Processing Pipeline
+- Raw metric normalization for consistent reporting
+- Conversion of memory values to standardized units (MiB)
+- PCIe bandwidth calculations in MB/s
+- Temperature scaling with celsius/fahrenheit conversion
 
-## System Tray Integration
-- Systemwide GPU monitoring through tray icon
-- Quick access to GPU status and alerts
-- Resource threshold notifications
-- Location: `dualgpuopt/tray.py`
+4. GPU Resource Dashboard
+- Real-time visualization of key metrics
+- Color-coded status indicators:
+  * Green: Normal operation
+  * Yellow: Approaching thresholds
+  * Red: Exceeding safe limits
+- Dynamic refresh rates (500ms-2000ms) based on system load
 
-IMPORTANCE SCORES:
-- GPU Telemetry Collection: 95 (Core monitoring functionality)
-- Resource Alert System: 90 (Critical for system stability)
-- GPU Performance Profiling: 85 (Key optimization component)
-- Memory Management System: 90 (Essential for preventing OOM)
-- Resource Monitoring Dashboard: 75 (Important user interface)
-- System Tray Integration: 70 (Supporting monitoring feature)
+Key Files:
+- dualgpuopt/telemetry.py
+- dualgpuopt/gui/dashboard.py 
+- dualgpuopt/metrics.py
+- dualgpuopt/gpu_info.py
+
+The system provides comprehensive GPU resource monitoring tailored for dual-GPU optimization scenarios, with emphasis on early warning detection and performance anomaly identification.
 
 $END$

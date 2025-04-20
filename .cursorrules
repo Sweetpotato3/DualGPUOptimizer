@@ -138,8 +138,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Creates a high-level overview for dual GPU optimization systems, focusing on model deployment, GPU resource management, memory monitoring, and performance telemetry aspects. Apply when documenting GPU optimization frameworks.
-globs: *.py,*.md,*.json
+description: Applies to dual GPU optimization systems focused on ML model deployment, specifically when documenting high-level architecture and core business logic organization across multiple components
+globs: *.py,*.code-workspace
 alwaysApply: false
 ---
 
@@ -155,45 +155,63 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized GPU optimization and monitoring capabilities across several key domains:
+The Dual GPU Optimizer system implements specialized logic for managing and optimizing large language model deployment across multiple GPUs. The core business functionality is organized into several key domains:
 
-## Core Model Optimization Engine
-- Smart resource allocation for dual GPU setups with dynamic layer balancing
-- Memory distribution optimization based on model architecture parameters 
-- Automatic context size calculation incorporating model-specific factors
-- Location: `dualgpuopt/optimizer.py`
+1. GPU Resource Management (Importance: 95)
+- Layer balancing algorithm in `dualgpuopt/layer_balance.py`
+- Memory monitoring system in `dualgpuopt/memory_monitor.py`
+- Context size optimization in `dualgpuopt/ctx_size.py`
+- Smart batching in `dualgpuopt/batch/smart_batch.py`
 
-## GPU Memory Management & Monitoring
-- Multi-stage VRAM reclamation system with tiered recovery approaches
-- Real-time memory pressure monitoring with configurable thresholds 
-- Model-specific memory profiling for different architectures (LLAMA, Mistral, Mixtral)
-- Location: `dualgpuopt/memory_monitor.py`
+2. Model Optimization (Importance: 90)
+- Profile-based memory estimation
+- Framework-specific command generation
+- Tensor parallelism configuration
+- Model architecture detection
+Files: `dualgpuopt/optimizer.py`, `dualgpuopt/model_profiles.py`
 
-## Resource Distribution System
-- Layer-aware distribution algorithms for optimal GPU utilization
-- Performance profiling with weighted sequence length analysis (64/1024 tokens)
-- Adaptive batch size calculations based on available VRAM
-- Location: `dualgpuopt/layer_balance.py`
+3. GPU State Management (Importance: 85)
+- Overclocking controls and safety limits
+- Fan speed management with temperature thresholds
+- Power limit monitoring and adjustment
+- Idle detection system
+Files: `dualgpuopt/gui/settings.py`
 
-## Telemetry & Performance Monitoring
-- Real-time GPU metrics collection (utilization, temperature, power, memory)
-- Multi-GPU overlay plotting with performance correlation
-- Framework-specific optimization parameter generation
-- Location: `dualgpuopt/telemetry.py`
+4. Performance Monitoring (Importance: 80)
+- Real-time GPU metrics collection
+- VRAM usage tracking
+- Temperature and power monitoring
+- PCIe bandwidth analysis
+Files: `dualgpuopt/telemetry.py`, `dualgpuopt/gui/dashboard.py`
 
-## Model Parameter Management
-- Architecture-specific parameter extraction and validation
-- Dynamic context length optimization based on model requirements
-- Mixture-of-Experts (MoE) factor handling for specialized models
-- Location: `dualgpuopt/ctx_size.py`
+5. Memory Recovery System (Importance: 75)
+- Multi-strategy VRAM reclamation
+- Cache management
+- Device reset coordination
+Files: `dualgpuopt/vram_reset.py`
 
-## Framework Integration Layer
-- Specialized command generation for llama.cpp and vLLM
-- GPU split ratio optimization for tensor parallelism
-- Environment configuration management for multi-GPU setups
-- Location: `dualgpuopt/commands/gpu_commands.py`
+Key Integration Points:
+- Model runner coordinates between optimization and execution
+- Telemetry service feeds into monitoring dashboard
+- Memory monitor triggers recovery system
+- Layer balancer works with optimizer for distribution decisions
 
-The system focuses on optimizing large language model deployment across dual GPU configurations through intelligent resource management, performance monitoring, and framework-specific optimizations.
+The system implements specialized algorithms for:
+- Dynamic context length calculation
+- Layer distribution across GPUs
+- Memory pressure detection
+- Smart batch size optimization
+- Model-specific memory profiling
+
+Core files for business logic:
+```
+dualgpuopt/
+  optimizer.py
+  layer_balance.py
+  memory_monitor.py
+  ctx_size.py
+  model_profiles.py
+```
 
 $END$
 END SPECIFICATION

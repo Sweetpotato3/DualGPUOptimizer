@@ -6,10 +6,15 @@ import os
 import sys
 import logging
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, font
 from pathlib import Path
 
 logger = logging.getLogger("DualGPUOpt.Theme")
+
+# Global font scaling - adjust this for larger text across the application
+FONT_SCALE = 1.4  # Increase font size by 40%
+DEFAULT_FONT_SIZE = 10  # Base font size before scaling
+DEFAULT_HEADING_SIZE = 14  # Base heading size before scaling
 
 # Define theme colors
 THEME_DARK_PURPLE = {
@@ -71,11 +76,55 @@ def fix_dpi_scaling(root):
                 pass  # Ignore if it fails
 
         # Force a specific scaling factor if needed
-        root.tk.call('tk', 'scaling', 1.0)
+        root.tk.call('tk', 'scaling', 1.3)  # Increase scaling for better readability
         
         logger.info("Applied DPI scaling fixes")
     except Exception as e:
         logger.warning(f"Failed to fix DPI scaling: {e}")
+
+def scale_font_size(size):
+    """Scale a font size by the global scale factor
+    
+    Args:
+        size: Original font size
+        
+    Returns:
+        Scaled font size (integer)
+    """
+    return int(size * FONT_SCALE)
+
+def configure_fonts(root):
+    """Configure default fonts for the application
+    
+    Args:
+        root: The root Tk window
+    """
+    try:
+        # Get available font families
+        families = sorted(font.families())
+        
+        # Prefer common, well-scaling fonts that look good on high DPI displays
+        preferred_fonts = ["Segoe UI", "Helvetica", "Arial", "DejaVu Sans", "Verdana", "Tahoma"]
+        
+        # Find the first available preferred font
+        main_font = next((f for f in preferred_fonts if f in families), "TkDefaultFont")
+        
+        # Configure default fonts
+        default_font = font.nametofont("TkDefaultFont")
+        default_font.configure(family=main_font, size=scale_font_size(DEFAULT_FONT_SIZE))
+        
+        text_font = font.nametofont("TkTextFont")
+        text_font.configure(family=main_font, size=scale_font_size(DEFAULT_FONT_SIZE))
+        
+        fixed_font = font.nametofont("TkFixedFont")
+        fixed_font.configure(size=scale_font_size(DEFAULT_FONT_SIZE))
+        
+        # Update all existing widgets to use the new font
+        root.option_add("*Font", default_font)
+        
+        logger.info(f"Configured application fonts: {main_font} at size {scale_font_size(DEFAULT_FONT_SIZE)}")
+    except Exception as e:
+        logger.warning(f"Error configuring fonts: {e}")
 
 def apply_theme(root):
     """Apply the current theme to the application
@@ -87,6 +136,9 @@ def apply_theme(root):
         # Fix DPI scaling first
         fix_dpi_scaling(root)
         
+        # Configure default fonts
+        configure_fonts(root)
+        
         # Try to load ttkthemes if available
         try:
             from ttkthemes import ThemedTk
@@ -97,6 +149,9 @@ def apply_theme(root):
             else:
                 root.set_theme("equilux")  # Dark theme similar to our purple
                 adjust_equilux_colors(root)
+                
+                # Apply font scaling even with ttkthemes
+                configure_fonts(root)
         except ImportError:
             logger.info("ttkthemes not available, using custom styling")
             apply_custom_styling(root)
@@ -119,46 +174,58 @@ def apply_custom_styling(root):
     # Configure inner frames in tabs differently
     style.configure("Inner.TFrame", background=current_theme["secondary_bg"])
     
-    # Configure TLabel
+    # Configure TLabel with scaled font
     style.configure("TLabel", 
                     background=current_theme["bg"], 
-                    foreground=current_theme["fg"])
+                    foreground=current_theme["fg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
+    
+    # Configure heading style with larger font
+    style.configure("Heading.TLabel",
+                    background=current_theme["bg"],
+                    foreground=current_theme["fg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_HEADING_SIZE), "bold"))
     
     # Configure inner labels to match inner frames
     style.configure("Inner.TLabel", 
                     background=current_theme["secondary_bg"],
-                    foreground=current_theme["fg"])
+                    foreground=current_theme["fg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
-    # Configure TButton
+    # Configure TButton with larger font
     style.configure("TButton", 
                     background=current_theme["accent"],
                     foreground=current_theme["fg"],
                     borderwidth=1,
                     focusthickness=1,
                     focuscolor=current_theme["accent_light"],
-                    padding=(10, 5))
+                    padding=(10, 6),
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     style.map("TButton",
                background=[("active", current_theme["accent_light"]),
                           ("disabled", current_theme["bg"])],
                foreground=[("disabled", "#AAAAAA")])
     
-    # Configure TEntry
+    # Configure TEntry with larger font
     style.configure("TEntry", 
                     fieldbackground=current_theme["input_bg"],
                     foreground=current_theme["fg"],
                     bordercolor=current_theme["border"],
                     lightcolor=current_theme["accent_light"],
                     darkcolor=current_theme["accent_dark"],
-                    insertcolor=current_theme["accent_light"])  # Text cursor color
+                    insertcolor=current_theme["accent_light"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
-    # Configure TCombobox - includes dropdown
+    # Configure TCombobox with larger font
     style.configure("TCombobox",
                     fieldbackground=current_theme["input_bg"],
                     background=current_theme["bg"],
                     foreground=current_theme["fg"],
                     arrowcolor=current_theme["fg"],
-                    bordercolor=current_theme["border"])
+                    bordercolor=current_theme["border"],
+                    padding=(5, 4),
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     style.map("TCombobox",
               fieldbackground=[("readonly", current_theme["input_bg"])],
@@ -170,8 +237,9 @@ def apply_custom_styling(root):
     root.option_add("*TCombobox*Listbox*Foreground", current_theme["fg"])
     root.option_add("*TCombobox*Listbox*selectBackground", current_theme["accent"])
     root.option_add("*TCombobox*Listbox*selectForeground", current_theme["fg"])
+    root.option_add("*TCombobox*Listbox*Font", ("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
-    # Configure TNotebook
+    # Configure TNotebook with larger font
     style.configure("TNotebook", 
                     background=current_theme["bg"],
                     borderwidth=0)
@@ -179,9 +247,10 @@ def apply_custom_styling(root):
     style.configure("TNotebook.Tab", 
                     background=current_theme["bg"],
                     foreground=current_theme["fg"],
-                    padding=(10, 2),
+                    padding=(12, 5),
                     borderwidth=1,
-                    bordercolor=current_theme["border"])
+                    bordercolor=current_theme["border"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     style.map("TNotebook.Tab",
               background=[("selected", current_theme["accent"]),
@@ -189,12 +258,13 @@ def apply_custom_styling(root):
               foreground=[("selected", "#FFFFFF"),
                           ("active", "#FFFFFF")])
     
-    # Configure TCheckbutton
+    # Configure TCheckbutton with larger font
     style.configure("TCheckbutton", 
                     background=current_theme["bg"],
                     foreground=current_theme["fg"],
                     indicatorcolor=current_theme["input_bg"],
-                    indicatorbackground=current_theme["input_bg"])
+                    indicatorbackground=current_theme["input_bg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     style.map("TCheckbutton",
               indicatorcolor=[("selected", current_theme["accent"])],
@@ -205,7 +275,8 @@ def apply_custom_styling(root):
                     background=current_theme["secondary_bg"],
                     foreground=current_theme["fg"],
                     indicatorcolor=current_theme["input_bg"],
-                    indicatorbackground=current_theme["input_bg"])
+                    indicatorbackground=current_theme["input_bg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     style.map("Inner.TCheckbutton",
               indicatorcolor=[("selected", current_theme["accent"])],
@@ -219,7 +290,7 @@ def apply_custom_styling(root):
                     lightcolor=current_theme["accent_light"],
                     darkcolor=current_theme["accent_dark"])
     
-    # Configure TLabelframe
+    # Configure TLabelframe with larger font
     style.configure("TLabelframe", 
                     background=current_theme["secondary_bg"],
                     foreground=current_theme["fg"],
@@ -227,7 +298,8 @@ def apply_custom_styling(root):
     
     style.configure("TLabelframe.Label", 
                     background=current_theme["bg"],
-                    foreground=current_theme["fg"])
+                    foreground=current_theme["fg"],
+                    font=("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     # Configure TPanedwindow
     style.configure("TPanedwindow", 
@@ -249,11 +321,13 @@ def apply_custom_styling(root):
     root.option_add("*Text.insertBackground", current_theme["fg"])  # Text cursor
     root.option_add("*Text.selectBackground", current_theme["accent"])
     root.option_add("*Text.selectForeground", current_theme["fg"])
+    root.option_add("*Text.font", ("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     root.option_add("*Listbox.background", current_theme["input_bg"])
     root.option_add("*Listbox.foreground", current_theme["fg"])
     root.option_add("*Listbox.selectBackground", current_theme["accent"])
     root.option_add("*Listbox.selectForeground", current_theme["fg"])
+    root.option_add("*Listbox.font", ("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     root.option_add("*Canvas.background", current_theme["bg"])
     root.option_add("*Canvas.highlightthickness", 0)  # Remove highlight border
@@ -262,6 +336,7 @@ def apply_custom_styling(root):
     root.option_add("*Menu.foreground", current_theme["fg"])
     root.option_add("*Menu.activeBackground", current_theme["accent"])
     root.option_add("*Menu.activeForeground", current_theme["fg"])
+    root.option_add("*Menu.font", ("TkDefaultFont", scale_font_size(DEFAULT_FONT_SIZE)))
     
     # Override any platform-specific appearance
     try:

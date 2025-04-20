@@ -11,6 +11,7 @@ import sys
 import os
 import tempfile
 from pathlib import Path
+import queue
 
 # Determine log directory - use temp directory or user home
 def get_log_directory():
@@ -71,6 +72,7 @@ from . import optimizer_tab
 from . import launcher
 from . import theme
 from ..telemetry import get_telemetry_service
+from ..chat_tab import ChatTab  # Add import for the ChatTab
 
 # Check for advanced feature dependencies
 try:
@@ -105,9 +107,21 @@ class MainApplication(ttk.Frame):
         self.telemetry = get_telemetry_service()
         self.telemetry.start()
         
-        # Configure grid layout
+        # Create chat queue for inter-thread communication
+        self.chat_q = queue.Queue()
+        
+        # Configure grid layout with proper weights for responsive resizing
         self.columnconfigure(0, weight=1)
-        self.rowconfigure(1, weight=1)
+        self.rowconfigure(1, weight=1)  # Main content area should expand
+        
+        # Store reference to parent for resize binding
+        self.parent = parent
+        
+        # Bind to window resize event for responsive adjustments
+        self.parent.bind("<Configure>", self._on_window_resize)
+        
+        # Set minimum window size to prevent UI from becoming too cramped
+        self.parent.minsize(800, 600)
         
         # Apply theme to parent window
         theme.apply_custom_styling(parent)
@@ -116,16 +130,22 @@ class MainApplication(ttk.Frame):
         header_frame = ttk.Frame(self, padding=10)
         header_frame.grid(row=0, column=0, sticky="ew")
         
-        title_label = ttk.Label(header_frame, text="Dual GPU Optimizer", font=("Arial", 16, "bold"))
-        title_label.pack(side=tk.LEFT)
+        # Make header frame columns flexible
+        header_frame.columnconfigure(1, weight=1)  # Middle space should expand
         
+        # Title aligned left with larger font
+        title_label = ttk.Label(header_frame, text="Dual GPU Optimizer", style="Heading.TLabel")
+        title_label.grid(row=0, column=0, sticky="w")
+        
+        # Status aligned right
         self.status_var = tk.StringVar(value="Status: Ready")
-        status_label = ttk.Label(header_frame, textvariable=self.status_var, foreground=theme.THEME_DARK_PURPLE["success"])
-        status_label.pack(side=tk.RIGHT)
+        status_label = ttk.Label(header_frame, textvariable=self.status_var, 
+                                foreground=theme.THEME_DARK_PURPLE["success"])
+        status_label.grid(row=0, column=2, sticky="e")
         
-        # Create notebook for tabs
+        # Create notebook for tabs with proper padding and expansion
         self.notebook = ttk.Notebook(self)
-        self.notebook.grid(row=1, column=0, sticky="nsew", padx=5, pady=5)
+        self.notebook.grid(row=1, column=0, sticky="nsew", padx=10, pady=10)
         
         # Add dashboard tab
         self.dashboard_tab = dashboard.DashboardView(self.notebook)
@@ -139,21 +159,54 @@ class MainApplication(ttk.Frame):
         self.launcher_tab = launcher.LauncherTab(self.notebook)
         self.notebook.add(self.launcher_tab, text="Launcher")
         
-        # Status bar
-        status_frame = ttk.Frame(self, relief="sunken", padding=(5, 2))
-        status_frame.grid(row=2, column=0, sticky="ew")
+        # Add chat tab
+        self.chat_tab = ChatTab(self.notebook, self.chat_q)
+        self.notebook.add(self.chat_tab, text="Chat")
         
-        # GPU count indicator
+        # Status bar with proper structure for multiple elements
+        status_frame = ttk.Frame(self, relief="sunken", padding=(10, 5))
+        status_frame.grid(row=2, column=0, sticky="ew")
+        status_frame.columnconfigure(1, weight=1)  # Middle space expands
+        
+        # GPU count indicator on left
         self.gpu_count_var = tk.StringVar(value="GPUs: Detecting...")
         gpu_count_label = ttk.Label(status_frame, textvariable=self.gpu_count_var)
-        gpu_count_label.pack(side=tk.LEFT)
+        gpu_count_label.grid(row=0, column=0, sticky="w")
         
-        # Version
+        # Version on right
         version_label = ttk.Label(status_frame, text="v0.2.0")
-        version_label.pack(side=tk.RIGHT)
+        version_label.grid(row=0, column=2, sticky="e")
+        
+        # Add tokens-per-second meter to status bar
+        try:
+            self.tps_meter = ttk.Meter(status_frame, metersize=50, amounttotal=100, 
+                                      bootstyle="success", subtext="tok/s", 
+                                      textright="", interactive=False)
+            self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
+        except Exception as e:
+            logger.warning(f"Could not create TPS meter: {e}")
+            self.tps_meter = None
         
         # Start GPU detection
         self.detect_gpus()
+        
+        # Start message polling
+        self._poll()
+        
+        # Initial resize handling
+        self._handle_resize()
+    
+    def _poll(self):
+        """Poll messages from chat queue and dispatch them"""
+        try:
+            while True:
+                kind, val = self.chat_q.get_nowait()
+                self.chat_tab.handle_queue(kind, val)
+                if kind == "tps" and self.tps_meter is not None:
+                    self.tps_meter.configure(amountused=min(val, 100))
+        except queue.Empty:
+            pass
+        self.after(40, self._poll)
     
     def detect_gpus(self):
         """Detect available GPUs"""
@@ -182,6 +235,41 @@ class MainApplication(ttk.Frame):
             self.telemetry.stop()
         
         super().destroy()
+    
+    def _on_window_resize(self, event=None):
+        """Handle window resize events
+        
+        Args:
+            event: The resize event (optional)
+        """
+        # Debounce resize events to avoid excessive processing
+        if hasattr(self, '_resize_timer'):
+            self.after_cancel(self._resize_timer)
+        self._resize_timer = self.after(100, self._handle_resize)
+    
+    def _handle_resize(self):
+        """Adjust UI elements based on current window size"""
+        try:
+            # Get current window dimensions
+            width = self.parent.winfo_width()
+            height = self.parent.winfo_height()
+            
+            # Adjust padding based on window size
+            if width < 1000:
+                # Smaller padding for small windows
+                self.notebook.configure(padding=(5, 5))
+            else:
+                # More padding for larger windows
+                self.notebook.configure(padding=(10, 10))
+            
+            # Log resize for debugging
+            logger.debug(f"Window resized to {width}x{height}, adjustments applied")
+            
+        except Exception as e:
+            logger.warning(f"Error handling resize: {e}")
+            
+        # Ensure all widgets are properly updated
+        self.update_idletasks()
 
 
 def find_icon():

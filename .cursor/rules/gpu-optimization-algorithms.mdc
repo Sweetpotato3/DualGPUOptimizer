@@ -1,63 +1,43 @@
 ---
-description: Specification for GPU optimization algorithms, memory management, and tensor parallelism for ML model inference
-globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/memory_monitor.py,dualgpuopt/layer_balance.py
+description: Specialized GPU memory distribution and optimization algorithms for LLM inference across multi-GPU setups
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/model_profiles.py,**/ctx_size.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-### Core GPU Memory Distribution Algorithms
+Core Memory Distribution System:
 
-1. Dynamic Memory Split Calculator
+1. Tensor Parallel Split Calculator
+- Handles optimal memory distribution across multiple GPUs based on relative VRAM sizes:
+  * Base memory per model (GB per billion parameters)
+  * KV cache overhead per token
+  * Safety margins for system overhead (20%)
+  * Expert overhead for MoE models (50%)
+
+2. Context Length Optimizer
+- Dynamic calculation of maximum safe sequence length:
 ```python
-def calculate_splits(gpus: List[GPU]) -> List[float]:
-    total_mem = sum(g.available_memory for g in gpus)
-    splits = [g.available_memory / total_mem for g in gpus]
-    return [round(s, 3) for s in splits]
+context_size = (available_vram - base_memory) / (bytes_per_token * n_layers * kv_heads)
 ```
+- Model-specific parameter detection:
+  * LLaMA: 32/40 heads, 128 head dimension
+  * Mistral: 32 heads, 128 dimension
+  * Mixtral: 8 experts, 32 heads each
 
-Allocates model layers across multiple GPUs based on available memory ratios. Includes 20% overhead buffer for tensor parallel operations.
+3. Layer Balance Algorithm
+- Weighted profiling system for layer distribution:
+  * Short sequence profiling (64 tokens, 20% weight)
+  * Long sequence profiling (1024 tokens, 80% weight)
+  * Contiguous block optimization for minimal transfers
+  * Prioritizes high-latency layers on faster GPU
 
-2. Layer Balancing Algorithm
-Located in `dualgpuopt/layer_balance.py`:
-- Uses weighted profiling with 64/1024 token sequences (20%/80% weights)
-- Redistributes transformer layers based on execution latency 
-- Groups layers into contiguous blocks to minimize cross-GPU communication
-- Handles model-specific architectures (LLaMA, Mistral, Mixtral)
+File Paths:
+/dualgpuopt/optimizer.py
+/dualgpuopt/gpu_info.py
+/dualgpuopt/layer_balance.py
 
-3. Memory Monitor System
-Located in `dualgpuopt/memory_monitor.py`:
-- Real-time VRAM tracking with configurable thresholds
-- Model-specific memory profiles:
-  - Base memory requirements
-  - Per-batch memory scaling
-  - KV cache growth rates
-  - MoE overhead factors
-- OOM prevention using predictive growth modeling
-- Tiered recovery strategies:
-  1. Cache clearing
-  2. Batch reduction
-  3. Memory offloading
-
-4. Tensor Parallelism Calculator
-Located in `dualgpuopt/optimizer.py`:
-```python
-def tensor_parallel_size(model_size: int, gpu_mem: List[int]) -> int:
-    min_mem = min(gpu_mem)
-    return max(1, model_size // (min_mem - SYSTEM_RESERVE))
-```
-
-Determines optimal tensor parallel configuration based on:
-- Model parameter count
-- Available GPU memory
-- System overhead (2GB reserve)
-- Framework-specific requirements
-
-Notable implementations:
-- Specialized MoE handling with expert activation tracking
-- Sliding window attention optimization
-- Dynamic KV cache growth projections
-- Hardware-aware tensor splitting
+Importance Score: 95 - Core GPU optimization algorithms directly impacting model performance and resource utilization
 
 $END$
