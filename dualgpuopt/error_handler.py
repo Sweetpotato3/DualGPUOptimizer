@@ -494,3 +494,48 @@ def install_global_handler():
 def get_error_handler() -> ErrorHandler:
     """Get or create singleton error handler instance"""
     return ErrorHandler() 
+
+# Add missing function
+def show_error_dialog(title: str, message: str, details: Optional[str] = None) -> None:
+    """Show an error dialog to the user
+    
+    Args:
+        title: Dialog title
+        message: Main error message
+        details: Optional technical details
+    """
+    # Import here to avoid circular imports
+    try:
+        import tkinter as tk
+        from tkinter import messagebox
+        
+        # Create a root window if needed
+        try:
+            # Try to use an existing Tk instance
+            root = tk._default_root or tk.Tk()
+            if not tk._default_root:
+                root.withdraw()  # Hide the root window
+        except Exception:
+            # If that fails, create a new one
+            root = tk.Tk()
+            root.withdraw()  # Hide the root window
+        
+        # Add details if provided
+        full_message = message
+        if details:
+            full_message += "\n\nDetails:\n" + details
+            
+        # Show the error message
+        messagebox.showerror(title, full_message)
+        
+        # Destroy the root if we created it
+        if not tk._default_root:
+            root.destroy()
+            
+    except Exception as e:
+        # Fall back to console if GUI fails
+        logger.error(f"Failed to show error dialog: {e}")
+        print(f"ERROR: {title}")
+        print(f"Message: {message}")
+        if details:
+            print(f"Details: {details}") 

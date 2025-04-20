@@ -25,7 +25,7 @@ try:
     from ..mpolicy import autocast, scaler
     from ..memory_monitor import get_memory_monitor
     from ..model_profiles import apply_profile, get_model_profile
-    from ..error_handler import get_error_handler, show_error_dialog
+    from ..error_handler import get_error_handler, show_error_dialog, ErrorSeverity
     from ..telemetry import get_telemetry_service
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
@@ -507,18 +507,25 @@ class LauncherTab(ttk.Frame):
         # Create thread pool for background tasks
         self.thread_pool = ThreadPoolExecutor(max_workers=4)
         
-        # Initialize error handler
+        # Get error handler
+        self.error_handler = get_error_handler()
+        
+        # Register error callbacks
+        if self.error_handler:
+            for severity in ErrorSeverity:
+                self.error_handler.register_callback(severity, self._handle_error)
+        
+        # Initialize memory monitor
+        self.memory_monitor = None
         if ADVANCED_FEATURES_AVAILABLE:
-            self.error_handler = get_error_handler()
-            # Register UI callback
-            self.error_handler.register_callback('*', self._handle_error)
-            
-            # Initialize memory monitor
-            self.memory_monitor = get_memory_monitor()
-            # Register memory warning callback
-            self.memory_monitor.register_callback("ui_warning", self._handle_memory_warning)
-            # Start the memory monitor
-            self.memory_monitor.start()
+            try:
+                self.memory_monitor = get_memory_monitor()
+                # Register for memory warnings
+                if self.memory_monitor:
+                    # Use register_alert_callback instead of register_callback
+                    self.memory_monitor.register_alert_callback("ui_warning", self._handle_memory_warning)
+            except Exception as e:
+                logger.warning(f"Error initializing memory monitor: {e}")
         
         # Initialize runner and queue
         self.log_queue = queue.Queue()
@@ -918,6 +925,50 @@ class LauncherTab(ttk.Frame):
         
         # Reset status after 2 seconds
         self.after(2000, lambda: self.status_var.set("Ready"))
+    
+    def _handle_error(self, error_details):
+        """Handle error callback from error handler
+        
+        Args:
+            error_details: Error details object
+        """
+        if hasattr(self, 'log_text') and self.log_text:
+            self._append_log(f"ERROR: {error_details.message}\n")
+            
+            if error_details.traceback_str:
+                self._append_log(f"Traceback: {error_details.traceback_str}\n")
+                
+        # Update status
+        if hasattr(self, 'status_var'):
+            self.status_var.set(f"Error: {error_details.message}")
+            
+        # Show dialog for severe errors
+        if error_details.severity in [ErrorSeverity.ERROR, ErrorSeverity.CRITICAL, ErrorSeverity.FATAL]:
+            show_error_dialog(
+                f"{error_details.severity.name} Error",
+                error_details.message,
+                error_details.traceback_str
+            )
+
+    def _handle_memory_warning(self, warning_type, gpu_id, used_mb, total_mb):
+        """Handle memory warning callback from memory monitor
+        
+        Args:
+            warning_type: Type of warning
+            gpu_id: GPU ID that triggered the warning
+            used_mb: Used memory in MB
+            total_mb: Total memory in MB
+        """
+        usage_pct = (used_mb / total_mb) * 100 if total_mb > 0 else 0
+        message = f"Warning: GPU {gpu_id} memory usage is high: {used_mb:.0f}MB/{total_mb:.0f}MB ({usage_pct:.1f}%)\n"
+        
+        # Log to console
+        if hasattr(self, 'log_text') and self.log_text:
+            self._append_log(message)
+            
+        # Update status
+        if hasattr(self, 'status_var'):
+            self.status_var.set(f"Warning: High GPU {gpu_id} memory usage")
 
 def model_name_to_params(model_name: str) -> float:
     """Extract model size in billions from model name
