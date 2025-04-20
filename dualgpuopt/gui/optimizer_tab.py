@@ -91,25 +91,26 @@ class OptimizerTab(ttk.Frame):
         ttk.Label(
             title_frame, 
             text="GPU Split Optimizer", 
-            font=("Arial", 14, "bold")
+            font=("Arial", 16, "bold")
         ).pack(side=tk.LEFT)
         
-        # GPU Information section
-        gpu_frame = ttk.LabelFrame(self, text="GPU Information", padding=10)
+        # GPU Information section - use TLabelframe style
+        gpu_frame = ttk.LabelFrame(self, text="GPU Information", padding=10, style="TLabelframe")
         gpu_frame.grid(row=1, column=0, sticky="ew", pady=(0, 15))
         
-        self.gpu_info_text = tk.Text(gpu_frame, height=4, width=60, wrap=tk.WORD, font=("Consolas", 10))
+        self.gpu_info_text = tk.Text(gpu_frame, height=4, width=60, wrap=tk.WORD, font=("Consolas", 10), 
+                                     bg="#241934", fg="#FFFFFF")
         self.gpu_info_text.pack(fill=tk.BOTH, expand=True)
         self.gpu_info_text.config(state=tk.DISABLED)
         
-        # Model selection section
-        model_frame = ttk.LabelFrame(self, text="Model Configuration", padding=10)
+        # Model selection section - use TLabelframe style
+        model_frame = ttk.LabelFrame(self, text="Model Configuration", padding=10, style="TLabelframe")
         model_frame.grid(row=2, column=0, sticky="ew", pady=(0, 15))
         
         model_frame.columnconfigure(1, weight=1)
         
         # Model preset dropdown
-        ttk.Label(model_frame, text="Model:").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
+        ttk.Label(model_frame, text="Model:", style="Inner.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.model_var = tk.StringVar(value=list(MODEL_PRESETS.keys())[0])
         model_dropdown = ttk.Combobox(
@@ -123,38 +124,38 @@ class OptimizerTab(ttk.Frame):
         model_dropdown.bind("<<ComboboxSelected>>", self._on_model_selected)
         
         # Context length entry
-        ttk.Label(model_frame, text="Context Length:").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        ttk.Label(model_frame, text="Context Length:", style="Inner.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
         
         self.context_var = tk.StringVar(value=str(MODEL_PRESETS[self.model_var.get()].context_length))
         context_entry = ttk.Entry(model_frame, textvariable=self.context_var, width=10)
         context_entry.grid(row=1, column=1, sticky="w", pady=5)
         
-        # Add custom model parameters (visible only when Custom is selected)
-        self.custom_frame = ttk.Frame(model_frame)
+        # Add custom model parameters (visible only when Custom is selected) - use Inner.TFrame style
+        self.custom_frame = ttk.Frame(model_frame, style="Inner.TFrame")
         self.custom_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(10, 0))
         self.custom_frame.columnconfigure(1, weight=1)
         self.custom_frame.columnconfigure(3, weight=1)
         
         # Hidden size
-        ttk.Label(self.custom_frame, text="Hidden Size:").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
+        ttk.Label(self.custom_frame, text="Hidden Size:", style="Inner.TLabel").grid(row=0, column=0, sticky="w", padx=(0, 10), pady=5)
         self.hidden_var = tk.StringVar(value="4096")
         hidden_entry = ttk.Entry(self.custom_frame, textvariable=self.hidden_var, width=10)
         hidden_entry.grid(row=0, column=1, sticky="w", pady=5)
         
         # Layers
-        ttk.Label(self.custom_frame, text="Layers:").grid(row=0, column=2, sticky="w", padx=(20, 10), pady=5)
+        ttk.Label(self.custom_frame, text="Layers:", style="Inner.TLabel").grid(row=0, column=2, sticky="w", padx=(20, 10), pady=5)
         self.layers_var = tk.StringVar(value="32")
         layers_entry = ttk.Entry(self.custom_frame, textvariable=self.layers_var, width=10)
         layers_entry.grid(row=0, column=3, sticky="w", pady=5)
         
         # Heads
-        ttk.Label(self.custom_frame, text="Attention Heads:").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
+        ttk.Label(self.custom_frame, text="Attention Heads:", style="Inner.TLabel").grid(row=1, column=0, sticky="w", padx=(0, 10), pady=5)
         self.heads_var = tk.StringVar(value="32")
         heads_entry = ttk.Entry(self.custom_frame, textvariable=self.heads_var, width=10)
         heads_entry.grid(row=1, column=1, sticky="w", pady=5)
         
         # KV Heads
-        ttk.Label(self.custom_frame, text="KV Heads:").grid(row=1, column=2, sticky="w", padx=(20, 10), pady=5)
+        ttk.Label(self.custom_frame, text="KV Heads:", style="Inner.TLabel").grid(row=1, column=2, sticky="w", padx=(20, 10), pady=5)
         self.kv_heads_var = tk.StringVar(value="32")
         kv_heads_entry = ttk.Entry(self.custom_frame, textvariable=self.kv_heads_var, width=10)
         kv_heads_entry.grid(row=1, column=3, sticky="w", pady=5)
@@ -163,7 +164,7 @@ class OptimizerTab(ttk.Frame):
         self.custom_frame.grid_remove()
         
         # Calculate button
-        button_frame = ttk.Frame(model_frame)
+        button_frame = ttk.Frame(model_frame, style="Inner.TFrame")
         button_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(15, 0))
         
         ttk.Button(
@@ -172,24 +173,25 @@ class OptimizerTab(ttk.Frame):
             command=self._calculate_split
         ).pack(side=tk.RIGHT)
         
-        # Results section
-        results_frame = ttk.LabelFrame(self, text="Optimization Results", padding=10)
+        # Results section - use TLabelframe style
+        results_frame = ttk.LabelFrame(self, text="Optimization Results", padding=10, style="TLabelframe")
         results_frame.grid(row=3, column=0, sticky="nsew")
         
-        self.results_text = tk.Text(results_frame, height=10, width=60, wrap=tk.WORD, font=("Consolas", 10))
+        self.results_text = tk.Text(results_frame, height=10, width=60, wrap=tk.WORD, font=("Consolas", 10), 
+                                    bg="#241934", fg="#FFFFFF")
         self.results_text.pack(fill=tk.BOTH, expand=True)
         self.results_text.config(state=tk.DISABLED)
         
-        # Command line section
-        cmd_frame = ttk.LabelFrame(self, text="Command Arguments", padding=10)
+        # Command line section - use TLabelframe style
+        cmd_frame = ttk.LabelFrame(self, text="Command Arguments", padding=10, style="TLabelframe")
         cmd_frame.grid(row=4, column=0, sticky="ew", pady=(15, 0))
         
         # Framework tabs
         cmd_notebook = ttk.Notebook(cmd_frame)
         cmd_notebook.pack(fill=tk.BOTH, expand=True)
         
-        # llama.cpp tab
-        llama_frame = ttk.Frame(cmd_notebook, padding=10)
+        # llama.cpp tab - use Inner.TFrame style
+        llama_frame = ttk.Frame(cmd_notebook, padding=10, style="Inner.TFrame")
         cmd_notebook.add(llama_frame, text="llama.cpp")
         
         self.llama_cmd_var = tk.StringVar(value="")
@@ -202,8 +204,8 @@ class OptimizerTab(ttk.Frame):
             command=lambda: self._copy_to_clipboard(self.llama_cmd_var.get())
         ).pack(side=tk.RIGHT)
         
-        # vLLM tab
-        vllm_frame = ttk.Frame(cmd_notebook, padding=10)
+        # vLLM tab - use Inner.TFrame style
+        vllm_frame = ttk.Frame(cmd_notebook, padding=10, style="Inner.TFrame")
         cmd_notebook.add(vllm_frame, text="vLLM")
         
         self.vllm_cmd_var = tk.StringVar(value="")

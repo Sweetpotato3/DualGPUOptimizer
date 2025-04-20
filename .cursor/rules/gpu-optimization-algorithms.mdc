@@ -1,58 +1,63 @@
 ---
-description: Technical specification for GPU optimization algorithms, memory management, and tensor parallelism calculations.
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory_monitor.py,**/ctx_size.py
+description: Specification for GPU optimization algorithms, memory management, and tensor parallelism for ML model inference
+globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/memory_monitor.py,dualgpuopt/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Memory Distribution Logic (optimizer.py):
-- Calculates optimal tensor parallel splits based on relative GPU memory capacities
-- Formula: tensor_fraction = gpu_memory / max_gpu_memory
-- Implements differentiated memory allocation strategies for llama.cpp and vLLM frameworks
-- Dynamically adjusts memory utilization thresholds (default 0.9 for vLLM)
-Importance: 95
+### Core GPU Memory Distribution Algorithms
 
-Layer Balancing System (layer_balance.py):
-- Distributes model layers across GPUs using weighted performance profiling:
-  - Short sequences (64 tokens): 20% weight
-  - Long sequences (1024 tokens): 80% weight
-- Optimizes layer placement based on GPU memory quotas and reserve ratios
-- Handles embedding and output layer special cases
-Importance: 90
+1. Dynamic Memory Split Calculator
+```python
+def calculate_splits(gpus: List[GPU]) -> List[float]:
+    total_mem = sum(g.available_memory for g in gpus)
+    splits = [g.available_memory / total_mem for g in gpus]
+    return [round(s, 3) for s in splits]
+```
 
-Context Size Calculator (ctx_size.py):
-- Computes maximum safe context length using formula:
-  bytes_per_token = 2 * layers * KV_heads * dimension * (bits/8) * MoE_factor
-- Includes specialized handling for:
-  - MoE (Mixture of Experts) models with scaling factors
-  - Grouped Query Attention architectures
-  - Different quantization levels (4-bit, 8-bit)
-Importance: 85
+Allocates model layers across multiple GPUs based on available memory ratios. Includes 20% overhead buffer for tensor parallel operations.
 
-Memory Monitor System:
-- Implements model-specific memory profiles with:
-  - Base memory requirements tracking
-  - Per-batch memory consumption
-  - Per-token memory usage rates
-  - Growth rate projections
-- Four-tier alert system (NORMAL, WARNING, CRITICAL, EMERGENCY)
-- Hierarchical OOM prevention:
+2. Layer Balancing Algorithm
+Located in `dualgpuopt/layer_balance.py`:
+- Uses weighted profiling with 64/1024 token sequences (20%/80% weights)
+- Redistributes transformer layers based on execution latency 
+- Groups layers into contiguous blocks to minimize cross-GPU communication
+- Handles model-specific architectures (LLaMA, Mistral, Mixtral)
+
+3. Memory Monitor System
+Located in `dualgpuopt/memory_monitor.py`:
+- Real-time VRAM tracking with configurable thresholds
+- Model-specific memory profiles:
+  - Base memory requirements
+  - Per-batch memory scaling
+  - KV cache growth rates
+  - MoE overhead factors
+- OOM prevention using predictive growth modeling
+- Tiered recovery strategies:
   1. Cache clearing
-  2. Batch size reduction
+  2. Batch reduction
   3. Memory offloading
-  4. Process termination
-Importance: 88
 
-Smart Batching Logic:
-- Groups sequences by length similarity for optimal throughput
-- Dynamic batch size adjustment based on:
-  - Available GPU memory
-  - Model size requirements
-  - Sequence length distribution
-- OOM recovery with 25% batch size reduction
-- Progressive recovery with 10% increases after successful processing
-Importance: 82
+4. Tensor Parallelism Calculator
+Located in `dualgpuopt/optimizer.py`:
+```python
+def tensor_parallel_size(model_size: int, gpu_mem: List[int]) -> int:
+    min_mem = min(gpu_mem)
+    return max(1, model_size // (min_mem - SYSTEM_RESERVE))
+```
+
+Determines optimal tensor parallel configuration based on:
+- Model parameter count
+- Available GPU memory
+- System overhead (2GB reserve)
+- Framework-specific requirements
+
+Notable implementations:
+- Specialized MoE handling with expert activation tracking
+- Sliding window attention optimization
+- Dynamic KV cache growth projections
+- Hardware-aware tensor splitting
 
 $END$

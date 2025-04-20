@@ -1,63 +1,68 @@
 ---
-description: Documents data flow patterns for GPU optimization and model inference across dual GPU setups
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
+description: Documentation of data flow between components, including GPU resource data, optimization parameters, and monitoring metrics.
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+## Core Data Flow Components
 
-1. GPU Metrics Pipeline (Importance: 95)
-- Location: dualgpuopt/telemetry.py
-- Collects real-time GPU performance data:
-  * Memory utilization
-  * Temperature
-  * Power consumption
-  * Clock speeds
-  * PCIe bandwidth
-- Implements event-driven metrics distribution through EventBus
-- Features telemetry middleware for data transformation and normalization
-- Handles graceful degradation with mock data generation
+### 1. GPU Telemetry Pipeline (90)
+- `dualgpuopt/telemetry.py` implements real-time GPU metrics collection
+- Metrics flow: GPU Hardware -> NVML Interface -> Telemetry Service -> Event Bus -> Dashboard/Optimizer
+- Key metrics include:
+  * Memory utilization/availability 
+  * Temperature/Power consumption
+  * Clock speeds (SM/Memory)
+  * PCIe bandwidth utilization
+- Historical data maintained in 60-sample rolling window
 
-2. Model Layer Distribution Flow (Importance: 90)
-- Location: dualgpuopt/layer_balance.py 
-- Directs transformer layer assignments across GPUs based on:
-  * Per-layer performance profiles
-  * Memory quotas
-  * GPU capability differentials
-- Employs weighted performance metrics:
-  * Short sequences (64 tokens): 20% weight
-  * Long sequences (1024 tokens): 80% weight
-- Optimizes data movement through contiguous block formation
+### 2. Memory Management Flow (95)
+- `dualgpuopt/memory_monitor.py` orchestrates memory-related data flow:
+  * Model profiling data -> Memory estimator
+  * Memory thresholds -> Alert system
+  * Recovery commands -> GPU drivers
+- Memory profiles track:
+  * Base memory requirements
+  * Per-batch scaling factors 
+  * Per-token memory usage
+- Recovery data flows through tiered system:
+  1. Cache clearing commands
+  2. Batch size adjustments
+  3. Memory offloading instructions
+  4. Process termination signals
 
-3. Memory Management Pipeline (Importance: 85)
-- Location: dualgpuopt/memory_monitor.py
-- Implements tiered alert system for memory pressure:
-  * NORMAL → WARNING → CRITICAL → EMERGENCY
-- Tracks per-process memory consumption
-- Provides hierarchical recovery flows:
-  1. Cache clearing
-  2. Batch reduction
-  3. Memory offloading
-  4. Process termination
+### 3. Model Parameter Pipeline (85)
+- `dualgpuopt/ctx_size.py` processes model configuration data:
+  * Model architecture -> Parameter extractor
+  * Layer counts/dimensions -> Memory calculator
+  * KV cache requirements -> Context size optimizer
+- Optimization parameters flow through:
+  * Context window calculator
+  * Memory safety validator
+  * Framework-specific command generator
 
-4. Optimization Parameter Flow (Importance: 80)
-- Location: dualgpuopt/optimizer.py
-- Calculates and distributes:
-  * Tensor parallel fractions
-  * GPU memory splits
-  * Context length limits
-  * Framework-specific parameters
-- Routes optimization parameters to framework-specific deployment handlers
+### 4. Layer Balance Data Flow (80)
+- `dualgpuopt/layer_balance.py` manages distribution data:
+  * Performance metrics -> Layer profiler
+  * GPU capabilities -> Load balancer
+  * Memory constraints -> Distribution optimizer
+- Uses weighted performance data:
+  * Short sequence (64 token) metrics: 20% weight
+  * Long sequence (1024 token) metrics: 80% weight
 
-5. Framework Command Generation (Importance: 75)
-- Location: dualgpuopt/commands/gpu_commands.py
-- Generates framework-specific deployment commands
-- Routes environment variables and GPU configurations
-- Handles command validation and error reporting flow
+### 5. Event Distribution System (75)
+- `dualgpuopt/services/event_bus.py` handles metric propagation:
+  * GPU events -> Event bus -> Subscribers
+  * State changes -> Service layer -> UI components
+  * Alerts/Warnings -> Notification system
 
-The system implements a multi-layered data flow architecture optimizing GPU resource utilization for large language model inference, with particular emphasis on dual GPU configurations and dynamic resource management.
+### 6. Configuration Data Flow (70)
+- `dualgpuopt/services/config_service.py` manages settings:
+  * User preferences -> Config store
+  * GPU profiles -> Overclock manager
+  * Alert thresholds -> Monitor service
 
 $END$

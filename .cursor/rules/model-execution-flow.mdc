@@ -1,57 +1,68 @@
 ---
-description: Handles model execution workflow configuration and GPU resource allocation for LLM deployment
-globs: **/launcher.py,**/runner.py,**/optimizer.py,**/gpu_info.py,**/commands/*.py
+description: Documents the workflow and execution patterns for LLM inference across multiple GPUs, including command generation and resource allocation.
+globs: 
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components:
+The model execution flow consists of several key components:
 
-1. Framework-Specific Command Generation (80/100)
-- Generates optimized command lines for different ML frameworks:
-  * llama.cpp: GPU layer splits and context size parameters
-  * vLLM: Tensor parallel size and memory utilization config
-- Located in: dualgpuopt/launcher.py, dualgpuopt/commands/gpu_commands.py
+## Command Generation System
+Located in `dualgpuopt/optimizer.py`:
 
-2. Memory Management Strategy (95/100)
-- Implements progressive memory management:
-  * OOM detection with automatic recovery
-  * Memory pressure monitoring with thresholds
-  * CUDA cache clearing on threshold breach
-  * Dynamic batch size adjustment based on memory availability
-- Located in: dualgpuopt/memory_monitor.py
+1. Framework-Specific Command Generation:
+- llama.cpp: 
+  - Generates GPU split parameters based on available VRAM
+  - Sets tensor allocation across multiple GPUs
+  - Configures context size and layer distribution
+- vLLM:
+  - Calculates tensor parallel size based on GPU count
+  - Sets memory utilization thresholds
+  - Configures batch size based on model architecture
 
-3. GPU Layer Distribution (90/100)
-- Dynamic layer balancing across multiple GPUs using:
-  * Performance weights (64 tokens: 0.2, 1024 tokens: 0.8)
-  * Memory quota-based distribution
-  * Contiguous block formation to minimize transitions
-- Located in: dualgpuopt/layer_balance.py
+2. Layer Distribution (`dualgpuopt/layer_balance.py`):
+- Implements weighted performance profiling using 64 and 1024 token sequences
+- Assigns layers based on performance quotas calculated from profiling results
+- Creates contiguous layer blocks to minimize cross-device communication
+- Handles architecture-specific placement rules for embeddings and output layers
 
-4. Model Parameter Analysis (85/100)
-- Extracts model parameters from filenames:
-  * Layer count and dimensions
-  * KV head configuration
-  * Context size optimization
-  * Batch size calculations
-- Located in: dualgpuopt/optimizer.py
+3. Context Size Management (`dualgpuopt/ctx_size.py`):
+- Calculates safe context lengths based on:
+  - Model architecture parameters (layers, KV heads, dimensions)
+  - Available GPU memory
+  - MoE factors for mixture models
+- Implements model-specific context size limits:
+```python
+llama2-7b: max_ctx = min(32768, available_mem / bytes_per_token)
+llama2-13b: max_ctx = min(16384, available_mem / bytes_per_token)
+mistral-7b: max_ctx = min(32768, available_mem / bytes_per_token)
+mixtral-8x7b: max_ctx = min(32768, available_mem / bytes_per_token * moe_factor)
+```
 
-5. Process Management (75/100)
-- Non-blocking subprocess handling for model inference
-- Specialized management for llama.cpp and vLLM processes
-- Thread-safe output streaming
-- Located in: dualgpuopt/runner.py
+4. Resource Management (`dualgpuopt/memory_monitor.py`):
+- Implements multi-stage VRAM management:
+  1. Cache clearing
+  2. Clock/compute mode reset
+  3. Full memory cleanup
+  4. System-level optimization
+- Tracks per-model memory requirements:
+  - Base memory footprint
+  - Per-batch scaling factors
+  - Token-level memory usage
+  - Growth rate projections
 
-6. Resource Monitoring (70/100)
-- Real-time metrics collection:
-  * Tokens/second throughput
-  * GPU memory pressure
-  * Temperature and utilization
-  * Performance degradation detection
-- Located in: dualgpuopt/telemetry.py
+5. Batch Processing (`dualgpuopt/batch/smart_batch.py`):
+- Length-aware sequence batching
+- Dynamic batch size calculation based on:
+  - Available GPU memory
+  - Model architecture constraints
+  - Current memory pressure
+- Implements backpressure mechanism:
+  - Reduces batch size by 25% after OOM events
+  - Gradually recovers after 5 successful batches
 
-The system employs a layered approach to model execution, with specialized handling for different frameworks and dynamic resource allocation based on GPU capabilities and model requirements.
+The execution flow prioritizes stable multi-GPU inference while preventing out-of-memory conditions through careful resource management and dynamic adjustments.
 
 $END$

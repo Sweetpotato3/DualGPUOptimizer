@@ -356,12 +356,12 @@ class LauncherTab(ttk.Frame):
         )
         self.profile_btn.grid(row=0, column=3, padx=5)
         
-        # Model path selection
-        model_frame = ttk.LabelFrame(self, text="Model Selection", padding=10)
+        # Model path selection - use Frame with Inner.TFrame style
+        model_frame = ttk.LabelFrame(self, text="Model Selection", padding=10, style="TLabelframe")
         model_frame.grid(row=1, column=0, sticky="ew", pady=(0, 10))
         model_frame.columnconfigure(1, weight=1)
         
-        ttk.Label(model_frame, text="Model Path:").grid(row=0, column=0, padx=(0, 5), sticky="w")
+        ttk.Label(model_frame, text="Model Path:", style="Inner.TLabel").grid(row=0, column=0, padx=(0, 5), sticky="w")
         self.model_path_var = tk.StringVar()
         model_entry = ttk.Entry(model_frame, textvariable=self.model_path_var)
         model_entry.grid(row=0, column=1, padx=5, sticky="ew")
@@ -373,31 +373,31 @@ class LauncherTab(ttk.Frame):
         )
         browse_btn.grid(row=0, column=2, padx=5)
         
-        # Options frame
-        options_frame = ttk.LabelFrame(self, text="Launch Options", padding=10)
+        # Options frame - use Frame with Inner.TFrame style
+        options_frame = ttk.LabelFrame(self, text="Launch Options", padding=10, style="TLabelframe")
         options_frame.grid(row=2, column=0, sticky="ew", pady=(0, 10))
         options_frame.columnconfigure(1, weight=1)
         
         # GPU Split option
-        ttk.Label(options_frame, text="GPU Split:").grid(row=0, column=0, padx=(0, 5), sticky="w")
+        ttk.Label(options_frame, text="GPU Split:", style="Inner.TLabel").grid(row=0, column=0, padx=(0, 5), sticky="w")
         self.gpu_split_var = tk.StringVar(value="auto")
         gpu_split_entry = ttk.Entry(options_frame, textvariable=self.gpu_split_var)
         gpu_split_entry.grid(row=0, column=1, padx=5, sticky="ew")
         
         # Context size option
-        ttk.Label(options_frame, text="Context Size:").grid(row=1, column=0, padx=(0, 5), sticky="w")
+        ttk.Label(options_frame, text="Context Size:", style="Inner.TLabel").grid(row=1, column=0, padx=(0, 5), sticky="w")
         self.ctx_size_var = tk.StringVar(value="8192")
         ctx_size_entry = ttk.Entry(options_frame, textvariable=self.ctx_size_var)
         ctx_size_entry.grid(row=1, column=1, padx=5, sticky="ew")
         
         # Batch size option 
-        ttk.Label(options_frame, text="Batch Size:").grid(row=2, column=0, padx=(0, 5), sticky="w")
+        ttk.Label(options_frame, text="Batch Size:", style="Inner.TLabel").grid(row=2, column=0, padx=(0, 5), sticky="w")
         self.batch_size_var = tk.StringVar(value="auto")
         batch_size_entry = ttk.Entry(options_frame, textvariable=self.batch_size_var)
         batch_size_entry.grid(row=2, column=1, padx=5, sticky="ew")
         
         # Advanced options frame
-        adv_options = ttk.Frame(options_frame)
+        adv_options = ttk.Frame(options_frame, style="Inner.TFrame")
         adv_options.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(10, 0))
         
         # Mixed precision toggle
@@ -405,7 +405,8 @@ class LauncherTab(ttk.Frame):
         mixed_precision_check = ttk.Checkbutton(
             adv_options,
             text="Use Mixed Precision",
-            variable=self.mixed_precision_var
+            variable=self.mixed_precision_var,
+            style="Inner.TCheckbutton"
         )
         mixed_precision_check.grid(row=0, column=0, padx=(0, 15), sticky="w")
         
@@ -414,7 +415,8 @@ class LauncherTab(ttk.Frame):
         layer_balance_check = ttk.Checkbutton(
             adv_options,
             text="Optimize Layer Balance",
-            variable=self.layer_balance_var
+            variable=self.layer_balance_var,
+            style="Inner.TCheckbutton"
         )
         layer_balance_check.grid(row=0, column=1, padx=(0, 15), sticky="w")
         
@@ -423,12 +425,13 @@ class LauncherTab(ttk.Frame):
         memory_monitor_check = ttk.Checkbutton(
             adv_options,
             text="Memory Monitor",
-            variable=self.memory_monitor_var
+            variable=self.memory_monitor_var,
+            style="Inner.TCheckbutton"
         )
         memory_monitor_check.grid(row=0, column=2, padx=(0, 15), sticky="w")
         
         # Launch controls
-        control_frame = ttk.Frame(options_frame)
+        control_frame = ttk.Frame(options_frame, style="Inner.TFrame")
         control_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=(10, 0))
         
         self.launch_btn = ttk.Button(
@@ -447,28 +450,29 @@ class LauncherTab(ttk.Frame):
         self.stop_btn.pack(side=tk.LEFT, padx=5)
         
         self.status_var = tk.StringVar(value="Ready")
-        status_label = ttk.Label(control_frame, textvariable=self.status_var)
+        status_label = ttk.Label(control_frame, textvariable=self.status_var, style="Inner.TLabel")
         status_label.pack(side=tk.RIGHT, padx=5)
         
-        # Log output
-        log_frame = ttk.LabelFrame(self, text="Process Output", padding=10)
+        # Log output - use Frame with Inner.TFrame style
+        log_frame = ttk.LabelFrame(self, text="Process Output", padding=10, style="TLabelframe")
         log_frame.grid(row=3, column=0, sticky="nsew", pady=(0, 10))
         log_frame.rowconfigure(0, weight=1)
         log_frame.columnconfigure(0, weight=1)
         
-        self.log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD)
+        self.log_text = scrolledtext.ScrolledText(log_frame, wrap=tk.WORD, bg="#241934", fg="#FFFFFF")
         self.log_text.grid(row=0, column=0, sticky="nsew")
         self.log_text.config(state="disabled")
         
         # Log controls
-        log_control_frame = ttk.Frame(log_frame)
+        log_control_frame = ttk.Frame(log_frame, style="Inner.TFrame")
         log_control_frame.grid(row=1, column=0, sticky="ew", pady=(10, 0))
         
         self.autoscroll_var = tk.BooleanVar(value=True)
         autoscroll_check = ttk.Checkbutton(
             log_control_frame,
             text="Auto-scroll",
-            variable=self.autoscroll_var
+            variable=self.autoscroll_var,
+            style="Inner.TCheckbutton"
         )
         autoscroll_check.pack(side=tk.LEFT)
         
@@ -479,8 +483,8 @@ class LauncherTab(ttk.Frame):
         )
         clear_btn.pack(side=tk.LEFT, padx=5)
         
-        # Command Preview (read-only)
-        cmd_frame = ttk.LabelFrame(self, text="Command Preview", padding=10)
+        # Command Preview (read-only) - use Frame with Inner.TFrame style
+        cmd_frame = ttk.LabelFrame(self, text="Command Preview", padding=10, style="TLabelframe")
         cmd_frame.grid(row=4, column=0, sticky="ew")
         cmd_frame.columnconfigure(0, weight=1)
         

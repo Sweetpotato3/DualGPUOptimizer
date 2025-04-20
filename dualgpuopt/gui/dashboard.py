@@ -32,7 +32,7 @@ class GPUMonitorFrame(ttk.Frame):
             gpu_id: GPU identifier
             gpu_name: GPU name to display
         """
-        super().__init__(parent, padding=10, relief="ridge", borderwidth=1)
+        super().__init__(parent, padding=10, relief="ridge", borderwidth=1, style="Inner.TFrame")
         self.gpu_id = gpu_id
         self.gpu_name = gpu_name
         
@@ -45,7 +45,8 @@ class GPUMonitorFrame(ttk.Frame):
         self.header = ttk.Label(
             self, 
             text=f"GPU {self.gpu_id}: {self.gpu_name}", 
-            font=("Arial", 12, "bold")
+            font=("Arial", 12, "bold"),
+            style="Inner.TLabel"
         )
         self.header.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
         
@@ -64,12 +65,12 @@ class GPUMonitorFrame(ttk.Frame):
         
         for i, (name, unit, min_val, max_val) in enumerate(metrics):
             # Create frame for this metric
-            frame = ttk.Frame(self)
+            frame = ttk.Frame(self, style="Inner.TFrame")
             frame.grid(row=i+1, column=0, columnspan=3, sticky="ew", pady=(0, 5))
             self.metric_frames[name.lower()] = frame
             
             # Metric label
-            ttk.Label(frame, text=f"{name}:", width=12, anchor="e").pack(side=tk.LEFT, padx=(0, 5))
+            ttk.Label(frame, text=f"{name}:", width=12, anchor="e", style="Inner.TLabel").pack(side=tk.LEFT, padx=(0, 5))
             
             # Progress bar
             progress = ttk.Progressbar(frame, length=180, maximum=max_val)
@@ -77,15 +78,15 @@ class GPUMonitorFrame(ttk.Frame):
             self.progress_bars[name.lower()] = progress
             
             # Value label
-            value_label = ttk.Label(frame, text=f"0 {unit}", width=8, anchor="w")
+            value_label = ttk.Label(frame, text=f"0 {unit}", width=8, anchor="w", style="Inner.TLabel")
             value_label.pack(side=tk.LEFT)
             self.value_labels[name.lower()] = value_label
         
         # Additional metrics (without progress bars)
-        self.clock_label = ttk.Label(self, text="Clocks: 0 MHz / 0 MHz")
+        self.clock_label = ttk.Label(self, text="Clocks: 0 MHz / 0 MHz", style="Inner.TLabel")
         self.clock_label.grid(row=len(metrics)+1, column=0, columnspan=3, sticky="w", pady=(5, 0))
         
-        self.pcie_label = ttk.Label(self, text="PCIe: 0 MB/s TX, 0 MB/s RX")
+        self.pcie_label = ttk.Label(self, text="PCIe: 0 MB/s TX, 0 MB/s RX", style="Inner.TLabel")
         self.pcie_label.grid(row=len(metrics)+2, column=0, columnspan=3, sticky="w")
     
     def update_metrics(self, metrics: GPUMetrics) -> None:
@@ -153,7 +154,7 @@ class DashboardView(ttk.Frame):
         ttk.Label(
             header_frame, 
             text="GPU Monitoring Dashboard", 
-            font=("Arial", 14, "bold")
+            font=("Arial", 16, "bold")
         ).pack(side=tk.LEFT)
         
         # Add VRAM reset button if available
@@ -172,8 +173,12 @@ class DashboardView(ttk.Frame):
         )
         self.status_label.pack(side=tk.RIGHT)
         
+        # Main content area with a background frame - helps with theming
+        content_container = ttk.LabelFrame(self, text="GPU Metrics", padding=10, style="TLabelframe")
+        content_container.pack(fill=tk.BOTH, expand=True)
+        
         # Main content area - will hold GPU monitor frames
-        self.content_frame = ttk.Frame(self)
+        self.content_frame = ttk.Frame(content_container, style="Inner.TFrame")
         self.content_frame.pack(fill=tk.BOTH, expand=True)
         
         # GPU monitor frames - will be populated when metrics arrive

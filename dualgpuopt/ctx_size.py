@@ -1,88 +1,136 @@
 """
-Context size calculator for determining maximum safe token window size
+Context size calculator for large language models
+Provides functions to calculate optimal context sizes based on GPU memory
 """
-from __future__ import annotations
 import logging
-from typing import Optional, Tuple
-
-from . import gpu_info
+from typing import Dict, Tuple, Optional, List
 
 logger = logging.getLogger("DualGPUOpt.CtxSize")
 
-def calc(n_layers: int, n_kv: int, dim: int, bits: int = 16,
-         moe: float = 1.0, reserve_mib: int = 2048) -> int:
-    """
-    Calculate maximum context length that fits in available GPU memory
-    
-    Args:
-        n_layers: Number of transformer layers
-        n_kv: Number of key-value heads
-        dim: Hidden dimension size
-        bits: Precision in bits (default: 16)
-        moe: Mixture of Experts factor (default: 1.0)
-        reserve_mib: Reserved memory in MiB (default: 2048)
-        
-    Returns:
-        Maximum context length in tokens
-    """
-    # Calculate bytes per token = 2 * layers * KV heads * dimensions * (bits/8) * moe
-    # 2 because we store both K and V
-    bytes_per_token = 2 * n_layers * n_kv * dim * (bits // 8) * moe
-    
-    # Get total available memory across all GPUs
-    gpus = gpu_info.query()
-    if not gpus:
-        logger.warning("No GPUs found, using fallback context size")
-        return 2048  # Fallback size
-    
-    # Calculate total free memory in bytes
-    total_free = sum(g["mem_total"] - g["mem_used"] for g in gpus) * 1024 * 1024
-    
-    # Subtract reserved memory
-    total_free -= reserve_mib * 1024 * 1024
-    
-    if total_free <= 0:
-        logger.warning("Insufficient free memory, using fallback context size")
-        return 2048  # Fallback if no usable memory
-    
-    # Calculate maximum tokens that can fit
-    max_tokens = int(total_free / bytes_per_token)
-    
-    # Apply constraints - round down to nearest 256 for alignment
-    max_tokens = (max_tokens // 256) * 256
-    
-    logger.info(f"Calculated max context size: {max_tokens} tokens " +
-               f"(using {n_layers} layers, {n_kv} KV heads, {dim} dim, {bits} bits)")
-    
-    return max_tokens
+# Constants for different models
+KV_OVERHEAD_FACTOR = 2  # KV cache overhead factor
+MQA_FACTOR = 0.25  # Multi-query attention reduction factor
+GQA_FACTOR = 0.5  # Grouped-query attention reduction factor
 
-def get_max_context_for_model(model_name: str, reserve_mib: int = 2048) -> int:
-    """
-    Get maximum context size for a known model preset
+def calc_max_ctx(
+    gpu_vram_mb: int,
+    model_params_b: float,
+    kv_heads: int = None,
+    heads: int = None,
+    layers: int = None,
+    hidden_size: int = None,
+    moe_expert_count: int = 1,
+    dtype_size: int = 2,  # Default to fp16/bf16
+    safety_margin: float = 0.9,
+) -> int:
+    """Calculate maximum context size based on GPU memory and model parameters
     
     Args:
-        model_name: Name of model (e.g., "Llama-2 7B", "Mistral 7B")
-        reserve_mib: Reserved memory in MiB
+        gpu_vram_mb: Available GPU VRAM in MB
+        model_params_b: Model size in billions of parameters
+        kv_heads: Number of KV heads (for MQA/GQA models)
+        heads: Total number of attention heads
+        layers: Number of transformer layers
+        hidden_size: Model's hidden dimension size
+        moe_expert_count: Number of experts for MoE models (default: 1 for non-MoE)
+        dtype_size: Size of data type in bytes (default: 2 for fp16/bf16)
+        safety_margin: Safety margin to prevent OOM (0.0-1.0)
         
     Returns:
-        Maximum context length in tokens
+        Maximum context size
     """
-    model_params = {
-        "llama-2 7b": (32, 32, 4096),   # layers, kv_heads, dim
-        "llama-2 13b": (40, 40, 5120),
-        "llama-2 70b": (80, 8, 8192),   # Grouped query attention
-        "mistral 7b": (32, 8, 4096),    # Grouped query attention
-        "mixtral 8x7b": (32, 8, 4096, 1.5),  # MoE factor 1.5
-        "phi-2": (32, 32, 2560),
-    }
+    try:
+        # Convert GPU VRAM to bytes
+        gpu_vram_bytes = gpu_vram_mb * 1024 * 1024
+        
+        # Apply safety margin
+        gpu_vram_bytes *= safety_margin
+        
+        # If we have detailed model architecture, use precise calculation
+        if all([kv_heads, heads, layers, hidden_size]):
+            # Calculate attention type factor (MQA, GQA, or standard)
+            if kv_heads == 1:
+                attn_factor = MQA_FACTOR  # MQA
+            elif kv_heads < heads:
+                attn_factor = GQA_FACTOR  # GQA
+            else:
+                attn_factor = 1.0  # Standard attention
+                
+            # Calculate bytes per token in KV cache
+            bytes_per_token = (
+                KV_OVERHEAD_FACTOR *  # KV cache overhead
+                layers *  # Number of layers
+                kv_heads *  # Number of KV heads
+                (hidden_size // heads) *  # Head dimension
+                dtype_size *  # Size of data type in bytes
+                moe_expert_count  # Expert count for MoE models
+            )
+            
+            # Maximum context size calculation
+            max_ctx = int(gpu_vram_bytes / bytes_per_token)
+            
+        else:
+            # Fallback to simplified heuristic based on model size
+            # Approximation: 2.5 bytes per token per billion params at context 4K
+            base_ctx = 4096
+            approx_bytes_per_token_per_b = 2.5 * 1024 * 1024  # 2.5 MB per token per billion params
+            
+            # Estimate max context based on available memory and model size
+            max_ctx = int((gpu_vram_bytes / (model_params_b * approx_bytes_per_token_per_b)) * base_ctx)
+        
+        # Clamp to reasonable values (minimum 256, maximum 128K)
+        max_ctx = max(256, min(max_ctx, 131072))
+        
+        # Round to nearest power of 2 or multiple of 128 for efficiency
+        if max_ctx >= 4096:
+            # Round to nearest power of 2 for large contexts
+            power = 2 ** (max_ctx.bit_length() - 1)
+            if max_ctx - power < power * 2 - max_ctx:
+                max_ctx = power
+            else:
+                max_ctx = power * 2
+        else:
+            # Round to nearest multiple of 128 for small contexts
+            max_ctx = (max_ctx // 128) * 128
+            
+        logger.info(f"Calculated max context: {max_ctx} tokens for {model_params_b}B model on {gpu_vram_mb}MB GPU")
+        return max_ctx
+        
+    except Exception as e:
+        logger.error(f"Error calculating max context size: {e}")
+        # Return a conservative default if calculation fails
+        return 2048
+        
+def estimate_vram_usage(
+    context_size: int,
+    model_params_b: float,
+    batch_size: int = 1
+) -> float:
+    """Estimate VRAM usage for a given context size and model
     
-    # Normalize model name for lookup
-    norm_name = model_name.lower().replace("-", " ").replace("_", " ")
-    
-    if norm_name in model_params:
-        params = model_params[norm_name]
-        moe_factor = 1.0 if len(params) < 4 else params[3]
-        return calc(params[0], params[1], params[2], 16, moe_factor, reserve_mib)
-    else:
-        logger.warning(f"Unknown model '{model_name}', using base LLaMA-2 7B parameters")
-        return calc(32, 32, 4096, 16, 1.0, reserve_mib)  # Default LLaMA-2 7B 
+    Args:
+        context_size: Context size in tokens
+        model_params_b: Model size in billions of parameters
+        batch_size: Batch size for inference
+        
+    Returns:
+        Estimated VRAM usage in MB
+    """
+    try:
+        # Base model memory (simplified estimation)
+        base_model_mb = model_params_b * 1024  # ~1GB per billion parameters when optimized
+        
+        # KV cache memory
+        # Roughly: 2 bytes per token per billion parameters for context tracking
+        kv_cache_mb = (context_size * model_params_b * 2) * batch_size
+        
+        # Additional overhead for activations, buffers, etc. (roughly 20%)
+        overhead_mb = (base_model_mb + kv_cache_mb) * 0.2
+        
+        total_mb = base_model_mb + kv_cache_mb + overhead_mb
+        
+        return total_mb
+    except Exception as e:
+        logger.error(f"Error estimating VRAM usage: {e}")
+        # Return a conservative estimate if calculation fails
+        return model_params_b * 1024 * 2  # 2x model size as fallback 
