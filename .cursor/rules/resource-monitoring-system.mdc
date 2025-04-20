@@ -1,55 +1,62 @@
 ---
-description: Specification for implementing GPU resource monitoring, telemetry collection, and alert systems for dual-GPU optimization
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/gpu_info.py,**/dashboard.py
+description: Core specification for GPU resource monitoring, telemetry collection, and real-time metric analysis systems
+globs: **/telemetry.py,**/metrics.py,**/tray.py,**/gpu_info.py,**/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry collection and analysis with real-time metric tracking.
+## Core Telemetry System
 
-Core Components:
+### GPU Metrics Collection (telemetry.py)
+- Implements real-time GPU metrics tracking through NVML integration
+- Collects comprehensive metrics:
+  - Memory utilization 
+  - PCIe bandwidth (RX/TX)
+  - Temperature monitoring
+  - Power consumption tracking
+  - Clock speeds (graphics/memory)
+- Uses middleware pattern for metrics processing
+- Includes idle detection with 5-minute threshold
 
-1. Telemetry Collection Engine
-- GPU-specific metrics gathered:
-  * Memory utilization (total/used/free)
-  * Core/Memory clock speeds
-  * Temperature readings
-  * Power consumption levels
-  * Fan speeds
-  * PCIe bandwidth utilization
-- Implementation in dualgpuopt/telemetry.py leverages NVML for direct hardware access
-- Rolling 60-sample history window maintained per metric
+### Metrics Processing Pipeline (metrics.py)
+- Maintains rolling 60-sample history window for trend analysis
+- Implements domain-specific thresholds:
+  - Temperature warning at 80°C
+  - Power limit enforcement
+  - Memory pressure alerts
+- Dynamic metric scaling based on GPU capabilities
+- Automatic unit conversion (mW to W, bytes to MB/GB)
 
-2. Alert Mechanism (Importance: 85)
-- Multi-tiered warning system with configurable thresholds:
-  * Temperature: Warning at 80°C, Critical at 90°C
-  * Memory: Warning at 90% utilization
-  * Power: Alert when exceeding TDP
-- Custom alert routing through event bus system
-- Idle detection with 30-second threshold
+### Dashboard Visualization (dashboard.py)
+- Real-time GPU telemetry visualization for multiple GPUs
+- Custom progress bar styling per GPU index
+- Color-coded metric display:
+  - Temperature thresholds (green/orange/red)
+  - Memory utilization gradients
+  - Power consumption relative to TDP
+- Rolling metrics history graphs with 60-point window
 
-3. Metric Processing Pipeline
-- Raw metric normalization for consistent reporting
-- Conversion of memory values to standardized units (MiB)
-- PCIe bandwidth calculations in MB/s
-- Temperature scaling with celsius/fahrenheit conversion
+### Resource Monitoring Alert System
+- Multi-level alert hierarchy:
+  - Warning: High utilization/temperature
+  - Critical: Near memory limits
+  - Emergency: Thermal throttling risk
+- Automatic CUDA cache clearing on memory pressure
+- Temperature-based fan speed adjustment
+- Power limit enforcement with throttling detection
 
-4. GPU Resource Dashboard
-- Real-time visualization of key metrics
-- Color-coded status indicators:
-  * Green: Normal operation
-  * Yellow: Approaching thresholds
-  * Red: Exceeding safe limits
-- Dynamic refresh rates (500ms-2000ms) based on system load
-
-Key Files:
+### File Paths
 - dualgpuopt/telemetry.py
-- dualgpuopt/gui/dashboard.py 
 - dualgpuopt/metrics.py
+- dualgpuopt/gui/dashboard.py
 - dualgpuopt/gpu_info.py
 
-The system provides comprehensive GPU resource monitoring tailored for dual-GPU optimization scenarios, with emphasis on early warning detection and performance anomaly identification.
+Importance Scores:
+- Telemetry System: 95 (Core monitoring infrastructure)
+- Metrics Pipeline: 85 (Critical data processing)
+- Dashboard: 75 (Key visualization)
+- Alert System: 80 (Safety monitoring)
 
 $END$

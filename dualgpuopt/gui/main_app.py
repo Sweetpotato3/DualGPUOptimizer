@@ -150,7 +150,11 @@ class MainApplication(ttk.Frame):
         # Create a container frame for the notebook
         self.notebook_container = ttk.Frame(self.paned)
         self.paned.add(self.notebook_container, weight=85)
-        
+
+
+
+
+
         # Create notebook for tabs with proper padding and expansion
         self.notebook = ttk.Notebook(self.notebook_container)
         self.notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)

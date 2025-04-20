@@ -22,7 +22,21 @@ class ChatTab(ttk.Frame):
         
         # Build interface components
         self._build_header()
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         # Create a horizontal paned window for resizable chat layout
         self.h_paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         self.h_paned.grid(row=1, column=0, sticky="nsew")

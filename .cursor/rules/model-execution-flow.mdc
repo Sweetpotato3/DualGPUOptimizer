@@ -1,66 +1,53 @@
 ---
-description: Guidelines for model execution workflow including LLM command generation, GPU management, and resource allocation
-globs: **/launcher.py,**/gpu_info.py,**/optimizer.py,**/runner.py,**/layer_balance.py
+description: Documentation for managing LLM execution workflows, command generation, and GPU resource allocation patterns
+globs: **/optimizer.py,**/runner.py,**/gui/launcher.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Execution Components:
+The model execution flow implements specialized handling of LLM deployments across multiple GPUs:
 
-1. Model Runner System (dualgpuopt/gui/launcher.py)
-Importance Score: 95
-- Manages model deployment across dual GPUs with memory optimization
-- Implements specialized command generation for llama.cpp and vLLM frameworks
-- Handles OOM recovery through staged memory reclamation
-- Coordinates tensor parallelism based on GPU capabilities
+### Core Execution Components
 
-2. Layer Distribution Engine (dualgpuopt/layer_balance.py)
-Importance Score: 90
-- Distributes model layers across GPUs using weighted profiling:
-  * Short sequence profiling (64 tokens) - 20% weight
-  * Long sequence profiling (1024 tokens) - 80% weight
-- Forces input embeddings to first GPU and output layers to last GPU
-- Creates contiguous layer blocks to minimize cross-GPU communication
+1. Command Generation System
+- Framework-specific command builders:
+  ```
+  llama.cpp: ./main -m {model} --gpu-split {ratio} --n-gpu-layers {count}
+  vLLM: python -m vllm.entrypoints.api_server --model {path} --tensor-parallel-size {tp}
+  ```
+- Dynamic parameter calculation based on:
+  - Available GPU memory
+  - Model architecture (layers, heads)
+  - KV cache requirements
+  - MoE factors for expert models
 
-3. Context Size Calculator (dualgpuopt/ctx_size.py)
-Importance Score: 85
-- Implements model-specific context length calculation:
-  * Base memory requirements
-  * Per-token KV cache scaling
-  * MoE architecture overhead
-  * Quantization impact factors
-- Enforces safety margins through 20% memory reservation
+2. Resource Allocation Flow
+- Pre-execution GPU memory analysis:
+  - Base memory footprint calculation
+  - Dynamic KV cache sizing
+  - Safety buffer allocation (10-20%)
+- Layer distribution optimization:
+  - Performance profiling with dual sequence lengths:
+    - Short sequences (64 tokens) - 20% weight
+    - Long sequences (1024 tokens) - 80% weight
+  - Layer rebalancing based on empirical performance
 
-4. Framework Command Generation (dualgpuopt/optimizer.py)
-Importance Score: 80
-- Creates optimized execution commands for supported frameworks:
-  * llama.cpp: GPU split configuration, layer distribution
-  * vLLM: Tensor parallel settings, batch size optimization
-- Manages environment variables for GPU memory allocation
-- Handles quantization parameters and precision settings
+3. Execution Pipeline
+- Model loading phase:
+  - Memory pressure monitoring
+  - CUDA cache management
+  - Layer distribution enforcement
+- Inference optimization:
+  - Batch size determination
+  - Context length validation
+  - Memory fragmention prevention
 
-5. Memory Monitoring System (dualgpuopt/memory_monitor.py)
-Importance Score: 75
-- Tracks real-time memory utilization across GPUs
-- Implements progressive memory recovery:
-  * Cache clearing
-  * Batch size reduction
-  * Process termination
-- Maintains model-specific memory profiles with pre-configured parameters
-
-Key Execution Paths:
-1. Model Loading:
-- Architecture detection from model name
-- Memory requirement calculation
-- GPU split ratio determination
-- Layer distribution optimization
-
-2. Execution Flow:
-- Command generation for target framework
-- Resource allocation across GPUs
-- Memory monitoring and recovery
-- Performance metric collection
+Relevant Files:
+- dualgpuopt/optimizer.py - Core optimization logic
+- dualgpuopt/gui/launcher.py - Launch orchestration
+- dualgpuopt/commands/gpu_commands.py - Command generation
+- dualgpuopt/batch/smart_batch.py - Batch optimization
 
 $END$

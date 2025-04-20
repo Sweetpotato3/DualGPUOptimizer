@@ -1,73 +1,61 @@
 ---
-description: Documents data flow patterns and architectures for GPU resource management and optimization systems
-globs: **/*.py,**/dualgpuopt/**
+description: Specification for analyzing and documenting data flow patterns between components in GPU optimization systems
+globs: 
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+Key Data Flow Components:
 
-1. GPU Telemetry Pipeline (Importance: 95)
-File: dualgpuopt/telemetry.py
+1. GPU Telemetry Pipeline
+- Telemetry service collects GPU metrics (utilization, memory, temperature)
+- EventBusMiddleware publishes metrics to application event bus
+- LoggingMiddleware handles diagnostic data streams
+- Components subscribe to metrics via event bus for real-time updates
+- Mock data generation provides fallback data flow when hardware unavailable
 
-Data flows from GPU hardware through multiple stages:
-- Raw metrics collection (utilization, memory, temperature)
-- Middleware transformation pipeline
-- Event bus distribution system
-- Real-time dashboard visualization
+2. Model Optimization Data Flow
+- Optimizer calculates memory splits and tensor parallel configurations
+- Layer balancing algorithm receives performance profiles:
+  - Short sequence (64 tokens) profile weighted at 20%
+  - Long sequence (1024 tokens) profile weighted at 80%
+- Distributes model layers across GPUs based on performance ratios
+- Sends configuration commands to ML frameworks (llama.cpp, vLLM)
 
-2. Model Memory Management Flow (Importance: 90)
-File: dualgpuopt/memory_monitor.py
+3. Memory Management Pipeline
+- MemoryMonitor tracks per-model memory profiles:
+  - Base memory footprint
+  - Per-batch memory scaling 
+  - Token memory requirements
+  - Growth characteristics
+- OOM prevention system implements recovery stages:
+  1. Cache clearing
+  2. Batch size reduction 
+  3. Memory offloading
+  4. Process termination
 
-Implements multi-stage memory optimization:
-- Model profile data -> Memory requirement calculator
-- Memory pressure detection -> Alert system
-- Recovery strategy selector -> Memory reclamation actions
-- Telemetry feedback loop for effectiveness monitoring
+4. Configuration Data Flow
+- StateService manages centralized application state
+- Persistent storage maintains GPU settings and model configurations
+- Event bus publishes state changes to subscribers
+- Components receive updates through state change subscriptions
 
-3. Layer Distribution Pipeline (Importance: 85)
-File: dualgpuopt/layer_balance.py
+5. Command Generation Pipeline  
+- Optimizer generates framework-specific commands
+- Parameters flow from:
+  - GPU memory calculations
+  - Layer distribution profiles
+  - Model architecture settings
+  - Runtime configurations
+- Commands distributed to framework runners
 
-Orchestrates model layer distribution:
-- Model architecture analysis -> Layer profiling
-- Performance metrics collection -> Load balancing algorithm
-- GPU capability assessment -> Resource allocation
-- Command generation -> Framework-specific deployment
-
-4. Optimization Parameter Flow (Importance: 80)
-Files: 
+Relevant Files:
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory_monitor.py
+- dualgpuopt/services/state_service.py
 - dualgpuopt/optimizer.py
-- dualgpuopt/mpolicy.py
-
-Manages optimization parameter propagation:
-- GPU configuration data -> Memory split calculator
-- Model requirements -> Tensor parallelism configurator
-- Hardware constraints -> Command parameter generator
-
-5. Event Distribution System (Importance: 75)
-File: dualgpuopt/services/event_bus.py
-
-Implements hierarchical event flow:
-- GPU metrics -> Event transformation
-- Priority-based routing
-- Subscriber notification chains
-- Metric aggregation for dashboard updates
-
-6. State Management Flow (Importance: 70)
-File: dualgpuopt/services/state_service.py
-
-Coordinates system state:
-- GPU settings -> Configuration store
-- Idle detection data -> Resource optimizer
-- Model paths -> Launch configuration
-- Settings persistence -> Storage system
-
-Key Integration Points:
-- GPU hardware interfaces feed into telemetry system
-- Memory monitor integrates with GPU command generation
-- Layer balancer coordinates with optimizer for resource allocation
-- Event bus provides metrics to visualization components
+- dualgpuopt/layer_balance.py
 
 $END$

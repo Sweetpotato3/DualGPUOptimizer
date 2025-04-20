@@ -102,7 +102,21 @@ def configure_fonts(root):
     try:
         # Get available font families
         families = sorted(font.families())
-        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         # Prefer common, well-scaling fonts that look good on high DPI displays
         preferred_fonts = ["Segoe UI", "Helvetica", "Arial", "DejaVu Sans", "Verdana", "Tahoma"]
         

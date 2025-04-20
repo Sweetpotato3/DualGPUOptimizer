@@ -1,43 +1,67 @@
 ---
-description: Specialized GPU memory distribution and optimization algorithms for LLM inference across multi-GPU setups
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/model_profiles.py,**/ctx_size.py
+description: Technical specification for GPU memory optimization, distribution algorithms, and performance monitoring logic
+globs: **/optimizer.py,**/gpu_info.py,**/memory_monitor.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core Memory Distribution System:
+## GPU Memory Distribution Algorithms
 
-1. Tensor Parallel Split Calculator
-- Handles optimal memory distribution across multiple GPUs based on relative VRAM sizes:
-  * Base memory per model (GB per billion parameters)
-  * KV cache overhead per token
-  * Safety margins for system overhead (20%)
-  * Expert overhead for MoE models (50%)
+Core memory allocation logic in optimizer.py implements:
 
-2. Context Length Optimizer
-- Dynamic calculation of maximum safe sequence length:
+1. Tensor Parallel Split Calculation:
 ```python
-context_size = (available_vram - base_memory) / (bytes_per_token * n_layers * kv_heads)
+def calculate_split(gpus):
+    total_mem = sum(g.mem_total for g in gpus)
+    return [g.mem_total/total_mem for g in gpus]
 ```
-- Model-specific parameter detection:
-  * LLaMA: 32/40 heads, 128 head dimension
-  * Mistral: 32 heads, 128 dimension
-  * Mixtral: 8 experts, 32 heads each
+- Determines optimal tensor parallel fractions based on relative GPU memory sizes
+- Maintains proportional load distribution across GPUs
+- Accounts for memory overhead and safety margins
 
-3. Layer Balance Algorithm
-- Weighted profiling system for layer distribution:
-  * Short sequence profiling (64 tokens, 20% weight)
-  * Long sequence profiling (1024 tokens, 80% weight)
-  * Contiguous block optimization for minimal transfers
-  * Prioritizes high-latency layers on faster GPU
+2. Layer Balancing Algorithm (layer_balance.py):
+- Weighted performance profiling:
+  - Short sequences (64 tokens): 20% weight
+  - Long sequences (1024 tokens): 80% weight 
+- Block merging optimization to reduce GPU switching overhead
+- Input/output layer pinning to specific GPUs
 
-File Paths:
-/dualgpuopt/optimizer.py
-/dualgpuopt/gpu_info.py
-/dualgpuopt/layer_balance.py
+3. Memory Monitoring System (memory_monitor.py):
+- Tracks per-model memory requirements:
+  - Base footprint
+  - Per-batch consumption
+  - Per-token growth rate
+  - MoE overhead factors
+- OOM prevention with multi-stage recovery:
+  1. Cache clearing
+  2. Batch reduction
+  3. Memory offloading
+  4. Process termination
 
-Importance Score: 95 - Core GPU optimization algorithms directly impacting model performance and resource utilization
+4. Context Size Optimization:
+```python
+def max_safe_context(model_params, gpu_mem):
+    bytes_per_token = (
+        model_params.layers * 
+        model_params.kv_heads *
+        model_params.head_dim *
+        model_params.dtype_size *
+        model_params.moe_factor
+    )
+    return int(gpu_mem / bytes_per_token)
+```
+
+5. Model-Specific Memory Profiles:
+- LLaMA2: {7B, 13B, 70B variants}
+- Mistral: 7B model
+- Mixtral: 8x7B MoE model
+
+Relevant Files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py 
+- dualgpuopt/memory_monitor.py
+- dualgpuopt/gpu_info.py
 
 $END$
