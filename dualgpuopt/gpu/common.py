@@ -10,15 +10,64 @@ from typing import Dict, Any, List, Optional
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU")
 
-# Try to import GPUMetrics class from telemetry
-try:
-    from dualgpuopt.telemetry import GPUMetrics as GpuMetrics
-    logger.debug("Imported GpuMetrics from telemetry module")
-except ImportError:
-    logger.warning("Failed to import GpuMetrics from telemetry, creating local class")
-    class GpuMetrics:
-        """Fallback GpuMetrics class when telemetry module is not available."""
-        pass
+# Create a local GpuMetrics class to avoid circular imports with telemetry
+class GpuMetrics:
+    """Local GpuMetrics class that matches the structure in telemetry.py"""
+    def __init__(self, 
+                 gpu_id: int, 
+                 name: str, 
+                 utilization: int,
+                 memory_used: int,
+                 memory_total: int,
+                 temperature: int,
+                 power_usage: float,
+                 power_limit: float,
+                 fan_speed: int,
+                 clock_sm: int,
+                 clock_memory: int,
+                 pcie_tx: int,
+                 pcie_rx: int,
+                 timestamp: float,
+                 error_state: bool = False):
+        self.gpu_id = gpu_id
+        self.name = name
+        self.utilization = utilization
+        self.memory_used = memory_used
+        self.memory_total = memory_total
+        self.temperature = temperature
+        self.power_usage = power_usage
+        self.power_limit = power_limit
+        self.fan_speed = fan_speed
+        self.clock_sm = clock_sm
+        self.clock_memory = clock_memory
+        self.pcie_tx = pcie_tx
+        self.pcie_rx = pcie_rx
+        self.timestamp = timestamp
+        self.error_state = error_state
+    
+    @property
+    def memory_percent(self) -> float:
+        """Return memory usage as percentage"""
+        if self.memory_total == 0:
+            return 0.0
+        return (self.memory_used / self.memory_total) * 100.0
+    
+    @property
+    def power_percent(self) -> float:
+        """Return power usage as percentage of limit"""
+        if self.power_limit == 0:
+            return 0.0
+        return (self.power_usage / self.power_limit) * 100.0
+    
+    @property
+    def formatted_memory(self) -> str:
+        """Return formatted memory usage string"""
+        return f"{self.memory_used}/{self.memory_total} MB ({self.memory_percent:.1f}%)"
+    
+    @property
+    def formatted_pcie(self) -> str:
+        """Return formatted PCIe bandwidth usage"""
+        return f"TX: {self.pcie_tx/1024:.1f} MB/s, RX: {self.pcie_rx/1024:.1f} MB/s"
 
 # Try to import our compatibility layer
 try:

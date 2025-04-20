@@ -7,13 +7,16 @@ from typing import Dict, Any, Optional, List, Tuple, Callable
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.ChatTab")
 
-# Optional dependencies - handle gracefully if missing
-try:
-    import requests
-    import sseclient
+# Import from UI compatibility layer instead of directly
+from dualgpuopt.ui.chat_compat import DEPENDENCIES as CHAT_DEPENDENCIES
+
+# Use dependencies from the compatibility layer
+if CHAT_DEPENDENCIES["requests"]["available"] and CHAT_DEPENDENCIES["sseclient"]["available"]:
+    requests = CHAT_DEPENDENCIES["requests"]["module"]
+    sseclient = CHAT_DEPENDENCIES["sseclient"]["module"]
     CHAT_DEPS_AVAILABLE = True
-    logger.info("Chat dependencies available")
-except ImportError:
+    logger.info("Chat dependencies available via compatibility layer")
+else:
     CHAT_DEPS_AVAILABLE = False
     logger.warning("Chat dependencies (requests/sseclient) not available - chat functionality will be limited")
 

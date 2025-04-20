@@ -1,432 +1,347 @@
 #!/usr/bin/env python3
 """
-Dependency installer for DualGPUOptimizer
+DualGPUOptimizer Dependency Installer
 
-This script provides a simple way to install all dependencies required by DualGPUOptimizer.
-It handles both required and optional dependencies with proper error handling.
+This script provides a simple way to install the dependencies required by DualGPUOptimizer.
+It can install core dependencies only or all dependencies.
 """
 import sys
-import subprocess
-import logging
 import os
-from pathlib import Path
-import importlib.util
 import argparse
-from typing import Dict, List, Union, Optional
+import subprocess
+import importlib.util
+from typing import Dict, List, Optional, Set
+import logging
 
-# Set up logging
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-    ]
+    format="%(levelname)s: %(message)s"
 )
+logger = logging.getLogger("DualGPUOpt.Installer")
 
-logger = logging.getLogger("DualGPUOpt.Install")
+# Define dependency categories
+REQUIRED_DEPENDENCIES = {
+    "tkinter": {"package": "tk", "description": "Base UI framework", "test_import": "tkinter"},
+}
 
-def is_venv() -> bool:
-    """
-    Check if the script is running in a virtual environment
-    
-    Returns:
-        True if running in a virtual environment, False otherwise
-    """
-    return hasattr(sys, 'real_prefix') or (
-        hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix
-    )
+CORE_DEPENDENCIES = {
+    "pynvml": {"package": "pynvml>=11.0.0", "description": "NVIDIA GPU monitoring"},
+    "psutil": {"package": "psutil>=5.9.0", "description": "System resource monitoring"},
+    "numpy": {"package": "numpy>=1.24.0", "description": "Optimization algorithms"},
+}
 
-def get_python_executable() -> str:
-    """
-    Get the current Python executable path
-    
-    Returns:
-        Path to the Python executable
-    """
-    return sys.executable
+UI_DEPENDENCIES = {
+    "ttkbootstrap": {"package": "ttkbootstrap>=1.0.0", "description": "Enhanced UI appearance"},
+    "ttkthemes": {"package": "ttkthemes>=3.2.0", "description": "Additional UI themes"},
+    "ttkwidgets": {"package": "ttkwidgets>=0.13.0", "description": "Additional UI widgets"},
+}
 
-def run_command(cmd: List[str], cwd: Optional[str] = None) -> bool:
-    """
-    Run a shell command
+CHAT_DEPENDENCIES = {
+    "requests": {"package": "requests>=2.25.0", "description": "API communication"},
+    "sseclient": {"package": "sseclient-py>=1.7.2", "description": "Streaming events"},
+}
+
+ML_DEPENDENCIES = {
+    "torch": {"package": "torch==2.5.1", "description": "PyTorch for advanced features"},
+    "torchvision": {"package": "torchvision==0.20.1", "description": "PyTorch vision utils"},
+    "torchaudio": {"package": "torchaudio==2.5.1", "description": "PyTorch audio utils"},
+}
+
+# All dependencies
+ALL_DEPENDENCIES = {
+    **REQUIRED_DEPENDENCIES,
+    **CORE_DEPENDENCIES, 
+    **UI_DEPENDENCIES, 
+    **CHAT_DEPENDENCIES, 
+    **ML_DEPENDENCIES
+}
+
+def check_dependency(name: str) -> bool:
+    """Check if a dependency is available
     
     Args:
-        cmd: Command to run as a list of arguments
-        cwd: Working directory to run the command in
+        name: Name of the dependency to check
         
     Returns:
-        True if the command was successful, False otherwise
+        True if available, False otherwise
     """
-    try:
-        logger.info(f"Running command: {' '.join(cmd)}")
-        result = subprocess.run(
-            cmd,
-            cwd=cwd,
-            check=True,
-            text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE
-        )
-        
-        # Log output if there is any
-        if result.stdout:
-            for line in result.stdout.splitlines():
-                logger.debug(line)
-                
-        return True
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Command failed with exit code {e.returncode}")
-        logger.error(f"Error output: {e.stderr}")
-        return False
-    except Exception as e:
-        logger.error(f"Error running command: {e}")
-        return False
-
-def check_tkinter() -> bool:
-    """
-    Check if tkinter is installed
-    
-    Returns:
-        True if tkinter is installed, False otherwise
-    """
-    try:
-        import tkinter
-        logger.info("tkinter is installed")
-        return True
-    except ImportError:
-        logger.error("tkinter is not installed")
-        return False
-
-def install_pip_dependencies(dependencies: List[str], upgrade: bool = False) -> bool:
-    """
-    Install Python dependencies using pip
-    
-    Args:
-        dependencies: List of dependencies to install
-        upgrade: Whether to upgrade existing packages
-        
-    Returns:
-        True if installation was successful, False otherwise
-    """
-    if not dependencies:
-        logger.info("No dependencies to install")
-        return True
-    
-    pip_cmd = [get_python_executable(), "-m", "pip", "install"]
-    
-    if upgrade:
-        pip_cmd.append("--upgrade")
-    
-    pip_cmd.extend(dependencies)
-    
-    result = run_command(pip_cmd)
-    if result:
-        logger.info("Dependencies installed successfully")
-    else:
-        logger.error("Failed to install dependencies")
-    
-    return result
-
-def ensure_pip_and_setuptools() -> bool:
-    """
-    Ensure pip and setuptools are up to date
-    
-    Returns:
-        True if pip and setuptools are installed and up to date, False otherwise
-    """
-    return install_pip_dependencies(["pip", "setuptools", "wheel"], upgrade=True)
-
-def handle_tkinter_installation() -> bool:
-    """
-    Provide instructions for installing tkinter
-    
-    Returns:
-        True if tkinter is installed, False otherwise
-    """
-    if check_tkinter():
-        return True
-    
-    logger.error("tkinter is required but not installed.")
-    logger.error("Please install tkinter using your operating system's package manager:")
-    
-    if sys.platform == 'win32':
-        logger.error("Windows: Reinstall Python and ensure 'tcl/tk and IDLE' is checked")
-    elif sys.platform == 'darwin':
-        logger.error("macOS: Run 'brew install python-tk' or reinstall Python")
-    else:
-        logger.error("Linux (Ubuntu/Debian): Run 'sudo apt-get install python3-tk'")
-        logger.error("Linux (Fedora): Run 'sudo dnf install python3-tkinter'")
-        logger.error("Linux (Arch): Run 'sudo pacman -S tk'")
-    
-    return check_tkinter()
-
-def get_dependency_manager():
-    """
-    Try to import the dependency manager module
-    
-    Returns:
-        Dependency manager module if available, None otherwise
-    """
-    try:
-        # Try to add the current directory to sys.path
-        current_dir = str(Path.cwd())
-        if current_dir not in sys.path:
-            sys.path.insert(0, current_dir)
-        
-        # Try to import the dependency manager
-        import dualgpuopt.dependency_manager as dm
-        logger.info("Dependency manager imported successfully")
-        return dm
-    except ImportError as e:
-        logger.warning(f"Could not import dependency manager: {e}")
-        
-        # Try to directly import from a relative path
+    if name == "tkinter":
         try:
-            # Try to import the module from the dualgpuopt directory
-            spec = importlib.util.spec_from_file_location(
-                "dependency_manager",
-                str(Path("dualgpuopt") / "dependency_manager.py")
-            )
-            dm = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(dm)
-            logger.info("Dependency manager imported from file path")
-            return dm
-        except Exception as e2:
-            logger.error(f"Could not import dependency manager from file: {e2}")
-            return None
+            import tkinter
+            return True
+        except ImportError:
+            return False
+    else:
+        return importlib.util.find_spec(name) is not None
 
-def create_virtual_environment(venv_path: Union[str, Path]) -> bool:
+def get_missing_dependencies() -> Dict[str, List[str]]:
+    """Check all dependencies and return missing ones by category
+    
+    Returns:
+        Dictionary with categories as keys and lists of missing dependencies as values
     """
-    Create a virtual environment
+    missing = {}
+    
+    # Check required dependencies
+    required_missing = [name for name in REQUIRED_DEPENDENCIES if not check_dependency(name)]
+    if required_missing:
+        missing["required"] = required_missing
+    
+    # Check core dependencies
+    core_missing = [name for name in CORE_DEPENDENCIES if not check_dependency(name)]
+    if core_missing:
+        missing["core"] = core_missing
+    
+    # Check UI dependencies
+    ui_missing = [name for name in UI_DEPENDENCIES if not check_dependency(name)]
+    if ui_missing:
+        missing["ui"] = ui_missing
+    
+    # Check chat dependencies
+    chat_missing = [name for name in CHAT_DEPENDENCIES if not check_dependency(name)]
+    if chat_missing:
+        missing["chat"] = chat_missing
+    
+    # Check ML dependencies
+    ml_missing = [name for name in ML_DEPENDENCIES if not check_dependency(name)]
+    if ml_missing:
+        missing["ml"] = ml_missing
+    
+    return missing
+
+def get_installation_commands(missing_deps: Dict[str, List[str]], install_categories: Set[str]) -> List[str]:
+    """Get pip installation commands for missing dependencies
     
     Args:
-        venv_path: Path to create the virtual environment
+        missing_deps: Dictionary with categories as keys and lists of missing dependencies as values
+        install_categories: Set of categories to install
         
     Returns:
-        True if the virtual environment was created, False otherwise
+        List of pip install commands
     """
-    venv_path = Path(venv_path)
+    commands = []
     
-    if venv_path.exists():
-        logger.info(f"Virtual environment already exists at {venv_path}")
-        return True
+    # Build installation commands by category
+    if "required" in missing_deps and "required" in install_categories:
+        required_packages = " ".join(
+            REQUIRED_DEPENDENCIES[name]["package"] for name in missing_deps["required"]
+            if name != "tkinter"  # tkinter requires special handling
+        )
+        if required_packages:
+            commands.append(f"pip install {required_packages}")
     
-    logger.info(f"Creating virtual environment at {venv_path}")
+    if "core" in missing_deps and "core" in install_categories:
+        core_packages = " ".join(CORE_DEPENDENCIES[name]["package"] for name in missing_deps["core"])
+        if core_packages:
+            commands.append(f"pip install {core_packages}")
     
-    try:
-        import venv
-        venv.create(venv_path, with_pip=True)
-        logger.info(f"Virtual environment created at {venv_path}")
-        return True
-    except Exception as e:
-        logger.error(f"Failed to create virtual environment: {e}")
-        return False
+    if "ui" in missing_deps and "ui" in install_categories:
+        ui_packages = " ".join(UI_DEPENDENCIES[name]["package"] for name in missing_deps["ui"])
+        if ui_packages:
+            commands.append(f"pip install {ui_packages}")
+    
+    if "chat" in missing_deps and "chat" in install_categories:
+        chat_packages = " ".join(CHAT_DEPENDENCIES[name]["package"] for name in missing_deps["chat"])
+        if chat_packages:
+            commands.append(f"pip install {chat_packages}")
+    
+    if "ml" in missing_deps and "ml" in install_categories:
+        ml_packages = " ".join(ML_DEPENDENCIES[name]["package"] for name in missing_deps["ml"])
+        if ml_packages:
+            commands.append(f"pip install {ml_packages}")
+    
+    return commands
 
-def parse_args():
+def print_dependency_status() -> None:
+    """Print status of all dependencies"""
+    print("\nDualGPUOptimizer Dependency Check")
+    print("===============================\n")
+    
+    # Check Python version
+    py_version = sys.version.split()[0]
+    print(f"Python version: {py_version}")
+    if float(py_version.split('.')[0] + '.' + py_version.split('.')[1]) < 3.8:
+        print("  ❌ Python 3.8+ is recommended. Some features may not work correctly.")
+    else:
+        print("  ✅ Python version is compatible.")
+    
+    print("\nRequired Dependencies:")
+    for name, info in REQUIRED_DEPENDENCIES.items():
+        if check_dependency(name):
+            print(f"  ✅ {name}: {info['description']}")
+        else:
+            print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
+    
+    print("\nCore Dependencies:")
+    for name, info in CORE_DEPENDENCIES.items():
+        if check_dependency(name):
+            print(f"  ✅ {name}: {info['description']}")
+        else:
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available but features limited")
+    
+    print("\nUI Dependencies:")
+    for name, info in UI_DEPENDENCIES.items():
+        if check_dependency(name):
+            print(f"  ✅ {name}: {info['description']}")
+        else:
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic UI")
+    
+    print("\nChat Dependencies:")
+    for name, info in CHAT_DEPENDENCIES.items():
+        if check_dependency(name):
+            print(f"  ✅ {name}: {info['description']}")
+        else:
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with limited chat")
+    
+    print("\nMachine Learning Dependencies:")
+    for name, info in ML_DEPENDENCIES.items():
+        if check_dependency(name):
+            print(f"  ✅ {name}: {info['description']}")
+        else:
+            print(f"  ❌ {name}: {info['description']} - OPTIONAL for advanced features")
+    
+    # Get missing dependencies
+    missing = get_missing_dependencies()
+    if missing:
+        print("\nMissing Dependencies:")
+        for category, deps in missing.items():
+            print(f"  {category.capitalize()}: {', '.join(deps)}")
+    else:
+        print("\nAll dependencies are installed! ✅")
+
+def install_dependencies(args: argparse.Namespace) -> int:
+    """Install missing dependencies based on command-line arguments
+    
+    Args:
+        args: Command-line arguments
+        
+    Returns:
+        Exit code (0 for success, 1 for failure)
     """
-    Parse command line arguments
+    # Check for missing dependencies
+    missing = get_missing_dependencies()
+    if not missing:
+        logger.info("All dependencies are already installed!")
+        return 0
+    
+    # Determine which categories to install
+    install_categories = set()
+    if args.core_only:
+        install_categories.update(["required", "core"])
+    elif args.ui_only:
+        install_categories.update(["required", "ui"])
+    elif args.chat_only:
+        install_categories.update(["required", "chat"])
+    elif args.ml_only:
+        install_categories.update(["required", "ml"])
+    else:
+        # Install all by default
+        install_categories.update(["required", "core", "ui", "chat", "ml"])
+    
+    # Get installation commands
+    commands = get_installation_commands(missing, install_categories)
+    if not commands:
+        logger.info("No installable dependencies found in selected categories")
+        return 0
+    
+    # Check for tkinter separately
+    if "required" in missing and "tkinter" in missing["required"]:
+        logger.warning("tkinter is required and must be installed through your system package manager")
+        if sys.platform == "win32":
+            logger.info("For Windows, reinstall Python and check 'tcl/tk and IDLE'")
+        elif sys.platform == "darwin":
+            logger.info("For macOS, use 'brew install python-tk'")
+        else:
+            logger.info("For Linux, use 'apt install python3-tk' or equivalent")
+    
+    # Print installation summary
+    print("\nInstallation Summary:")
+    for category in install_categories:
+        if category in missing:
+            print(f"  {category.capitalize()}: {', '.join(missing[category])}")
+    
+    print("\nCommands to execute:")
+    for cmd in commands:
+        print(f"  {cmd}")
+    
+    # Confirm installation
+    if not args.yes:
+        response = input("\nProceed with installation? [y/N] ").strip().lower()
+        if response != 'y':
+            logger.info("Installation cancelled by user")
+            return 0
+    
+    # Execute installation commands
+    success = True
+    for cmd in commands:
+        logger.info(f"Running: {cmd}")
+        try:
+            result = subprocess.run(cmd, shell=True, check=True)
+            if result.returncode != 0:
+                logger.error(f"Command failed with exit code {result.returncode}")
+                success = False
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Command failed: {e}")
+            success = False
+        except Exception as e:
+            logger.error(f"Error during installation: {e}")
+            success = False
+    
+    # Print final status
+    if success:
+        logger.info("Installation completed successfully!")
+        # Re-check to make sure everything installed
+        new_missing = get_missing_dependencies()
+        still_missing = []
+        for category in install_categories:
+            if category in new_missing:
+                still_missing.extend(new_missing[category])
+        
+        if still_missing:
+            logger.warning(f"Some dependencies could not be installed: {', '.join(still_missing)}")
+            if "tkinter" in still_missing:
+                logger.warning("Note: tkinter must be installed through your system package manager")
+            return 1
+        return 0
+    else:
+        logger.error("Installation failed!")
+        return 1
+
+def main() -> int:
+    """Main entry point
     
     Returns:
-        Parsed command line arguments
+        Exit code
     """
-    parser = argparse.ArgumentParser(
-        description="Install dependencies for DualGPUOptimizer"
-    )
+    parser = argparse.ArgumentParser(description="DualGPUOptimizer Dependency Installer")
     
-    parser.add_argument(
-        "--core-only",
-        action="store_true",
-        help="Only install core dependencies"
-    )
+    # Dependency selection options
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("--all", action="store_true", help="Install all dependencies (default)")
+    group.add_argument("--core-only", action="store_true", help="Install only core dependencies")
+    group.add_argument("--ui-only", action="store_true", help="Install only UI dependencies")
+    group.add_argument("--chat-only", action="store_true", help="Install only chat dependencies")
+    group.add_argument("--ml-only", action="store_true", help="Install only ML dependencies")
     
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Install all dependencies, including optional ones"
-    )
+    # Other options
+    parser.add_argument("--check", action="store_true", help="Check dependencies and exit")
+    parser.add_argument("-y", "--yes", action="store_true", help="Answer yes to all prompts")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
     
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force reinstallation of dependencies"
-    )
+    args = parser.parse_args()
     
-    parser.add_argument(
-        "--venv",
-        type=str,
-        help="Create or use a virtual environment at the specified path"
-    )
-    
-    parser.add_argument(
-        "--verbose",
-        action="store_true",
-        help="Enable verbose logging"
-    )
-    
-    return parser.parse_args()
-
-def main():
-    """
-    Main function
-    """
-    args = parse_args()
-    
-    # Set verbose logging if requested
+    # Configure logging based on verbosity
     if args.verbose:
         logging.getLogger().setLevel(logging.DEBUG)
-        logger.debug("Verbose logging enabled")
     
-    # Check if we're in a virtual environment
-    if not is_venv() and not args.venv:
-        logger.warning("Not running in a virtual environment.")
-        logger.warning("It's recommended to use a virtual environment to avoid dependency conflicts.")
-        logger.warning("Use --venv to create a virtual environment.")
-        
-        if not confirm("Continue without virtual environment?"):
-            logger.info("Installation cancelled.")
-            return
+    # Just check dependencies if requested
+    if args.check:
+        print_dependency_status()
+        return 0
     
-    # Create or activate virtual environment if requested
-    if args.venv:
-        venv_path = Path(args.venv)
-        
-        # Create virtual environment if it doesn't exist
-        if not venv_path.exists():
-            if not create_virtual_environment(venv_path):
-                logger.error("Failed to create virtual environment.")
-                return
-            
-            logger.info(f"Virtual environment created at {venv_path}")
-            logger.info(f"Please activate it and run this script again within the virtual environment:")
-            
-            if sys.platform == 'win32':
-                logger.info(f"{venv_path}\\Scripts\\activate")
-            else:
-                logger.info(f"source {venv_path}/bin/activate")
-            
-            return
-        else:
-            logger.info(f"Using existing virtual environment at {venv_path}")
-            
-            # If we're not in the specified virtual environment, suggest activation
-            if venv_path != Path(sys.prefix):
-                logger.warning(f"Not running in the specified virtual environment.")
-                logger.warning(f"Please activate it and run this script again:")
-                
-                if sys.platform == 'win32':
-                    logger.warning(f"{venv_path}\\Scripts\\activate")
-                else:
-                    logger.warning(f"source {venv_path}/bin/activate")
-                
-                return
-    
-    # Ensure pip and setuptools are up to date
-    logger.info("Checking pip and setuptools...")
-    if not ensure_pip_and_setuptools():
-        logger.error("Failed to update pip and setuptools.")
-        return
-    
-    # Check for tkinter
-    logger.info("Checking for tkinter...")
-    if not handle_tkinter_installation():
-        logger.error("tkinter is required but not installed.")
-        logger.error("Please install tkinter and try again.")
-        return
-    
-    # Try to get the dependency manager
-    dm = get_dependency_manager()
-    
-    if dm:
-        logger.info("Using dependency manager for installation")
-        
-        # Initialize dependency status
-        dm.initialize_dependency_status()
-        
-        # Get missing dependencies
-        missing = dm.get_missing_dependencies()
-        
-        if not missing:
-            logger.info("All dependencies are already installed!")
-            return
-        
-        # Filter dependencies based on flags
-        if args.core_only and not args.all:
-            # Only keep required and core dependencies
-            missing = {k: v for k, v in missing.items() if k in ["required", "core"]}
-        
-        # Install dependencies
-        success = dm.install_dependencies(missing, interactive=not args.force)
-        
-        if success:
-            logger.info("All dependencies installed successfully!")
-        else:
-            logger.error("Failed to install some dependencies.")
-            logger.info("Please check the error messages and try again.")
-    else:
-        logger.warning("Dependency manager not available. Using basic installation.")
-        
-        # Define core dependencies
-        core_deps = [
-            "pynvml>=11.0.0",
-            "psutil>=5.9.0",
-            "numpy>=1.24.0",
-        ]
-        
-        # Define optional dependencies
-        optional_deps = []
-        
-        if not args.core_only or args.all:
-            optional_deps.extend([
-                "ttkbootstrap>=1.0.0",
-                "ttkthemes>=3.2.0",
-                "ttkwidgets>=0.13.0",
-                "requests>=2.25.0",
-                "sseclient-py>=1.7.2",
-            ])
-        
-        if args.all:
-            optional_deps.extend([
-                "torch==2.5.1",
-                "torchvision==0.20.1",
-                "torchaudio==2.5.1",
-            ])
-        
-        # Install dependencies
-        logger.info("Installing core dependencies...")
-        if not install_pip_dependencies(core_deps, upgrade=args.force):
-            logger.error("Failed to install core dependencies.")
-            return
-        
-        if optional_deps:
-            logger.info("Installing optional dependencies...")
-            if not install_pip_dependencies(optional_deps, upgrade=args.force):
-                logger.warning("Failed to install some optional dependencies.")
-        
-        logger.info("Dependencies installed successfully!")
-
-def confirm(prompt: str) -> bool:
-    """
-    Ask for user confirmation
-    
-    Args:
-        prompt: Prompt to display
-        
-    Returns:
-        True if user confirms, False otherwise
-    """
-    while True:
-        response = input(f"{prompt} [y/N] ").strip().lower()
-        if not response or response == 'n':
-            return False
-        elif response == 'y':
-            return True
-        else:
-            print("Please enter 'y' or 'n'")
+    # Install dependencies
+    return install_dependencies(args)
 
 if __name__ == "__main__":
-    try:
-        main()
-    except KeyboardInterrupt:
-        logger.info("Installation cancelled by user.")
-    except Exception as e:
-        logger.exception(f"Unexpected error: {e}")
-        sys.exit(1) 
+    sys.exit(main()) 

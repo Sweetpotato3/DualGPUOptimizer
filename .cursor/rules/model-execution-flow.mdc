@@ -1,55 +1,51 @@
 ---
-description: Model execution and optimization rules for large language models across multiple GPUs, handling tensor parallelism and memory management.
-globs: **/optimizer.py,**/commands/*.py,**/runner.py,**/ctx_size.py,**/layer_balance.py
+description: Documents the unique model execution flows, command generation, and GPU resource allocation in dual-GPU optimizer solutions.
+globs: **/optimizer.py,**/launcher*.py,**/gpu_info.py,**/gpu/**,**/commands/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized logic for optimizing large language model inference across multiple GPUs:
+The model execution flow implements specialized GPU management and model deployment across multiple GPUs:
 
-## Core Model Execution Components
+## Command Generation System (dualgpuopt/optimizer.py)
+- Generates framework-specific commands for llama.cpp and vLLM execution
+- Computes optimal tensor splits based on relative GPU memory capacities and model requirements
+- Calculates appropriate memory fractions for balanced distribution between GPUs
+- Configures framework-specific parameters like context length, batch size and tensor parallelism
 
-1. **Framework-Specific Command Generation**
-- Generates optimized commands for llama.cpp and vLLM frameworks
-- Configures tensor parallel size based on available GPUs 
-- Implements memory split ratios based on relative GPU VRAM sizes
-- Handles specialized quantization parameters and context lengths
+## Launcher Orchestration (dualgpuopt/gui/launcher/launch_controller.py)
+- Manages model deployment processes across GPUs
+- Validates model compatibility with available GPU configurations
+- Handles launch sequence orchestration with failure recovery
+- Monitors execution metrics like GPU utilization and memory usage
+- Implements graceful shutdown and error handling
 
-2. **Dynamic Context Size Management**
-- Calculates maximum safe context lengths based on:
-  - Available GPU VRAM
-  - Model architecture (MQA/GQA/Standard)
-  - KV cache requirements
-  - MoE (Mixture of Experts) configurations
-- Automatically detects model architecture from model names
-- Implements safety margins to prevent OOM conditions
+## Resource Allocation Flow
+- Analyzes GPU capabilities including VRAM size and compute capability
+- Generates optimal layer distribution across GPUs based on profiling
+- Calculates safe maximum context sizes per device
+- Manages VRAM quotas and overflow handling
+- Monitors memory pressure with warning thresholds
 
-3. **Layer Distribution Optimization** 
-- Profiles layer execution times across sequence lengths
-- Distributes transformer layers between GPUs based on:
-  - GPU memory capacity
-  - Layer performance characteristics 
-  - Memory quotas per GPU
-- Optimizes for contiguous layer blocks to reduce inter-GPU communication
+## Framework-Specific Optimizations
+- llama.cpp:
+  - GPU layer split ratios based on relative memory capacity
+  - Layer offloading between devices
+  - Tensor parallel size configuration
+  
+- vLLM: 
+  - Memory utilization percentage allocation
+  - Tensor parallel configuration
+  - KV cache management across GPUs
 
-4. **Memory Recovery Strategies**
-- Implements tiered recovery approaches:
-  - CUDA cache clearing
-  - Batch size reduction
-  - Model offloading
-  - Process termination
-- Tracks memory pressure and triggers recovery before OOM errors
-
-## Key Files
-
-- `dualgpuopt/ctx_size.py`: Context size calculations and model detection
-- `dualgpuopt/layer_balance.py`: Layer distribution optimization
-- `dualgpuopt/optimizer.py`: Command generation and GPU split optimization
-- `dualgpuopt/memory/recovery.py`: Memory recovery strategies
-- `dualgpuopt/commands/gpu_commands.py`: Framework-specific command builders
-
-The execution flow focuses on optimizing model inference across multiple GPUs while maintaining stability and preventing out-of-memory conditions. It handles framework-specific requirements, dynamic context sizing, and intelligent layer distribution.
+Key file paths:
+```
+dualgpuopt/optimizer.py
+dualgpuopt/gui/launcher/launch_controller.py
+dualgpuopt/gui/launcher/parameter_resolver.py
+dualgpuopt/gpu/monitor.py
+```
 
 $END$

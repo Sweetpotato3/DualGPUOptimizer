@@ -10,6 +10,29 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 
+## Recent Improvements
+
+### Circular Import Resolution
+- Fixed circular dependencies between telemetry and GPU modules
+- Created independent local classes to avoid import cycles
+- Improved module initialization with proper error handling
+
+### Robust Chat Dependency Management
+- Implemented a compatibility layer for chat module dependencies
+- Added fallback functionality when chat dependencies are missing
+- Provided helpful installation instructions for users
+
+### Simplified Dependency Installation
+- Added a new standalone `install_deps.py` script for easy dependency management
+- Support for targeted installation of specific dependency categories (core, UI, chat, ML)
+- Clearer feedback about missing dependencies and installation status
+- Automatic environment detection and configuration
+
+### Better Application Startup
+- Graceful startup even with minimal dependencies
+- Clearer error messages when dependencies are missing
+- Added fallback UI mode when optional UI packages are unavailable
+
 ## New: Enhanced Dependency Management System
 
 DualGPUOptimizer now features a robust dependency management system that:
@@ -140,6 +163,11 @@ DualGPUOptimizer now supports configuration through environment variables:
    # Install all dependencies including optional ones
    python install_deps.py --all
    
+   # Install specific dependency categories
+   python install_deps.py --ui-only
+   python install_deps.py --chat-only
+   python install_deps.py --ml-only
+   
    # Or use the module-based installer
    python -m dualgpuopt --install-deps
    ```
@@ -257,13 +285,13 @@ If you encounter missing dependency errors, use the built-in dependency installe
 
 ```
 # Check which dependencies are missing
-python -m dualgpuopt --check-deps
+python install_deps.py --check
 
 # Install missing dependencies
-python -m dualgpuopt --install-deps
-
-# Or use the standalone installer
 python install_deps.py --all
+
+# Or use the module-based installer
+python -m dualgpuopt --install-deps
 ```
 
 For manual installation of specific package groups:
@@ -289,7 +317,7 @@ If the application fails to start:
 1. Try the direct application first: `python run_direct_app.py`
 2. Check the logs in the `logs` directory for specific errors
 3. Run with verbose logging: `python -m dualgpuopt --verbose`
-4. Verify dependencies are installed: `python -m dualgpuopt --check-deps`
+4. Verify dependencies are installed: `python install_deps.py --check`
 
 ### GPU Detection Issues
 
