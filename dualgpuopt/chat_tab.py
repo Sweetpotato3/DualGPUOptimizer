@@ -1,10 +1,68 @@
 from __future__ import annotations
-import queue, threading, time, requests, sseclient
-import ttkbootstrap as ttk
+import queue, threading, time
+import logging
 import tkinter as tk
-from ttkbootstrap.widgets import Meter
-from ttkbootstrap.scrolled import ScrolledFrame
-from dualgpuopt.ui.chat_widgets import Bubble
+from typing import Dict, Any, Optional, List, Tuple, Callable
+
+# Configure logger
+logger = logging.getLogger("DualGPUOpt.ChatTab")
+
+# Optional dependencies - handle gracefully if missing
+try:
+    import requests
+    import sseclient
+    CHAT_DEPS_AVAILABLE = True
+    logger.info("Chat dependencies available")
+except ImportError:
+    CHAT_DEPS_AVAILABLE = False
+    logger.warning("Chat dependencies (requests/sseclient) not available - chat functionality will be limited")
+
+# Try importing ttkbootstrap - fall back to standard ttk if not available
+try:
+    import ttkbootstrap as ttk
+    from ttkbootstrap.widgets import Meter
+    from ttkbootstrap.scrolled import ScrolledFrame
+    TTKBOOTSTRAP_AVAILABLE = True
+except ImportError:
+    import tkinter.ttk as ttk
+    TTKBOOTSTRAP_AVAILABLE = False
+    # Mock the missing classes
+    class Meter:
+        def __init__(self, *args, **kwargs):
+            self.frame = ttk.Frame(*args)
+            self.label = ttk.Label(self.frame, text="Meter not available")
+            self.label.pack()
+            
+        def pack(self, *args, **kwargs):
+            self.frame.pack(*args, **kwargs)
+            
+        def configure(self, **kwargs):
+            pass
+    
+    class ScrolledFrame(ttk.Frame):
+        def __init__(self, parent, **kwargs):
+            super().__init__(parent)
+            self.canvas = tk.Canvas(self)
+            self.canvas.pack(fill="both", expand=True)
+            
+        def pack(self, *args, **kwargs):
+            super().pack(*args, **kwargs)
+
+# Try to import the UI chat widgets
+try:
+    from dualgpuopt.ui.chat_widgets import Bubble
+    CHAT_WIDGETS_AVAILABLE = True
+except ImportError:
+    CHAT_WIDGETS_AVAILABLE = False
+    # Create a fallback Bubble implementation
+    class Bubble(ttk.Frame):
+        def __init__(self, parent, text, is_user=False):
+            super().__init__(parent)
+            bg_color = "#3D2A50" if not is_user else "#6A3EBD"
+            self.label = ttk.Label(self, text=text, wraplength=400, 
+                                  background=bg_color, padding=10)
+            self.label.pack(side="right" if is_user else "left", anchor="e" if is_user else "w",
+                           pady=5, padx=5)
 
 BACKENDS = [
     {"name": "Dolphin 34B AWQ", "hf_id": "TheBloke/dolphin-2.2-yi-34b-200k-AWQ",
@@ -20,23 +78,14 @@ class ChatTab(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.rowconfigure(1, weight=1)  # Message area should expand
         
+        # Check for required dependencies
+        if not CHAT_DEPS_AVAILABLE:
+            self._build_dependency_notice()
+            return
+            
         # Build interface components
         self._build_header()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        
         # Create a horizontal paned window for resizable chat layout
         self.h_paned = ttk.PanedWindow(self, orient=tk.HORIZONTAL)
         self.h_paned.grid(row=1, column=0, sticky="nsew")
@@ -64,6 +113,40 @@ class ChatTab(ttk.Frame):
         
         # Bind to resize event
         self.bind("<Configure>", self._on_resize)
+
+    def _build_dependency_notice(self):
+        """Build a notice about missing dependencies"""
+        notice_frame = ttk.Frame(self, padding=20)
+        notice_frame.grid(row=0, column=0, sticky="nsew")
+        
+        title = ttk.Label(notice_frame, text="Chat Functionality Unavailable", 
+                         font=("Segoe UI", 16, "bold"))
+        title.pack(pady=(20, 10))
+        
+        msg = "The chat functionality requires additional dependencies that are not installed:"
+        ttk.Label(notice_frame, text=msg).pack(pady=5)
+        
+        deps = ttk.Label(notice_frame, text="• requests\n• sseclient-py", justify="left")
+        deps.pack(pady=5)
+        
+        install_msg = "You can install these dependencies with:"
+        ttk.Label(notice_frame, text=install_msg).pack(pady=5)
+        
+        install_cmd = ttk.Label(notice_frame, text="pip install requests sseclient-py", 
+                               font=("Courier New", 10), background="#241934", padding=10)
+        install_cmd.pack(pady=5)
+        
+        alt_msg = "Or run the dependency installer:"
+        ttk.Label(notice_frame, text=alt_msg).pack(pady=5)
+        
+        alt_cmd = ttk.Label(notice_frame, text="python -m dualgpuopt --install-deps", 
+                           font=("Courier New", 10), background="#241934", padding=10)
+        alt_cmd.pack(pady=5)
+        
+        # Add function availability info
+        functions = ttk.Label(notice_frame, 
+                             text="This tab will remain available but chat functionality will be disabled.")
+        functions.pack(pady=20)
 
     # ------------ UI parts -------------
     def _build_header(self):
@@ -167,15 +250,20 @@ class ChatTab(ttk.Frame):
         
         # Status indicators on the right
         try:
-            self.meter = Meter(meter_frame, subtext="tok/s", bootstyle="success", 
-                              amounttotal=100, metersize=60, stripethickness=10)
-            self.meter.pack(side="right")
-            
+            if TTKBOOTSTRAP_AVAILABLE:
+                self.meter = Meter(meter_frame, subtext="tok/s", bootstyle="success", 
+                                  amounttotal=100, metersize=60, stripethickness=10)
+                self.meter.pack(side="right")
+            else:
+                # Fallback for when ttkbootstrap is not available
+                self.meter = None
+                ttk.Label(meter_frame, text="tok/s").pack(side="right")
+                
             # Add token count label
             self.token_label = ttk.Label(meter_frame, text="0 tokens")
             self.token_label.pack(side="right", padx=(0, 15))
         except Exception as e:
-            print(f"Could not create meter: {e}")
+            logger.error(f"Could not create meter: {e}")
             self.meter = None
             self.token_label = ttk.Label(meter_frame, text="0 tokens")
             self.token_label.pack(side="right", padx=(0, 15))
@@ -261,14 +349,30 @@ class ChatTab(ttk.Frame):
         self.sf.update_idletasks()
 
     def _on_send(self, *_):
+        # Check if chat dependencies are available
+        if not CHAT_DEPS_AVAILABLE:
+            self._show_dependency_error()
+            return
+            
         prompt = self.entry.get("1.0", "end").strip()
         if not prompt: return
         self.last_prompt = prompt
         self.entry.delete("1.0", "end")
         self._append(f"<b>You:</b> {prompt}", user=True)
         self._start_stream(prompt)
+        
+    def _show_dependency_error(self):
+        """Show a message about missing dependencies"""
+        self._append("<b>System:</b> Chat functionality requires additional dependencies.", user=False)
+        self._append("<b>System:</b> Please install 'requests' and 'sseclient-py' to enable chat.", user=False)
+        self._append("<b>System:</b> Run: <code>pip install requests sseclient-py</code>", user=False)
 
     def _regen(self):
+        # Check if chat dependencies are available
+        if not CHAT_DEPS_AVAILABLE:
+            self._show_dependency_error()
+            return
+            
         if self.last_prompt: self._start_stream(self.last_prompt)
 
     def _start_stream(self, prompt: str):
@@ -277,11 +381,17 @@ class ChatTab(ttk.Frame):
         msg = cfg["template"].format(prompt=prompt, system="You are a helpful assistant.")
         self.streaming = True
         if self.meter is not None:
-            self.meter.amountused = 0
+            self.meter.configure(amountused=0)
         threading.Thread(target=self._worker,
                          args=(cfg["hf_id"], msg), daemon=True).start()
 
     def _worker(self, model_id: str, msg: str):
+        if not CHAT_DEPS_AVAILABLE:
+            self.out_q.put(("chat_chunk", "<b>Error:</b> Chat dependencies not available"))
+            self.out_q.put(("chat_end", ""))
+            self.streaming = False
+            return
+            
         t0 = time.perf_counter()
         tok = 0
         try:
@@ -299,6 +409,7 @@ class ChatTab(ttk.Frame):
                     self.out_q.put(("chat_chunk", delta))
             self.out_q.put(("chat_end", ""))
         except Exception as e:
+            logger.error(f"Chat error: {e}")
             self.out_q.put(("chat_chunk", f"<br><i>Error: {e}</i>"))
         finally:
             self.streaming = False
@@ -354,12 +465,13 @@ class ChatTab(ttk.Frame):
                 self.speed_var.set(f"{int(val)} tok/s")
 
     def _clear(self):
-        for w in self.msg_frame.winfo_children(): w.destroy()
+        if hasattr(self, 'msg_frame'):
+            for w in self.msg_frame.winfo_children(): w.destroy()
 
     def _load_history(self, event=None):
         """Load a previous chat from history"""
         # Get selected item
-        if self.history_list.curselection():
+        if hasattr(self, 'history_list') and self.history_list.curselection():
             idx = self.history_list.curselection()[0]
             selected = self.history_list.get(idx)
             # In a real implementation, this would load the chat
@@ -374,7 +486,8 @@ class ChatTab(ttk.Frame):
     
     def _clear_history(self):
         """Clear the chat history"""
-        self.history_list.delete(0, tk.END)
+        if hasattr(self, 'history_list'):
+            self.history_list.delete(0, tk.END)
 
     # ------------ responsive layout --------------
     def _on_resize(self, event=None):
@@ -384,6 +497,10 @@ class ChatTab(ttk.Frame):
     
     def _update_layout(self):
         """Update layout based on current window size"""
+        # Skip if this is the dependency notice version of the tab
+        if not hasattr(self, 'entry') or not hasattr(self, 'h_paned'):
+            return
+            
         width = self.winfo_width()
         
         # Adjust text entry height based on window width

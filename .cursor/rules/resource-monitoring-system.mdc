@@ -1,57 +1,56 @@
 ---
-description: Rules for implementing GPU resource monitoring, telemetry collection, and alert systems in dual GPU optimization scenarios
-globs: 
+description: Resource monitoring and telemetry system specification for managing GPU metrics, utilization tracking, and alerting.
+globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements real-time GPU telemetry collection and alerting with these key components:
+## Core Monitoring Components
 
-1. GPU Telemetry Collector
-File: dualgpuopt/telemetry.py
-- Collects core GPU metrics on configurable intervals (default 1000ms):
-  * Utilization percentage
-  * Memory usage (used/total/free)
-  * Temperature in Celsius
-  * Power draw in Watts
-  * Fan speeds
-  * Clock speeds (core/memory)
-- Implements exponential backoff on failures (starts at 100ms, caps at 2000ms)
-- Provides mock metrics generation for development/testing
+### GPU Telemetry Collection
+- Real-time collection of GPU metrics including:
+  - Memory utilization and VRAM usage
+  - Core/Memory clock speeds
+  - Temperature and power consumption
+  - PCIe bandwidth utilization
+- Built-in fallback to mock data generation if hardware access fails
+- Exponential backoff retry mechanism for NVML reinitialization
 
-2. Memory Alert System 
-File: dualgpuopt/memory/alerts.py
-- Defines critical thresholds:
-  * Warning: 80% memory utilization
-  * Critical: 90% memory utilization  
-  * Emergency: 95% memory utilization
-- Triggers automatic recovery actions:
-  * Cache clearing at Warning level
-  * Batch size reduction at Critical
-  * Process termination at Emergency
-- Maintains alert history for trend analysis
+### Memory Alert System
+- Implements tiered alert levels:
+  - NORMAL: <70% memory usage
+  - WARNING: 70-85% memory usage  
+  - CRITICAL: 85-95% memory usage
+  - EMERGENCY: >95% memory usage
+- Alert notifications include:
+  - Current usage and threshold
+  - Recommended actions
+  - GPU context
+  - Timestamp
 
-3. GPU Monitor
-File: dualgpuopt/gpu/monitor.py
-- Real-time monitoring of dual GPU configurations
-- Tracks synchronized metrics across both GPUs
-- Implements correlated metrics tracking:
-  * Power/Temperature relationship
-  * Memory/Utilization patterns
-  * Clock speed/Performance impact
-- Provides automatic failover to mock mode on hardware issues
+### Performance Monitoring
+- Rolling history of GPU metrics with 60-sample window
+- Multi-line graphing with per-GPU color coding
+- Dynamic scaling based on canvas dimensions 
+- Auto-adjusting time intervals
+- Grid overlay with 10% utilization intervals
 
-4. Metric Collection System
-File: dualgpuopt/metrics.py
-- Maintains 60-second rolling window of GPU metrics
-- Calculates derivative metrics:
-  * Memory pressure index
-  * Thermal throttling risk
-  * Overall GPU health score
-- Implements normalized metric scaling for cross-GPU comparison
+### Memory Recovery
+- Memory reclamation strategies:
+  - CACHE_ONLY: Clears PyTorch CUDA cache
+  - CLOCK_RESET: Resets GPU clocks via NVML
+  - FULL_RESET: Combines all methods
+  - SYSTEM_CMD: OS-specific commands
+- Measures reclaimed memory and provides status
 
-The system focuses on proactive resource management through continuous monitoring and automated intervention based on predefined thresholds and recovery strategies.
+File Paths:
+```
+dualgpuopt/telemetry.py
+dualgpuopt/memory/alerts.py
+dualgpuopt/memory/monitor.py
+dualgpuopt/memory/recovery.py
+```
 
 $END$

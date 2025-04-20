@@ -1,73 +1,70 @@
 ---
-description: GPU memory distribution algorithms, tensor parallel splits, and optimization strategies for large language model deployment
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory/*.py,**/batch/*.py,**/services/*.py
+description: Technical specification for GPU optimization algorithms, tensor parallel splits, and memory distribution strategies in DualGPUOptimizer
+globs: **/optimizer.py,**/gpu_info.py,**/gpu/**,**/gpu/*.py,**/layer_balance.py,**/memory/**,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Key algorithms for GPU resource optimization and model distribution:
+## Memory Distribution and Layer Balancing
 
-1. GPU Memory Split Calculator (optimizer.py)
-```python
-def calculate_gpu_splits():
-    # Calculate optimal memory distribution across GPUs
-    per_token_memory = model.hidden_size * model.num_layers * kv_head_ratio
-    safety_margin = 0.1  # 10% safety buffer
-    vram_per_gpu = get_available_memory() * (1 - safety_margin)
-    
-    return distribute_memory(vram_per_gpu, per_token_memory)
-```
+### Tensor Parallel Distribution
+The optimizer implements dynamic tensor parallel distribution across GPUs based on:
+- Available VRAM per GPU
+- Model architecture parameters (layers, hidden size, attention heads)
+- Memory overhead per token for KV cache
+- MoE (Mixture of Experts) scaling factors
 
-2. Layer Balance Optimizer (layer_balance.py)
-```python
-def optimize_layer_distribution():
-    # Profile layer performance with dual sequence lengths
-    short_perf = profile_layers(seq_len=64)  # 20% weight
-    long_perf = profile_layers(seq_len=1024) # 80% weight
-    weighted_perf = 0.2 * short_perf + 0.8 * long_perf
-    
-    # Calculate GPU quotas based on performance ratios
-    gpu_quotas = calculate_quotas(weighted_perf)
-    return distribute_layers(gpu_quotas)
-```
+File: `dualgpuopt/layer_balance.py`
 
-3. Memory Usage Predictor (memory/predictor.py)
-- Calculates per-token memory requirements:
-  * Base model memory
-  * KV cache scaling
-  * Activation memory
-  * MoE overhead for expert models
+### Layer Profiling System
+- Profiles transformer layer execution times across sequence lengths
+- Weights longer sequences (1024 tokens) at 80% vs shorter sequences (64 tokens) at 20%
+- Caches profiling results per model to avoid redundant profiling
+- Distributes layers between GPUs based on performance ratios
 
-4. Smart Batch Scheduler (batch/smart_batch.py)
-- Groups similar-length sequences
-- Dynamic batch size adjustment
-- OOM prevention with 25% reduction on failure
-- Recovery mechanism with 5-batch success requirement
+### Memory Monitoring and Recovery
+Files: `dualgpuopt/memory/monitor.py`, `dualgpuopt/memory/recovery.py`
 
-Core Business Rules:
+- Real-time GPU memory monitoring with configurable thresholds
+- Memory alert levels: WARNING, CRITICAL, EMERGENCY
+- Recovery strategies:
+  - REDUCE_BATCH: Dynamically reduces batch size
+  - CLEAR_CACHE: Frees CUDA cache
+  - OFFLOAD: Moves layers to CPU
+  - TERMINATE: Emergency process termination
 
-1. GPU Memory Management:
-- Minimum 20% model allocation per GPU
-- 10% safety margin for dynamic allocations
-- Non-linear scaling for KV cache memory
+### Smart Batching Algorithm
+File: `dualgpuopt/batch/smart_batch.py`
 
-2. Layer Distribution:
-- Long sequence performance weighted at 80%
-- Short sequence performance at 20%
-- Contiguous block optimization to reduce transfers
+- Groups sequences by length using pow2 bucketing
+- Dynamically adjusts batch size based on:
+  - Available GPU memory
+  - Model memory profile
+  - Current sequence lengths
+- Implements backpressure mechanism to prevent OOM conditions
 
-3. Resource Optimization:
-- Automatic tensor parallel sizing
-- Dynamic split ratio calculation
-- Framework-specific command generation
-- Model-aware memory estimation
+### Memory Prediction System
+File: `dualgpuopt/memory/predictor.py`
 
-Key Files:
-- optimizer.py: Core memory distribution logic
-- layer_balance.py: Layer optimization algorithms
-- memory/predictor.py: Memory requirement calculations
-- batch/smart_batch.py: Batch scheduling optimization
+- Maintains memory profiles for common models
+- Projects memory growth using linear regression
+- Calculates maximum safe context size based on:
+  - GPU VRAM capacity
+  - KV cache requirements
+  - Memory overhead factors
+  - MoE configuration
+
+### Layer Balance Command Generation
+File: `dualgpuopt/commands/gpu_commands.py`
+
+- Generates optimized launch commands for:
+  - llama.cpp with layer distribution
+  - vLLM with tensor parallel configuration
+- Sets environment variables for:
+  - CUDA device mapping
+  - NCCL peer-to-peer communication
+  - Memory allocation strategy
 
 $END$

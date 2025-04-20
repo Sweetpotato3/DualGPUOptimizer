@@ -10,6 +10,16 @@ from typing import Dict, Any, List, Optional
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU")
 
+# Try to import GPUMetrics class from telemetry
+try:
+    from dualgpuopt.telemetry import GPUMetrics as GpuMetrics
+    logger.debug("Imported GpuMetrics from telemetry module")
+except ImportError:
+    logger.warning("Failed to import GpuMetrics from telemetry, creating local class")
+    class GpuMetrics:
+        """Fallback GpuMetrics class when telemetry module is not available."""
+        pass
+
 # Try to import our compatibility layer
 try:
     from .compat import (

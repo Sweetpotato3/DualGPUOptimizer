@@ -165,24 +165,37 @@ The application will function with graceful fallbacks when optional dependencies
 
 ## Usage
 
-### Running the Direct Application (Recommended)
+### Recommended: Run the Direct Application
 
-For the most reliable startup with complete functionality:
+For the most stable experience with the simplest setup, use the direct application:
 
 ```
 python run_direct_app.py
 ```
 
-This provides a full-featured application with both dashboard and optimizer functionality in a tabbed interface. The application automatically uses the most advanced features available in your environment with helpful fallbacks if certain components aren't available.
+This provides the most reliable startup with complete functionality in a streamlined interface:
 
-### Running with Module Approach
+- **Automatic dependency detection** - uses what's available and provides fallbacks
+- **Simplified architecture** - avoids complex module imports that might cause issues
+- **Full-featured interface** - includes both dashboard and optimizer in a tabbed UI
+- **Robust error handling** - better recovery from dependency or hardware issues
+- **Event-driven design** - more responsive interface with real-time updates
+
+To run in mock mode (no GPU required):
+
+```
+python run_direct_app.py --mock
+```
+
+### Alternative: Module-Based Approach
+
+If you prefer the module-based approach:
 
 ```
 python -m dualgpuopt
 ```
 
-### Running in Mock Mode (No GPU Required)
-
+To run in mock mode:
 ```
 python -m dualgpuopt --mock
 ```
@@ -271,7 +284,7 @@ pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
 
 ### Application Not Starting
 
-If the main application fails to start:
+If the application fails to start:
 
 1. Try the direct application first: `python run_direct_app.py`
 2. Check the logs in the `logs` directory for specific errors
