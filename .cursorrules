@@ -138,7 +138,7 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: This overview documents the business logic of a dual GPU optimization system for running large language models, focusing on unique implementations for memory management, layer balancing, and telemetry monitoring across GPUs.
+description: Generate high-level documentation overviews for GPU optimization and management systems, particularly focusing on dual-GPU setups and machine learning workload management
 globs: *.py,*.code-workspace
 alwaysApply: false
 ---
@@ -155,46 +155,37 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized logic for running large language models across two GPUs with three core subsystems:
+The DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning workloads across dual GPU configurations. The core business logic is organized into four main areas:
 
-1. Layer Distribution System (dualgpuopt/layer_balance.py)
-- Optimizes transformer layer placement across GPUs
-- Uses weighted profiling with dual sequence lengths (64/1024 tokens)
-- Adapts distribution based on relative GPU speeds and memory quotas
-- Prioritizes faster GPU for computation-intensive layers
+1. GPU Memory Management (Importance: 95)
+Core management layer in `dualgpuopt/optimizer.py`:
+- Smart memory splits between GPUs using relative VRAM capacity
+- Dynamic context size calculation incorporating model architecture parameters
+- Specialized memory quotas for different model types (Llama-2, Mistral, Mixtral)
+- Layer balancing optimization across GPUs with performance profiling
 
-2. Memory Management (dualgpuopt/optimizer.py)
-- Calculates optimal GPU memory splits considering:
-  - KV cache requirements
-  - Tensor parallelism overhead
-  - Model-specific architecture parameters
-  - Per-token memory needs
+2. Inference Optimization (Importance: 90)
+Implemented in `dualgpuopt/batch/smart_batch.py`:
+- Length-aware batch scheduling with memory heuristics
+- Token-based batch splitting with backpressure mechanisms
+- Automatic OOM recovery with cache management
+- Framework-specific optimizations for llama.cpp and vLLM
 
-3. Real-Time GPU Telemetry (dualgpuopt/telemetry.py)
-- Collects GPU-specific metrics: utilization, power, temperature
-- Implements idle detection for power optimization
-- Provides memory reclamation capabilities
-- Supports mock mode for testing
+3. GPU Telemetry System (Importance: 85)
+Centralized in `dualgpuopt/telemetry.py`:
+- Real-time GPU metrics collection including utilization, memory, temperature
+- PCIe bandwidth monitoring for inter-GPU communication
+- Power consumption and clock speed tracking
+- Fault-tolerant monitoring with mock data fallback
 
-The system specializes in managing dual GPU configurations through:
+4. Resource Optimization (Importance: 80)
+Controlled through `dualgpuopt/services/config_service.py`:
+- GPU overclocking parameter management
+- Idle detection thresholds and timing
+- Dynamic fan speed control with auto/manual modes
+- Temperature-based throttling rules
 
-Core Services:
-- Framework-specific launch configuration (llama.cpp/vLLM)
-- GPU profile persistence and restoration
-- Temperature and power threshold monitoring
-- Dynamic batch size optimization
-
-Key Business Rules:
-- Context size calculations based on model architecture
-- Memory safety limits and reclamation policies
-- GPU load balancing based on capability ratios
-- Idle detection for power optimization
-
-Critical Files:
-- dualgpuopt/layer_balance.py: Layer distribution algorithm
-- dualgpuopt/optimizer.py: Memory allocation logic
-- dualgpuopt/telemetry.py: GPU metrics collection
-- dualgpuopt/mpolicy.py: Mixed precision handling
+The system integrates these components through an event-driven architecture, maintaining GPU state synchronization and providing real-time optimization of machine learning workloads across multiple GPUs. Core innovation lies in the automated balancing of transformer layers and memory allocation across heterogeneous GPU configurations.
 
 $END$
 END SPECIFICATION

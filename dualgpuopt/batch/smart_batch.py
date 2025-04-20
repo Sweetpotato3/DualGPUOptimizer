@@ -1,8 +1,11 @@
 """
 Smart batching system for length-aware inference scheduling
 """
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any, Optional, Tuple, Callable
 import logging
+import time
+import math
+from dataclasses import dataclass
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.SmartBatch")
@@ -21,20 +24,48 @@ def optimize_batch_size(
     Returns:
         Optimal batch size
     """
-    # Simple heuristic: leave 20% for overhead, use rest for batching
-    available_memory = gpu_memory_gb * 0.8 - model_size_gb
+    # Enhanced heuristic with better overhead estimation
+    # Reserve memory for model overhead, KV cache expansion, and system buffers
+    model_overhead_factor = 0.15  # 15% for model overhead
+    kv_cache_factor = 0.20       # 20% for KV cache
+    system_reserve_gb = 1.0      # 1 GB fixed reserve
     
-    # Assuming each sequence in batch uses ~5% of model size
-    per_sequence_gb = model_size_gb * 0.05
+    available_memory = gpu_memory_gb - model_size_gb * (1 + model_overhead_factor) - system_reserve_gb
     
-    # Calculate batch size
+    # Calculate memory needed per sequence in batch
+    # This now considers sequence length impact more accurately
+    token_memory_mb = 2  # Memory per token in MB (for fp16)
+    avg_seq_length = 512  # Reasonable default
+    per_sequence_gb = (token_memory_mb * avg_seq_length) / 1024 * (1 + kv_cache_factor)
+    
+    # Calculate and clamp batch size
     if available_memory <= 0 or per_sequence_gb <= 0:
         return 1
     
     batch_size = int(available_memory / per_sequence_gb)
     
-    # Clamp between 1 and 64
-    return max(1, min(batch_size, 64))
+    # Clamp and ensure it's a power of 2 for optimal GPU utilization
+    batch_size = max(1, min(batch_size, 64))
+    batch_size = 2 ** int(math.log2(batch_size))
+    
+    logger.info(f"Optimized batch size: {batch_size} for {gpu_memory_gb:.1f}GB GPU with {model_size_gb:.1f}GB model")
+    return batch_size
+
+
+@dataclass
+class BatchStats:
+    """Statistics for a processed batch"""
+    tokens_in: int
+    tokens_out: int
+    processing_time: float
+    oom_events: int
+    
+    @property
+    def tokens_per_second(self) -> float:
+        """Calculate tokens per second throughput"""
+        if self.processing_time <= 0:
+            return 0
+        return self.tokens_out / self.processing_time
 
 
 class SmartBatcher:
@@ -47,16 +78,28 @@ class SmartBatcher:
     def __init__(
         self, 
         max_batch_size: int = 32, 
-        length_threshold: int = 256
+        length_threshold: int = 256,
+        adaptive_sizing: bool = True,
+        oom_recovery: bool = True
     ) -> None:
         """Initialize the smart batcher
         
         Args:
             max_batch_size: Maximum number of sequences in a batch
             length_threshold: Threshold for considering sequences as "long"
+            adaptive_sizing: Whether to dynamically adjust batch size based on performance
+            oom_recovery: Whether to enable automatic OOM recovery
         """
         self.max_batch_size = max_batch_size
         self.length_threshold = length_threshold
+        self.adaptive_sizing = adaptive_sizing
+        self.oom_recovery = oom_recovery
+        
+        # Performance tracking
+        self.batch_stats: List[BatchStats] = []
+        self.backpressure_active = False
+        self.oom_count = 0
+        self.current_scale_factor = 1.0
         
     def optimize_batches(
         self, 
@@ -73,30 +116,96 @@ class SmartBatcher:
         if not sequences:
             return []
             
-        # Sort sequences by length
+        # Sort sequences by length for more efficient processing
         seq_lengths = [(len(seq[0]), seq[1]) for seq in sequences]
         sorted_seqs = sorted(seq_lengths, key=lambda x: x[0])
         
-        # Group into batches
+        # Apply backpressure if active (reduce effective batch size)
+        effective_batch_size = self.max_batch_size
+        if self.backpressure_active:
+            effective_batch_size = max(1, int(effective_batch_size * self.current_scale_factor))
+            logger.info(f"Backpressure active: reduced batch size to {effective_batch_size}")
+        
+        # Group into batches with enhanced logic
         batches: List[List[int]] = []
         current_batch: List[int] = []
         current_length = 0
+        current_token_sum = 0
+        max_token_sum = 16384  # Maximum total tokens in a batch
         
         for length, seq_id in sorted_seqs:
-            # If adding this sequence would exceed max batch size or 
-            # it's a long sequence and the batch already has items
-            if (len(current_batch) >= self.max_batch_size or
-                (length > self.length_threshold and current_batch)):
+            # Check if adding this sequence would exceed constraints:
+            # 1. Batch size limit
+            # 2. Large length difference from current batch
+            # 3. Total token count exceeds maximum
+            if (len(current_batch) >= effective_batch_size or
+                (length > self.length_threshold and current_batch and length > 2 * current_length) or
+                (current_token_sum + length > max_token_sum)):
+                
                 batches.append(current_batch)
                 current_batch = [seq_id]
                 current_length = length
+                current_token_sum = length
             else:
                 current_batch.append(seq_id)
                 current_length = max(current_length, length)
+                current_token_sum += length
                 
         # Add the last batch if not empty
         if current_batch:
             batches.append(current_batch)
             
         logger.debug(f"Created {len(batches)} optimized batches from {len(sequences)} sequences")
-        return batches 
+        return batches
+    
+    def record_batch_stats(self, stats: BatchStats) -> None:
+        """Record statistics for a processed batch
+        
+        Args:
+            stats: Batch statistics
+        """
+        self.batch_stats.append(stats)
+        
+        # Keep only last 20 batch stats for adaptive sizing
+        if len(self.batch_stats) > 20:
+            self.batch_stats.pop(0)
+            
+        # Update backpressure state
+        if stats.oom_events > 0:
+            self.oom_count += 1
+            self.backpressure_active = True
+            # Reduce batch size by 25% after OOM
+            self.current_scale_factor = max(0.25, self.current_scale_factor * 0.75)
+            logger.warning(f"OOM detected: activating backpressure, scale={self.current_scale_factor:.2f}")
+        else:
+            # Gradually recover if we've processed 5 batches without OOM
+            if self.backpressure_active and len(self.batch_stats) >= 5 and all(s.oom_events == 0 for s in self.batch_stats[-5:]):
+                # Increase scale factor, but still keep some backpressure
+                self.current_scale_factor = min(0.95, self.current_scale_factor * 1.1)
+                logger.info(f"Gradually reducing backpressure, scale={self.current_scale_factor:.2f}")
+                
+                # Deactivate backpressure if we're close to normal
+                if self.current_scale_factor > 0.9:
+                    self.backpressure_active = False
+                    logger.info("Backpressure deactivated")
+    
+    def reset_cache(self) -> None:
+        """Reset CUDA cache to recover from OOM conditions"""
+        try:
+            import torch
+            if torch.cuda.is_available():
+                # Clear CUDA cache
+                torch.cuda.empty_cache()
+                logger.info("CUDA cache cleared for OOM recovery")
+                
+                # Perform additional memory cleanup
+                for i in range(torch.cuda.device_count()):
+                    torch.cuda.reset_peak_memory_stats(i)
+                    
+                return True
+        except ImportError:
+            logger.warning("PyTorch not available for cache reset")
+        except Exception as e:
+            logger.error(f"Error resetting cache: {e}")
+            
+        return False 

@@ -1,44 +1,54 @@
 ---
-description: Applies to GPU optimization algorithms, memory management, and workload distribution across multiple GPUs
-globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/layer_balance.py
+description: Technical documentation for GPU optimization algorithms, memory allocation and tensor parallel computations
+globs: **/optimizer.py,**/gpu_info.py,**/ctx_size.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm
-Score: 95
-- Calculates optimal memory splits between GPUs based on relative VRAM capacity
-- Reserves system overhead (2GB base + 20% tensor parallel overhead)
-- Implements KV cache memory tracking with 2.0x multiplier 
-- Maintains 10% safety margin for dynamic allocations
+## Memory Distribution System
+Importance: 95
 
-## Layer Balancing System
-Score: 90
-- Optimizes layer distribution across GPUs using weighted execution profiles
-- Profiles layer performance at sequence lengths 64 and 1024
-- Prioritizes faster GPU for computationally intensive layers
-- Allocates layers based on relative GPU memory quotas and capabilities
+Core GPU memory allocation logic implemented in optimizer.py:
+- Calculates tensor parallel fractions based on relative GPU memory capacities 
+- Memory split optimization using available/total memory ratios
+- Implements dynamic safety margins based on model architecture
+- Model-specific memory requirement formulas for different LLM types
+- Memory overhead calculations including tensor parallelism (20%) and system reserve (2GB)
 
-## Tensor Split Calculation
-Score: 85
-- Determines optimal tensor parallel splits for asymmetric GPU configurations 
-- Adapts split ratios based on available VRAM per device
-- Handles specialized MoE model factors (1.05x memory overhead)
-- Calculates safe context lengths for different model architectures
+## Layer Distribution Engine 
+Importance: 90
 
-## Context Size Optimization
-Score: 80
-- Calculates maximum safe context window based on:
-  - Transformer architecture parameters (layers, heads, dimensions) 
-  - Available GPU memory across devices
-  - Model-specific MoE factors
-- Contains preset parameters for LLaMA-2, Mistral, Mixtral models
+Layer balancing algorithms in layer_balance.py:
+- Distributes transformer layers across GPUs based on performance profiling
+- Uses weighted execution time analysis combining:
+  - Short sequence profiling (64 tokens, 20% weight)
+  - Long sequence profiling (1024 tokens, 80% weight)
+- Implements quota-based GPU allocation with configurable reserve ratios
+- Prioritizes high-performance-differential layers to faster GPU within memory constraints
 
-Key files implementing core logic:
-- dualgpuopt/optimizer.py: Memory distribution and tensor splits
-- dualgpuopt/layer_balance.py: Layer distribution algorithms
-- dualgpuopt/ctx_size.py: Context size calculation
+## Context Size Calculator
+Importance: 85
+
+Context window optimization in ctx_size.py:
+- Calculates maximum safe token window based on:
+  - Layer count 
+  - KV head dimensions
+  - Hidden layer size
+  - MoE architecture factor
+  - Available GPU memory
+- Contains model-specific parameter mappings for major LLM architectures
+- Implements safety margins for stable operation
+
+## GPU Resource Monitor
+Importance: 80
+
+Hardware telemetry collection in gpu_info.py:
+- Tracks real-time GPU utilization metrics
+- Monitors memory allocation and fragmentation
+- Calculates memory bandwidth consumption
+- Reports PCIe throughput between GPUs
+- Provides idle GPU detection with configurable thresholds
 
 $END$

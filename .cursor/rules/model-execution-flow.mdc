@@ -1,49 +1,59 @@
 ---
-description: Guidelines for implementing model execution workflows, command generation, and GPU resource management
-globs: **/optimizer.py,**/runner.py,**/layer_balance.py,**/ctx_size.py,**/gpu_info.py
+description: Handles model execution flow optimization, command generation and GPU memory allocation for dual-GPU language model inference
+globs: dualgpuopt/runner.py,dualgpuopt/gpu_info.py,dualgpuopt/ctx_size.py,dualgpuopt/optimizer.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Model Execution Workflows:
+Core execution flow logic revolves around:
 
-1. Framework-Specific Command Generation (Importance: 95)
-- Two primary execution paths:
-  * llama.cpp: GPU layer distribution and split configuration
-  * vLLM: Tensor parallel GPU allocation and batch optimization
-- Dynamic environment configuration based on GPU configuration
-- Adaptive command generation based on model architecture and GPU memory
+1. Command Generation Pipeline (dualgpuopt/optimizer.py)
+- Framework-specific parameter generation:
+  * llama.cpp: GPU split ratios and layer distributions
+  * vLLM: Tensor parallel sizing and memory allocation
+- Automatic optimization based on detected GPU capabilities:
+  * Memory availability checks
+  * Layer performance profiling
+  * Split ratios based on relative GPU power
+  * Tensor parallel configuration for different model architectures
 
-2. Layer Distribution System (Importance: 90)
-- Intelligent layer placement across GPUs based on:
-  * Per-layer latency profiling (64 and 1024 token sequences)
-  * Memory quota allocation per GPU
-  * Layer performance characteristics
-- Weighted scoring (20% short sequences, 80% long sequences)
-- Priority assignment for performance-critical layers
+2. Context Size Management (dualgpuopt/ctx_size.py)
+- Model-specific window size calculation incorporating:
+  * Layer count and dimensions
+  * KV head configuration 
+  * MoE architecture factors
+  * Per-token memory requirements
+  * Safety margins and reserved memory
+- Token window validation against GPU memory constraints
 
-3. Context Size Management (Importance: 85)
-- Model-specific token window calculations considering:
-  * Transformer architecture parameters
-  * Available GPU memory distribution
-  * MoE factor requirements
-  * KV cache overhead
-- Built-in parameters for common architectures (LLaMA-2, Mistral, Mixtral)
+3. Layer Distribution System (dualgpuopt/runner.py)  
+- Performance-based layer distribution:
+  * Profiling of layer execution times
+  * Weighted scoring based on sequence lengths 
+  * Quota-based allocation with reserve margins
+  * Priority assignment for high-impact layers
+- Dynamic rebalancing based on runtime metrics
 
-4. Memory Optimization (Importance: 85)
-- Token-based memory allocation with:
-  * System overhead (2GB base)
-  * KV cache multiplier (2.0x)
-  * Tensor parallelism overhead (20%)
-  * Safety margin buffer (10%)
-- Dynamic split ratio calculation for available GPU memory
+4. Memory Split Optimization (dualgpuopt/optimizer.py)
+- Optimal memory distribution calculations:
+  * KV cache requirements per token
+  * Tensor parallelism overhead allocation
+  * System reserve margins
+  * Model-specific safety buffers
+- Split configurations proportional to GPU capabilities
 
-Key Implementation Components:
-- dualgpuopt/optimizer.py: Command generation and resource allocation
-- dualgpuopt/layer_balance.py: Layer distribution algorithms
-- dualgpuopt/ctx_size.py: Context window optimization
-- dualgpuopt/gpu_info.py: GPU capability detection and monitoring
+Key Domain Rules:
+- Layer distribution must respect per-GPU memory quotas
+- Split ratios account for relative GPU performance differences
+- Memory allocation includes safety margins for stability
+- Token windows validated against available GPU memory
+
+Importance Scores:
+- Command Generation Pipeline: 95 (Core execution optimization)
+- Context Size Management: 90 (Critical for model stability)
+- Layer Distribution: 85 (Key performance optimization)
+- Memory Split Optimization: 90 (Essential resource management)
 
 $END$
