@@ -1,65 +1,63 @@
 ---
-description: Documents the execution flow and orchestration of LLM models across multiple GPUs, including memory management and resource allocation.
-globs: **/runner.py,**/optimizer.py,**/gpu_commands.py,**/smart_batch.py,**/layer_balance.py
+description: Documents how model execution is coordinated across GPUs, including command generation and resource allocation flows
+globs: **/optimizer.py,**/runner.py,**/launcher*.py,**/commands/*.py,**/gpu/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized orchestration for running large language models across multiple GPUs:
+The model execution flow implements specialized logic for running large language models across multiple GPUs:
 
-Core Execution Pipeline:
+## Command Generation System
+- Generates framework-specific commands for model execution:
+  ```python
+  # llama.cpp format
+  ./main -m <model> --split {gpu_splits} --mul-mat-q --gpu-layers {layer_count}
+  
+  # vLLM format 
+  python -m vllm.entrypoints.api_server --model <model> --tensor-parallel-size {gpu_count}
+  ```
 
-1. Model Resource Calculation
-- Layer-aware distribution based on transformer architecture
-- Memory requirement estimation using:
-  * Base model weights
-  * KV cache scaling factor (2.0x)
-  * Tensor parallelism overhead (20%)
-  * System overhead buffer (2GB)
-- GPU split ratio optimization considering:
-  * Available VRAM per device
-  * Model architecture requirements
-  * Minimum 20% allocation per GPU rule
+- Layer distribution calculation splits model across GPUs:
+  ```python
+  total_memory = sum(gpu.mem_free_mb for gpu in gpus)
+  split = [int((gpu.mem_free_mb / total_memory) * 100) for gpu in gpus]
+  ```
 
-2. Smart Batching System
-- Length-aware inference scheduling using:
-  * Token count bucketing (threshold: 256 tokens)
-  * Dynamic batch sizing based on sequence lengths
-  * Back-pressure system for OOM prevention
-  * Automatic retry mechanism with configurable scale factor
-- Two primary bucket strategies:
-  * Power-of-two scaling for llama.cpp
-  * Token ratio optimization for vLLM
+## Resource Management
+- Memory split optimization assigns memory quotas based on:
+  - Available VRAM per GPU
+  - Model size and architecture
+  - Context length requirements
+  - Batch size configuration
 
-3. Layer Distribution Algorithm
-- Performance-weighted profiling:
-  * Short sequences (64 tokens): 20% weight
-  * Long sequences (1024 tokens): 80% weight
-- Layer assignment rules:
-  * Input embeddings to first GPU
-  * Output components to second GPU
-  * Contiguous block optimization
-  * Cross-device transfer minimization
+- Dynamic adjustment of tensor parallel size based on:
+  - GPU count
+  - Per-GPU memory availability  
+  - Model architecture constraints
 
-4. Framework-Specific Command Generation
-- llama.cpp:
-  * GPU split string configuration 
-  * Context size parameters
-  * Layer distribution mapping
-- vLLM:
-  * Tensor parallel size settings
-  * Memory allocation ratios
-  * Quantization configuration
+## Model Launch Controller
+- Validates hardware requirements:
+  - Minimum 2GB free memory per GPU
+  - Compatible GPU architectures
+  - Valid model checkpoint path
 
-File Paths:
-- dualgpuopt/optimizer.py: Core optimization logic
-- dualgpuopt/batch/smart_batch.py: Batching system
-- dualgpuopt/layer_balance.py: Layer distribution
-- dualgpuopt/commands/gpu_commands.py: Command generation
+- Handles framework-specific launch flows:
+  - llama.cpp: Layer distribution, memory splits
+  - vLLM: Tensor parallelism, memory efficiency
 
-Importance Score: 95
-Rationale: Core business logic for ML model execution orchestration across GPUs
+## Flow Orchestration 
+1. Hardware validation and resource analysis
+2. Memory quota calculation and GPU split determination
+3. Framework-specific parameter generation
+4. Launch command construction
+5. Model execution monitoring
+
+File paths containing core execution logic:
+- dualgpuopt/optimizer.py
+- dualgpuopt/runner.py
+- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/gui/launcher.py
 
 $END$

@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: For documenting high-level system architecture and business logic organization in GPU optimization software, particularly focusing on dual-GPU model management and performance monitoring
-globs: *.py,*.md
+description: Apply this overview when documenting projects focused on GPU optimization and monitoring, particularly for dual GPU setups and machine learning model deployment. This covers GPU telemetry, model management, resource allocation, and performance monitoring.
+globs: *.py,*.pyx,*.pyd
 alwaysApply: false
 ---
 
@@ -154,36 +154,58 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized GPU optimization for machine learning model deployment across dual GPU configurations. The core business logic is organized into four main domains:
+The DualGPUOptimizer implements specialized GPU management and optimization logic across several core areas:
 
-1. GPU Resource Management & Optimization (Importance: 95)
-- Memory allocation strategies using tensor fractions calculations
-- Real-time GPU metrics monitoring including utilization, temperature, power
-- Specialized batch processing system with length-aware inference scheduling
-- Custom overclocking profile management with safety constraints
-- File: dualgpuopt/optimizer.py
+## GPU Telemetry and Resource Management
+- GPU utilization tracking and VRAM monitoring through telemetry system
+- Temperature, power consumption, and fan speed monitoring with warning thresholds
+- Tokens-per-second (TPS) performance metrics collection
+- Custom update intervals (1000ms standard, 500ms critical)
 
-2. Model Layer Distribution (Importance: 90) 
-- Layer balancing algorithms for transformer model deployment
-- Performance-based distribution across GPUs using weighted profiling
-- Adaptive block optimization to minimize cross-device transfers
-- Specialized MoE model handling with expert-specific overhead calculations
-- File: dualgpuopt/layer_balance.py
+File Paths:
+- `modern_standalone.py`
+- `gpu_info.py`
 
-3. Memory Management System (Importance: 85)
-- Predictive memory growth projection using model-specific profiles
-- Hierarchical memory recovery strategies for OOM prevention
-- Context size calculations based on model architecture parameters
-- Dynamic batch size optimization with back-pressure control
-- Files: dualgpuopt/memory/predictor.py, dualgpuopt/memory/recovery.py
+## Model Management and Deployment
+- AWQ quantization integration for model loading
+- Path validation for specific model formats
+- Asynchronous model initialization with GPU context management
+- Framework-specific optimizations for llama.cpp and vLLM
 
-4. Framework Integration (Importance: 80)
-- Framework-specific command generation (llama.cpp, vLLM)
-- Cross-framework parameter mapping and optimization
-- GPU split configuration management for tensor parallelism
-- File: dualgpuopt/commands/gpu_commands.py
+File Paths:
+- `dualgpuopt/optimizer.py`
+- `dualgpuopt/model_profiles.py`
 
-The system utilizes an event-driven architecture for GPU telemetry collection and metric processing, with specialized handling of GPU-specific error conditions and performance monitoring. The core optimization logic focuses on balancing computational load while minimizing cross-device communication overhead.
+## Memory Management
+- Smart batching system with length-aware inference scheduling
+- Memory pressure monitoring and OOM prevention
+- Recovery strategies including cache clearing and workload reduction
+- Dynamic context size calculation based on model architecture
+
+File Paths:
+- `dualgpuopt/memory/predictor.py`
+- `dualgpuopt/memory/recovery.py`
+
+## Layer Distribution
+- Adaptive latency-aware layer distribution across GPUs
+- Weighted profiling using multiple sequence lengths
+- Tensor parallelism configuration based on GPU capabilities
+- Memory-aware layer balancing with safety margins
+
+File Paths:
+- `dualgpuopt/layer_balance.py`
+
+## Error Handling
+- GPU-specific error categorization (driver, memory, process)
+- Error severity classification with recovery strategies
+- Historical error tracking for optimization patterns
+- Automatic recovery procedures for critical failures
+
+File Paths:
+- `dualgpuopt/error_handler/base.py`
+- `dualgpuopt/error_handler/handler.py`
+
+The system focuses on optimizing dual GPU setups for machine learning workloads through intelligent resource management, automated optimization, and comprehensive error handling.
 
 $END$
 END SPECIFICATION

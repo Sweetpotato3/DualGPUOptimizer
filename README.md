@@ -93,35 +93,46 @@ The DualGPUOptimizer consists of several key components:
 
 ## Refactoring Progress and Testing Status
 
-### Completed Refactorings
+### Recent Refactorings
+
+Since the project start, we've been focused on modularizing the codebase to improve maintainability and testability. Recent work includes:
+
+- ✅ **GPU Module**: Refactored `gpu_info.py` into a modular structure with distinct components:
+  - `gpu/info.py`: Core GPU querying functionality
+  - `gpu/mock.py`: Mock GPU generation for testing
+  - `gpu/monitor.py`: Specialized monitoring functions
+  - `gpu/common.py`: Shared functionality and constants
+  - `gpu/compat.py`: Backward compatibility layer
+  - Added unit tests to validate functionality
+
 - ✅ `memory_monitor.py` (769 lines) - Refactored into multiple components
 - ✅ `settings.py` (722 lines) - Refactored into appearance, overclocking, and application settings components
 - ✅ `error_handler.py` (558 lines) - Refactored into base, handler, decorators, UI, and logging components
+- ✅ `theme.py` (549 lines) - Refactored into colors, dpi, styling, compatibility, and core components
+- ✅ `launcher.py` (1000+ lines) - Refactored into controller, parameter resolver, model validation, process monitor, and config handler components
 
-### Test Results for Refactored Modules
+### Test Status for Refactored Modules
+
+- ✅ **GPU Module**: Unit tests for query, monitoring, and compatibility
 - ✅ **Error Handler Module**: All 10 tests pass successfully
-- ⚠️ **Settings Module**: Tests require fixing merge conflicts in constants.py
-- ⚠️ **Memory Module**: No dedicated test files found
-- ⚠️ **Launcher Module**: No dedicated test files found
+- ✅ **Memory Module**: Tests for monitor, metrics, alerts, recovery, and prediction
+- ✅ **Launcher Module**: Tests for controller, parameter resolver, model validation, process monitor, and config handler
+- ✅ **Theme Module**: Tests for colors, DPI, styling, core, and compatibility
+- ✅ **Settings Module**: Tests for appearance, overclocking, and application settings
 
 ### Next Steps
-1. **Module Refactoring**: Continue with remaining modules >500 lines:
-   - `theme.py` (549 lines) - Next priority
-
-2. **Testing Improvements**:
-   - Fix import issues and merge conflicts in existing tests
-   - Add unit tests for memory and launcher modules
+1. **Testing Improvements**:
+   - Setup continuous integration with automated test runs
    - Implement test coverage reports
+   - Add integration tests for the full application
 
-3. **Code Quality**: Fix linter issues related to trailing whitespace
+2. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
 
-4. **Additional Model Profiles**: Support for newer models like Llama 3, Phi-3, and Claude-optimized variants
+3. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
 
-5. **Enhanced Memory Management**: More aggressive VRAM optimization and recovery
+4. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
 
-6. **Advanced Layer Balancing**: Better algorithms for layer distribution across heterogeneous GPUs
-
-7. **Documentation Improvements**: Detailed API docs and usage examples
+5. **Documentation Improvements**: Detailed API docs and usage examples
 
 ## Supported Models
 

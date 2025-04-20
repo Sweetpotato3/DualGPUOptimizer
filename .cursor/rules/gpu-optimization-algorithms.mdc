@@ -1,77 +1,55 @@
 ---
-description: GPU optimization algorithms and memory management strategies for multi-GPU language model inference
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py,**/layer_balance.py
+description: Specifications for GPU memory allocation, tensor parallelism, and layer distribution algorithms in the DualGPUOptimizer project.
+globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/ctx_size.py,dualgpuopt/layer_balance.py,dualgpuopt/memory/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Management Algorithms (optimizer.py)
+## Memory Split and Layer Distribution
 
-Memory distribution and tensor splitting calculations optimize deployment of large language models across multiple GPUs:
+The optimizer implements specialized algorithms for GPU memory allocation and model layer distribution across multiple GPUs:
 
-1. Split Ratio Calculation:
-- Uses relative VRAM sizes to determine optimal GPU allocation percentages
-- Accounts for model architecture overhead and KV cache requirements 
-- Enforces minimum 20% per-GPU allocation rule
-- Adjusts splits for tensor parallelism overhead (20% buffer)
+1. Memory Split Calculator:
+- Calculates optimal memory splits between GPUs based on relative VRAM capacity
+- Implements weighted ratios to account for NVLink/PCIe bandwidth differences  
+- Handles asymmetric GPU configurations with different VRAM sizes
+- Produces tensor parallel fractions for framework-specific commands
 
-2. Context Length Optimization:
-- Calculates maximum safe context window based on:
-  * Available GPU memory
-  * Model architecture (layers, heads, dimensions)
-  * KV cache scaling factors
-  * MoE overhead multipliers (1.2x for expert models)
+2. Layer Distribution Engine:
+- Performs latency-aware layer distribution across GPUs
+- Uses dual sequence length profiling (64 and 1024 tokens)
+- Applies weighted scoring (20% short, 80% long sequences)
+- Creates contiguous layer blocks to minimize communication overhead
 
-## Layer Distribution Logic (layer_balance.py)
+3. Dynamic Context Size Optimizer:
+- Calculates safe context lengths based on:
+  - Model architecture (MQA/GQA factors)
+  - KV cache scaling requirements
+  - MoE expert count overhead
+  - Reserved memory buffer (2GB default)
+- Implements model-specific memory estimation heuristics
+- Handles different precision requirements (FP16/INT8/INT4)
 
-1. Performance-Based Layer Assignment:
-- Profiles layer execution across sequence lengths:
-  * Short sequences (64 tokens): 20% weight
-  * Long sequences (1024 tokens): 80% weight
-- Distributes transformer layers based on:
-  * GPU performance ratios
-  * Memory capacity limits
-  * Contiguous block optimization
+4. Memory Usage Predictor:
+- Maintains rolling window of memory usage patterns
+- Projects future memory requirements using linear regression
+- Applies architecture-specific growth factors
+- Triggers recovery strategies at configurable thresholds
 
-2. Block Optimization:
-- Merges isolated layers into contiguous blocks
-- Input embeddings assigned to first GPU
-- Output components (norm, LM head) to second GPU
-- Minimizes cross-device transfer overhead
+## Critical Paths
 
-## Memory Recovery System (memory/recovery.py)
+```
+dualgpuopt/
+  optimizer.py         - Memory split and tensor parallel calculations
+  layer_balance.py    - Layer distribution algorithms
+  ctx_size.py         - Context length optimization
+  memory/
+    predictor.py      - Memory usage prediction
+    recovery.py       - OOM recovery strategies
+```
 
-Hierarchical recovery strategy for out-of-memory prevention:
-1. Cache clearing
-2. Batch size reduction
-3. Model offloading
-4. Process termination
-
-Memory safety rules:
-- 15% reserved recovery buffer
-- Minimum batch size: 1
-- Minimum sequence length: 128 tokens
-
-## Batch Optimization (batch/smart_batch.py)
-
-Length-aware inference scheduling:
-- Dynamic batch sizing based on token counts
-- Back-pressure system for RAM protection
-- Sequence length bucketing with two strategies:
-  * Power-of-two scaling
-  * Token ratio preservation
-- OOM protection with automatic retry mechanism
-
-## Model Distribution (memory/predictor.py)
-
-Memory usage prediction per model type:
-- Base memory requirements
-- Per-batch scaling factors
-- Token-based growth rates
-- Architecture-specific overhead:
-  * Standard models: 1.0x
-  * MoE models: 1.2x per active expert
+The core optimization algorithms focus on efficient distribution of model layers and memory across heterogeneous GPU configurations while maintaining optimal performance characteristics.
 
 $END$
