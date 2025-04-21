@@ -10,11 +10,37 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 - **Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
-- **NEW: Qt-Based Modern UI**: Completely rebuilt interface using Qt for improved stability and visual experience
-- **NEW: Enhanced Memory Profiling**: Interactive memory timeline with zooming, filtering, and event markers
-- **NEW: Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
+- **Qt-Based Modern UI**: Completely rebuilt interface using Qt for improved stability and visual experience
+- **Enhanced Memory Profiling**: Interactive memory timeline with zooming, filtering, and event markers
+- **Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
+- **NEW: Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
+- **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
 
 ## Recent Improvements
+
+### NEW: Simplified Settings Application Workflow
+
+We've significantly improved the workflow for generating and applying optimal GPU settings:
+
+- **Direct Settings Transfer**: Apply optimizer-generated settings directly to the launcher with a single click
+- **Automatic Tab Switching**: Automatically switch to the launcher tab after applying settings
+- **Configuration Presets**: Save and load optimized configurations for quick reuse
+- **Parameter Validation**: Smart validation ensures applied settings are compatible with the current environment
+- **Comprehensive Parameters**: Automatically transfers all relevant settings including context sizes, GPU splits, and precision settings
+
+This streamlined workflow eliminates the need for manual copy-pasting of settings between tabs or components.
+
+### NEW: Configuration Preset System
+
+The new preset system allows you to save and reuse optimized configurations:
+
+- **Named Presets**: Save configurations with custom names for easy identification
+- **One-Click Loading**: Load entire configurations with a single click
+- **Persistent Storage**: Presets are saved between application sessions
+- **Framework-Specific Parameters**: Presets capture all framework-specific parameters
+- **Quick Access**: Preset controls are easily accessible in the launcher interface
+
+The preset system makes it simple to switch between different model configurations without reconfiguring settings each time.
 
 ### NEW: Enhanced Memory Profiling System
 

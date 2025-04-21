@@ -1,6 +1,5 @@
 import logging
 import time
-from typing import Dict, List, Optional, Tuple, Any
 from collections import deque
 import threading
 import datetime
@@ -10,7 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton, QSizePolicy, QSpacerItem, QComboBox, QTextEdit,
     QTabWidget, QCheckBox, QFileDialog, QInputDialog, QLineEdit, QProgressBar
 )
-from PySide6.QtCore import Qt, Signal, Slot, QTimer
+from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QFont, QColor
 
 # Try to import matplotlib for visualization

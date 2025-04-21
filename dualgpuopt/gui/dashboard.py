@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import time
 import threading
-from typing import Dict, List, Optional, Callable, Any
+from typing import Dict
 import logging
 
 from ..telemetry import get_telemetry_service, GPUMetrics
@@ -70,7 +70,7 @@ class GPUMonitorFrame(ttk.Frame):
         self.value_labels = {}
         self.metric_frames = {}
 
-        for i, (name, unit, min_val, max_val) in enumerate(metrics):
+        for i, (name, unit, _min_val, max_val) in enumerate(metrics):
             # Create frame for this metric
             frame = ttk.Frame(self, style="Inner.TFrame")
             frame.grid(row=i+1, column=0, columnspan=3, sticky="ew", pady=(0, 5))

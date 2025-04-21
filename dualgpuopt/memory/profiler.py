@@ -11,7 +11,7 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Dict, List, Optional, Set, Tuple, Any, Callable
+from typing import Dict, List, Optional, Tuple, Any, Callable
 
 # Try to import matplotlib for visualization, but provide fallbacks
 try:

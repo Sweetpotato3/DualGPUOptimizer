@@ -1,57 +1,60 @@
 ---
-description: Defines and documents how LLM model execution is handled, including process launching, parameter management, and GPU resource allocation.
-globs: '**/*.py','**/gui/launcher/**','**/gpu/**','**/optimizer/**'
+description: Defines how LLM models are loaded and executed, including command generation, batching, and GPU resource handling
+globs: **/services/*.py,**/batch/*.py,**/commands/*.py,**/launcher/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components:
+Core Model Execution Components (Importance: 95):
 
-1. Framework-Specific Command Generation
-- Generates optimized command strings for llama.cpp and vLLM
-- Handles parameter distribution between GPUs based on memory capacity
-- Built-in presets for common models (Llama-2, Mixtral, Mistral)
-- Dynamic tensor parallel size calculation for vLLM
-- GPU split ratio optimization for llama.cpp
-- File: dualgpuopt/commands/gpu_commands.py
+1. Framework-Specific Launch Orchestration
+- Specialized command generation for LLM frameworks:
+  * llama.cpp: GPU split optimization with memory fraction calculations
+  * vLLM: Tensor parallel size configuration and memory allocation
+- Model-specific parameter optimization:
+  * Context length based on model architecture
+  * Layer distribution for multi-GPU deployments
+  * Memory per token allocation tracking
 
-2. Smart Batch Processing
-- Length-aware batch scheduling with profiled memory constraints
-- Adaptive batch size adjustment based on OOM events
-- Backpressure mechanism for preventing memory exhaustion
-- Token count tracking and optimization
-- File: dualgpuopt/batch/smart_batch.py
+File paths:
+- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/gui/launcher/launch_controller.py
 
-3. GPU Memory Management 
-- Real-time memory monitoring across multiple GPUs
-- Memory leak detection with configurable thresholds
-- Pre/post inference memory baseline tracking
-- Custom memory pattern analysis for growth detection
-- Files: dualgpuopt/memory/profiler.py, dualgpuopt/memory/monitor.py
+2. Smart Batching System (Importance: 90):
+- Length-aware sequence batching for optimized throughput
+- Dynamic batch size calculation considering:
+  * Available GPU memory per device
+  * Model architecture requirements
+  * Token sequence lengths
+  * Safety margins for OOM prevention
+- Backpressure mechanism with configurable queue depths
 
-4. Model Parameter Validation
-- Validates model architectures and configurations
-- Enforces constraints on head counts and dimensions
-- Handles specialized MoE model requirements
-- Implements validation rules for tensor parallel setups
-- File: dualgpuopt/optimizer.py
+File paths:
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/batch/heuristics.py
 
-5. Resource Allocation Flow
-- Dynamic GPU split calculation based on available memory
-- Tensor parallel processing configuration
-- KV cache allocation optimization
-- Safety margin enforcement for stable execution
-- Files: dualgpuopt/optimizer.py, dualgpuopt/layer_balance.py
+3. Model Loading Pipeline (Importance: 85):
+- Progressive loading states with validation
+- Memory prediction for model requirements
+- Resource allocation verification across GPUs
+- Layer distribution optimization for multi-GPU setups
 
-6. Launch Process Management
-- Non-blocking execution with output streaming
-- Process lifecycle tracking and cleanup
-- Error recovery and automatic retries
-- Environment variable configuration
-- File: dualgpuopt/runner.py
+File paths:
+- dualgpuopt/services/event_service.py
+- dualgpuopt/gui/launcher/parameter_resolver.py
 
-The system implements sophisticated model execution workflows with particular focus on memory management, resource allocation, and process control across multiple GPUs. Key aspects include dynamic resource distribution, intelligent batch processing, and framework-specific optimizations.
+4. Execution Monitoring (Importance: 80):
+- Real-time token processing rate tracking
+- GPU memory utilization monitoring
+- Framework-specific error handling
+- OOM detection and recovery strategies
+
+File paths:
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/memory/monitor.py
+
+The system implements a comprehensive model execution pipeline optimized for dual-GPU configurations, with specialized handling for different ML frameworks and dynamic resource management based on model architectures and GPU capabilities.
 
 $END$

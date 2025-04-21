@@ -15,7 +15,6 @@ import logging
 
 # Import memory profiling API
 from dualgpuopt.memory import MemoryProfiler, get_memory_profiler, MemoryEventType
-from dualgpuopt.error_handler import handle_exceptions, ErrorSeverity
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.MemoryProfileTab")

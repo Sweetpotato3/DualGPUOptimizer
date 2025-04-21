@@ -8,16 +8,17 @@ application with real-time GPU monitoring, memory profiling, and model optimizat
 __version__ = "1.0.0"
 __author__ = "DualGPUOptimizer Team"
 
-# Export main application components
-from dualgpuopt.qt.main import main
 from dualgpuopt.qt.app_window import DualGPUOptimizerApp
 
 # Export tab components
 from dualgpuopt.qt.dashboard_tab import DashboardTab, GPUCard, GPUChart
-from dualgpuopt.qt.optimizer_tab import OptimizerTab
-from dualgpuopt.qt.memory_tab import MemoryProfilerTab
 from dualgpuopt.qt.launcher_tab import LauncherTab
-from dualgpuopt.qt.settings_tab import SettingsTab, SettingsManager
+
+# Export main application components
+from dualgpuopt.qt.main import main
+from dualgpuopt.qt.memory_tab import MemoryProfilerTab
+from dualgpuopt.qt.optimizer_tab import OptimizerTab
+from dualgpuopt.qt.settings_tab import SettingsManager, SettingsTab
 
 # Export system tray components
 from dualgpuopt.qt.system_tray import GPUTrayManager
@@ -30,6 +31,7 @@ VERSION_INFO = {
     "release": "stable",
 }
 
+
 def get_version():
     """Return the current version as a string."""
-    return f"{VERSION_INFO['major']}.{VERSION_INFO['minor']}.{VERSION_INFO['patch']}-{VERSION_INFO['release']}" 
+    return f"{VERSION_INFO['major']}.{VERSION_INFO['minor']}.{VERSION_INFO['patch']}-{VERSION_INFO['release']}"

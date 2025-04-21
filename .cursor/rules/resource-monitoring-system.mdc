@@ -1,59 +1,58 @@
 ---
-description: Used to detect and understand GPU memory usage monitoring, telemetry systems, and resource tracking capabilities.
-globs: **/telemetry.py,**/tray.py,**/monitor.py,**/memory/**,**/gpu/**
+description: Specification for implementing real-time GPU resource monitoring and telemetry systems with alerts
+globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## Core Telemetry Collection Logic
+Core Telemetry System Components:
 
-The telemetry system implements real-time GPU metric collection with the following key components:
+1. GPU Metrics Collection (telemetry.py)
+- Real-time monitoring of critical GPU metrics:
+  * Memory utilization with percentage thresholds (75%, 90%)
+  * Temperature monitoring with warning levels (70°C, 80°C) 
+  * Power consumption relative to GPU power limits
+  * Clock speeds for SM and Memory
+  * PCIe bandwidth (TX/RX rates)
 
-1. GPU Memory State Collection
-- Tracks real-time memory allocations and deallocations per GPU
-- Implements sliding window analysis for memory growth detection 
-- Maintains session-specific memory baselines
-- Calculates memory deltas between inference operations
-- Key file: `dualgpuopt/memory/profiler.py`
+2. Alert System (telemetry.py)
+- Four-tier alert classification:
+  * NORMAL: Standard operating conditions
+  * WARNING: Approaching thresholds (75% memory, 70°C)
+  * CRITICAL: Threshold exceeded (90% memory, 80°C)
+  * EMERGENCY: Dangerous conditions (95% memory, 90°C)
+- Intelligent throttling of alerts:
+  * 3-second cooldown between notifications
+  * Alert priority queueing system
+  * Context-aware recommendations based on alert severity
 
-2. Custom Alert System
-- Memory leak detection using configurable thresholds:
-  * Spike detection for rapid memory growth
-  * Sustained growth monitoring for leak identification
-  * Minimum 5MB change requirement for alerts
-  * 30-second cooldown between leak notifications
-- File: `dualgpuopt/telemetry.py`
+3. History Management
+- Rolling 60-second history buffer for metrics tracking
+- Timeline markers for significant events:
+  * Out of memory conditions
+  * Temperature spikes
+  * Power limit throttling
+- Custom event classification system for tracking GPU state changes
 
-3. Metric Collection Pipeline
-- Polling-based collection of GPU metrics:
-  * Memory utilization
-  * GPU usage percentage  
-  * Temperature monitoring
-  * Power consumption
-  * Clock speeds
-- Configurable sampling rates with default 1000ms interval
-- File: `dualgpuopt/gpu/monitor.py`
+4. Mock Data Generation
+- Simulated metrics for testing and development:
+  * Correlated power usage with GPU utilization (20-90%)
+  * Temperature scaling based on utilization
+  * Memory usage patterns following workload profiles
+  * Fan speed correlation with temperature readings
 
-4. Session Analytics
-- Per-inference memory tracking:
-  * Token count correlation
-  * Memory efficiency metrics
-  * Peak usage analysis
-- Session statistics with min/max/avg values
-- Resource optimization recommendations
-- File: `dualgpuopt/memory/metrics.py`
+Relevant Files:
+- dualgpuopt/telemetry.py: Core telemetry implementation
+- dualgpuopt/gpu/monitor.py: GPU state monitoring
+- dualgpuopt/memory/metrics.py: Memory-specific metrics
+- dualgpuopt/memory/alerts.py: Alert system implementation
 
-5. Recovery Mechanisms
-- Progressive memory cleanup strategies:
-  * CUDA cache clearance
-  * GPU clock/compute reset
-  * Full system memory reclamation
-- Platform-specific memory recovery commands
-- Success rate tracking for recovery attempts
-- File: `dualgpuopt/memory/recovery.py`
-
-The system provides comprehensive GPU resource monitoring with sophisticated pattern detection, alert generation, and memory optimization capabilities focused on ML model inference workloads.
+Business Impact Scores:
+- Telemetry System: 95 (Critical for GPU monitoring)
+- Alert System: 85 (Key for system stability)
+- History Management: 75 (Important for trend analysis)
+- Mock System: 45 (Supporting development functionality)
 
 $END$

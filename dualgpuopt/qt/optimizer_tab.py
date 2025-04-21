@@ -2,7 +2,8 @@ import logging
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                               QComboBox, QLineEdit, QPushButton, QGroupBox,
                               QGridLayout, QFormLayout, QSpinBox, QDoubleSpinBox,
-                              QTextEdit, QFrame, QSpacerItem, QSizePolicy, QCheckBox)
+                              QTextEdit, QFrame, QSpacerItem, QSizePolicy, QCheckBox,
+                              QMessageBox)
 from PySide6.QtCore import Qt, Signal, Slot, QSize
 from PySide6.QtGui import QFont, QIcon
 
@@ -268,6 +269,12 @@ class OptimizerTab(QWidget):
         self.generate_cmd_button.clicked.connect(self.generate_command)
         cmd_layout.addWidget(self.generate_cmd_button)
         
+        # Add Apply to Launcher button
+        self.apply_button = QPushButton("Apply to Launcher")
+        self.apply_button.clicked.connect(self.apply_to_launcher)
+        
+        cmd_layout.addWidget(self.apply_button)
+        
         results_layout.addLayout(cmd_layout)
         
         right_column.addWidget(results_group)
@@ -481,6 +488,66 @@ class OptimizerTab(QWidget):
             # Add error to output text
             current_text = self.output_text.toPlainText()
             self.output_text.setText(f"{current_text}\n\nError generating command: {str(e)}")
+    
+    @Slot()
+    def apply_to_launcher(self):
+        """Apply optimization settings directly to the launcher tab."""
+        try:
+            # Get current settings
+            framework = self.cmd_type_combo.currentText()
+            model_name = self.model_combo.currentText()
+            
+            if not model_name:
+                QMessageBox.warning(self, "Missing Information", "Please enter a model name first.")
+                return
+                
+            # Calculate split ratio based on GPU memory values
+            if len(self.gpu_memory) >= 2:
+                gpu1_mem = self.gpu_memory[0]
+                gpu2_mem = self.gpu_memory[1]
+                
+                total_mem = gpu1_mem + gpu2_mem
+                gpu1_ratio = gpu1_mem / total_mem
+                gpu2_ratio = gpu2_mem / total_mem
+            else:
+                # Fallback if GPU info not available
+                gpu1_ratio = 0.6
+                gpu2_ratio = 0.4
+            
+            # Get context size
+            context_text = self.context_combo.currentText()
+            context_map = {
+                "2k": 2048, "4k": 4096, "8k": 8192, "16k": 16384,
+                "32k": 32768, "64k": 65536, "128k": 131072
+            }
+            context_size = context_map.get(context_text, 8192)
+            
+            # Get precision
+            precision = self.precision_combo.currentText()
+            
+            # Create settings dictionary to send to launcher
+            settings = {
+                "framework": framework,
+                "model_name": model_name,
+                "context_size": context_size,
+                "precision": precision,
+                "gpu_split": f"{gpu1_ratio:.1f},{gpu2_ratio:.1f}",
+                "tensor_parallel_size": 2 if len(self.gpu_memory) >= 2 else 1
+            }
+            
+            # Use Qt's event system to communicate with launcher tab
+            from dualgpuopt.services.event_service import event_bus
+            event_bus.publish("optimizer_settings", settings)
+            
+            # Show confirmation
+            QMessageBox.information(self, "Settings Applied", 
+                                   f"Optimization settings for {model_name} have been applied to the launcher tab.")
+            
+            self.logger.info(f"Applied optimizer settings to launcher: {settings}")
+            
+        except Exception as e:
+            self.logger.error(f"Error applying settings to launcher: {e}")
+            QMessageBox.warning(self, "Error", f"Error applying settings to launcher: {e}")
     
     def update_gpu_memory(self, metrics_list):
         """Update GPU memory values from metrics."""

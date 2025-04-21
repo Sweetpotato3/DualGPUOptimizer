@@ -2,27 +2,34 @@
 Telemetry module for GPU metrics collection and processing
 Provides real-time monitoring of GPU resources, temperature, power, and utilization
 """
-from typing import Dict, List, Optional, Callable, Any, Tuple
-import threading
-import time
+
 import logging
 import os
+import threading
+import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Telemetry")
 
 # Environment variable configuration options
 ENV_POLL_INTERVAL = float(os.environ.get("DUALGPUOPT_POLL_INTERVAL", "1.0"))
-ENV_MOCK_TELEMETRY = os.environ.get("DUALGPUOPT_MOCK_TELEMETRY", "").lower() in ("1", "true", "yes", "on")
+ENV_MOCK_TELEMETRY = os.environ.get("DUALGPUOPT_MOCK_TELEMETRY", "").lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 ENV_MAX_RECOVERY_ATTEMPTS = int(os.environ.get("DUALGPUOPT_MAX_RECOVERY", "3"))
 ENV_METRIC_CACHE_TTL = float(os.environ.get("DUALGPUOPT_METRIC_CACHE_TTL", "0.05"))  # 50ms default
 
 # Import error handling if available
 try:
-    from dualgpuopt.error_handler import handle_exceptions, ErrorCategory, ErrorSeverity
+    from dualgpuopt.error_handler import ErrorCategory, ErrorSeverity, handle_exceptions
+
     error_handler_available = True
 except ImportError:
     error_handler_available = False
@@ -30,7 +37,8 @@ except ImportError:
 
 # Import event bus if available
 try:
-    from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
+    from dualgpuopt.services.event_bus import GPUMetricsEvent, event_bus
+
     event_bus_available = True
     logger.debug("Event bus available for telemetry events")
 except ImportError:
@@ -40,6 +48,7 @@ except ImportError:
 # Always try to import pynvml
 try:
     import pynvml
+
     NVML_AVAILABLE = True
     logger.info("PYNVML successfully imported")
 except ImportError:
@@ -50,6 +59,7 @@ except ImportError:
 @dataclass
 class GPUMetrics:
     """Represents comprehensive metrics for a single GPU"""
+
     gpu_id: int
     name: str
     utilization: int  # percentage
@@ -94,7 +104,9 @@ class GPUMetrics:
 class TelemetryService:
     """Service for collecting and distributing GPU telemetry"""
 
-    def __init__(self, poll_interval: float = ENV_POLL_INTERVAL, use_mock: bool = ENV_MOCK_TELEMETRY):
+    def __init__(
+        self, poll_interval: float = ENV_POLL_INTERVAL, use_mock: bool = ENV_MOCK_TELEMETRY
+    ):
         """Initialize the telemetry service
 
         Args:
@@ -181,7 +193,7 @@ class TelemetryService:
 
         # Add backoff between recovery attempts
         current_time = time.time()
-        if current_time - self._last_error_time < (2 ** self._recovery_attempts):
+        if current_time - self._last_error_time < (2**self._recovery_attempts):
             return False
 
         self._recovery_attempts += 1
@@ -223,7 +235,9 @@ class TelemetryService:
 
         self.running = True
         self._stop_event.clear()
-        self._thread = threading.Thread(target=self._telemetry_loop, daemon=True, name="TelemetryThread")
+        self._thread = threading.Thread(
+            target=self._telemetry_loop, daemon=True, name="TelemetryThread"
+        )
         self._thread.start()
         logger.info(f"Telemetry service started with poll interval: {self.poll_interval}s")
 
@@ -281,6 +295,7 @@ class TelemetryService:
 
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
+
         # Create batch collection helper
         def collect_batch_metrics(gpu_ids: List[int], current_time: float) -> Dict[int, GPUMetrics]:
             batch_metrics = {}
@@ -293,7 +308,9 @@ class TelemetryService:
                 except Exception as e:
                     logger.error(f"Error collecting metrics for GPU {gpu_id}: {e}")
                     # Fallback to mock data for this GPU
-                    batch_metrics[gpu_id] = self._get_mock_metrics(gpu_id, current_time, error_state=True)
+                    batch_metrics[gpu_id] = self._get_mock_metrics(
+                        gpu_id, current_time, error_state=True
+                    )
                     self._consecutive_errors += 1
             return batch_metrics
 
@@ -345,13 +362,15 @@ class TelemetryService:
 
     def _process_metrics_update(self, metrics: Dict[int, GPUMetrics]) -> None:
         """Process metrics update by notifying callbacks and publishing to event bus
-        
+
         Args:
             metrics: The current metrics to distribute
         """
         # Notify all registered callbacks with thread safety
         with self._callback_lock:
-            callbacks = list(self.callbacks)  # Create a copy to avoid issues if the list changes during iteration
+            callbacks = list(
+                self.callbacks
+            )  # Create a copy to avoid issues if the list changes during iteration
 
         for callback in callbacks:
             try:
@@ -371,7 +390,7 @@ class TelemetryService:
                         memory_total=gpu_metrics.memory_total,
                         temperature=gpu_metrics.temperature,
                         power_draw=gpu_metrics.power_usage,
-                        fan_speed=gpu_metrics.fan_speed
+                        fan_speed=gpu_metrics.fan_speed,
                     )
                     event_bus.publish_typed(metrics_event)
 
@@ -384,10 +403,10 @@ class TelemetryService:
     @lru_cache(maxsize=32)
     def _get_cached_gpu_name(self, gpu_id: int) -> str:
         """Get cached GPU name to avoid redundant NVML calls
-        
+
         Args:
             gpu_id: The GPU ID to query
-            
+
         Returns:
             GPU name as a string
         """
@@ -399,7 +418,7 @@ class TelemetryService:
             name_bytes = pynvml.nvmlDeviceGetName(handle)
             # Handle different return types from various pynvml versions
             if isinstance(name_bytes, bytes):
-                return name_bytes.decode('utf-8', errors='replace')
+                return name_bytes.decode("utf-8", errors="replace")
             else:
                 # Already a string in newer pynvml versions
                 return name_bytes
@@ -460,7 +479,9 @@ class TelemetryService:
 
             # Get power limit with error handling
             try:
-                power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0  # Convert to watts
+                power_limit = (
+                    pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0
+                )  # Convert to watts
             except Exception as e:
                 logger.debug(f"Error getting power limit: {e}")
                 power_limit = 0.0
@@ -483,8 +504,12 @@ class TelemetryService:
 
             # Get PCIe throughput with error handling
             try:
-                tx_bytes = pynvml.nvmlDeviceGetPcieThroughput(handle, pynvml.NVML_PCIE_UTIL_TX_BYTES)
-                rx_bytes = pynvml.nvmlDeviceGetPcieThroughput(handle, pynvml.NVML_PCIE_UTIL_RX_BYTES)
+                tx_bytes = pynvml.nvmlDeviceGetPcieThroughput(
+                    handle, pynvml.NVML_PCIE_UTIL_TX_BYTES
+                )
+                rx_bytes = pynvml.nvmlDeviceGetPcieThroughput(
+                    handle, pynvml.NVML_PCIE_UTIL_RX_BYTES
+                )
             except Exception as e:
                 logger.debug(f"Error getting PCIe throughput: {e}")
                 tx_bytes = 0
@@ -505,7 +530,7 @@ class TelemetryService:
                 pcie_tx=tx_bytes,
                 pcie_rx=rx_bytes,
                 timestamp=timestamp,
-                error_state=False
+                error_state=False,
             )
         except Exception as e:
             logger.warning(f"Failed to get metrics for GPU {gpu_id}: {e}")
@@ -516,7 +541,9 @@ class TelemetryService:
             # Return mock metrics in case of failure
             return self._get_mock_metrics(gpu_id, timestamp, error_state=True)
 
-    def _get_mock_metrics(self, gpu_id: int, timestamp: float, error_state: bool = False) -> GPUMetrics:
+    def _get_mock_metrics(
+        self, gpu_id: int, timestamp: float, error_state: bool = False
+    ) -> GPUMetrics:
         """Generate mock metrics for testing without actual GPUs
 
         Args:
@@ -589,7 +616,7 @@ class TelemetryService:
             pcie_tx=pcie_tx,
             pcie_rx=pcie_rx,
             timestamp=timestamp,
-            error_state=error_state
+            error_state=error_state,
         )
 
     def reset(self) -> bool:

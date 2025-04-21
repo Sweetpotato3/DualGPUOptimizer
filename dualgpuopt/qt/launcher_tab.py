@@ -5,10 +5,11 @@ from typing import Dict, List, Optional, Tuple
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
     QComboBox, QLineEdit, QTextEdit, QGroupBox, QFormLayout,
-    QCheckBox, QTabWidget, QSplitter, QFileDialog, QMessageBox
+    QCheckBox, QTabWidget, QSplitter, QFileDialog, QMessageBox, QInputDialog
 )
 from PySide6.QtCore import Qt, QProcess, QTimer, Signal, Slot, QSize
 from PySide6.QtGui import QTextCursor, QFont, QIcon
+from PySide6.QtWidgets import QApplication
 
 from dualgpuopt.gui.launcher.launch_controller import LaunchController
 from dualgpuopt.gui.launcher.parameter_resolver import ParameterResolver
@@ -175,26 +176,121 @@ class LauncherTab(QWidget):
     def __init__(self, mock_mode=False):
         super().__init__()
         self.mock_mode = mock_mode
-        self.logger = logger
-        self.logger.info("Initializing Launcher tab")
+        self.logger = logging.getLogger("DualGPUOpt.LauncherTab")
+        self.process_cards = {}
+        self.next_process_id = 1
         
-        # Initialize controllers
-        self.launch_controller = LaunchController()
-        self.parameter_resolver = ParameterResolver()
-        self.model_validator = ModelValidator()
+        # Create launch controller
+        self.launch_controller = LaunchController(mock_mode=mock_mode)
         
-        # Initialize UI
+        # Subscribe to events
+        from dualgpuopt.services.event_service import event_bus
+        event_bus.subscribe("optimizer_settings", self.apply_optimizer_settings)
+        
         self._init_ui()
         
-        # Track running processes
-        self.next_process_id = 1
-        self.process_cards = {}
+    def apply_optimizer_settings(self, settings):
+        """
+        Apply settings received from optimizer tab.
         
-        self.logger.info("Launcher tab initialized")
+        Args:
+            settings: Dictionary with optimizer settings
+        """
+        try:
+            self.logger.info(f"Received optimizer settings: {settings}")
+            
+            # Update framework
+            if "framework" in settings and settings["framework"] in self.framework_options:
+                self.framework_combo.setCurrentText(settings["framework"])
+            
+            # Update model path if model_name is specified
+            if "model_name" in settings and settings["model_name"]:
+                # Check if this is a local path or just a model name
+                model_name = settings["model_name"]
+                if os.path.exists(model_name):
+                    self.model_path_input.setText(model_name)
+                else:
+                    # Try to find in models directory
+                    models_dir = os.path.join(os.getcwd(), "models")
+                    if os.path.exists(models_dir):
+                        model_path = os.path.join(models_dir, f"{model_name}.gguf")
+                        if os.path.exists(model_path):
+                            self.model_path_input.setText(model_path)
+                        else:
+                            # Just use as is
+                            self.model_path_input.setText(model_name)
+                    else:
+                        self.model_path_input.setText(model_name)
+            
+            # Handle framework-specific settings
+            framework = self.framework_combo.currentText()
+            
+            if framework == "llama.cpp":
+                # Update context size
+                if "context_size" in settings:
+                    self.context_input.setText(str(settings["context_size"]))
+                
+                # Update GPU split
+                if "gpu_split" in settings:
+                    self.split_checkbox.setChecked(True)
+                    self.split_input.setText(settings["gpu_split"])
+                    
+            elif framework == "vLLM":
+                # Update context size (max_model_len in vLLM)
+                if "context_size" in settings:
+                    self.context_input.setText(str(settings["context_size"]))
+                
+                # Update tensor parallel size
+                if "tensor_parallel_size" in settings:
+                    self.tp_checkbox.setChecked(True)
+                    self.tp_input.setText(str(settings["tensor_parallel_size"]))
+            
+            # Update command preview with new settings
+            self.update_command_preview()
+            
+            # Show notification
+            self.status_label.setText("Optimizer settings applied")
+            
+        except Exception as e:
+            self.logger.error(f"Error applying optimizer settings: {e}")
+            self.status_label.setText(f"Error applying settings: {str(e)}")
     
     def _init_ui(self):
         """Initialize the UI components."""
+        # Main layout
         main_layout = QVBoxLayout(self)
+        main_layout.setSpacing(16)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        
+        # Header
+        header_layout = QHBoxLayout()
+        title = QLabel("Model Launcher")
+        title_font = QFont()
+        title_font.setPointSize(16)
+        title_font.setBold(True)
+        title.setFont(title_font)
+        header_layout.addWidget(title)
+        
+        # Add preset buttons to header
+        preset_layout = QHBoxLayout()
+        
+        # Save preset button
+        self.save_preset_button = QPushButton("Save Preset")
+        self.save_preset_button.setIcon(QIcon.fromTheme("document-save"))
+        self.save_preset_button.clicked.connect(self.save_preset)
+        preset_layout.addWidget(self.save_preset_button)
+        
+        # Load preset button
+        self.load_preset_button = QPushButton("Load Preset")
+        self.load_preset_button.setIcon(QIcon.fromTheme("document-open"))
+        self.load_preset_button.clicked.connect(self.load_preset)
+        preset_layout.addWidget(self.load_preset_button)
+        
+        # Add preset layout to header with spacer
+        header_layout.addStretch(1)
+        header_layout.addLayout(preset_layout)
+        
+        main_layout.addLayout(header_layout)
         
         # Create a splitter for configuration and processes
         splitter = QSplitter(Qt.Vertical)
@@ -440,4 +536,143 @@ class LauncherTab(QWidget):
         for pid, card in list(self.process_cards.items()):
             if card == process_card:
                 del self.process_cards[pid]
-                break 
+                break
+    
+    def save_preset(self):
+        """Save current configuration as a preset."""
+        try:
+            # Get current settings
+            current_config = self._get_current_config()
+            
+            # Ask for preset name
+            preset_name, ok = QInputDialog.getText(
+                self, "Save Preset", "Enter preset name:", 
+                QLineEdit.Normal, f"{current_config.get('framework', '')}_{current_config.get('model_name', 'config')}"
+            )
+            
+            if not ok or not preset_name:
+                return
+                
+            # Get presets storage
+            from dualgpuopt.services.config_service import config_service
+            presets = config_service.get("launcher_presets", {})
+            
+            # Add new preset
+            presets[preset_name] = current_config
+            
+            # Save to config service
+            config_service.set("launcher_presets", presets)
+            config_service.save()
+            
+            self.logger.info(f"Saved preset: {preset_name}")
+            self.status_label.setText(f"Preset '{preset_name}' saved")
+            
+        except Exception as e:
+            self.logger.error(f"Error saving preset: {e}")
+            QMessageBox.warning(self, "Error", f"Error saving preset: {e}")
+    
+    def load_preset(self):
+        """Load a saved preset configuration."""
+        try:
+            # Get presets storage
+            from dualgpuopt.services.config_service import config_service
+            presets = config_service.get("launcher_presets", {})
+            
+            if not presets:
+                QMessageBox.information(self, "No Presets", "No presets have been saved yet.")
+                return
+                
+            # Show preset selection dialog
+            preset_name, ok = QInputDialog.getItem(
+                self, "Load Preset", "Select a preset:", 
+                list(presets.keys()), 0, False
+            )
+            
+            if not ok or not preset_name:
+                return
+                
+            # Get preset configuration
+            config = presets.get(preset_name, {})
+            if not config:
+                self.logger.warning(f"Preset '{preset_name}' is empty or invalid")
+                return
+                
+            # Apply the configuration
+            self._apply_config(config)
+            
+            self.logger.info(f"Loaded preset: {preset_name}")
+            self.status_label.setText(f"Preset '{preset_name}' loaded")
+            
+        except Exception as e:
+            self.logger.error(f"Error loading preset: {e}")
+            QMessageBox.warning(self, "Error", f"Error loading preset: {e}")
+    
+    def _get_current_config(self):
+        """Get current configuration as a dictionary."""
+        config = {
+            "framework": self.framework_combo.currentText(),
+            "model_path": self.model_path_input.text(),
+        }
+        
+        # Framework-specific settings
+        if config["framework"] == "llama.cpp":
+            config.update({
+                "context_size": self.context_input.text(),
+                "gpu_split": self.split_input.text() if self.split_checkbox.isChecked() else None,
+                "extra_args": self.args_input.text()
+            })
+        elif config["framework"] == "vLLM":
+            config.update({
+                "context_size": self.context_input.text(),
+                "tensor_parallel_size": self.tp_input.text() if self.tp_checkbox.isChecked() else None,
+                "extra_args": self.args_input.text()
+            })
+        
+        return config
+    
+    def _apply_config(self, config):
+        """Apply a configuration dictionary to the UI."""
+        # Set framework
+        if "framework" in config and config["framework"] in self.framework_options:
+            self.framework_combo.setCurrentText(config["framework"])
+            
+        # Set model path
+        if "model_path" in config:
+            self.model_path_input.setText(config["model_path"])
+            
+        # Handle framework-specific settings
+        framework = config.get("framework")
+        
+        # Wait for framework UI to update
+        QApplication.processEvents()
+        
+        if framework == "llama.cpp":
+            # Set context size
+            if "context_size" in config:
+                self.context_input.setText(str(config["context_size"]))
+                
+            # Set GPU split
+            if "gpu_split" in config and config["gpu_split"]:
+                self.split_checkbox.setChecked(True)
+                self.split_input.setText(config["gpu_split"])
+                
+            # Set extra args
+            if "extra_args" in config:
+                self.args_input.setText(config["extra_args"])
+                
+        elif framework == "vLLM":
+            # Set context size
+            if "context_size" in config:
+                self.context_input.setText(str(config["context_size"]))
+                
+            # Set tensor parallel size
+            if "tensor_parallel_size" in config and config["tensor_parallel_size"]:
+                self.tp_checkbox.setChecked(True)
+                self.tp_input.setText(str(config["tensor_parallel_size"]))
+                
+            # Set extra args
+            if "extra_args" in config:
+                self.args_input.setText(config["extra_args"])
+        
+        # Update command preview
+        self.update_command_preview() 
