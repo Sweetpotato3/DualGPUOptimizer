@@ -12,4 +12,4 @@ __all__ = [
     "generate_llama_cpp_cmd",
     "generate_vllm_cmd",
     "generate_env_vars",
-] 
+]

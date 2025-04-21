@@ -1,184 +1,274 @@
 """
 GPU info module with platform-independent GPU detection
+(Compatibility layer for refactored gpu module)
 """
 from __future__ import annotations
-import platform, logging
-from typing import List, Dict, Any, Optional
+import logging
+import os
+from typing import List, Dict, Any
 
+# Set up the logger
 logger = logging.getLogger("DualGPUOpt.GPUInfo")
 
-IS_MAC = platform.system() == "Darwin"
-IS_NVIDIA = not IS_MAC
+# Check environment variables for configuration
+ENV_MOCK_GPU = os.environ.get("DUALGPUOPT_MOCK_GPU", "").lower() in ("1", "true", "yes", "on")
+ENV_GPU_COUNT = int(os.environ.get("DUALGPUOPT_GPU_COUNT", "0"))
 
-# Global flag for mock mode
-MOCK_MODE = False
-
+# Import from refactored GPU module
 try:
-    if IS_NVIDIA:
-        import pynvml
-        pynvml.nvmlInit()
-except (ImportError, Exception) as e:
-    logger.warning(f"Failed to initialize NVML: {e}")
-    MOCK_MODE = True
+    # Import the core functionality from the refactored modules
+    from dualgpuopt.gpu.common import IS_NVIDIA, IS_MAC, MOCK_MODE, NVML_INITIALIZED
+    from dualgpuopt.gpu.info import query, get_gpu_count, get_gpu_names
+    from dualgpuopt.gpu.mock import set_mock_mode, get_mock_mode, generate_mock_gpus
+    from dualgpuopt.gpu.monitor import get_memory_info, get_utilization, get_temperature, get_power_usage
 
-def set_mock_mode(enabled: bool) -> None:
-    """Enable or disable mock GPU mode"""
-    global MOCK_MODE
-    MOCK_MODE = enabled
-    logger.info(f"Mock GPU mode {'enabled' if enabled else 'disabled'}")
+    # Override with environment variables if set
+    if ENV_MOCK_GPU:
+        set_mock_mode(True)
+        logger.info("Mock GPU mode enabled via environment variable")
 
-def get_mock_mode() -> bool:
-    """Get current mock mode status"""
-    return MOCK_MODE
+    # Use environment-specified GPU count if provided
+    if ENV_GPU_COUNT > 0:
+        logger.info(f"Using environment-specified GPU count: {ENV_GPU_COUNT}")
 
-def _query_nvidia() -> list[dict]:
-    """Query NVIDIA GPUs using NVML"""
-    if MOCK_MODE:
-        return _generate_mock_gpus()
-    
-    try:
-        gpus: list[dict] = []
-        for idx in range(pynvml.nvmlDeviceGetCount()):
-            h = pynvml.nvmlDeviceGetHandleByIndex(idx)
-            util = pynvml.nvmlDeviceGetUtilizationRates(h)
-            mem = pynvml.nvmlDeviceGetMemoryInfo(h)
-            temp = pynvml.nvmlDeviceGetTemperature(h, pynvml.NVML_TEMPERATURE_GPU)
-            power = pynvml.nvmlDeviceGetPowerUsage(h) / 1000.0  # Convert from mW to W
-            
-            # Get GPU name with proper string handling
-            device_name = pynvml.nvmlDeviceGetName(h)
-            if isinstance(device_name, bytes):
-                device_name = device_name.decode('utf-8')
-            
-            gpus.append(
-                {
-                    "id": idx,
-                    "name": device_name,
-                    "type": "nvidia",
-                    "util": util.gpu,
-                    "mem_total": mem.total // 1_048_576,
-                    "mem_used": (mem.total - mem.free) // 1_048_576,
-                    "temperature": temp,
-                    "power_usage": power,
-                    "clock_sm": pynvml.nvmlDeviceGetClockInfo(h, pynvml.NVML_CLOCK_SM),
-                    "clock_memory": pynvml.nvmlDeviceGetClockInfo(h, pynvml.NVML_CLOCK_MEM),
+    logger.info("Successfully imported refactored GPU module")
+except ImportError as e:
+    logger.error(f"Failed to import refactored GPU module: {e}")
+    # Keep basic functionality working if refactored modules fail to import
+    IS_NVIDIA = True
+    IS_MAC = False
+    MOCK_MODE = ENV_MOCK_GPU or True
+    NVML_INITIALIZED = False
+
+    def query() -> List[Dict[str, Any]]:
+        """Fallback query function that returns mock data"""
+        return _generate_mock_gpus(ENV_GPU_COUNT if ENV_GPU_COUNT > 0 else 2)
+
+    def get_gpu_count() -> int:
+        """Fallback GPU count function"""
+        return ENV_GPU_COUNT if ENV_GPU_COUNT > 0 else len(query())
+
+    def get_gpu_names() -> List[str]:
+        """Fallback GPU names function"""
+        return [gpu["name"] for gpu in query()]
+
+    def set_mock_mode(enabled: bool) -> None:
+        """Fallback to enable/disable mock mode"""
+        global MOCK_MODE
+        MOCK_MODE = enabled
+        logger.info(f"Mock GPU mode {'enabled' if enabled else 'disabled'}")
+
+    def get_mock_mode() -> bool:
+        """Get current mock mode status"""
+        return MOCK_MODE
+
+    def get_memory_info(gpu_id: int = 0) -> Dict[str, int]:
+        """Fallback memory info function"""
+        try:
+            gpus = query()
+            if gpu_id < len(gpus):
+                gpu = gpus[gpu_id]
+                return {
+                    "total": gpu["mem_total"],
+                    "used": gpu["mem_used"],
+                    "free": gpu["mem_total"] - gpu["mem_used"]
                 }
-            )
-        return gpus
-    except Exception as e:
-        logger.error(f"Error querying NVIDIA GPUs: {e}")
-        return _generate_mock_gpus()
+        except Exception as e:
+            logger.error(f"Error getting memory info (fallback): {e}")
 
-def _query_mac() -> list[dict]:
-    """Query Apple GPUs using powermetrics"""
-    if MOCK_MODE:
-        return _generate_mock_gpus()
-    
-    import subprocess, json, shutil, psutil
+        # Default safe values
+        return {"total": 8192, "used": 0, "free": 8192}
 
-    if not shutil.which("powermetrics"):
-        logger.debug("powermetrics not found; returning CPU stats only")
-        return []
+    def get_utilization(gpu_id: int = 0) -> int:
+        """Fallback utilization function"""
+        try:
+            gpus = query()
+            if gpu_id < len(gpus):
+                return gpus[gpu_id]["util"]
+        except Exception as e:
+            logger.error(f"Error getting utilization (fallback): {e}")
+        return 0
 
-    try:
-        out = subprocess.check_output(
-            ["powermetrics", "-n", "1", "-i", "200", "--json"],
-            text=True,
-            stderr=subprocess.DEVNULL,
-        )
-        data = json.loads(out)
-        gpu = data["gpu_status"]["activeGPU"]
-        return [
-            {
-                "id": 0,
-                "name": gpu["modelName"],
-                "type": "apple",
-                "util": gpu.get("utilisationPercent", 0),
-                "mem_total": psutil.virtual_memory().total // 1_048_576,
-                "mem_used": psutil.virtual_memory().used // 1_048_576,
-                "temperature": None,  # powermetrics doesn't provide GPU temp
-                "power_usage": 0.0,   # Not available on Mac
-                "clock_sm": 0,
-                "clock_memory": 0,
-            }
-        ]
-    except Exception as e:
-        logger.warning(f"powermetrics failed: {e}")
-        return _generate_mock_gpus()
+    def get_temperature(gpu_id: int = 0) -> float:
+        """Fallback temperature function"""
+        try:
+            gpus = query()
+            if gpu_id < len(gpus):
+                return gpus[gpu_id]["temperature"]
+        except Exception as e:
+            logger.error(f"Error getting temperature (fallback): {e}")
+        return 0.0
 
-def _generate_mock_gpus() -> list[dict]:
-    """Generate mock GPU data for testing"""
+    def get_power_usage(gpu_id: int = 0) -> float:
+        """Fallback power usage function"""
+        try:
+            gpus = query()
+            if gpu_id < len(gpus):
+                return gpus[gpu_id]["power_usage"]
+        except Exception as e:
+            logger.error(f"Error getting power usage (fallback): {e}")
+        return 0.0
+
+# Import error handling
+try:
+    from dualgpuopt.error_handler import handle_exceptions, ErrorCategory, ErrorSeverity
+    error_handler_available = True
+except ImportError:
+    error_handler_available = False
+    logger.warning("Error handler not available, using simplified error handling")
+
+# Apply error handling decorator if available
+def _apply_error_handler(component="GPUInfo", category=ErrorCategory.GPU_ERROR):
+    """Apply error handling decorator if available"""
+    def decorator(func):
+        if error_handler_available:
+            return handle_exceptions(component=component,
+                                    severity=ErrorSeverity.ERROR,
+                                    reraise=False)(func)
+        else:
+            # Simple error handling if dedicated error handler isn't available
+            @functools.wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    return func(*args, **kwargs)
+                except Exception as e:
+                    logger.error(f"Error in {func.__name__}: {e}")
+                    # Return appropriate default values based on function name
+                    if "count" in func.__name__:
+                        return 0
+                    elif "names" in func.__name__:
+                        return []
+                    elif "memory" in func.__name__:
+                        return {"total": 8192, "used": 0, "free": 8192}
+                    elif any(x in func.__name__ for x in ["temperature", "power", "util"]):
+                        return 0
+                    return None
+            return wrapper
+    return decorator
+
+# Compatibility function for code expecting get_gpu_info
+@_apply_error_handler()
+def get_gpu_info() -> List[Dict[str, Any]]:
+    """Get GPU information (compatibility function)"""
+    return query()
+
+# Generate mock GPU data with configurable count
+def _generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
+    """Generate mock GPU data for testing
+
+    Args:
+        count: Number of mock GPUs to generate
+
+    Returns:
+        List of GPU dictionaries with mock data
+    """
     import random
-    
-    # Generate 1-2 GPUs with realistic specs
-    gpu_count = 2  # Fixed at 2 for dual GPU optimization
-    
-    mock_gpus = []
-    
-    gpu_templates = [
-        {
-            "name": "NVIDIA GeForce RTX 4090",
-            "mem_total": 24576,  # 24 GB
-            "mem_base_used": 1024,  # Base memory usage (1 GB)
-            "max_util": 98,
-            "max_temp": 85,
-            "power_range": (30, 450),  # Min/max power in W
-        },
-        {
-            "name": "NVIDIA GeForce RTX 4080",
-            "mem_total": 16384,  # 16 GB
-            "mem_base_used": 768,  # Base memory usage
-            "max_util": 98,
-            "max_temp": 83,
-            "power_range": (25, 320),  # Min/max power in W
-        },
-    ]
-    
-    for i in range(gpu_count):
-        # Use the template for this index, or repeat the last one if out of templates
-        template_idx = min(i, len(gpu_templates) - 1)
-        template = gpu_templates[template_idx]
-        
-        # Random utilization between 1-max_util
-        util = random.randint(1, template["max_util"])
-        
-        # Memory usage correlates somewhat with utilization
-        mem_used = template["mem_base_used"] + int(util / 100 * (template["mem_total"] * 0.4))
-        
-        # Temperature correlates with utilization
-        temp_base = 35
-        temp_range = template["max_temp"] - temp_base
-        temp = temp_base + (util / 100 * temp_range)
-        
-        # Power usage correlates with utilization
-        pmin, pmax = template["power_range"]
-        power = pmin + (util / 100 * (pmax - pmin))
-        
-        # Clock speeds correlate with utilization
-        clock_base = 500
-        clock_max = 2500
-        clock = clock_base + (util / 100 * (clock_max - clock_base))
-        
-        mock_gpus.append({
-            "id": i,
-            "name": template["name"],
-            "type": "nvidia",
-            "util": util,
-            "mem_total": template["mem_total"],
-            "mem_used": mem_used,
-            "temperature": temp,
-            "power_usage": power,
-            "clock_sm": int(clock),
-            "clock_memory": int(clock * 0.75),  # Memory clock is typically lower
-        })
-    
-    return mock_gpus
 
-def query() -> list[dict]:
-    """Query GPU information with platform detection"""
-    if MOCK_MODE:
-        return _generate_mock_gpus()
-    
-    if IS_NVIDIA:
-        return _query_nvidia()
-    return _query_mac() 
+    gpus = []
+    for i in range(count):
+        # Create different tiers of GPUs
+        if i == 0:
+            # High-end GPU
+            name = "NVIDIA GeForce RTX 5090 (MOCK)"
+            mem_total = 24 * 1024  # 24 GB
+            mem_used = random.randint(2 * 1024, 8 * 1024)  # 2-8 GB used
+            power_limit = 450
+        elif i == 1:
+            # Mid-range GPU
+            name = "NVIDIA GeForce RTX 4080 (MOCK)"
+            mem_total = 16 * 1024  # 16 GB
+            mem_used = random.randint(1 * 1024, 6 * 1024)  # 1-6 GB used
+            power_limit = 320
+        else:
+            # Low-end GPU
+            name = f"NVIDIA GeForce RTX 3060 #{i} (MOCK)"
+            mem_total = 12 * 1024  # 12 GB
+            mem_used = random.randint(1 * 1024, 4 * 1024)  # 1-4 GB used
+            power_limit = 170
+
+        # Generate other values
+        utilization = random.randint(5, 80)
+        temperature = 40 + int(utilization / 2)
+        power_usage = (power_limit * utilization / 100) + random.randint(-20, 20)
+
+        gpus.append({
+            "id": i,
+            "name": name,
+            "type": "cuda",
+            "mem_total": mem_total,
+            "mem_used": mem_used,
+            "util": utilization,
+            "temperature": temperature,
+            "power_usage": power_usage,
+            "power_limit": power_limit,
+            "clock_sm": random.randint(1500, 2000),
+            "clock_memory": random.randint(8000, 10000),
+        })
+
+    return gpus
+
+# Mock GPU class for compatibility
+class GPU:
+    """GPU class for backward compatibility"""
+    def __init__(self, gpu_data: Dict[str, Any]):
+        self.id = gpu_data.get("id", 0)
+        self.name = gpu_data.get("name", "Unknown GPU")
+        self.type = gpu_data.get("type", "unknown")
+        self.mem_total = gpu_data.get("mem_total", 0)
+        self.mem_used = gpu_data.get("mem_used", 0)
+        self.util = gpu_data.get("util", 0)
+        self.temperature = gpu_data.get("temperature", 0.0)
+        self.power_usage = gpu_data.get("power_usage", 0.0)
+        self.clock_sm = gpu_data.get("clock_sm", 0)
+        self.clock_memory = gpu_data.get("clock_memory", 0)
+
+    @property
+    def mem_free(self) -> int:
+        """Get free memory in MB"""
+        return self.mem_total - self.mem_used
+
+    def get_memory_info(self) -> Dict[str, int]:
+        """Get memory information"""
+        return {
+            "total": self.mem_total,
+            "used": self.mem_used,
+            "free": self.mem_free
+        }
+
+    def get_utilization(self) -> int:
+        """Get GPU utilization"""
+        return self.util
+
+    def get_temperature(self) -> float:
+        """Get GPU temperature"""
+        return self.temperature
+
+    def get_power_usage(self) -> float:
+        """Get power usage in watts"""
+        return self.power_usage
+
+    @classmethod
+    @_apply_error_handler()
+    def get_gpus(cls) -> List["GPU"]:
+        """Get list of GPU objects"""
+        try:
+            return [cls(gpu_data) for gpu_data in query()]
+        except Exception as e:
+            logger.error(f"Error getting GPU objects: {e}")
+            # Return at least one mock GPU as fallback
+            return [cls(_generate_mock_gpus(1)[0])]
+
+    @classmethod
+    @_apply_error_handler()
+    def get_gpu_count(cls) -> int:
+        """Get number of GPUs"""
+        return get_gpu_count()
+
+    @classmethod
+    @_apply_error_handler()
+    def get_gpu_names(cls) -> List[str]:
+        """Get list of GPU names"""
+        return get_gpu_names()
+
+# For backward compatibility - re-export the _generate_mock_gpus function
+generate_mock_gpus = _generate_mock_gpus

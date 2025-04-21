@@ -55,11 +55,11 @@ def autocast(dtype=None):
 def scaler(enabled: bool = True) -> _t.Any:
     """
     Return a GradScaler that follows mpolicy's dtype.
-    
+
     No-op if PyTorch is not available.
     """
     if not TORCH_AVAILABLE:
         _log.warning("scaler called but PyTorch is not available")
         return None
-    
-    return torch.cuda.amp.GradScaler(enabled=enabled) 
+
+    return torch.cuda.amp.GradScaler(enabled=enabled)

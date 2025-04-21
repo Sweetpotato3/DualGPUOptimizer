@@ -18,4 +18,4 @@ except Exception as e:
     logger.error(f"Error launching modern UI: {e}", exc_info=True)
     import traceback
     traceback.print_exc()
-    sys.exit(1) 
+    sys.exit(1)

@@ -1,17 +1,19 @@
-<<<<<<< HEAD
-#!/usr/bin/env python3
 """
 Standalone GUI constants module for DualGPUOptimizer.
 This script contains all the GUI constants in one place to avoid import issues.
 """
 
-from typing import Dict, Tuple
 from __future__ import annotations
+from typing import Dict, Tuple
 from pathlib import Path
+
+# Application info
+APP_NAME = "DualGPUOptimizer"
+APP_VERSION = "0.2.0"
 
 # UI Padding constants
 PAD = 10  # Standard padding for UI elements
-PROGRESSBAR_THICKNESS = 8  # Thickness for progress bars
+PROGRESSBAR_THICKNESS = 14  # Thickness for progress bars
 
 # Theme Colors (Purple Style based on Icon)
 PURPLE_PRIMARY = "#7b1fa2"    # Main purple from icon
@@ -33,14 +35,14 @@ CHART_HISTORY_LENGTH = 60     # Number of data points to keep in history (60 sec
 
 # Color mapping for different metrics/GPUs
 GPU_COLORS = {
-    0: PURPLE_PRIMARY,      # Primary GPU
-    1: BLUE_ACCENT,         # Secondary GPU
+    0: "#4287f5",  # Blue for primary GPU
+    1: "#f542a7",  # Pink for secondary GPU
     2: PINK_ACCENT,         # Additional GPU
     3: CYAN_ACCENT,         # Additional GPU
-    "temp": ORANGE_ACCENT,    # Temperature
-    "power": CYAN_ACCENT,     # Power
-    "memory": PINK_ACCENT,    # Memory
-    "utilization": PURPLE_PRIMARY, # Utilization
+    "temp": "#f5a742",  # Orange for temperature
+    "power": "#42f584",  # Green for power
+    "memory": "#f54242",  # Red for memory
+    "utilization": "#42f5f5",  # Cyan for utilization
 }
 
 # Font Constants
@@ -67,6 +69,14 @@ COLORS: Dict[str, str] = {
 # Theme constants
 DARK_THEME = "darkly"
 LIGHT_THEME = "litera"
+THEME = DARK_THEME
+
+# UI settings
+STATUS_DURATION = 5000  # duration to show status messages in ms
+VRAM_WARN_MB = 256     # minimum MB reclaimed to show as success
+
+# Asset paths - use relative path from this file
+ASSET_DIR = Path(__file__).parent.parent / "assets"
 
 # Dashboard refresh rates (ms)
 DASHBOARD_REFRESH_RATE = 1000
@@ -97,67 +107,5 @@ STATUS_COLORS: Dict[str, str] = {
     "disabled": "#9e9e9e" # Gray
 }
 
-APP_NAME        = "DualGPUOptimizer"
-THEME           = "darkly"
-ASSET_DIR       = Path(__file__).parent.parent / "assets"
-BASE_FONT       = ("Segoe UI", 10)
-STATUS_DURATION = 5000            # ms
-VRAM_WARN_MB    = 256             # warn banner if < 256 MB reclaimed 
-=======
-"""
-Common constants for the GUI modules.
-This module should be importable by all GUI components without causing circular imports.
-"""
-
-# Layout constants
-PAD = 16  # Global padding, doubled from original 8
-PROGRESSBAR_THICKNESS = 14
-
-# Chart colors for GPU visualization
-GPU_COLORS = [
-    "#33ff55",  # Lime for GPU-0
-    "#00ffff",  # Cyan for GPU-1
-    "#ff5500",  # Orange
-    "#aa00ff",  # Purple
-    "#ffcc00",  # Yellow
-    "#ff0066",  # Pink
-    "#00ffcc",  # Teal
-    "#ffffff",  # White
-]
-
-# Default values
-DEFAULT_CHART_BG = "#1a2327"
-DEFAULT_FONT = "Segoe UI"
-DEFAULT_FONT_SIZE = 11
-
-"""
-Shared constants for the GUI components of the DualGPUOptimizer.
-"""
-from __future__ import annotations
-
-# UI Padding constants
-PAD = 10  # Standard padding for UI elements
-
-# Chart and visualization constants
-DEFAULT_CHART_BG = "#1f1f1f"  # Dark background for charts
-DEFAULT_CHART_FG = "#ffffff"  # Light foreground for charts
-DEFAULT_CHART_HEIGHT = 150    # Default height for charts
-
-# Color constants
-GPU_COLORS = {
-    0: "#4287f5",  # Blue for primary GPU
-    1: "#f542a7",  # Pink for secondary GPU
-    "temp": "#f5a742",  # Orange for temperature
-    "power": "#42f584",  # Green for power
-    "memory": "#f54242",  # Red for memory
-    "utilization": "#42f5f5",  # Cyan for utilization
-}
-
-# Update intervals (milliseconds)
-UPDATE_INTERVAL_MS = 1000  # Default interval for UI updates
-FAST_UPDATE_INTERVAL_MS = 500  # Faster interval for critical components
-SLOW_UPDATE_INTERVAL_MS = 2000  # Slower interval for less critical components
-
-# Chart history length
-CHART_HISTORY_LENGTH = 60  # Number of data points to keep in history (60 seconds) 
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
+# Base font
+BASE_FONT = ("Segoe UI", 10)

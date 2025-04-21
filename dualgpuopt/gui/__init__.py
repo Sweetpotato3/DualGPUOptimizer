@@ -23,18 +23,7 @@ except ImportError:
             spec.loader.exec_module(constants)
             sys.modules["dualgpuopt.gui.constants"] = constants
 
-# Import UI components - these are lazily loaded when needed
-from . import main_app  # Main application entry point
-from . import dashboard  # GPU monitoring dashboard
-from . import optimizer_tab  # GPU split optimizer interface
-from . import modern_ui  # Modern ttkbootstrap UI (2025 update)
-
-from dualgpuopt.gui.dashboard import DashboardView
-from dualgpuopt.gui.optimizer_tab import OptimizerTab
-from dualgpuopt.gui.launcher import LauncherTab
-from dualgpuopt.gui.main_app import MainApplication, run
-from dualgpuopt.gui.modern_ui import ModernApp, run_modern_app
-
+# We'll import the components lazily as needed to avoid circular imports
 __all__ = [
     'DashboardView',
     'OptimizerTab',
@@ -44,6 +33,70 @@ __all__ = [
     'run',
     'run_modern_app'
 ]
+
+# Forward declarations of classes to avoid circular imports
+DashboardView = None
+OptimizerTab = None
+LauncherTab = None
+MainApplication = None
+ModernApp = None
+run = None
+run_modern_app = None
+
+def _import_component(name):
+    """Import a component on demand to avoid circular dependencies"""
+    try:
+        return importlib.import_module(f"dualgpuopt.gui.{name}")
+    except ImportError as e:
+        logger.warning(f"Could not import {name}: {e}")
+        return None
+
+def get_dashboard_view():
+    """Get the DashboardView class, importing it if necessary"""
+    global DashboardView
+    if DashboardView is None:
+        module = _import_component("dashboard")
+        if module:
+            DashboardView = module.DashboardView
+    return DashboardView
+
+def get_optimizer_tab():
+    """Get the OptimizerTab class, importing it if necessary"""
+    global OptimizerTab
+    if OptimizerTab is None:
+        module = _import_component("optimizer_tab")
+        if module:
+            OptimizerTab = module.OptimizerTab
+    return OptimizerTab
+
+def get_launcher_tab():
+    """Get the LauncherTab class, importing it if necessary"""
+    global LauncherTab
+    if LauncherTab is None:
+        module = _import_component("launcher")
+        if module:
+            LauncherTab = module.LauncherTab
+    return LauncherTab
+
+def get_main_application():
+    """Get the MainApplication class, importing it if necessary"""
+    global MainApplication, run
+    if MainApplication is None:
+        module = _import_component("main_app")
+        if module:
+            MainApplication = module.MainApplication
+            run = module.run
+    return MainApplication
+
+def get_modern_app():
+    """Get the ModernApp class, importing it if necessary"""
+    global ModernApp, run_modern_app
+    if ModernApp is None:
+        module = _import_component("modern_ui")
+        if module:
+            ModernApp = module.ModernApp
+            run_modern_app = module.run_modern_app
+    return ModernApp
 
 # Check for required modules to provide better error messages
 try:
@@ -65,34 +118,6 @@ except ImportError:
     logger.warning("PyTorch not found - some features will be limited")
     TORCH_AVAILABLE = False
 
-# Import modern GUI components
-try:
-    # Import directly from the module, not relative import
-    from dualgpuopt.gui import modern_ui
-    
-    # Provide the run function
-    def run_app(config: Optional[Dict[str, Any]] = None) -> None:
-        """Run the modern UI application (directly)"""
-        # Import here to avoid circular imports
-        from dualgpuopt.gui.modern_ui import run_modern_app
-        run_modern_app()
-except ImportError as e:
-    logger.warning(f"Could not import modern UI: {e}")
-    
-    # Fallback for modern UI
-    def run_app(config: Optional[Dict[str, Any]] = None) -> None:
-        """Fallback for running the modern UI"""
-        logger.warning("Using fallback UI launcher")
-        # Try with different imports
-        try:
-            # Try importing from module
-            from dualgpuopt.gui.main_app import run
-            logger.info("Falling back to legacy UI")
-            run()
-        except ImportError:
-            logger.error("Failed to load UI - no suitable module found")
-            sys.exit(1)
-
 def run_app() -> None:
     """
     Run the appropriate GUI application based on availability.
@@ -103,24 +128,31 @@ def run_app() -> None:
         # Check if modern_ui module exists before attempting to import
         if importlib.util.find_spec("dualgpuopt.gui.modern_ui") is not None:
             logger.info("Loading modern UI implementation")
-            from dualgpuopt.gui.modern_ui import run_modern_app
-            run_modern_app()
-            return
+            modern_app = get_modern_app()
+            if modern_app and run_modern_app:
+                run_modern_app()
+                return
+            else:
+                logger.warning("Modern UI classes not found, falling back to legacy UI")
         else:
             logger.warning("Modern UI module not found, falling back to legacy UI")
     except ImportError as e:
         logger.warning(f"Failed to import modern UI: {e}")
     except Exception as e:
         logger.error(f"Error running modern UI: {e}", exc_info=True)
-    
+
     # Fall back to legacy UI if modern UI fails
     try:
         logger.info("Loading legacy UI implementation")
-        from dualgpuopt.gui.main_app import run
-        run()
+        main_app = get_main_application()
+        if main_app and run:
+            run()
+        else:
+            logger.error("Failed to load legacy UI classes")
+            sys.exit(1)
     except ImportError as e:
         logger.error(f"Failed to import legacy UI: {e}")
         sys.exit(1)
     except Exception as e:
         logger.error(f"Error running legacy UI: {e}", exc_info=True)
-        sys.exit(1) 
+        sys.exit(1)

@@ -33,7 +33,7 @@ class Telemetry:
 
 class TelemetryMiddleware(Protocol):
     """Protocol for telemetry middleware components."""
-    
+
     def process(self, telemetry: Telemetry) -> None:
         """Process telemetry data."""
         ...
@@ -41,11 +41,11 @@ class TelemetryMiddleware(Protocol):
 
 class EventBusMiddleware:
     """Middleware that publishes telemetry data to the event bus."""
-    
+
     def __init__(self) -> None:
         """Initialize the middleware."""
         self.logger = logging.getLogger("dualgpuopt.telemetry.middleware")
-        
+
     def process(self, telemetry: Telemetry) -> None:
         """Publish telemetry data to the event bus."""
         try:
@@ -63,7 +63,7 @@ class EventBusMiddleware:
                 mem_total = 0
                 if i < len(gpus):
                     mem_total = gpus[i].mem_total
-                
+
                 # Create and publish the GPU metrics event
                 event = GPUMetricsEvent(
                     gpu_index=i,
@@ -81,11 +81,11 @@ class EventBusMiddleware:
 
 class LoggingMiddleware:
     """Middleware that logs telemetry data for debugging."""
-    
+
     def __init__(self) -> None:
         """Initialize the middleware."""
         self.logger = logging.getLogger("dualgpuopt.telemetry.logging")
-        
+
     def process(self, telemetry: Telemetry) -> None:
         """Log telemetry data."""
         try:
@@ -105,21 +105,21 @@ def _collect() -> Telemetry:
     fan_speed = []
     graphics_clock = []
     memory_clock = []
-    
+
     try:
         import pynvml as nv
         nv.nvmlInit()
-        
+
         try:
             for g in gpus:
                 h = nv.nvmlDeviceGetHandleByIndex(g.index)
-                
+
                 # Basic metrics (always collected)
                 util = nv.nvmlDeviceGetUtilizationRates(h)
                 load.append(util.gpu)
                 mem.append(g.mem_used)
                 memory_util.append(util.memory)
-                
+
                 # PCIe throughput
                 try:
                     bw = nv.nvmlDeviceGetPcieThroughput(h, nv.NVML_PCIE_UTIL_RX_BYTES)
@@ -129,33 +129,33 @@ def _collect() -> Telemetry:
                 except Exception:
                     rx.append(0)
                     tx.append(0)
-                    
+
                 # Temperature
                 try:
                     temp = nv.nvmlDeviceGetTemperature(h, nv.NVML_TEMPERATURE_GPU)
                     temperature.append(temp)
                 except Exception:
                     temperature.append(0)
-                    
+
                 # Power usage
                 try:
                     power = nv.nvmlDeviceGetPowerUsage(h) / 1000.0  # Convert from mW to W
                     power_usage.append(round(power, 1))
                 except Exception:
                     power_usage.append(0.0)
-                    
+
                 # Fan speed
                 try:
                     fan = nv.nvmlDeviceGetFanSpeed(h)
                     fan_speed.append(fan)
                 except Exception:
                     fan_speed.append(0)
-                    
+
                 # Clock speeds
                 try:
                     g_clock = nv.nvmlDeviceGetClockInfo(h, nv.NVML_CLOCK_GRAPHICS)
                     graphics_clock.append(g_clock)
-                    
+
                     m_clock = nv.nvmlDeviceGetClockInfo(h, nv.NVML_CLOCK_MEM)
                     memory_clock.append(m_clock)
                 except Exception:
@@ -166,7 +166,7 @@ def _collect() -> Telemetry:
     except Exception as e:
         # In case of any error with NVML, log it and continue with mock data
         logging.getLogger("dualgpuopt.telemetry").error(f"Error in telemetry collection: {e}")
-        
+
         # If we have no data yet, add mock data for each GPU
         if not load and gpus:
             for _ in range(len(gpus)):
@@ -180,7 +180,7 @@ def _collect() -> Telemetry:
                 fan_speed.append(30)
                 graphics_clock.append(1500)
                 memory_clock.append(7000)
-        
+
     return Telemetry(
         time.time(),
         load,
@@ -203,13 +203,13 @@ _middleware: List[TelemetryMiddleware] = []
 def register_middleware(middleware: TelemetryMiddleware) -> None:
     """Register a middleware component to process telemetry data."""
     _middleware.append(middleware)
-    
+
 
 def unregister_middleware(middleware: TelemetryMiddleware) -> None:
     """Unregister a middleware component."""
     if middleware in _middleware:
         _middleware.remove(middleware)
-        
+
 
 def clear_middleware() -> None:
     """Clear all middleware components."""
@@ -219,24 +219,24 @@ def clear_middleware() -> None:
 def start_stream(interval: float=1.0) -> queue.Queue[Telemetry]:
     """
     Start collecting telemetry at the specified interval.
-    
+
     Args:
         interval: Polling interval in seconds
-        
+
     Returns:
         Queue of telemetry objects
     """
     q: queue.Queue[Telemetry] = queue.Queue()
-    
+
     def run() -> None:
         while True:
             try:
                 # Collect telemetry
                 telemetry = _collect()
-                
+
                 # Put in queue for consumers
                 q.put(telemetry)
-                
+
                 # Process through middleware pipeline
                 for mw in _middleware:
                     try:
@@ -251,11 +251,11 @@ def start_stream(interval: float=1.0) -> queue.Queue[Telemetry]:
                 )
             finally:
                 time.sleep(interval)
-                
+
     th = threading.Thread(target=run, daemon=True)
     th.start()
     return q
 
 
 # Register default middleware
-register_middleware(EventBusMiddleware()) 
+register_middleware(EventBusMiddleware())

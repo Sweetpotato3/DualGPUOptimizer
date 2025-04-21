@@ -9,7 +9,7 @@ from PyInstaller.utils.hooks import get_module_file_attribute, collect_data_file
 try:
     gui_path = Path(get_module_file_attribute('dualgpuopt.gui'))
     package_path = gui_path.parent
-    
+
     # Collect all Python files in the gui directory
     datas = []
     if gui_path.exists():
@@ -20,4 +20,4 @@ except (ImportError, ModuleNotFoundError):
     datas = []
 
 # Collect all data files too
-datas.extend(collect_data_files('dualgpuopt.gui', includes=['*.py', '*.png', '*.json'])) 
+datas.extend(collect_data_files('dualgpuopt.gui', includes=['*.py', '*.png', '*.json']))

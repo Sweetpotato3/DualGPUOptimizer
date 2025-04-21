@@ -1,1 +1,1 @@
-"""Batch processing module for optimized model inference.""" 
+"""Batch processing module for optimized model inference."""

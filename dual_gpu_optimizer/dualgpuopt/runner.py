@@ -32,4 +32,4 @@ class Runner:
 
     def stop(self) -> None:
         if self.proc and self.proc.poll() is None:
-            self.proc.terminate() 
+            self.proc.terminate()

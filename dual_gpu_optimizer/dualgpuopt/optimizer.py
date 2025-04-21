@@ -48,4 +48,4 @@ def vllm_command(model_path: str, tp: int) -> str:
         "python -m vllm.entrypoints.openai.api_server "
         f"--model {model_path} --dtype float16 "
         f"--tensor-parallel-size {tp} --gpu-memory-utilization 0.9"
-    ) 
+    )

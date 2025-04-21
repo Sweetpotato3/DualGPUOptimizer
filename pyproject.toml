@@ -1,0 +1,104 @@
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dualgpuopt"
+version = "0.1.0"
+description = "Dual GPU optimizer for machine learning workloads"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "pynvml>=11.0.0",
+    "numpy>=1.20.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+ui = [
+    "ttkbootstrap>=1.10.0",
+    "ttkthemes>=3.2.0",
+    "ttkwidgets>=0.13.0",
+]
+chat = [
+    "requests>=2.28.0",
+    "sseclient-py>=1.7.2",
+]
+ml = [
+    "torch>=2.1.0",
+    "torchvision>=0.16.0",
+    "torchaudio>=2.1.0",
+]
+dev = [
+    "black>=23.9.1",
+    "isort>=5.12.0",
+    "flake8>=6.1.0",
+    "mypy>=1.5.1",
+]
+test = [
+    "pytest>=7.4.2",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.11.1",
+    "pytest-env>=1.0.1",
+    "pytest-xdist>=3.3.1",
+]
+all = [
+    "dualgpuopt[ui,chat,ml,dev,test]",
+]
+
+[project.scripts]
+dualgpuopt = "dualgpuopt.main:main"
+
+[tool.black]
+line-length = 100
+target-version = ["py38", "py39", "py310", "py311", "py312"]
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+markers = [
+    "unit: Unit tests that test a single component in isolation",
+    "integration: Tests that verify multiple components working together",
+    "functional: End-to-end tests that test the system as a whole",
+    "gpu: Tests that require actual GPU hardware (skip in CI if needed)",
+    "slow: Tests that take a long time to run",
+]
+env = [
+    "DUALGPUOPT_MOCK_GPU=1",
+    "DUALGPUOPT_POLL_INTERVAL=0.1",
+    "DUALGPUOPT_SAFETY_MARGIN=0.1",
+]
+
+[tool.coverage.run]
+source = ["dualgpuopt"]
+omit = ["tests/*", "setup.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+] 

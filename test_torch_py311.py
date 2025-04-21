@@ -9,7 +9,7 @@ if torch.cuda.is_available():
     print(f"CUDA version: {torch.version.cuda}")
     device_count = torch.cuda.device_count()
     print(f"Number of GPU devices: {device_count}")
-    
+
     for i in range(device_count):
         device_props = torch.cuda.get_device_properties(i)
         print(f"\nDevice {i}: {device_props.name}")
@@ -22,4 +22,4 @@ if torch.cuda.is_available():
 else:
     print("CUDA is not available")
 
-input("Press Enter to exit...") 
+input("Press Enter to exit...")

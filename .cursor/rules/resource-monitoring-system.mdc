@@ -1,63 +1,58 @@
 ---
-description: Provides implementation details for GPU resource monitoring, telemetry collection, and performance tracking across multi-GPU systems
-globs: **/telemetry.py,**/gpu_info.py,**/metrics.py,**/tray.py,**/dashboard.py
+description: Specification for implementing real-time GPU resource monitoring and telemetry systems with alerts
+globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-GPU Resource Monitoring System for ML workloads with specialized telemetry collection, processing and alerting capabilities.
+Core Telemetry System Components:
 
-Core Components:
+1. GPU Metrics Collection (telemetry.py)
+- Real-time monitoring of critical GPU metrics:
+  * Memory utilization with percentage thresholds (75%, 90%)
+  * Temperature monitoring with warning levels (70°C, 80°C) 
+  * Power consumption relative to GPU power limits
+  * Clock speeds for SM and Memory
+  * PCIe bandwidth (TX/RX rates)
 
-1. Telemetry Collection Pipeline
-- Streams real-time GPU metrics including:
-  * Memory utilization (total/used/free)
-  * PCIe bandwidth (RX/TX rates)
-  * Power consumption and thermal status
-  * Clock speeds (graphics/memory)
-  * GPU and memory utilization percentages
-- Implements middleware for metrics processing:
-  * EventBusMiddleware for event distribution
-  * LoggingMiddleware for debug information
-- Provides fallback to mock data generation when hardware access fails
+2. Alert System (telemetry.py)
+- Four-tier alert classification:
+  * NORMAL: Standard operating conditions
+  * WARNING: Approaching thresholds (75% memory, 70°C)
+  * CRITICAL: Threshold exceeded (90% memory, 80°C)
+  * EMERGENCY: Dangerous conditions (95% memory, 90°C)
+- Intelligent throttling of alerts:
+  * 3-second cooldown between notifications
+  * Alert priority queueing system
+  * Context-aware recommendations based on alert severity
 
-2. Performance Monitoring
-- Custom threaded metrics collection with configurable intervals:
-  * 500ms for critical metrics  
-  * 1000ms for standard metrics
-  * 2000ms for background metrics
-- Maintains 60-point historical data buffer for trend analysis
-- Color-coded GPU activity visualization with distinct colors per GPU
+3. History Management
+- Rolling 60-second history buffer for metrics tracking
+- Timeline markers for significant events:
+  * Out of memory conditions
+  * Temperature spikes
+  * Power limit throttling
+- Custom event classification system for tracking GPU state changes
 
-3. Memory Management
-- Implements multi-tier memory alert system:
-  * WARNING (80% utilization)
-  * CRITICAL (90% utilization)
-  * EMERGENCY (95% utilization)
-- Model-specific memory profiles with:
-  * Base memory requirements
-  * Per-batch memory scaling
-  * Growth rate projections
-- Predictive memory consumption modeling using rolling 100-point history
+4. Mock Data Generation
+- Simulated metrics for testing and development:
+  * Correlated power usage with GPU utilization (20-90%)
+  * Temperature scaling based on utilization
+  * Memory usage patterns following workload profiles
+  * Fan speed correlation with temperature readings
 
-4. Alert Mechanism
-- Real-time threshold monitoring for:
-  * Temperature caps with 100°C limit
-  * Power usage against GPU-specific maximums  
-  * PCIe bandwidth auto-scaling (KB/s-GB/s)
-  * Memory pressure detection
-- Implements recovery strategies:
-  1. Cache clearing
-  2. Batch size reduction
-  3. Memory offloading
-  4. Process termination
+Relevant Files:
+- dualgpuopt/telemetry.py: Core telemetry implementation
+- dualgpuopt/gpu/monitor.py: GPU state monitoring
+- dualgpuopt/memory/metrics.py: Memory-specific metrics
+- dualgpuopt/memory/alerts.py: Alert system implementation
 
-File Paths:
-- dualgpuopt/telemetry.py: Core telemetry collection
-- dualgpuopt/memory_monitor.py: Memory management system
-- dualgpuopt/gui/dashboard.py: Monitoring visualization
-- dualgpuopt/tray.py: System tray integration
+Business Impact Scores:
+- Telemetry System: 95 (Critical for GPU monitoring)
+- Alert System: 85 (Key for system stability)
+- History Management: 75 (Important for trend analysis)
+- Mock System: 45 (Supporting development functionality)
 
 $END$

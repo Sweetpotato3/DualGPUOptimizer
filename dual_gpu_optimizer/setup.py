@@ -34,4 +34,4 @@ setup(
         "Operating System :: Microsoft :: Windows",
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
-) 
+)

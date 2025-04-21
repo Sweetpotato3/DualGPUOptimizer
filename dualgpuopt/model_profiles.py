@@ -1,7 +1,7 @@
 """
 Model profiles for GPU memory consumption estimation and optimization.
 
-This module provides standardized profiles for common ML models, with memory 
+This module provides standardized profiles for common ML models, with memory
 consumption patterns, optimal batch sizes, and layer distribution recommendations
 for dual-GPU setups.
 """
@@ -37,7 +37,7 @@ class ModelMemoryProfile:
     """Memory profile for a specific model architecture."""
     name: str
     model_type: ModelType
-    
+
     # Base parameters
     hidden_size: int
     num_layers: int
@@ -45,55 +45,55 @@ class ModelMemoryProfile:
     vocab_size: int
     max_sequence_length: int
     parameter_count: float  # in billions
-    
+
     # Memory estimates in GB
     base_memory: float
     memory_per_token: float
     kv_cache_per_token: float
-    
+
     # Optional fields with defaults
     quantization: QuantizationType = QuantizationType.NONE
     expert_count: int = 0  # For MoE models
     activated_experts: int = 0  # For sparse MoE models
     sliding_window: Optional[int] = None
-    
+
     # Optimal GPU split recommendations for different VRAM configurations
     gpu_split_recommendations: Dict[str, Tuple[float, float]] = field(default_factory=dict)
-    
+
     def __post_init__(self):
         """Calculate derived properties after initialization."""
         # If not explicitly set, estimate these values
         if not self.base_memory:
             # Roughly estimate base model memory (weights + optimizer states)
             self.base_memory = self.parameter_count * (2.0 / self.quantization.value)
-            
+
         if not self.memory_per_token:
             # Rough estimate of memory per token
             self.memory_per_token = (self.hidden_size * 12) / (1024 * 1024 * 1024)
-            
+
         if not self.kv_cache_per_token:
             # Estimate KV cache size per token
             head_dim = self.hidden_size // self.num_attention_heads
             kv_elements = 2 * self.max_sequence_length * self.num_attention_heads * head_dim * self.num_layers
             self.kv_cache_per_token = (kv_elements * 2) / (1024 * 1024 * 1024)  # 2 bytes for FP16
-    
+
     def estimate_total_memory(self, batch_size: int, sequence_length: int) -> float:
         """
         Estimate total GPU memory required for a specific batch and sequence length.
-        
+
         Args:
             batch_size: Number of sequences to process in parallel
             sequence_length: Length of each sequence in tokens
-            
+
         Returns:
             Estimated memory requirement in GB
         """
         # Base model memory (weights)
         total_memory = self.base_memory
-        
+
         # Memory for activations
         activation_memory = batch_size * sequence_length * self.memory_per_token
-        
+
         # KV cache memory
         kv_memory = 0.0
         if self.model_type in [ModelType.DECODER_ONLY, ModelType.ENCODER_DECODER]:
@@ -101,7 +101,7 @@ class ModelMemoryProfile:
             if self.sliding_window and sequence_length > self.sliding_window:
                 effective_seq_len = self.sliding_window
             kv_memory = batch_size * effective_seq_len * self.kv_cache_per_token
-        
+
         # Add extra memory for MoE models
         moe_factor = 1.0
         if self.model_type == ModelType.MIXTURE_OF_EXPERTS and self.expert_count > 0:
@@ -110,69 +110,69 @@ class ModelMemoryProfile:
                 moe_factor = 1.0 + (self.activated_experts / self.expert_count)
             else:
                 moe_factor = 1.2  # Default assumption: 20% overhead for MoE
-            
+
         return (total_memory + activation_memory + kv_memory) * moe_factor
-    
+
     def calculate_max_batch_size(self, available_memory: float, sequence_length: int) -> int:
         """
         Calculate maximum batch size given available memory and sequence length.
-        
+
         Args:
             available_memory: Available GPU memory in GB
             sequence_length: Sequence length in tokens
-            
+
         Returns:
             Maximum batch size
         """
         # Reserve memory for model weights and some overhead
         remaining_memory = available_memory - self.base_memory - 0.5  # 0.5GB for overhead
-        
+
         if remaining_memory <= 0:
             return 0
-        
+
         # Calculate memory needed per sequence
         memory_per_sequence = sequence_length * self.memory_per_token
-        
+
         # Add KV cache if applicable
         if self.model_type in [ModelType.DECODER_ONLY, ModelType.ENCODER_DECODER]:
             effective_seq_len = sequence_length
             if self.sliding_window and sequence_length > self.sliding_window:
                 effective_seq_len = self.sliding_window
             memory_per_sequence += effective_seq_len * self.kv_cache_per_token
-        
+
         # Account for MoE overhead
         if self.model_type == ModelType.MIXTURE_OF_EXPERTS and self.expert_count > 0:
             if self.activated_experts > 0:
                 memory_per_sequence *= 1.0 + (self.activated_experts / self.expert_count)
             else:
                 memory_per_sequence *= 1.2  # Default MoE overhead
-        
+
         # Calculate max batch size and round down
         max_batch = int(remaining_memory / memory_per_sequence)
         return max(1, max_batch)  # Ensure at least batch size 1
-    
+
     def recommend_gpu_split(self, vram_gb_primary: float, vram_gb_secondary: float) -> Tuple[float, float]:
         """
         Recommend how to split model between two GPUs based on their VRAM.
-        
+
         Args:
             vram_gb_primary: Primary GPU VRAM in GB
             vram_gb_secondary: Secondary GPU VRAM in GB
-            
+
         Returns:
             Tuple of (primary_gpu_percentage, secondary_gpu_percentage)
         """
         vram_key = f"{int(vram_gb_primary)}+{int(vram_gb_secondary)}"
-        
+
         # If we have a pre-computed recommendation, use it
         if vram_key in self.gpu_split_recommendations:
             return self.gpu_split_recommendations[vram_key]
-        
+
         # Otherwise, calculate based on relative VRAM sizes
         total_vram = vram_gb_primary + vram_gb_secondary
         primary_pct = vram_gb_primary / total_vram
         secondary_pct = vram_gb_secondary / total_vram
-        
+
         # Adjust for minimum requirements - each GPU needs at least 20% of the model
         if primary_pct < 0.2:
             primary_pct = 0.2
@@ -180,7 +180,7 @@ class ModelMemoryProfile:
         elif secondary_pct < 0.2:
             primary_pct = 0.8
             secondary_pct = 0.2
-            
+
         return (primary_pct, secondary_pct)
 
 
@@ -206,7 +206,7 @@ MODEL_PROFILES: Dict[str, ModelMemoryProfile] = {
             "24+8": (0.75, 0.25)
         }
     ),
-    
+
     "llama2-13b": ModelMemoryProfile(
         name="Llama-2 13B",
         model_type=ModelType.DECODER_ONLY,
@@ -226,7 +226,7 @@ MODEL_PROFILES: Dict[str, ModelMemoryProfile] = {
             "24+16": (0.6, 0.4)
         }
     ),
-    
+
     "llama2-70b": ModelMemoryProfile(
         name="Llama-2 70B",
         model_type=ModelType.DECODER_ONLY,
@@ -245,7 +245,7 @@ MODEL_PROFILES: Dict[str, ModelMemoryProfile] = {
             "80+24": (0.75, 0.25)
         }
     ),
-    
+
     # Mixtral models
     "mixtral-8x7b": ModelMemoryProfile(
         name="Mixtral 8x7B",
@@ -267,7 +267,7 @@ MODEL_PROFILES: Dict[str, ModelMemoryProfile] = {
             "80+48": (0.65, 0.35)
         }
     ),
-    
+
     # Mistral models
     "mistral-7b": ModelMemoryProfile(
         name="Mistral 7B",
@@ -295,24 +295,24 @@ MODEL_PROFILES: Dict[str, ModelMemoryProfile] = {
 def get_model_profile(model_name: str, quantization: Optional[str] = None) -> ModelMemoryProfile:
     """
     Get a model profile by name, optionally with specific quantization.
-    
+
     Args:
         model_name: Base model name (e.g., "llama2-7b")
         quantization: Optional quantization type (e.g., "int8", "int4", "q4_k_m")
-        
+
     Returns:
         ModelMemoryProfile with adjusted memory requirements based on quantization
     """
     # Standardize model name format
     model_name = model_name.lower().replace(" ", "").replace("_", "").replace("-", "")
-    
+
     # Try to match with our known profiles
     profile = None
     for key, prof in MODEL_PROFILES.items():
         if model_name in key.lower().replace("-", "").replace("_", ""):
             profile = prof
             break
-    
+
     if not profile:
         # Handle unknown models with best-guess estimates
         if "7b" in model_name:
@@ -326,7 +326,7 @@ def get_model_profile(model_name: str, quantization: Optional[str] = None) -> Mo
         else:
             # Default to 7B profile if we can't determine
             profile = MODEL_PROFILES["llama2-7b"]
-    
+
     # Create a copy of the profile to modify for quantization
     result = ModelMemoryProfile(
         name=profile.name,
@@ -345,7 +345,7 @@ def get_model_profile(model_name: str, quantization: Optional[str] = None) -> Mo
         sliding_window=profile.sliding_window,
         gpu_split_recommendations=profile.gpu_split_recommendations.copy()
     )
-    
+
     # Apply quantization if specified
     if quantization:
         quant_type = None
@@ -361,24 +361,24 @@ def get_model_profile(model_name: str, quantization: Optional[str] = None) -> Mo
             quant_type = QuantizationType.GGUF_Q8_0
         elif quantization.lower() in ("awq"):
             quant_type = QuantizationType.AWQQUANT
-            
+
         if quant_type:
             result.quantization = quant_type
             # Adjust base memory according to quantization factor
             result.base_memory = profile.base_memory * quant_type.value
-    
-    return result 
 
-def apply_profile(model_name: str, gpu_specs: Dict[str, float], 
+    return result
+
+def apply_profile(model_name: str, gpu_specs: Dict[str, float],
                  quantization: Optional[str] = None) -> Dict[str, Union[float, str, List]]:
     """
     Apply a model profile to calculate optimal settings for the given GPU configuration.
-    
+
     Args:
         model_name: Name of the model to profile
         gpu_specs: Dictionary mapping GPU IDs to available VRAM in GB
         quantization: Optional quantization type (e.g., "int8", "int4", "q4_k_m")
-        
+
     Returns:
         Dictionary containing:
         - memory_required: Total memory required by the model (GB)
@@ -387,56 +387,56 @@ def apply_profile(model_name: str, gpu_specs: Dict[str, float],
         - device_map: Suggested device map for model layers
     """
     profile = get_model_profile(model_name, quantization)
-    
+
     # Sort GPUs by available memory (descending)
     sorted_gpus = sorted(gpu_specs.items(), key=lambda x: x[1], reverse=True)
-    
+
     # Calculate total available memory across all GPUs
     total_vram = sum(vram for _, vram in sorted_gpus)
-    
+
     # Calculate memory required for the model
     memory_required = profile.base_memory
-    
+
     # If we have exactly two GPUs, use the recommended split
     if len(sorted_gpus) == 2:
         primary_gpu, primary_vram = sorted_gpus[0]
         secondary_gpu, secondary_vram = sorted_gpus[1]
-        
+
         # Get recommended split ratio
         primary_pct, secondary_pct = profile.recommend_gpu_split(primary_vram, secondary_vram)
-        
+
         # Create device map (simplified - actual implementation would be more nuanced)
         device_map = {}
-        
+
         # Distribute layers based on the recommended percentages
         total_layers = profile.num_layers
         primary_layers = int(total_layers * primary_pct)
-        
+
         # Simple device mapping strategy (would be more complex in reality)
         for i in range(total_layers):
             if i < primary_layers:
                 device_map[f"layer.{i}"] = int(primary_gpu)
             else:
                 device_map[f"layer.{i}"] = int(secondary_gpu)
-        
+
         # Calculate maximum batch size with sequence length 1024
         # For simplicity, we use the smaller GPU's capacity here
         sequence_length = 1024
         max_batch = profile.calculate_max_batch_size(min(primary_vram, secondary_vram), sequence_length)
-        
+
         return {
             "memory_required": memory_required,
             "max_batch_size": max_batch,
             "split_ratio": (primary_pct, secondary_pct),
             "device_map": device_map
         }
-    
+
     # For single GPU or more than two GPUs
     if len(sorted_gpus) == 1:
         # Single GPU configuration
         max_vram = sorted_gpus[0][1]
         max_batch = profile.calculate_max_batch_size(max_vram, 1024)
-        
+
         return {
             "memory_required": memory_required,
             "max_batch_size": max_batch,
@@ -448,35 +448,35 @@ def apply_profile(model_name: str, gpu_specs: Dict[str, float],
         # This is a simplified version for >2 GPUs
         gpu_count = len(sorted_gpus)
         total_layers = profile.num_layers
-        
+
         # Calculate layers per GPU (distribute evenly for simplicity)
         layers_per_gpu = total_layers // gpu_count
         extra_layers = total_layers % gpu_count
-        
+
         # Create device map
         device_map = {}
         current_layer = 0
-        
+
         for i, (gpu_id, vram) in enumerate(sorted_gpus):
             # Assign extra layers to the GPUs with more VRAM
             layer_count = layers_per_gpu + (1 if i < extra_layers else 0)
-            
+
             for j in range(layer_count):
                 if current_layer < total_layers:
                     device_map[f"layer.{current_layer}"] = int(gpu_id)
                     current_layer += 1
-        
+
         # Calculate maximum batch size based on minimum VRAM
         min_vram = min(vram for _, vram in sorted_gpus)
         max_batch = profile.calculate_max_batch_size(min_vram, 1024)
-        
+
         # Calculate distribution percentages
-        gpu_percentages = tuple(count / total_layers for count in [sum(1 for gpu in device_map.values() if int(gpu) == int(gpu_id)) 
+        gpu_percentages = tuple(count / total_layers for count in [sum(1 for gpu in device_map.values() if int(gpu) == int(gpu_id))
                                                                   for gpu_id, _ in sorted_gpus])
-        
+
         return {
             "memory_required": memory_required,
             "max_batch_size": max_batch,
             "split_ratio": gpu_percentages,
             "device_map": device_map
-        } 
+        }

@@ -43,7 +43,7 @@ def test_torch_available():
     try:
         import torch
         print(f"✅ Torch {torch.__version__} found")
-        
+
         if torch.cuda.is_available():
             print(f"✅ CUDA is available: {torch.version.cuda}")
             print(f"✅ Found {torch.cuda.device_count()} CUDA device(s)")
@@ -66,13 +66,13 @@ def test_assets_present():
         if not ASSET_DIR.exists():
             print(f"❌ Assets directory not found: {ASSET_DIR}")
             return False
-        
+
         # Check for important assets
         icon_file = ASSET_DIR / "app_icon.ico"
         if not icon_file.exists():
             print(f"❌ App icon not found: {icon_file}")
             return False
-            
+
         print(f"✅ Assets directory found: {ASSET_DIR}")
         print(f"✅ App icon found: {icon_file}")
         return True
@@ -85,20 +85,20 @@ def test_app_runs_in_mock_mode():
     """Test if the app runs in mock mode (quick smoke test)."""
     print("Testing app in mock mode...")
     app_path = Path("dist") / "DualGPUOptimizer" / "DualGPUOptimizer.exe"
-    
+
     if not app_path.exists():
         print(f"❌ Application executable not found: {app_path}")
         return False
-        
+
     print(f"✅ Application executable found: {app_path}")
     print("Running in mock mode (will start GUI, close it after testing)...")
-    
+
     # Spawn process but don't wait (GUI will show)
     if sys.platform == "win32":
         os.startfile(str(app_path) + " --mock")
     else:
         subprocess.Popen([str(app_path), "--mock"])
-    
+
     print("✅ Application launched in mock mode")
     return True
 
@@ -106,19 +106,19 @@ def test_app_runs_in_mock_mode():
 def main():
     """Run all tests."""
     print("=== DualGPUOptimizer Bundle Verification ===")
-    
+
     tests = [
         test_constants_packaged,
         test_torch_available,
         test_assets_present,
         test_app_runs_in_mock_mode
     ]
-    
+
     results = []
     for test in tests:
         results.append(test())
         print()  # Add spacing
-    
+
     print("=== Test Summary ===")
     if all(results):
         print("✅ All tests passed!")
@@ -129,4 +129,4 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

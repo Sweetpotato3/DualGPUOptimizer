@@ -22,10 +22,10 @@ logger = logging.getLogger("DualGPUOpt.ThemedWidgets")
 
 class ThemedFrame(tk.Frame, ThemedWidget):
     """A frame with automatic theme updating"""
-    
+
     def __init__(self, master=None, **kwargs):
         """Initialize a themed frame
-        
+
         Args:
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Frame
@@ -35,17 +35,17 @@ class ThemedFrame(tk.Frame, ThemedWidget):
         for prop, value in theme_props.items():
             if prop not in kwargs:
                 kwargs[prop] = value
-        
+
         # Initialize the frame
         tk.Frame.__init__(self, master, **kwargs)
         ThemedWidget.__init__(self)
-        
+
         # Setup theme observation
         self.setup_theming()
-    
+
     def _get_theme_props(self) -> Dict[str, Any]:
         """Get theme-related properties for this widget
-        
+
         Returns:
             Dictionary of properties from current theme
         """
@@ -54,21 +54,21 @@ class ThemedFrame(tk.Frame, ThemedWidget):
             "highlightbackground": current_theme["border"],
             "highlightcolor": current_theme["accent"]
         }
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.configure(
             bg=theme_colors["bg"],
             highlightbackground=theme_colors["border"],
             highlightcolor=theme_colors["accent"]
         )
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         self.cleanup()
@@ -76,10 +76,10 @@ class ThemedFrame(tk.Frame, ThemedWidget):
 
 class ThemedLabel(tk.Label, ThemedWidget):
     """A label with automatic theme updating"""
-    
+
     def __init__(self, master=None, **kwargs):
         """Initialize a themed label
-        
+
         Args:
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Label
@@ -89,17 +89,17 @@ class ThemedLabel(tk.Label, ThemedWidget):
         for prop, value in theme_props.items():
             if prop not in kwargs:
                 kwargs[prop] = value
-        
+
         # Initialize the label
         tk.Label.__init__(self, master, **kwargs)
         ThemedWidget.__init__(self)
-        
+
         # Setup theme observation
         self.setup_theming()
-    
+
     def _get_theme_props(self) -> Dict[str, Any]:
         """Get theme-related properties for this widget
-        
+
         Returns:
             Dictionary of properties from current theme
         """
@@ -108,21 +108,21 @@ class ThemedLabel(tk.Label, ThemedWidget):
             "fg": current_theme["fg"],
             "highlightbackground": current_theme["bg"]
         }
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.configure(
             bg=theme_colors["bg"],
             fg=theme_colors["fg"],
             highlightbackground=theme_colors["bg"]
         )
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         self.cleanup()
@@ -130,10 +130,10 @@ class ThemedLabel(tk.Label, ThemedWidget):
 
 class ThemedButton(tk.Button, ThemedWidget):
     """A button with automatic theme updating"""
-    
+
     def __init__(self, master=None, **kwargs):
         """Initialize a themed button
-        
+
         Args:
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Button
@@ -143,17 +143,17 @@ class ThemedButton(tk.Button, ThemedWidget):
         for prop, value in theme_props.items():
             if prop not in kwargs:
                 kwargs[prop] = value
-        
+
         # Initialize the button
         tk.Button.__init__(self, master, **kwargs)
         ThemedWidget.__init__(self)
-        
+
         # Setup theme observation
         self.setup_theming()
-    
+
     def _get_theme_props(self) -> Dict[str, Any]:
         """Get theme-related properties for this widget
-        
+
         Returns:
             Dictionary of properties from current theme
         """
@@ -166,15 +166,15 @@ class ThemedButton(tk.Button, ThemedWidget):
             "relief": tk.FLAT,
             "borderwidth": 1
         }
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.configure(
             bg=theme_colors["accent"],
             fg=theme_colors["fg"],
@@ -182,7 +182,7 @@ class ThemedButton(tk.Button, ThemedWidget):
             activeforeground=theme_colors["fg"],
             highlightbackground=theme_colors["border"]
         )
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         self.cleanup()
@@ -190,10 +190,10 @@ class ThemedButton(tk.Button, ThemedWidget):
 
 class ThemedEntry(tk.Entry, ThemedWidget):
     """An entry with automatic theme updating"""
-    
+
     def __init__(self, master=None, **kwargs):
         """Initialize a themed entry
-        
+
         Args:
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Entry
@@ -203,17 +203,17 @@ class ThemedEntry(tk.Entry, ThemedWidget):
         for prop, value in theme_props.items():
             if prop not in kwargs:
                 kwargs[prop] = value
-        
+
         # Initialize the entry
         tk.Entry.__init__(self, master, **kwargs)
         ThemedWidget.__init__(self)
-        
+
         # Setup theme observation
         self.setup_theming()
-    
+
     def _get_theme_props(self) -> Dict[str, Any]:
         """Get theme-related properties for this widget
-        
+
         Returns:
             Dictionary of properties from current theme
         """
@@ -227,15 +227,15 @@ class ThemedEntry(tk.Entry, ThemedWidget):
             "relief": tk.FLAT,
             "borderwidth": 1
         }
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.configure(
             bg=theme_colors["input_bg"],
             fg=theme_colors["fg"],
@@ -244,7 +244,7 @@ class ThemedEntry(tk.Entry, ThemedWidget):
             selectforeground=theme_colors["fg"],
             highlightbackground=theme_colors["border"]
         )
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         self.cleanup()
@@ -252,10 +252,10 @@ class ThemedEntry(tk.Entry, ThemedWidget):
 
 class ThemedListbox(tk.Listbox, ThemedWidget):
     """A listbox with automatic theme updating"""
-    
+
     def __init__(self, master=None, **kwargs):
         """Initialize a themed listbox
-        
+
         Args:
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Listbox
@@ -265,17 +265,17 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
         for prop, value in theme_props.items():
             if prop not in kwargs:
                 kwargs[prop] = value
-        
+
         # Initialize the listbox
         tk.Listbox.__init__(self, master, **kwargs)
         ThemedWidget.__init__(self)
-        
+
         # Setup theme observation
         self.setup_theming()
-    
+
     def _get_theme_props(self) -> Dict[str, Any]:
         """Get theme-related properties for this widget
-        
+
         Returns:
             Dictionary of properties from current theme
         """
@@ -288,15 +288,15 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
             "relief": tk.FLAT,
             "borderwidth": 1
         }
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.configure(
             bg=theme_colors["input_bg"],
             fg=theme_colors["fg"],
@@ -304,7 +304,7 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
             selectforeground=theme_colors["fg"],
             highlightbackground=theme_colors["border"]
         )
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         self.cleanup()
@@ -312,10 +312,10 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
 
 class ColorSwatch(ThemedFrame):
     """A color swatch for displaying theme colors"""
-    
+
     def __init__(self, master=None, color: str = "#000000", width: int = 30, height: int = 30, **kwargs):
         """Initialize a color swatch
-        
+
         Args:
             master: Parent widget
             color: Color to display
@@ -324,42 +324,42 @@ class ColorSwatch(ThemedFrame):
             **kwargs: Additional keyword arguments for ThemedFrame
         """
         super().__init__(master, width=width, height=height, **kwargs)
-        
+
         self.color = color
         self.canvas = tk.Canvas(
-            self, 
-            width=width, 
-            height=height, 
+            self,
+            width=width,
+            height=height,
             bg=color,
             highlightthickness=1,
             highlightbackground=current_theme["border"]
         )
         self.canvas.pack(fill=tk.BOTH, expand=True)
-        
+
         # Register the canvas for theme updates
         register_themed_widget(self.canvas)
-    
+
     def set_color(self, color: str) -> None:
         """Set the color of the swatch
-        
+
         Args:
             color: New color to display
         """
         self.color = color
         self.canvas.configure(bg=color)
-    
+
     def apply_theme(self, theme_name: str) -> None:
         """Apply theme to this widget
-        
+
         Args:
             theme_name: Name of the theme to apply
         """
         super().apply_theme(theme_name)
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
-        
+
         self.canvas.configure(highlightbackground=theme_colors["border"])
-    
+
     def destroy(self):
         """Clean up before destroying the widget"""
         unregister_themed_widget(self.canvas)
-        super().destroy() 
+        super().destroy()

@@ -27,7 +27,7 @@ def _profile_pass(model, dummy) -> List[int]:
     if not TORCH_AVAILABLE:
         _log.error("profile_pass called but PyTorch is not available")
         return []
-    
+
     times = []
     with torch.no_grad():
         for blk in model.model.layers:  # type: ignore[attr-defined]
@@ -42,7 +42,7 @@ def profile_layers(model, dummy) -> List[float]:
     if not TORCH_AVAILABLE:
         _log.error("profile_layers called but PyTorch is not available")
         return []
-    
+
     t_short = _profile_pass(model, dummy[:, :64])
     t_long  = _profile_pass(model, dummy[:, :1024])
     return [0.2 * s + 0.8 * l for s, l in zip(t_short, t_long)]
@@ -56,19 +56,19 @@ def rebalance(
 ) -> Dict[str, int]:
     """
     Return layer→GPU mapping while respecting per‑GPU VRAM quota.
-    
+
     Note: No-op if PyTorch is not available.
     """
     if not TORCH_AVAILABLE:
         _log.error("rebalance called but PyTorch is not available")
         return {}
-    
+
     lat = profile_layers(model, dummy_input_ids)
-    
+
     if not lat:  # Empty list means profiling failed
         _log.error("Layer profiling failed - cannot rebalance")
         return {}
-    
+
     idx_fast, idx_slow = gpus[0]["idx"], gpus[1]["idx"]
     quota_fast = gpus[0]["mem_total"] * reserve_ratio
     used_fast = 0
@@ -80,4 +80,4 @@ def rebalance(
             used_fast += dur
     pathlib.Path("device_map.json").write_text(json.dumps(mapping, indent=2))
     _log.info("Adaptive map saved → device_map.json")
-    return mapping 
+    return mapping

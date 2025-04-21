@@ -45,4 +45,4 @@ DEFAULT_FONT_SIZE = 10        # Default font size
 # Update Intervals (milliseconds)
 UPDATE_INTERVAL_MS = 1000     # Default interval for UI updates (1 second)
 FAST_UPDATE_INTERVAL_MS = 500 # Faster interval for critical components
-SLOW_UPDATE_INTERVAL_MS = 2000 # Slower interval for less critical components 
+SLOW_UPDATE_INTERVAL_MS = 2000 # Slower interval for less critical components

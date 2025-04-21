@@ -51,7 +51,7 @@ try:
     except ImportError:
         logger.warning("Optional dependency 'torch' not found - some features will be disabled")
         TORCH_AVAILABLE = False
-    
+
     try:
         import prometheus_client
         logger.info("Successfully imported prometheus_client")
@@ -81,37 +81,37 @@ try:
             verbose=args.verbose,
             log_file=pathlib.Path.home() / ".dualgpuopt" / "logs" / "optimizer.log"
         )
-        
+
         print("\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 =====\n")
-        
+
         try:
             print("Detecting GPUs...")
             gpus = gpu_info.probe_gpus()
-            
+
             if len(gpus) < 2:
                 print("Error: At least 2 GPUs are required for optimization")
                 return 1
-                
+
             # Show detected GPUs
             print("\nDetected GPUs:")
             for g in gpus:
                 print(f"  GPU {g.index}: {g.name} - {g.mem_total} MiB total, {g.mem_free} MiB free")
-            
+
             # Generate split configuration
             split = optimizer.split_string(gpus)
             tensor_fractions = optimizer.tensor_fractions(gpus)
-            
+
             print(f"\nRecommended GPU Split: {split}")
-            
+
             if args.model_path:
                 ctx = args.context_size or 65536
                 llama_cmd = optimizer.llama_command(args.model_path, ctx, split)
                 vllm_cmd = optimizer.vllm_command(args.model_path, len(gpus))
-                
+
                 print("\nGenerated Commands:")
                 print(f"  llama.cpp: {llama_cmd}")
                 print(f"  vLLM: {vllm_cmd}")
-                
+
                 # Write env file if requested
                 if args.env_file:
                     env_path = pathlib.Path(args.env_file)
@@ -119,9 +119,9 @@ try:
                     print(f"\nEnvironment variables written to: {env_path}")
             else:
                 print("\nNo model path specified. Use --model-path to generate framework-specific commands.")
-            
+
             return 0
-                
+
         except Exception as err:
             logger.error(f"Optimization failed: {err}", exc_info=args.verbose)
             print(f"Error: {err}")
@@ -133,29 +133,29 @@ try:
         parser = argparse.ArgumentParser(
             description="DualGPUOptimizer - Optimize LLM workloads across multiple GPUs"
         )
-        
+
         # Mode selection
         parser.add_argument(
             "--cli", action="store_true",
             help="Run in command-line mode (no GUI)"
         )
-        
+
         # Common options
         parser.add_argument(
             "-v", "--verbose", action="store_true",
             help="Enable verbose logging"
         )
-        
+
         parser.add_argument(
             "--no-splash", action="store_true",
             help="Disable splash screen on startup"
         )
-        
+
         parser.add_argument(
             "--mock", action="store_true",
             help="Use mock GPU data instead of real hardware"
         )
-        
+
         # CLI mode options
         parser.add_argument(
             "-m", "--model-path", type=str,
@@ -169,7 +169,7 @@ try:
             "-e", "--env-file", type=str,
             help="Write environment variables to this file"
         )
-        
+
         return parser.parse_args(args)
 
 
@@ -177,19 +177,19 @@ try:
         """Main entry point."""
         global logger
         args = parse_args()
-        
+
         # Enable mock mode if requested
         if args.mock:
             os.environ["DGPUOPT_MOCK_GPUS"] = "1"
             logger.info("Mock GPU mode enabled by command-line flag")
-        
+
         # Setup logging regardless of mode
         log_file = pathlib.Path.home() / ".dualgpuopt" / "logs" / "gui.log"
         app_logger = setup_logging(
             verbose=args.verbose,
             log_file=log_file
         )
-        
+
         try:
             if args.cli:
                 return cli_optimize(args)
@@ -199,7 +199,7 @@ try:
                 if not args.no_splash:
                     print("\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 =====")
                     print("Starting GUI application...\n")
-                    
+
                 # Launch GUI
                 run_app()
                 return 0
@@ -222,12 +222,12 @@ except Exception as e:
         # If even the logger fails, write to a file directly
         with open(log_path, "a") as f:
             f.write(f"{error_message}\n")
-    
+
     print(f"Critical error during startup: {str(e)}")
     print(f"Check log file at: {log_path}")
-    
+
     # Keep console open if running the exe directly
     if getattr(sys, 'frozen', False):
         input("Press Enter to exit...")
-    
-    sys.exit(1) 
+
+    sys.exit(1)

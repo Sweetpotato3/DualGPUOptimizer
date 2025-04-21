@@ -24,4 +24,4 @@ def token_ratio_bucket(ratio: float = 1.5) -> BucketPolicy:
         while l > base * ratio:
             base *= 2
         return base
-    return _inner 
+    return _inner

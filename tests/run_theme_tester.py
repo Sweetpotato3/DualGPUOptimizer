@@ -31,24 +31,24 @@ try:
 except ImportError as e:
     print(f"Error importing theme tester: {e}")
     print("\nChecking available modules:")
-    
+
     # Check for the presence of critical modules
     modules_to_check = [
         "dualgpuopt.gui.theme",
-        "dualgpuopt.gui.theme_selector", 
+        "dualgpuopt.gui.theme_selector",
         "dualgpuopt.gui.theme_observer",
         "dualgpuopt.gui.themed_widgets",
         "dualgpuopt.services.event_service",
         "dualgpuopt.services.config_service"
     ]
-    
+
     for module in modules_to_check:
         try:
             __import__(module)
             print(f"  ✓ {module}: Available")
         except ImportError as err:
             print(f"  ✗ {module}: Not available ({err})")
-    
+
     print("\nCheck directory structure:")
     for directory in ["dualgpuopt", "dualgpuopt/gui", "dualgpuopt/services"]:
         if os.path.exists(directory):
@@ -57,5 +57,5 @@ except ImportError as e:
             print(f"    Contents: {', '.join(files)}")
         else:
             print(f"  ✗ {directory}: Does not exist")
-    
-    sys.exit(1) 
+
+    sys.exit(1)

@@ -36,12 +36,12 @@ __all__ = [
 def model_name_to_params(model_name: str) -> float:
     """
     Extract model size in billions from model name
-    
+
     Args:
         model_name: Model name or path
-        
+
     Returns:
         Model size in billions of parameters
     """
     controller = LaunchController()
-    return controller._estimate_model_size(model_name) 
+    return controller._estimate_model_size(model_name)

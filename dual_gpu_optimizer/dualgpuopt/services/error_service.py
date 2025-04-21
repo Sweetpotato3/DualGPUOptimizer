@@ -18,7 +18,7 @@ from dualgpuopt.services.event_service import event_bus
 
 class ErrorService:
     """Service for centralized error handling."""
-    
+
     # Error severity levels
     ERROR_LEVELS = {
         "INFO": 0,
@@ -26,11 +26,11 @@ class ErrorService:
         "ERROR": 2,
         "CRITICAL": 3,
     }
-    
+
     def __init__(self, root: Optional[tk.Tk] = None) -> None:
         """
         Initialize the error service.
-        
+
         Args:
             root: Optional root window for displaying dialogs
         """
@@ -41,21 +41,21 @@ class ErrorService:
         self.general_handler: Optional[Callable] = None
 =======
 >>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-        
+
     def set_root(self, root: tk.Tk) -> None:
         """
         Set the root window for displaying dialogs.
-        
+
         Args:
             root: Tkinter root window
         """
         self.root = root
-        
+
 <<<<<<< HEAD
     def register_handler(self, handler: Callable, error_type: str = None) -> None:
         """
         Register a custom handler for errors.
-        
+
         Args:
             handler: Callback function that takes (error, context)
             error_type: Optional name of the exception class for specific handling
@@ -70,7 +70,7 @@ class ErrorService:
     def register_handler(self, error_type: str, handler: Callable) -> None:
         """
         Register a custom handler for a specific error type.
-        
+
         Args:
             error_type: Name of the exception class
             handler: Callback function that takes (error, context)
@@ -78,16 +78,16 @@ class ErrorService:
         self.error_handlers[error_type] = handler
         self.logger.debug(f"Registered custom handler for {error_type}")
 >>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-        
-    def handle_error(self, 
-                     error: Exception, 
-                     level: str = "ERROR", 
-                     title: str = "Error", 
+
+    def handle_error(self,
+                     error: Exception,
+                     level: str = "ERROR",
+                     title: str = "Error",
                      show_dialog: bool = True,
                      context: Optional[Dict[str, Any]] = None) -> None:
         """
         Handle an error with appropriate logging and user feedback.
-        
+
         Args:
             error: The exception to handle
             level: Error severity level ('INFO', 'WARNING', 'ERROR', 'CRITICAL')
@@ -97,15 +97,15 @@ class ErrorService:
         """
         if context is None:
             context = {}
-            
+
         # Get error type
         error_type = error.__class__.__name__
-        
+
         # Log the error
         log_message = f"{error_type}: {str(error)}"
         if context:
             log_message += f" Context: {context}"
-            
+
         # Log with appropriate level
         if level == "INFO":
             self.logger.info(log_message)
@@ -115,7 +115,7 @@ class ErrorService:
             self.logger.error(log_message, exc_info=True)
         elif level == "CRITICAL":
             self.logger.critical(log_message, exc_info=True)
-        
+
         # Publish error event
         event_data = {
             "error": error,
@@ -125,7 +125,7 @@ class ErrorService:
             "context": context
         }
         event_bus.publish("error_occurred", event_data)
-        
+
 <<<<<<< HEAD
         # Check for custom handler for this error type
 =======
@@ -137,7 +137,7 @@ class ErrorService:
                 return
             except Exception as handler_error:
                 self.logger.error(f"Error in custom handler: {handler_error}")
-        
+
 <<<<<<< HEAD
         # Try general handler if available
         if self.general_handler:
@@ -146,7 +146,7 @@ class ErrorService:
                 return
             except Exception as handler_error:
                 self.logger.error(f"Error in general handler: {handler_error}")
-        
+
 =======
 >>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         # Show dialog if requested
@@ -155,28 +155,28 @@ class ErrorService:
             if level == "CRITICAL":
                 # Add stack trace for critical errors
                 message += f"\n\nStack Trace:\n{traceback.format_exc()}"
-                
+
             if level == "INFO":
                 messagebox.showinfo(title, message, parent=self.root)
             elif level == "WARNING":
                 messagebox.showwarning(title, message, parent=self.root)
             else:
                 messagebox.showerror(title, message, parent=self.root)
-    
+
     def handle_gpu_error(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
         """
         Special handler for GPU-related errors.
-        
+
         Args:
             error: The GPU-related exception
             context: Additional contextual information
         """
         if context is None:
             context = {}
-            
+
         error_type = error.__class__.__name__
         self.logger.error(f"GPU error ({error_type}): {error}", exc_info=True)
-        
+
         # Show special dialog for GPU errors with mock mode option
         if self.root is not None:
             response = messagebox.askquestion(
@@ -185,10 +185,10 @@ class ErrorService:
                 icon="warning",
                 parent=self.root
             )
-            
+
             if response == "yes":
                 # Publish event to enable mock mode
                 event_bus.publish("enable_mock_mode")
 
 # Create global error service
-error_service = ErrorService() 
+error_service = ErrorService()

@@ -14,19 +14,19 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run the integrated DualGPUOptimizer application")
     parser.add_argument("--mock", action="store_true", help="Run with mock GPU data")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    
+
     args = parser.parse_args()
-    
+
     # Set up command line arguments to pass to the app
     sys_args = []
     if args.mock:
         sys_args.append("--mock")
     if args.verbose:
         sys_args.append("--verbose")
-    
+
     # Replace sys.argv with our processed arguments
     sys.argv = [sys.argv[0]] + sys_args
-    
+
     # Import and run the application
     try:
         from dualgpuopt.__main__ import main as app_main
@@ -40,4 +40,4 @@ def main() -> int:
         return 1
 
 if __name__ == "__main__":
-    sys.exit(main()) 
+    sys.exit(main())

@@ -16,7 +16,7 @@ __version__ = VERSION
 def enable_mock_mode():
     """Enable mock mode for testing without real GPUs."""
     os.environ["DGPUOPT_MOCK_GPUS"] = "1"
-    
+
 def is_mock_mode_enabled():
     """Check if mock mode is enabled."""
     return os.environ.get("DGPUOPT_MOCK_GPUS") == "1"
@@ -32,4 +32,4 @@ __all__ = [
 # Don't import modules here to avoid circular imports
 # Instead, users should import specific modules as needed:
 # from dualgpuopt import gpu_info
-# from dualgpuopt.gui import run_app 
+# from dualgpuopt.gui import run_app

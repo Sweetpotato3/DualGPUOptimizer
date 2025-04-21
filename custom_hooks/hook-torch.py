@@ -10,7 +10,7 @@ from PyInstaller.utils.hooks import collect_data_files
 
 # Explicitly list the torch modules we need
 hiddenimports = [
-    'torch', 
+    'torch',
     'torch.cuda',
     'torch.nn',
     'torch.utils.data',

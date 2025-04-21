@@ -1,11 +1,19 @@
-torch==2.5.1
-torchvision==0.20.1
-torchaudio==2.5.1
-tk
-ttkthemes
-ttkwidgets
+# Core dependencies
+pynvml>=11.0.0  # For NVIDIA GPU monitoring
+tk              # Core tkinter package for UI
+psutil>=5.9.0   # For system resource monitoring
+numpy>=1.24.0   # For optimization algorithms
+
+# UI enhancements (optional but recommended)
+ttkthemes>=3.2.0
+ttkwidgets>=0.13.0
 ttkbootstrap>=1.0.0
-psutil
-numpy
+
+# Model communication (for Chat functionality)
 requests>=2.25.0
 sseclient-py>=1.7.2 
+
+# PyTorch (optional - used for advanced features)
+torch==2.5.1
+torchvision==0.20.1
+torchaudio==2.5.1 

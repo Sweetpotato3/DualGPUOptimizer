@@ -89,7 +89,7 @@ def generate_colors(count: int) -> list[str]:
     """Generate distinct colors for GPU visualization."""
     if count <= len(GPU_COLORS):
         return GPU_COLORS[:count]
-    
+
     # Generate additional colors if needed using HSV color space
     colors = []
     for i in range(count):
@@ -103,18 +103,18 @@ def generate_colors(count: int) -> list[str]:
 def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] = None) -> Dict[str, Any]:
     """
     Apply selected theme to the application.
-    
+
     Args:
         root: The root Tk window
         theme_name: Name of the theme to apply
         logger: Optional logger for error messages
-        
+
     Returns:
         Dict containing theme properties
     """
     if logger is None:
         logger = logging.getLogger("dualgpuopt.gui.theme")
-        
+
     # Handle system theme specially
     if theme_name == "system":
         # Just use default theme for the platform
@@ -124,17 +124,17 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
             ttk_theme = "vista"
         else:  # Linux and others
             ttk_theme = "clam"
-            
+
         return {"ttk_theme": ttk_theme}
     else:
         # Get theme from our definitions
         theme = THEMES.get(theme_name, THEMES["dark"])
         ttk_theme = theme.get("ttk_theme")
-        
+
         # Configure colors
         if "bg" in theme:
             root.configure(bg=theme["bg"])
-            
+
             # Create or get style
             if TTKTHEMES_AVAILABLE and hasattr(root, "set_theme"):
                 # For ThemedTk
@@ -160,54 +160,54 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
             else:
                 # Regular Style
                 style = ttk.Style()
-            
+
             # Configure style for widgets
             style.configure(".", background=theme["bg"], foreground=theme["text"])
-            style.configure("TButton", 
-                            background=theme["button"], 
+            style.configure("TButton",
+                            background=theme["button"],
                             foreground=theme["text"],
                             bordercolor=theme.get("border", theme["button"]))
-            
+
             style.map("TButton",
                      background=[('active', theme.get("highlight"))],
                      relief=[('pressed', 'sunken')])
-            
+
             # Configure entry fields
-            style.configure("TEntry", 
+            style.configure("TEntry",
                            fieldbackground=theme["entry"],
                            foreground=theme["text"],
                            bordercolor=theme.get("border", theme["entry"]))
-            
+
             # Configure other widget types
             style.configure("TFrame", background=theme["bg"])
             style.configure("TLabelframe", background=theme["bg"], foreground=theme["text"])
             style.configure("TLabelframe.Label", background=theme["bg"], foreground=theme["text"])
             style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
             style.configure("TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0])
-            style.configure("TNotebook.Tab", background=theme["button"], 
+            style.configure("TNotebook.Tab", background=theme["button"],
                            foreground=theme["text"], padding=[10, 2])
-            
+
             # Map states for notebook tabs
             style.map("TNotebook.Tab",
                      background=[("selected", theme.get("highlight"))],
                      foreground=[("selected", theme["bg"])])
-            
+
             # Set progressbar colors
-            style.configure("Horizontal.TProgressbar", 
+            style.configure("Horizontal.TProgressbar",
                            background=theme.get("accent", theme.get("highlight")),
                            troughcolor=theme.get("chart_bg", "#202020"))
-            
+
             # Set text widget colors via root options
             root.option_add("*Text.Background", theme["entry"])
             root.option_add("*Text.Foreground", theme["text"])
             root.option_add("*Text.selectBackground", theme.get("highlight"))
             root.option_add("*Text.selectForeground", theme.get("bg"))
-            
+
             # Set combobox colors
-            style.map('TCombobox', 
+            style.map('TCombobox',
                      fieldbackground=[('readonly', theme["entry"])],
                      selectbackground=[('readonly', theme.get("highlight"))])
-            
+
             # Update notebook styling for better appearance
             notebook_style = ttk.Style()
             notebook_style.layout("TNotebook", [
@@ -227,7 +227,7 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
                     ]
                 })
             ])
-            
+
             # Apply ttk theme if specified
             if ttk_theme and not TTKTHEMES_AVAILABLE:
                 try:
@@ -236,7 +236,7 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
                     # Fall back to default theme if specified one not available
                     if logger:
                         logger.warning(f"TTK theme {ttk_theme} not available, using default")
-                    
+
             # Apply font for better readability
             default_font = ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
             for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", "TCombobox"]:
@@ -246,14 +246,14 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
                 except tk.TclError as e:
                     if logger:
                         logger.debug(f"Could not set font for {widget}: {e}")
-            
+
         return theme
 
 
 def update_widgets_theme(parent: tk.Widget, theme: Dict[str, Any]) -> None:
     """
     Update the theme of existing widgets recursively.
-    
+
     Args:
         parent: The parent widget
         theme: The theme dictionary with color settings
@@ -276,7 +276,7 @@ def update_widgets_theme(parent: tk.Widget, theme: Dict[str, Any]) -> None:
             selectbackground=theme.get("highlight", parent.cget("selectbackground")),
             selectforeground=theme.get("bg", parent.cget("selectforeground"))
         )
-    
+
     # Recursively update all children
     for child in parent.winfo_children():
-        update_widgets_theme(child, theme) 
+        update_widgets_theme(child, theme)

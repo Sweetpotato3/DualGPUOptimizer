@@ -27,4 +27,4 @@ try:
     import dualgpuopt.mpolicy
     print('MPOLICY module OK')
 except ImportError as e:
-    print(f'MPOLICY import error: {e}') 
+    print(f'MPOLICY import error: {e}')

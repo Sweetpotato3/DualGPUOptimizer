@@ -15,4 +15,4 @@ with open('torch_test_output.txt', 'w') as f:
         f.write("CUDA not available\n")
 
 print("Test completed. Results saved to torch_test_output.txt")
-input("Press Enter to continue...") 
+input("Press Enter to continue...")

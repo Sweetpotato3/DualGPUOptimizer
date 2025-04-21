@@ -25,11 +25,11 @@ def tensor_fractions(gpus: List[GPU]) -> list[float]:
 def make_env_file(gpus: List[GPU], filename: Path) -> Path:
     """
     Create an environment file with optimal GPU configuration.
-    
+
     Args:
         gpus: List of GPU objects
         filename: Path to save the environment file
-        
+
     Returns:
         Path to the created file
     """
@@ -51,12 +51,12 @@ def make_env_file(gpus: List[GPU], filename: Path) -> Path:
 def llama_command(model_path: str, ctx: int, split: str) -> str:
     """
     Generate command for llama.cpp with optimized parameters.
-    
+
     Args:
         model_path: Path to the model file
         ctx: Context size
         split: GPU memory split string
-        
+
     Returns:
         Formatted command string
     """
@@ -69,11 +69,11 @@ def llama_command(model_path: str, ctx: int, split: str) -> str:
 def vllm_command(model_path: str, tp: int) -> str:
     """
     Generate command for vLLM with optimized parameters.
-    
+
     Args:
         model_path: Path to the model file
         tp: Tensor parallel size (usually number of GPUs)
-        
+
     Returns:
         Formatted command string
     """
@@ -81,4 +81,4 @@ def vllm_command(model_path: str, tp: int) -> str:
         "python -m vllm.entrypoints.openai.api_server "
         f"--model {model_path} --dtype float16 "
         f"--tensor-parallel-size {tp} --gpu-memory-utilization 0.9"
-    ) 
+    )

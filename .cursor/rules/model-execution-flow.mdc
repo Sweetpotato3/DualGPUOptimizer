@@ -1,84 +1,60 @@
 ---
-description: Provides guidance on AI model execution workflows, optimization strategies, and launch parameter configuration across multiple GPUs.
-globs: **/launcher.py,**/gpu_commands.py,**/runner.py,**/model_profiles.py,**/mpolicy.py
+description: Defines how LLM models are loaded and executed, including command generation, batching, and GPU resource handling
+globs: **/services/*.py,**/batch/*.py,**/commands/*.py,**/launcher/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow encompasses several key subsystems:
+Core Model Execution Components (Importance: 95):
 
-## Launch Parameter Generation
+1. Framework-Specific Launch Orchestration
+- Specialized command generation for LLM frameworks:
+  * llama.cpp: GPU split optimization with memory fraction calculations
+  * vLLM: Tensor parallel size configuration and memory allocation
+- Model-specific parameter optimization:
+  * Context length based on model architecture
+  * Layer distribution for multi-GPU deployments
+  * Memory per token allocation tracking
 
-The launcher system generates optimal launch parameters for both llama.cpp and vLLM frameworks:
+File paths:
+- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/gui/launcher/launch_controller.py
 
-```python
-def llama_command(model_path: str, ctx: int, split: str):
-    return f"./main -m {model_path} --gpu-split {split} --ctx-size {ctx}"
+2. Smart Batching System (Importance: 90):
+- Length-aware sequence batching for optimized throughput
+- Dynamic batch size calculation considering:
+  * Available GPU memory per device
+  * Model architecture requirements
+  * Token sequence lengths
+  * Safety margins for OOM prevention
+- Backpressure mechanism with configurable queue depths
 
-def vllm_command(model_path: str, tp: int):
-    return f"--model {model_path} --tensor-parallel-size {tp}"
-```
+File paths:
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/batch/heuristics.py
 
-## GPU Resource Management
+3. Model Loading Pipeline (Importance: 85):
+- Progressive loading states with validation
+- Memory prediction for model requirements
+- Resource allocation verification across GPUs
+- Layer distribution optimization for multi-GPU setups
 
-The system actively manages GPU resources during model execution:
+File paths:
+- dualgpuopt/services/event_service.py
+- dualgpuopt/gui/launcher/parameter_resolver.py
 
-1. Dynamic GPU Split Calculation
-- Analyzes available GPU memory
-- Determines optimal tensor split ratios
-- Configures memory pressure thresholds
-- Maintains reserves for system overhead
+4. Execution Monitoring (Importance: 80):
+- Real-time token processing rate tracking
+- GPU memory utilization monitoring
+- Framework-specific error handling
+- OOM detection and recovery strategies
 
-2. Layer Distribution
-- Profiles layer performance on each GPU
-- Creates optimized device maps for model distribution
-- Handles load balancing across devices
-- Maintains monitoring of layer execution stats
+File paths:
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/memory/monitor.py
 
-## Recovery System
-
-1. OOM Prevention
-- Implements tiered recovery approaches:
-  * Cache clearing
-  * Batch size reduction
-  * Memory offloading
-  * Process termination
-
-2. Memory Pressure Monitoring
-- Configurable alert levels (WARNING/CRITICAL/EMERGENCY)
-- Memory usage projection system
-- Rolling history analysis
-- Growth rate modeling with safety factors
-
-## Smart Batch Processing
-
-The batch processing system optimizes workload distribution:
-
-1. Length-aware batch scheduling
-- Groups similar length sequences
-- Adapts batch sizes based on GPU capacity
-- Implements backpressure for OOM prevention
-- Gradual batch size recovery after stability
-
-2. Token Management
-- Maximum token sum per batch (16384)
-- Length threshold-based splitting
-- Backpressure scaling (25-95%)
-- 5-batch stability window
-
-## Framework Integration
-
-1. Mixed Precision Policies
-- Specialized handling for LayerNorm operations
-- Custom autocast context management
-- Framework-specific dtype configurations
-
-2. Model-Specific Optimizations
-- Parameter detection from model names
-- Architecture-based context size calculation
-- Automatic batch size optimization
-- Memory overhead calculation
+The system implements a comprehensive model execution pipeline optimized for dual-GPU configurations, with specialized handling for different ML frameworks and dynamic resource management based on model architectures and GPU capabilities.
 
 $END$

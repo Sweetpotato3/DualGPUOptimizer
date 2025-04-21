@@ -39,7 +39,7 @@ try:
     # Import the GUI module
     from dualgpuopt.gui import DualGUI
     print("Starting modern UI...")
-    
+
     # Create and run the UI
     app = DualGUI()
     app.mainloop()
@@ -47,4 +47,4 @@ except Exception as e:
     print(f"Error starting UI: {e}")
     import traceback
     traceback.print_exc()
-    sys.exit(1) 
+    sys.exit(1)

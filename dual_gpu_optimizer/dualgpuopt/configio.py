@@ -29,30 +29,30 @@ _DEFAULT = {
 def validate_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validate and normalize configuration values.
-    
+
     Args:
         cfg: Raw configuration dictionary
-        
+
     Returns:
         Validated configuration with correct types
     """
     validated = _DEFAULT.copy()
-    
+
     # Validate theme
     if "theme" in cfg and isinstance(cfg["theme"], str):
         if cfg["theme"] in ("dark", "light", "system"):
             validated["theme"] = cfg["theme"]
-    
+
     # Validate strings
     for key in ("last_model",):
         if key in cfg and isinstance(cfg["last_model"], str):
             validated[key] = cfg[key]
-    
+
     # Validate integers
     for key in ("ctx", "alert_threshold", "alert_duration"):
         if key in cfg and isinstance(cfg[key], int) and cfg[key] > 0:
             validated[key] = cfg[key]
-    
+
     # Validate floats
     if "monitor_interval" in cfg:
         try:
@@ -61,39 +61,39 @@ def validate_config(cfg: Dict[str, Any]) -> Dict[str, Any]:
                 validated["monitor_interval"] = interval
         except (ValueError, TypeError):
             pass
-    
+
     # Validate booleans
     if "check_updates" in cfg:
         validated["check_updates"] = bool(cfg["check_updates"])
-    
+
     # Validate dictionary
     if "env_overrides" in cfg and isinstance(cfg["env_overrides"], dict):
         validated["env_overrides"] = {
             k: str(v) for k, v in cfg["env_overrides"].items()
         }
-    
+
     # Validate lists
     if "fav_paths" in cfg and isinstance(cfg["fav_paths"], list):
         validated["fav_paths"] = [str(path) for path in cfg["fav_paths"] if str(path)]
-    
+
     return validated
 
 
 def load_cfg() -> dict:
     """
     Load configuration from file with fallback to defaults.
-    
+
     Returns:
         Validated configuration dictionary
     """
     if not CFG_PATH.exists():
         logger.info(f"No config file found at {CFG_PATH}, using defaults")
         return _DEFAULT.copy()
-    
+
     try:
         with CFG_PATH.open("rb") as fh:
             data = tomllib.load(fh)
-        
+
         # Validate and merge with defaults
         validated = validate_config(data)
         logger.debug(f"Loaded configuration from {CFG_PATH}")
@@ -106,13 +106,13 @@ def load_cfg() -> dict:
 def save_cfg(cfg: dict) -> None:
     """
     Save configuration to file after validation.
-    
+
     Args:
         cfg: Configuration dictionary to save
     """
     # Validate before saving
     validated = validate_config(cfg)
-    
+
     try:
         with CFG_PATH.open("wb") as fh:
             tomli_w.dump(validated, fh)
@@ -123,4 +123,4 @@ def save_cfg(cfg: dict) -> None:
 
 def get_config_path() -> pathlib.Path:
     """Return the config directory path."""
-    return CFG_DIR 
+    return CFG_DIR

@@ -31,4 +31,4 @@ def calc_max_ctx(
     free_mib = sum(g.mem_free for g in gpus) - reserve_gb * 1024
     if free_mib <= 0:
         return 2048
-    return int((free_mib * 1024**2) // bytes_per_tok) 
+    return int((free_mib * 1024**2) // bytes_per_tok)

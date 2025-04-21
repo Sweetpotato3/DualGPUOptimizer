@@ -12,8 +12,8 @@ from __future__ import annotations
 # from dualgpuopt.services.state_service import state_service
 # from dualgpuopt.services.config_service import config_service
 
-__all__ = [] 
+__all__ = []
 =======
 Services package for core application services.
-""" 
+"""
 >>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
