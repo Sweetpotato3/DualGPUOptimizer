@@ -13,22 +13,26 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 ## Recent Improvements
 
 ### Circular Import Resolution
+
 - Fixed circular dependencies between telemetry and GPU modules
 - Created independent local classes to avoid import cycles
 - Improved module initialization with proper error handling
 
 ### Robust Chat Dependency Management
+
 - Implemented a compatibility layer for chat module dependencies
 - Added fallback functionality when chat dependencies are missing
 - Provided helpful installation instructions for users
 
 ### Simplified Dependency Installation
+
 - Added a new standalone `install_deps.py` script for easy dependency management
 - Support for targeted installation of specific dependency categories (core, UI, chat, ML)
 - Clearer feedback about missing dependencies and installation status
 - Automatic environment detection and configuration
 
 ### Better Application Startup
+
 - Graceful startup even with minimal dependencies
 - Clearer error messages when dependencies are missing
 - Added fallback UI mode when optional UI packages are unavailable
@@ -44,6 +48,7 @@ DualGPUOptimizer now features a robust dependency management system that:
 - **Includes Fallback UI**: A minimal UI will run even when optional UI packages are unavailable
 
 The dependency system categorizes dependencies into:
+
 - **Required**: Application won't start without these (e.g., tkinter)
 - **Core**: Application works with fallbacks if missing (e.g., pynvml, numpy)
 - **Optional**: Enhanced functionality when available (e.g., ttkbootstrap, torch)
@@ -59,6 +64,7 @@ DualGPUOptimizer now features a comprehensive error handling and recovery system
 - **Detailed Logging**: Enhanced logging captures error context for easier troubleshooting
 
 The recovery system includes strategies for:
+
 - NVML initialization errors
 - GPU memory issues
 - Configuration problems
@@ -78,6 +84,7 @@ The direct application now implements a fully event-driven architecture that:
 - **Provides Status Updates**: A status bar shows real-time event information
 
 Event types include:
+
 - `GPUMetricsEvent`: Real-time GPU metrics updates
 - `ModelSelectedEvent`: Fired when a model is selected in the optimizer
 - `SplitCalculatedEvent`: Contains calculated GPU split configurations
@@ -89,6 +96,7 @@ This architecture follows the same patterns used in the main application, ensuri
 The direct application features a full-featured tabbed interface with:
 
 ### Dashboard Tab
+
 - Enhanced GPU metrics visualization with progress bars
 - Temperature monitoring with color-coded warnings
 - Power usage tracking with limit indicators
@@ -97,6 +105,7 @@ The direct application features a full-featured tabbed interface with:
 - Memory reset capabilities
 
 ### Optimizer Tab
+
 - Model selection for popular LLMs (Llama, Mistral, Mixtral)
 - Automatic GPU memory split ratio calculation
 - Context length optimization
@@ -144,18 +153,21 @@ DualGPUOptimizer now supports configuration through environment variables:
 ### Installation Steps
 
 1. Clone the repository:
+
    ```
    git clone https://github.com/yourusername/DualGPUOptimizer.git
    cd DualGPUOptimizer
    ```
 
 2. Create a virtual environment (recommended):
+
    ```
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
 
 3. Use the dependency installer to install required packages:
+
    ```
    # Install core dependencies only
    python install_deps.py --core-only
@@ -177,12 +189,14 @@ DualGPUOptimizer now supports configuration through environment variables:
 The application has both core and optional dependencies:
 
 ### Core Dependencies
+
 - `pynvml`: For NVIDIA GPU monitoring
 - `tk`: For the base UI framework
 - `psutil`: For system resource monitoring
 - `numpy`: For optimization algorithms
 
 ### Optional Dependencies
+
 - `ttkbootstrap`: For enhanced UI appearance
 - `ttkthemes`: For additional UI themes
 - `ttkwidgets`: For additional UI widgets
@@ -224,6 +238,7 @@ python -m dualgpuopt
 ```
 
 To run in mock mode:
+
 ```
 python -m dualgpuopt --mock
 ```
@@ -243,7 +258,9 @@ python -m dualgpuopt --mock
 ## Key Features
 
 ### GPU Dashboard
+
 The Dashboard tab provides real-time monitoring of GPU metrics, including:
+
 - Memory usage
 - GPU utilization
 - Temperature
@@ -251,27 +268,35 @@ The Dashboard tab provides real-time monitoring of GPU metrics, including:
 - Clock speeds
 
 ### Optimizer
+
 The Optimizer tab helps calculate optimal GPU configurations for ML models:
+
 - Calculates memory requirements based on model parameters
 - Determines optimal tensor parallelism settings
 - Generates split ratios for uneven GPU memory sizes
 - Predicts maximum batch sizes and context lengths
 
 ### Launcher
+
 The Launcher tab provides:
+
 - Integration with popular ML frameworks
 - Command generation for optimal GPU performance
 - Environment variable configuration
 - Process monitoring and management
 
 ### Chat Interface
+
 The Chat tab offers:
+
 - Basic interface for testing language models
 - Streaming response visualization
 - Token throughput metrics
 
 ### Error Recovery System
+
 The error recovery system provides:
+
 - Automatic recovery from GPU driver issues
 - Memory pressure detection and mitigation
 - Intelligent fallbacks when components fail
@@ -364,17 +389,20 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Recently Fixed Issues
 
 ### Enhanced Dependency Management
+
 - **Improved Installer Script**: Fixed and enhanced the dependency installer with better error handling
 - **Clear Dependency Organization**: Properly categorized dependencies into core, UI, chat, and ML groups
 - **Automatic Recovery**: Added fallback paths when optional dependencies are missing
 - **Better User Feedback**: Improved console output with color-coded status messages
 
 ### Resolved Import Errors
+
 - **Fixed Circular Imports**: Resolved issues between telemetry and GPU modules
 - **Standardized Class Naming**: Ensured consistent naming of GPUMetrics class across modules
 - **Local Class Declaration**: Used local class declarations to avoid import dependencies
 
 ### Improved UI Compatibility Layer
+
 - **Theme Application Support**: Fixed theme application errors in MainApplication
 - **Status Variable Handling**: Added ensure_status_var function to prevent 'status_var' not found errors
 - **Graceful Fallbacks**: Improved fallback mechanisms when UI enhancement packages are unavailable

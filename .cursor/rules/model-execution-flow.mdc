@@ -1,70 +1,44 @@
 ---
-description: Manages execution flows and resource allocation for large language model deployment across multiple GPUs.
-globs: **/gpu/*.py,**/gpu/**/*.py,**/optimizer/*.py,**/runner/*.py,**/batch/*.py
+description: Documents LLM execution workflows, command generation, configuration parameters, and GPU resource allocation strategies for machine learning model deployment.
+globs: **/optimizer.py,**/commands/*.py,**/launcher/*.py,**/direct_launcher.py,**/services/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core LLM Execution Components:
+## Core Model Execution Control 
+Orchestrates model execution across dual GPUs, providing commands for both llama.cpp and vLLM frameworks. Key capabilities:
+- **Model Loading:** Loads model weights with optimized memory splits across GPUs. Calculates optimal split ratios based on available VRAM and device capabilities.
+- **Tensor Parallelization:** Auto-detects optimal tensor parallel configurations for both frameworks. For llama.cpp, generates layer distribution commands based on memory ratios. For vLLM, sets tensor parallel size and device mappings.
+- **Command Generation:** Creates framework-specific commands with optimized parameters:
+  - llama.cpp: `model_path`, `context_size`, `gpu_split`, and layer distribution options
+  - vLLM: `model_path`, `tensor_parallel_size`, memory configurations
 
-1. GPU Split Configuration (optimizer.py)
-- Generates optimal GPU memory splits based on:
-  * Model architecture parameters 
-  * Available GPU memory
-  * Tensor parallel configurations
-  * Requested context length
-- Dynamically adjusts splits between 0.25 and 0.75 ratios
-- Handles asymmetric GPU memory scenarios
+## Memory Management
+- Real-time monitoring of GPU memory utilization
+- Dynamic memory reclamation using CUDA cache clearing
+- OOM prevention through batch size adjustment
 
-2. Execution Flow Management (runner.py)
-- Pipeline orchestration for model loading and inference:
-  1. Initial GPU memory validation
-  2. Model weight distribution
-  3. KV cache allocation
-  4. Inference process initialization
-- Provides framework-specific launch parameters for:
-  * llama.cpp: GPU split, layer distribution
-  * vLLM: Tensor parallel size, memory fraction
+## Configuration Parameters
+- Model-specific configurations (context length, hidden size, layers, heads)
+- GPU split recommendations based on device capabilities
+- Environment variable generation for optimized execution
 
-3. Resource Management (batch/smart_batch.py)
-- Length-aware batch scheduling with:
-  * Dynamic batch size adjustment
-  * Token count tracking per sequence
-  * Memory pressure monitoring
-  * OOM prevention through backpressure
-- Recovery logic with 25% batch reduction on OOM
+## Resource Allocation Flow
+1. Model Parameter Detection
+2. GPU Memory Analysis 
+3. Split Ratio Calculation
+4. Command Generation
+5. Process Launch and Monitoring
 
-4. Framework-Specific Command Generation
-- llama.cpp execution:
-```python
-command = [
-    f"--tensor-split {split_ratio}",
-    f"--ctx-size {context_length}",
-    f"--batch-size {batch_size}"
-]
+Relevant File Paths:
 ```
-- vLLM deployment:
-```python
-command = [
-    f"--tensor-parallel-size {gpu_count}",
-    f"--max-num-batched-tokens {tokens_per_batch}",
-    f"--gpu-memory-utilization {mem_fraction}"
-]
+dualgpuopt/optimizer.py - Core optimization logic
+dualgpuopt/commands/command_base.py - Base command generation
+dualgpuopt/commands/gpu_commands.py - GPU-specific commands
+dualgpuopt/launcher/launch_controller.py - Process control
+dualgpuopt/services/event_bus.py - Execution event coordination
 ```
-
-File Paths:
-```
-dualgpuopt/optimizer.py - Split calculation logic
-dualgpuopt/runner.py - Execution orchestration 
-dualgpuopt/batch/smart_batch.py - Batch management
-```
-
-Importance Scores:
-- GPU Split Configuration: 95 (Core resource allocation)
-- Execution Flow Management: 90 (Critical orchestration)
-- Resource Management: 85 (Key optimization)
-- Command Generation: 75 (Framework integration)
 
 $END$

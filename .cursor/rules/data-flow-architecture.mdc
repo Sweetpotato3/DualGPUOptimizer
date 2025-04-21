@@ -1,49 +1,65 @@
 ---
-description: Specification for analyzing data flow architecture in dual GPU optimization systems with focus on memory management and telemetry
-globs: **/*.py,**/dual_gpu_optimizer/**
+description: Defines data flow patterns and architecture for GPU resource monitoring, optimization metrics, and component communication.
+globs: **/*.py,**/services/**/*.py,**/commands/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The data flow architecture centers around three primary domains:
+### Core Data Flow Components
 
-## GPU Metrics Flow (Importance: 95)
-- Telemetry service collects raw GPU metrics (utilization, memory, temperature, power)
-- Metrics flow through event bus system with priority-based routing
-- Dashboard components receive metrics via observer pattern
-- Real-time visualization components update based on metric events
-- Key paths: dualgpuopt/telemetry.py → services/event_bus.py → gui/dashboard.py
+1. GPU Telemetry Pipeline
+- **TelemetryService** collects real-time GPU metrics including utilization, memory, temperature
+- Metrics flow through configurable middleware chain for processing
+- Event bus publishes metrics to registered subscribers
+- Data flows to visualization components and monitoring systems
+- File: `dualgpuopt/telemetry.py`
 
-## Model Optimization Flow (Importance: 90)
-- Layer balancer determines optimal layer distribution across GPUs 
-- Memory predictor calculates requirements and constraints
-- Layer assignments flow to model launcher for execution
-- GPU split configurations generated and applied
-- Key paths: dualgpuopt/layer_balance.py → memory/predictor.py → optimizer.py
+2. State Management
+- Centralized state service manages application configuration and GPU settings
+- State changes trigger events for UI updates and optimization recalculation
+- Components subscribe to specific state keys
+- File: `dualgpuopt/services/state_service.py`
 
-## Memory Management Flow (Importance: 85)
-- Memory monitor tracks GPU VRAM usage and allocation
-- OOM detection triggers recovery workflow
-- Recovery actions flow through error handler to affected components
-- Memory reclamation results feed back to monitoring system
-- Key paths: dualgpuopt/memory/monitor.py → error_handler/recovery.py → memory/metrics.py
+3. Command Generation Pipeline
+- GPU split calculator determines optimal tensor distribution
+- Results flow to command generator for framework-specific formatting
+- Generated commands transmitted to launcher component
+- Files: `dualgpuopt/commands/gpu_commands.py`
 
-## Resource Control Flow (Importance: 80)
-- GPU commands flow through command system with rollback capability
-- Parameter changes trigger validation and safety checks
-- Configuration updates propagate through state service
-- Settings persistence ensures state consistency
-- Key paths: dualgpuopt/commands/gpu_commands.py → services/state_service.py
+4. Memory Monitoring Flow
+- Memory predictor estimates usage based on model profiles
+- Alerts flow through recovery manager when thresholds exceeded
+- Recovery strategies executed based on severity
+- Files: `dualgpuopt/memory/predictor.py`, `dualgpuopt/memory/recovery.py`
 
-## Alert Flow (Importance: 75)
-- GPU metrics exceed thresholds trigger alert generation
-- Alerts flow through event system to UI components
-- Alert status tracked in state service
-- Recovery recommendations generated based on alert type
-- Key paths: dualgpuopt/error_handler/base.py → services/event_bus.py
+5. Event Bus Architecture 
+- Central event bus coordinates component communication
+- Components publish domain events (GPUMetricsEvent, ModelSelectedEvent)
+- Subscribers receive filtered events based on type/priority
+- File: `dualgpuopt/services/event_bus.py`
 
-The architecture emphasizes real-time monitoring and optimization of dual GPU configurations, with specific focus on memory management and performance optimization for machine learning workloads.
+### Key Data Flows
+
+1. GPU Metrics Flow:
+```
+GPU Hardware -> Telemetry Service -> Middleware Chain -> Event Bus -> UI Components
+```
+
+2. Optimization Command Flow:
+```
+Model Selection -> Split Calculator -> Command Generator -> Launcher
+```
+
+3. Memory Management Flow:
+```
+Memory Monitor -> Predictor -> Alert System -> Recovery Manager
+```
+
+4. Configuration Flow:
+```
+State Service -> Event Bus -> Component Updates
+```
 
 $END$

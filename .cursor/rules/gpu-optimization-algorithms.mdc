@@ -1,82 +1,65 @@
 ---
-description: Handles GPU memory distribution, tensor parallelism, and optimization algorithms for ML model deployment
-globs: **/gpu/**,**/optimizer/**,**/memory/**,**/layer_balance.py,**/batch/**
+description: Specification for GPU optimization algorithms, tensor parallelism, memory distribution and VRAM management components
+globs: 
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Distribution (Importance: 95)
+## Core Optimization Components
 
-Memory distribution algorithm calculates optimal splits across multiple GPUs based on:
-- Available VRAM per GPU
-- Model architecture requirements (layers, heads, hidden size)
-- KV cache memory scaling factors
-- Quantization impacts (INT8, INT4, GPTQ variants)
+### GPU Memory Split Calculator
+- Calculates optimal tensor parallel splits across multiple GPUs based on relative VRAM capacities
+- Implements weighted distribution algorithms to handle asymmetric GPU configurations 
+- Dynamically adjusts split ratios based on model architecture requirements
+- Located in `optimizer.py`
 
-Key files:
+### Layer Distribution Manager
+- Balances model layers across available GPUs using latency-aware distribution
+- Implements contiguous block optimization to minimize inter-GPU communication
+- Profiles layer execution times and adjusts distribution accordingly
+- Located in `layer_balance.py`
+
+### Memory Monitor & Recovery 
+- Tracks GPU memory usage with configurable alert thresholds (warning at 80%, critical at 90%)
+- Implements staged recovery strategies:
+  1. Cache clearing
+  2. Batch size reduction 
+  3. Layer offloading
+  4. Process termination
+- Located in `memory/monitor.py`
+
+### Batch Size Optimizer
+- Dynamically calculates optimal batch sizes based on:
+  - Available GPU memory
+  - Model architecture 
+  - Sequence length
+  - KV cache requirements
+- Implements length-aware batching for improved throughput
+- Located in `batch/smart_batch.py`
+
+### Memory Predictor
+- Estimates memory requirements based on:
+  - Base model size
+  - Per-token memory usage
+  - Attention mechanism overhead
+  - MoE gating factors (if applicable)
+- Provides safety margins to prevent OOM conditions
+- Located in `memory/predictor.py`
+
+## File Paths
 ```
-dualgpuopt/optimizer.py
-dualgpuopt/memory/predictor.py
-```
-
-## Layer Balancing System (Importance: 90)
-
-Intelligent layer distribution across GPUs using:
-- Weighted profiling (20% short sequences, 80% long sequences)
-- Performance quota allocation with reserve ratios
-- Block merging optimization for contiguous memory access
-- Input embedding placement optimization
-
-Key files:
-```
-dualgpuopt/layer_balance.py
-```
-
-## Batch Processing Optimization (Importance: 85)
-
-Length-aware sequence batching with:
-- Dynamic batch sizing based on GPU memory constraints
-- Token-based grouping with 16,384 maximum tokens per batch
-- Automatic OOM recovery with 25% reduction steps
-- Backpressure mechanism for memory management
-
-Key files:
-```
-dualgpuopt/batch/smart_batch.py
-```
-
-## Memory Recovery Strategy (Importance: 80)
-
-Hierarchical recovery system for OOM prevention:
-1. CUDA cache clearing
-2. Batch size reduction
-3. Memory offloading
-4. Process termination
-
-Implements memory growth projection with 5-minute historical window and 85% recovery buffer target.
-
-Key files:
-```
-dualgpuopt/memory/recovery.py
+dualgpuopt/
+  optimizer.py
+  layer_balance.py
+  memory/
+    monitor.py
+    predictor.py
+  batch/
+    smart_batch.py
 ```
 
-## Model-Specific Optimization (Importance: 75)
-
-Predefined memory profiles for common LLM architectures:
-- LLaMA2 (7B, 13B, 70B variants)
-- Mistral-7B
-- Mixtral-8x7B
-
-Custom scaling factors for:
-- Per-token memory requirements
-- Batch size multipliers
-- Expert count overhead (MoE models)
-
-Key files:
-```
-dualgpuopt/model_profiles.py
-```
+Importance Score: 95 - Core GPU optimization algorithms represent critical business logic for model deployment and execution
 
 $END$
