@@ -5,8 +5,7 @@ GPU info module with platform-independent GPU detection
 from __future__ import annotations
 import logging
 import os
-import sys
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 
 # Set up the logger
 logger = logging.getLogger("DualGPUOpt.GPUInfo")

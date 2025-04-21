@@ -580,7 +580,15 @@ The Qt interface includes several key tabs:
 
 2. **Optimizer Tab**: Calculate optimal GPU memory splits for large language models with customizable parameters and command generation
 
-3. **Memory Profiler Tab**: Analyze GPU memory usage patterns with:
+3. **Launcher Tab**: Interface for launching and managing model execution with:
+   - Framework-specific command generation (llama.cpp, vLLM)
+   - Process management with real-time output monitoring
+   - Multiple concurrent model execution support
+   - Command customization with GPU split and tensor parallelism options
+   - Process control with start/stop functionality
+   - Tabbed interface for monitoring multiple processes
+
+4. **Memory Profiler Tab**: Analyze GPU memory usage patterns with:
    - Real-time memory usage timeline visualization
    - Memory leak detection with severity indicators
    - Interactive memory event log with color-coded events
