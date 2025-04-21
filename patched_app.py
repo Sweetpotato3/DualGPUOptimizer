@@ -45,7 +45,8 @@ class PatchedGUI:
         except Exception as e:
             logger.error(f"Error applying theme: {e}")
             messagebox.showwarning("Theme Error",
-                                   f"Could not load theme module. Using default theme.\nError: {e}")
+                                   f"Could not load theme module. Using default " +
+                                   "theme.\nError: {e}")
             self.has_theme = False
 
         # Main container
@@ -58,8 +59,11 @@ class PatchedGUI:
 
         # App title
         title_font = ("TkDefaultFont", 16, "bold")
-        title_label = ttk.Label(self.header_frame, text="DualGPUOptimizer", font=title_font)
-        title_label.pack(side=tk.LEFT)
+        title_label = ttk.Label(
+                                self.header_frame,
+                                text="DualGPUOptimizer",
+                                font=title_font)
+        )        title_label.pack(side=tk.LEFT)
 
         # Theme toggle if available
         if self.has_theme:
@@ -110,11 +114,17 @@ class PatchedGUI:
         self.notebook.add(dashboard, text="Dashboard")
 
         # Add header and description
-        header = ttk.Label(dashboard, text="GPU Dashboard", font=("TkDefaultFont", 14, "bold"))
-        header.pack(pady=(20, 10))
+        header = ttk.Label(
+                           dashboard,
+                           text="GPU Dashboard",
+                           font=("TkDefaultFont",
+                           14,
+                           "bold"))
+        )        header.pack(pady=(20, 10))
 
         description = ttk.Label(dashboard,
-                                text="Monitor your GPU resources and performance metrics")
+                                text="Monitor your GPU resources and performance met" +
+                                "rics")
         description.pack(pady=(0, 20))
 
         # Create GPU info frames
@@ -129,13 +139,27 @@ class PatchedGUI:
             row=0, column=0, columnspan=2, sticky=tk.W)
 
         ttk.Label(gpu0_frame, text="VRAM:").grid(row=1, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu0_frame, text="12 GB / 16 GB (75%)").grid(row=1, column=1, sticky=tk.W)
+        ttk.Label(
+                  gpu0_frame,
+                  text="12 GB / 16 GB (75%)").grid(row=1,
+                  column=1,
+                  sticky=tk.W)
+        )
+        ttk.Label(
+                  gpu0_frame,
+                  text="Utilization:").grid(row=2,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10)
+        )        ttk.Label(gpu0_frame, text="82%").grid(row=2, column=1, sticky=tk.W)
 
-        ttk.Label(gpu0_frame, text="Utilization:").grid(row=2, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu0_frame, text="82%").grid(row=2, column=1, sticky=tk.W)
-
-        ttk.Label(gpu0_frame, text="Temperature:").grid(row=3, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu0_frame, text="72°C").grid(row=3, column=1, sticky=tk.W)
+        ttk.Label(
+                  gpu0_frame,
+                  text="Temperature:").grid(row=3,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10)
+        )        ttk.Label(gpu0_frame, text="72°C").grid(row=3, column=1, sticky=tk.W)
 
         # GPU 1
         gpu1_frame = ttk.Frame(gpu_frame)
@@ -145,35 +169,77 @@ class PatchedGUI:
             row=0, column=0, columnspan=2, sticky=tk.W)
 
         ttk.Label(gpu1_frame, text="VRAM:").grid(row=1, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu1_frame, text="6 GB / 8 GB (75%)").grid(row=1, column=1, sticky=tk.W)
+        ttk.Label(
+                  gpu1_frame,
+                  text="6 GB / 8 GB (75%)").grid(row=1,
+                  column=1,
+                  sticky=tk.W)
+        )
+        ttk.Label(
+                  gpu1_frame,
+                  text="Utilization:").grid(row=2,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10)
+        )        ttk.Label(gpu1_frame, text="68%").grid(row=2, column=1, sticky=tk.W)
 
-        ttk.Label(gpu1_frame, text="Utilization:").grid(row=2, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu1_frame, text="68%").grid(row=2, column=1, sticky=tk.W)
-
-        ttk.Label(gpu1_frame, text="Temperature:").grid(row=3, column=0, sticky=tk.W, padx=10)
-        ttk.Label(gpu1_frame, text="65°C").grid(row=3, column=1, sticky=tk.W)
+        ttk.Label(
+                  gpu1_frame,
+                  text="Temperature:").grid(row=3,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10)
+        )        ttk.Label(gpu1_frame, text="65°C").grid(row=3, column=1, sticky=tk.W)
 
         # Add some performance metrics
         metrics_frame = ttk.LabelFrame(dashboard, text="Performance")
         metrics_frame.pack(fill=tk.X, padx=20, pady=10)
 
-        ttk.Label(metrics_frame, text="Inference Speed:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=5)
-        ttk.Label(metrics_frame, text="45 tokens/sec").grid(row=0, column=1, sticky=tk.W, pady=5)
-
-        ttk.Label(metrics_frame, text="PCIe Bandwidth:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=5)
-        ttk.Label(metrics_frame, text="8.5 GB/s").grid(row=1, column=1, sticky=tk.W, pady=5)
-
+        ttk.Label(
+                  metrics_frame,
+                  text="Inference Speed:").grid(row=0,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=5)
+        )        ttk.Label(
+                  metrics_frame,
+                  text="45 tokens/sec").grid(row=0,
+                  column=1,
+                  sticky=tk.W,
+                  pady=5)
+        )
+        ttk.Label(
+                  metrics_frame,
+                  text="PCIe Bandwidth:").grid(row=1,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=5)
+        )        ttk.Label(
+                  metrics_frame,
+                  text="8.5 GB/s").grid(row=1,
+                  column=1,
+                  sticky=tk.W,
+                  pady=5)
+        )
     def _create_optimizer_tab(self):
         """Create the optimizer tab"""
         optimizer = ttk.Frame(self.notebook)
         self.notebook.add(optimizer, text="Optimizer")
 
         # Add header and description
-        header = ttk.Label(optimizer, text="GPU Split Optimizer", font=("TkDefaultFont", 14, "bold"))
-        header.pack(pady=(20, 10))
+        header = ttk.Label(
+                           optimizer,
+                           text="GPU Split Optimizer",
+                           font=("TkDefaultFont",
+                           14,
+                           "bold"))
+        )        header.pack(pady=(20, 10))
 
         description = ttk.Label(optimizer,
-                                text="Calculate optimal GPU split ratios for LLM inference")
+                                text="Calculate optimal GPU split ratios for LLM inf" +
+                                "erence")
         description.pack(pady=(0, 20))
 
         # Create form for optimizer
@@ -181,14 +247,31 @@ class PatchedGUI:
         form_frame.pack(fill=tk.X, padx=20)
 
         # Model selection
-        ttk.Label(form_frame, text="Model Type:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
-        model_combo = ttk.Combobox(form_frame, values=["Llama 3 8B", "Llama 3 70B", "Mistral 7B", "Custom"])
-        model_combo.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(
+                  form_frame,
+                  text="Model Type:").grid(row=0,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        model_combo = ttk.Combobox(
+                                   form_frame,
+                                   values=["Llama 3 8B",
+                                   "Llama 3 70B",
+                                   "Mistral 7B",
+                                   "Custom"])
+        )        model_combo.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
         model_combo.current(1)
 
         # Context size
-        ttk.Label(form_frame, text="Context Size:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        context_frame = ttk.Frame(form_frame)
+        ttk.Label(
+                  form_frame,
+                  text="Context Size:").grid(row=1,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        context_frame = ttk.Frame(form_frame)
         context_frame.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
 
         context_entry = ttk.Entry(context_frame, width=10)
@@ -198,14 +281,26 @@ class PatchedGUI:
         ttk.Label(context_frame, text="tokens").pack(side=tk.LEFT, padx=5)
 
         # Number of layers
-        ttk.Label(form_frame, text="Model Layers:").grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
-        layers_spin = ttk.Spinbox(form_frame, from_=1, to=100, width=10)
+        ttk.Label(
+                  form_frame,
+                  text="Model Layers:").grid(row=2,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        layers_spin = ttk.Spinbox(form_frame, from_=1, to=100, width=10)
         layers_spin.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
         layers_spin.set("80")
 
         # Memory per token
-        ttk.Label(form_frame, text="Memory per Token:").grid(row=3, column=0, sticky=tk.W, padx=10, pady=10)
-        memory_frame = ttk.Frame(form_frame)
+        ttk.Label(
+                  form_frame,
+                  text="Memory per Token:").grid(row=3,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        memory_frame = ttk.Frame(form_frame)
         memory_frame.grid(row=3, column=1, sticky=tk.W, padx=10, pady=10)
 
         memory_entry = ttk.Entry(memory_frame, width=10)
@@ -222,17 +317,51 @@ class PatchedGUI:
         results_frame = ttk.LabelFrame(optimizer, text="Results")
         results_frame.pack(fill=tk.X, padx=20, pady=20)
 
-        ttk.Label(results_frame, text="Optimal Split Ratio:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(results_frame, text="60% / 40%").grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
-
-        ttk.Label(results_frame, text="VRAM Usage:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(results_frame, text="GPU 0: 12.8 GB, GPU 1: 8.5 GB").grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
-
-        ttk.Label(results_frame, text="Command:").grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
-        command_text = tk.Text(results_frame, height=3, width=50)
+        ttk.Label(
+                  results_frame,
+                  text="Optimal Split Ratio:").grid(row=0,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        ttk.Label(
+                  results_frame,
+                  text="60% / 40%").grid(row=0,
+                  column=1,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )
+        ttk.Label(
+                  results_frame,
+                  text="VRAM Usage:").grid(row=1,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        ttk.Label(
+                  results_frame,
+                  text="GPU 0: 12.8 GB,
+                  GPU 1: 8.5 GB").grid(row=1,
+                  column=1,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )
+        ttk.Label(
+                  results_frame,
+                  text="Command:").grid(row=2,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        command_text = tk.Text(results_frame, height=3, width=50)
         command_text.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
-        command_text.insert("1.0", "./llama.cpp -m models/llama-3-70b.gguf -c 8192 --gpu-layers -1 --tensor-split 0.60,0.40")
-        command_text.config(state="disabled")
+        command_text.insert(
+                            "1.0",
+                            "./llama.cpp -m models/llama-3-70b.gguf -c 8192 --gpu-layers -1 --tensor-split 0.60,
+                            0.40")
+        )        command_text.config(state="disabled")
 
     def _create_launcher_tab(self):
         """Create the launcher tab"""
@@ -240,8 +369,13 @@ class PatchedGUI:
         self.notebook.add(launcher, text="Launcher")
 
         # Add header and description
-        header = ttk.Label(launcher, text="Model Launcher", font=("TkDefaultFont", 14, "bold"))
-        header.pack(pady=(20, 10))
+        header = ttk.Label(
+                           launcher,
+                           text="Model Launcher",
+                           font=("TkDefaultFont",
+                           14,
+                           "bold"))
+        )        header.pack(pady=(20, 10))
 
         description = ttk.Label(launcher,
                                 text="Launch LLM models with optimized settings")
@@ -264,8 +398,13 @@ class PatchedGUI:
         framework_frame.pack(fill=tk.X, padx=20, pady=10)
 
         ttk.Label(framework_frame, text="Framework:").pack(side=tk.LEFT, padx=(0, 10))
-        framework_combo = ttk.Combobox(framework_frame, values=["llama.cpp", "vLLM", "ExLlama", "TGI"])
-        framework_combo.pack(side=tk.LEFT)
+        framework_combo = ttk.Combobox(
+                                       framework_frame,
+                                       values=["llama.cpp",
+                                       "vLLM",
+                                       "ExLlama",
+                                       "TGI"])
+        )        framework_combo.pack(side=tk.LEFT)
         framework_combo.current(0)
 
         # Launch options
@@ -273,40 +412,76 @@ class PatchedGUI:
         options_frame.pack(fill=tk.X, padx=20, pady=10)
 
         # Context size
-        ttk.Label(options_frame, text="Context Size:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
-        context_entry = ttk.Entry(options_frame, width=10)
+        ttk.Label(
+                  options_frame,
+                  text="Context Size:").grid(row=0,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        context_entry = ttk.Entry(options_frame, width=10)
         context_entry.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
         context_entry.insert(0, "8192")
 
         # Tensor split
-        ttk.Label(options_frame, text="Tensor Split:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        split_entry = ttk.Entry(options_frame, width=10)
+        ttk.Label(
+                  options_frame,
+                  text="Tensor Split:").grid(row=1,
+                  column=0,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        split_entry = ttk.Entry(options_frame, width=10)
         split_entry.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
         split_entry.insert(0, "0.60,0.40")
 
         # Threads
-        ttk.Label(options_frame, text="Threads:").grid(row=0, column=2, sticky=tk.W, padx=10, pady=10)
-        thread_spin = ttk.Spinbox(options_frame, from_=1, to=32, width=5)
+        ttk.Label(
+                  options_frame,
+                  text="Threads:").grid(row=0,
+                  column=2,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        thread_spin = ttk.Spinbox(options_frame, from_=1, to=32, width=5)
         thread_spin.grid(row=0, column=3, sticky=tk.W, padx=10, pady=10)
         thread_spin.set("8")
 
         # GPU Layers
-        ttk.Label(options_frame, text="GPU Layers:").grid(row=1, column=2, sticky=tk.W, padx=10, pady=10)
-        layers_spin = ttk.Spinbox(options_frame, from_=-1, to=100, width=5)
+        ttk.Label(
+                  options_frame,
+                  text="GPU Layers:").grid(row=1,
+                  column=2,
+                  sticky=tk.W,
+                  padx=10,
+                  pady=10)
+        )        layers_spin = ttk.Spinbox(options_frame, from_=-1, to=100, width=5)
         layers_spin.grid(row=1, column=3, sticky=tk.W, padx=10, pady=10)
         layers_spin.set("-1")
 
         # Check boxes
         advanced_frame = ttk.Frame(options_frame)
-        advanced_frame.grid(row=2, column=0, columnspan=4, sticky=tk.W, padx=10, pady=10)
-
+        advanced_frame.grid(
+                            row=2,
+                            column=0,
+                            columnspan=4,
+                            sticky=tk.W,
+                            padx=10,
+                            pady=10)
+        )
         use_mmap_var = tk.BooleanVar(value=True)
-        use_mmap = ttk.Checkbutton(advanced_frame, text="Use mmap", variable=use_mmap_var)
-        use_mmap.pack(side=tk.LEFT, padx=5)
+        use_mmap = ttk.Checkbutton(
+                                   advanced_frame,
+                                   text="Use mmap",
+                                   variable=use_mmap_var)
+        )        use_mmap.pack(side=tk.LEFT, padx=5)
 
         use_mlock_var = tk.BooleanVar(value=False)
-        use_mlock = ttk.Checkbutton(advanced_frame, text="Use mlock", variable=use_mlock_var)
-        use_mlock.pack(side=tk.LEFT, padx=5)
+        use_mlock = ttk.Checkbutton(
+                                    advanced_frame,
+                                    text="Use mlock",
+                                    variable=use_mlock_var)
+        )        use_mlock.pack(side=tk.LEFT, padx=5)
 
         # Launch button
         launch_btn = ttk.Button(launcher, text="Launch Model")
@@ -318,12 +493,17 @@ class PatchedGUI:
 
         preview_text = tk.Text(preview_frame, height=4, width=80)
         preview_text.pack(padx=10, pady=10, fill=tk.X)
-        preview_text.insert("1.0", "./llama.cpp -m D:/AI/models/llama-3-70b.gguf -c 8192 -t 8 --gpu-layers -1 --tensor-split 0.60,0.40 --mmap")
-
+        preview_text.insert(
+                            "1.0",
+                            "./llama.cpp -m D:/AI/models/llama-3-70b.gguf -c 8192 -t 8 --gpu-layers -1 --tensor-split 0.60,
+                            0.40 --mmap")
+        )
     def _update_gpu_info(self):
         """Update GPU information display with simulated data"""
-        self.gpu_info_var.set("GPUs: 2 - NVIDIA GeForce RTX 5070 Ti, NVIDIA GeForce RTX 4060 Ti")
-        self.status_var.set("Status: Ready")
+        self.gpu_info_var.set(
+                              "GPUs: 2 - NVIDIA GeForce RTX 5070 Ti,
+                              NVIDIA GeForce RTX 4060 Ti")
+        )        self.status_var.set("Status: Ready")
 
     def _toggle_theme(self):
         """Toggle between light and dark themes"""

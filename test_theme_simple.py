@@ -46,11 +46,15 @@ try:
 
     logger.info("Backward compatibility test successful!")
     logger.info(f"Original current theme has {len(original_current_theme)} properties")
-    logger.info(f"Original available themes: {', '.join(original_AVAILABLE_THEMES.keys())}")
-
+    logger.info(
+                f"Original available themes: {',
+                '.join(original_AVAILABLE_THEMES.keys())}")
+    )
     # Verify the objects are the same
-    logger.info(f"Current theme is the same object: {current_theme is original_current_theme}")
-    logger.info(f"AVAILABLE_THEMES is the same object: {AVAILABLE_THEMES is original_AVAILABLE_THEMES}")
+    logger.info(f"Current theme is the same object: {current_theme is original_current_theme" +
+    "}")
+    logger.info(f"AVAILABLE_THEMES is the same object: {AVAILABLE_THEMES is original_AVAILAB" +
+    "LE_THEMES}")
 
 except ImportError as e:
     logger.error(f"Backward compatibility test failed: {e}")

@@ -7,14 +7,21 @@ import sys
 import argparse
 
 # Add the integrated_app directory to the Python path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "integrated_app")))
-
+sys.path.insert(
+                0,
+                os.path.abspath(os.path.join(os.path.dirname(__file__),
+                "integrated_app")))
+)
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(description="Run the integrated DualGPUOptimizer application")
     parser.add_argument("--mock", action="store_true", help="Run with mock GPU data")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-
+    parser.add_argument(
+                        "--verbose",
+                        "-v",
+                        action="store_true",
+                        help="Enable verbose logging")
+    )
     args = parser.parse_args()
 
     # Set up command line arguments to pass to the app

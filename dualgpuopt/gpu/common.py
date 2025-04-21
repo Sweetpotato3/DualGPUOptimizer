@@ -10,8 +10,8 @@ from typing import Dict, Any, List
 logger = logging.getLogger("DualGPUOpt.GPU")
 
 # Create a local GpuMetrics class to avoid circular imports with telemetry
-class GPUMetrics:
-    """Local GPUMetrics class that matches the structure in telemetry.py"""
+class GpuMetrics:
+    """Local GpuMetrics class that matches the structure in telemetry.py"""
     def __init__(self,
                  gpu_id: int,
                  name: str,

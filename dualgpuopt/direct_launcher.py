@@ -179,6 +179,10 @@ def run_minimal_ui(ttk, gpu_compat, telemetry, dashboard, optimizer):
     """
     # Import required tkinter modules
     import tkinter as tk
+    
+    # Ensure ttk is a module, not a dict
+    if isinstance(ttk, dict):
+        from tkinter import ttk
 
     # Enable mock mode for safe operation
     if hasattr(gpu_compat, "set_mock_mode"):

@@ -109,7 +109,8 @@ class EventBus:
                     except Exception as e:
                         self.logger.error(f"Error in event handler for {event_type.__name__}: {e}")
 
-                self.logger.debug(f"Published event: {event_type.__name__} to {len(subscribers)} subscribers")
+                self.logger.debug(f"Published event: {event_type.__name__} to {len(subscribers)} s" +
+                "ubscribers")
 
 # Create a global event bus instance
 event_bus = EventBus()
@@ -152,8 +153,13 @@ except ImportError:
     def generate_mock_gpus(count=2):
         return [
             {"id": 0, "name": "Mock GPU 0", "mem_total": 24576, "mem_used": 8192, "util": 45},
-            {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85}
-        ]
+            {
+             "id": 1,
+             "name": "Mock GPU 1",
+             "mem_total": 12288,
+             "mem_used": 10240,
+             "util": 85}
+            }        ]
 
 # Try to import the Dashboard component
 try:
@@ -252,8 +258,12 @@ class GPUInfoFrame(ttk.LabelFrame):
 
             # Add a separator between GPUs
             if i < len(gpus) - 1:
-                ttk.Separator(frame, orient="horizontal").pack(fill="x", padx=10, pady=10)
-
+                ttk.Separator(
+                              frame,
+                              orient="horizontal").pack(fill="x",
+                              padx=10,
+                              pady=10)
+                )
             # Publish mock GPU metrics event
             event_bus.publish(GPUMetricsEvent(
                 gpu_id=i,
@@ -339,8 +349,12 @@ class GPUInfoFrame(ttk.LabelFrame):
 
                 # Add separator if not the last GPU
                 if gpu_id < max(metrics.keys()):
-                    ttk.Separator(frame, orient="horizontal").pack(fill="x", padx=10, pady=10)
-
+                    ttk.Separator(
+                                  frame,
+                                  orient="horizontal").pack(fill="x",
+                                  padx=10,
+                                  pady=10)
+                    )
                 # Store widgets
                 self.gpu_frames[gpu_id] = {
                     'frame': frame,
@@ -357,7 +371,8 @@ class GPUInfoFrame(ttk.LabelFrame):
             # Memory info with formatting
             mem_percent = gpu_metrics.memory_percent
             widgets['mem_label'].config(
-                text=f"Memory: {gpu_metrics.memory_used}MB / {gpu_metrics.memory_total}MB ({mem_percent:.1f}%)"
+                text=f"Memory: {gpu_metrics.memory_used}MB / {gpu_metrics.memory_tota" +
+                "l}MB ({mem_percent:.1f}%)"
             )
 
             # Utilization
@@ -380,7 +395,8 @@ class GPUInfoFrame(ttk.LabelFrame):
 
             # Power usage
             if hasattr(gpu_metrics, 'power_usage'):
-                power_text = f"Power: {gpu_metrics.power_usage:.1f}W / {gpu_metrics.power_limit:.1f}W"
+                power_text = f"Power: {gpu_metrics.power_usage:.1f}W / {gpu_metrics.power_lim" +
+                "it:.1f}W"
                 widgets['power_label'].config(text=power_text)
 
     def destroy(self):
@@ -431,7 +447,8 @@ class BasicOptimizerFrame(ttk.LabelFrame):
 
         ttk.Label(
             self,
-            text="This component would calculate optimal GPU split configurations\nfor running large language models across multiple GPUs.",
+            text="This component would calculate optimal GPU split configurations\nf" +
+            "or running large language models across multiple GPUs.",
             justify="center"
         ).pack(pady=10)
 
@@ -465,15 +482,52 @@ class BasicOptimizerFrame(ttk.LabelFrame):
         sample_frame = ttk.LabelFrame(self, text="Sample Split Configuration")
         sample_frame.pack(padx=20, pady=20, fill="x")
 
-        ttk.Label(sample_frame, text="Tensor Parallel Size:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
-        ttk.Label(sample_frame, text="2 GPUs").grid(row=0, column=1, sticky="w", padx=10, pady=5)
-
-        ttk.Label(sample_frame, text="GPU Split Ratio:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        ttk.Label(sample_frame, text="0.67, 0.33").grid(row=1, column=1, sticky="w", padx=10, pady=5)
-
-        ttk.Label(sample_frame, text="Context Length:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
-        ttk.Label(sample_frame, text="4096 tokens").grid(row=2, column=1, sticky="w", padx=10, pady=5)
-
+        ttk.Label(
+                  sample_frame,
+                  text="Tensor Parallel Size:").grid(row=0,
+                  column=0,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )        ttk.Label(
+                  sample_frame,
+                  text="2 GPUs").grid(row=0,
+                  column=1,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )
+        ttk.Label(
+                  sample_frame,
+                  text="GPU Split Ratio:").grid(row=1,
+                  column=0,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )        ttk.Label(
+                  sample_frame,
+                  text="0.67,
+                  0.33").grid(row=1,
+                  column=1,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )
+        ttk.Label(
+                  sample_frame,
+                  text="Context Length:").grid(row=2,
+                  column=0,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )        ttk.Label(
+                  sample_frame,
+                  text="4096 tokens").grid(row=2,
+                  column=1,
+                  sticky="w",
+                  padx=10,
+                  pady=5)
+        )
         # Subscribe to GPU metrics events to demonstrate event listening
         event_bus.subscribe(GPUMetricsEvent, self._on_gpu_metrics)
 
@@ -626,23 +680,56 @@ class StatusBar(ttk.Frame):
 
         self.last_update = now
         self.status_label.config(
-            text=f"GPU {event.gpu_id} metrics: {event.utilization:.1f}% util, {event.memory_used}/{event.memory_total} MB"
+            text=f"GPU {event.gpu_id} metrics: {event.utilization:.1f}% util, {event." +
+            "memory_used}/{event.memory_total} MB"
         )
 
     def _on_model_selected(self, event):
         """Handle model selection events"""
         self.status_label.config(
-            text=f"Model selected: {event.model_name}, {event.num_layers} layers, {event.hidden_size} hidden size"
+            text=f"Model selected: {event.model_name}, {event.num_layers} layers, {ev" +
+            "ent.hidden_size} hidden size"
         )
 
     def _on_split_calculated(self, event):
         """Handle split calculation events"""
         self.status_label.config(
-            text=f"Split calculated: {event.tensor_parallel_size} GPUs, context length {event.context_length}"
+            text=f"Split calculated: {event.tensor_parallel_size} GPUs, context lengt" +
+            "h {event.context_length}"
         )
 
-def main():
-    """Main entry point"""
+def main(mock=False):
+    """Main entry point for the direct application
+
+    Args:
+        mock (bool, optional): Whether to use mock GPU data. Defaults to False.
+    """
+    # Set up logging
+    Path("logs").mkdir(exist_ok=True)
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler(),
+            logging.FileHandler(Path("logs") / "direct_app.log", mode='w', encoding='utf-8'),
+        ]
+    )
+
+    # Enable mock mode if requested
+    if mock:
+        set_mock_mode(True)
+        logger.info("Mock GPU mode enabled")
+
+    # Determine if we're using ttkbootstrap
+    global TTKBOOTSTRAP_AVAILABLE
+    try:
+        import ttkbootstrap
+        TTKBOOTSTRAP_AVAILABLE = True
+        logger.info("Using ttkbootstrap for enhanced UI")
+    except ImportError:
+        TTKBOOTSTRAP_AVAILABLE = False
+        logger.info("ttkbootstrap not available, using standard ttk")
+
     # Set up the root window
     root = tk.Tk()
     root.title("DualGPUOptimizer - Direct")
@@ -741,8 +828,5 @@ def main():
     root.mainloop()
 
 if __name__ == "__main__":
-    # Ensure the logs directory exists
-    Path("logs").mkdir(exist_ok=True)
-
     # Run the application
     main()

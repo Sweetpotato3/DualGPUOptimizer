@@ -38,13 +38,20 @@ def main():
         if (current_dir / "dual_gpu_optimizer").exists():
             print(f"Found dual_gpu_optimizer directory. Installing...")
             try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "./dual_gpu_optimizer"])
-                print("✓ DualGPUOptimizer installed")
+                subprocess.check_call(
+                                      [sys.executable,
+                                      "-m",
+                                      "pip",
+                                      "install",
+                                      "-e",
+                                      "./dual_gpu_optimizer"])
+                )                print("✓ DualGPUOptimizer installed")
                 # Try importing again
                 try:
                     pass
                 except ImportError:
-                    print("✗ Still cannot import DualGPUOptimizer even after installation.")
+                    print("✗ Still cannot import DualGPUOptimizer even after installa" +
+                    "tion.")
                     return 1
             except Exception as e:
                 print(f"✗ Failed to install DualGPUOptimizer: {e}")

@@ -19,8 +19,14 @@ def check_pyinstaller():
     except ImportError:
         print("PyInstaller is not installed. Installing...")
         try:
-            subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
-            print("PyInstaller installed successfully")
+            subprocess.run(
+                           [sys.executable,
+                           "-m",
+                           "pip",
+                           "install",
+                           "pyinstaller"],
+                           check=True)
+            )            print("PyInstaller installed successfully")
             return True
         except subprocess.CalledProcessError:
             print("Failed to install PyInstaller")

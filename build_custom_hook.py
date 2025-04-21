@@ -97,8 +97,10 @@ def find_torch_dlls():
         # Add cuda DLLs if available
         cuda_lib_path = torch_path / "lib" / "cuda"
         if cuda_lib_path.exists():
-            dll_paths.extend([(str(dll), "lib/cuda") for dll in cuda_lib_path.glob("*.dll")])
-
+            dll_paths.extend(
+                             [(str(dll),
+                             "lib/cuda") for dll in cuda_lib_path.glob("*.dll")])
+            )
         return dll_paths
     except ImportError:
         print("Warning: torch not found in environment")
@@ -113,7 +115,8 @@ def create_spec_file(hooks_dir, torch_dlls, nvml_path, assets_dir, presets_dir, 
     for dll_path, target_dir in torch_dlls:
         binaries_str = binaries_str[:-1] + f", (r'{dll_path}', '{target_dir}')]"
 
-    datas_str = f"[(r'{assets_dir}', 'dualgpuopt/assets'), (r'{presets_dir}', 'dualgpuopt/presets')]"
+    datas_str = f"[(r'{assets_dir}', 'dualgpuopt/assets'), (r'{presets_dir}', 'dualgpuopt/pr" +
+    "esets')]"
 
     with open(spec_path, "w") as f:
         f.write(f"""# -*- mode: python ; coding: utf-8 -*-

@@ -12,8 +12,11 @@ import argparse
 def main():
     """Main entry point for running the memory profiler"""
     parser = argparse.ArgumentParser(description='Memory Profiler for GPU memory usage')
-    parser.add_argument('--mock', action='store_true', help='Run in mock mode without real GPUs')
-    args = parser.parse_args()
+    parser.add_argument(
+                        '--mock',
+                        action='store_true',
+                        help='Run in mock mode without real GPUs')
+    )    args = parser.parse_args()
 
     if args.mock:
         os.environ['DUALGPUOPT_MOCK_GPU'] = '1'

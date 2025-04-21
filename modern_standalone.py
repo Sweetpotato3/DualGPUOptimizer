@@ -26,8 +26,11 @@ except ImportError:
         def __init__(self, master, **kwargs):
             super().__init__(master, **kwargs)
             self.canvas = tk.Canvas(self, highlightthickness=0)
-            self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
-            self.scrollable_frame = ttk.Frame(self.canvas)
+            self.scrollbar = ttk.Scrollbar(
+                                           self,
+                                           orient="vertical",
+                                           command=self.canvas.yview)
+            )            self.scrollable_frame = ttk.Frame(self.canvas)
 
             self.scrollable_frame.bind("<Configure>",
                 lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
@@ -140,9 +143,21 @@ class GradientBar(tk.Canvas):
                 # Try to use ttkbootstrap's gradient if available
                 try:
                     pct = self._value / 100.0
-                    r1, g1, b1 = int(self._start_color[1:3], 16), int(self._start_color[3:5], 16), int(self._start_color[5:7], 16)
-                    r2, g2, b2 = int(self._end_color[1:3], 16), int(self._end_color[3:5], 16), int(self._end_color[5:7], 16)
-                    r = int(r1 + (r2 - r1) * pct)
+                    r1, g1, b1 = int(
+                                     self._start_color[1:3],
+                                     16),
+                                     int(self._start_color[3:5],
+                                     16),
+                                     int(self._start_color[5:7],
+                                     16)
+                    )                    r2, g2, b2 = int(
+                                     self._end_color[1:3],
+                                     16),
+                                     int(self._end_color[3:5],
+                                     16),
+                                     int(self._end_color[5:7],
+                                     16)
+                    )                    r = int(r1 + (r2 - r1) * pct)
                     g = int(g1 + (g2 - g1) * pct)
                     b = int(b1 + (b2 - b1) * pct)
                     color = f"#{r:02x}{g:02x}{b:02x}"
@@ -325,12 +340,23 @@ class ModernDualGUI(tk.Tk):
         header = ttk.Frame(self, style="TFrame", padding=6)
         header.pack(fill="x", pady=(0, 4))
 
-        NeonButton(header, text="Launch Model", command=self._on_launch).pack(side="left")
-        NeonButton(header, text="New Session", command=self._on_new_session).pack(side="left", padx=6)
-
+        NeonButton(
+                   header,
+                   text="Launch Model",
+                   command=self._on_launch).pack(side="left")
+        )        NeonButton(
+                   header,
+                   text="New Session",
+                   command=self._on_new_session).pack(side="left",
+                   padx=6)
+        )
         # Theme toggle button
-        ttk.Button(header, text="🌙/☀️", command=self._toggle_theme).pack(side="right", padx=6)
-
+        ttk.Button(
+                   header,
+                   text="🌙/☀️",
+                   command=self._toggle_theme).pack(side="right",
+                   padx=6)
+        )
         # Main notebook with tabs
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=6)
@@ -353,8 +379,15 @@ class ModernDualGUI(tk.Tk):
         self.notebook.add(tab, text="Launcher")
 
         # Model path input
-        ttk.Label(tab, text="Model Path:", style="Card.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=10)
-        self.model_var = tk.StringVar(value="TheBloke/dolphin-2.2-yi-34b-200k-AWQ")
+        ttk.Label(
+                  tab,
+                  text="Model Path:",
+                  style="Card.TLabel").grid(row=0,
+                  column=0,
+                  sticky="w",
+                  padx=4,
+                  pady=10)
+        )        self.model_var = tk.StringVar(value="TheBloke/dolphin-2.2-yi-34b-200k-AWQ")
         model_entry = ttk.Entry(tab, textvariable=self.model_var, width=55)
         model_entry.grid(row=0, column=1, sticky="ew", padx=6)
 
@@ -367,8 +400,15 @@ class ModernDualGUI(tk.Tk):
         tab.columnconfigure(1, weight=1)
 
         # Output area
-        ttk.Label(tab, text="Output Log:", style="Card.TLabel").grid(row=1, column=0, sticky="nw", padx=4, pady=6)
-        self.out_box = tk.Text(tab, height=20, bg="#13141C", fg="#E6E6E6",
+        ttk.Label(
+                  tab,
+                  text="Output Log:",
+                  style="Card.TLabel").grid(row=1,
+                  column=0,
+                  sticky="nw",
+                  padx=4,
+                  pady=6)
+        )        self.out_box = tk.Text(tab, height=20, bg="#13141C", fg="#E6E6E6",
                               insertbackground="white")
         self.out_box.grid(row=2, column=0, columnspan=3, sticky="nsew", padx=4, pady=4)
         tab.rowconfigure(2, weight=1)
@@ -380,13 +420,27 @@ class ModernDualGUI(tk.Tk):
         self.notebook.add(tab, text="Dashboard")
 
         # GPU Utilization
-        ttk.Label(tab, text="GPU Utilization:", style="Card.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=10)
-        self.util_bar = GradientBar(tab)
+        ttk.Label(
+                  tab,
+                  text="GPU Utilization:",
+                  style="Card.TLabel").grid(row=0,
+                  column=0,
+                  sticky="w",
+                  padx=4,
+                  pady=10)
+        )        self.util_bar = GradientBar(tab)
         self.util_bar.grid(row=0, column=1, sticky="ew", padx=10)
 
         # VRAM Usage
-        ttk.Label(tab, text="VRAM Usage:", style="Card.TLabel").grid(row=1, column=0, sticky="w", padx=4, pady=10)
-        self.vram_bar = GradientBar(tab)
+        ttk.Label(
+                  tab,
+                  text="VRAM Usage:",
+                  style="Card.TLabel").grid(row=1,
+                  column=0,
+                  sticky="w",
+                  padx=4,
+                  pady=10)
+        )        self.vram_bar = GradientBar(tab)
         self.vram_bar.grid(row=1, column=1, sticky="ew", padx=10)
 
         # Performance meter
@@ -406,9 +460,23 @@ class ModernDualGUI(tk.Tk):
             ("Power:", "120W / 350W"),
             ("Fan Speed:", "35%")
         ]):
-            ttk.Label(stats_frame, text=label, style="Card.TLabel").grid(row=i, column=0, sticky="w", padx=10, pady=6)
-            ttk.Label(stats_frame, text=value, style="Card.TLabel").grid(row=i, column=1, sticky="w", padx=10, pady=6)
-
+            ttk.Label(
+                      stats_frame,
+                      text=label,
+                      style="Card.TLabel").grid(row=i,
+                      column=0,
+                      sticky="w",
+                      padx=10,
+                      pady=6)
+            )            ttk.Label(
+                      stats_frame,
+                      text=value,
+                      style="Card.TLabel").grid(row=i,
+                      column=1,
+                      sticky="w",
+                      padx=10,
+                      pady=6)
+            )
     def _build_chat_tab(self):
         """Build the chat tab"""
         # Create tab container
@@ -421,8 +489,14 @@ class ModernDualGUI(tk.Tk):
         chat_scroll = ttk.Scrollbar(tab, command=self.chat_display.yview)
         self.chat_display.configure(yscrollcommand=chat_scroll.set)
 
-        self.chat_display.pack(fill="both", expand=True, side="left", padx=(4, 0), pady=4)
-        chat_scroll.pack(fill="y", side="right", padx=(0, 4), pady=4)
+        self.chat_display.pack(
+                               fill="both",
+                               expand=True,
+                               side="left",
+                               padx=(4,
+                               0),
+                               pady=4)
+        )        chat_scroll.pack(fill="y", side="right", padx=(0, 4), pady=4)
 
         # Input area
         input_frame = ttk.Frame(tab, style="Card.TFrame", padding=4)
@@ -437,8 +511,11 @@ class ModernDualGUI(tk.Tk):
         send_btn.pack(side="right")
 
         # Configure text tags for user/assistant messages
-        self.chat_display.tag_configure("user", foreground="#FFFFFF", background="#371B59")
-        self.chat_display.tag_configure("assistant", foreground="#E6E6E6")
+        self.chat_display.tag_configure(
+                                        "user",
+                                        foreground="#FFFFFF",
+                                        background="#371B59")
+        )        self.chat_display.tag_configure("assistant", foreground="#E6E6E6")
 
     def _toggle_theme(self):
         """Toggle between light and dark themes"""

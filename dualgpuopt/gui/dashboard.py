@@ -4,7 +4,7 @@ GPU monitoring dashboard for real-time metrics visualization
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
-from typing import Dict
+from typing import Dict, List, Optional
 import logging
 
 from ..telemetry import get_telemetry_service, GPUMetrics
@@ -18,7 +18,7 @@ except ImportError:
 
 # Try to import memory profiler tab
 try:
-    from .memory_profile_tab import MemoryProfileTab
+    from dualgpuopt.memory.profiler import MemoryProfileTab
     MEMORY_PROFILER_AVAILABLE = True
 except ImportError:
     MEMORY_PROFILER_AVAILABLE = False

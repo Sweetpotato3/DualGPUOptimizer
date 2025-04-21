@@ -32,7 +32,8 @@ def create_service_structure():
     init_file = services_dir / "__init__.py"
     if not init_file.exists():
         with open(init_file, "w") as f:
-            f.write('"""Services package for DualGPUOptimizer."""\n\n__all__ = ["config_service", "event_service"]')
+            f.write('"""Services package for DualGPUOptimizer."""\n\n__all__ = ["config' +
+            '_service", "event_service"]')
 
     # Create basic config_service.py if it doesn't exist
     config_file = services_dir / "config_service.py"
@@ -143,8 +144,11 @@ def run_theme_test():
         main_frame.pack(fill=tk.BOTH, expand=True)
 
         # Add a heading
-        heading = ttk.Label(main_frame, text="Theme Test Application", style="Heading.TLabel")
-        heading.pack(pady=20)
+        heading = ttk.Label(
+                            main_frame,
+                            text="Theme Test Application",
+                            style="Heading.TLabel")
+        )        heading.pack(pady=20)
 
         # Add some regular labels
         label1 = ttk.Label(main_frame, text="This is a regular label")
@@ -159,8 +163,11 @@ def run_theme_test():
             def theme_changer(name=theme_name):
                 set_theme(root, name)
 
-            btn = ttk.Button(button_frame, text=f"Apply {theme_name} theme", command=theme_changer)
-            btn.pack(side=tk.LEFT, padx=10)
+            btn = ttk.Button(
+                             button_frame,
+                             text=f"Apply {theme_name} theme",
+                             command=theme_changer)
+            )            btn.pack(side=tk.LEFT, padx=10)
 
         # Add a toggle button
         toggle_btn = ttk.Button(main_frame, text="Toggle Theme",
@@ -205,8 +212,10 @@ def run_theme_test():
         # Add some debug info
         debug_text.insert(tk.END, f"Current Python version: {sys.version}\n")
         debug_text.insert(tk.END, f"Tkinter version: {tk.TkVersion}\n")
-        debug_text.insert(tk.END, f"Available themes: {list(AVAILABLE_THEMES.keys())}\n")
-
+        debug_text.insert(
+                          tk.END,
+                          f"Available themes: {list(AVAILABLE_THEMES.keys())}\n")
+        )
         # Start the main loop
         root.mainloop()
 

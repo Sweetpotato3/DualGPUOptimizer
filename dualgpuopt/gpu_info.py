@@ -17,10 +17,10 @@ ENV_GPU_COUNT = int(os.environ.get("DUALGPUOPT_GPU_COUNT", "0"))
 # Import from refactored GPU module
 try:
     # Import the core functionality from the refactored modules
-    from dualgpuopt.gpu.common import IS_NVIDIA, IS_MAC, MOCK_MODE, NVML_INITIALIZED
+    from dualgpuopt.gpu.common import IS_NVIDIA, IS_MAC, MOCK_MODE, NVML_INITIALIZED, GpuMetrics
     from dualgpuopt.gpu.info import query, get_gpu_count, get_gpu_names
     from dualgpuopt.gpu.mock import set_mock_mode, get_mock_mode, generate_mock_gpus
-    from dualgpuopt.gpu.monitor import get_memory_info, get_utilization, get_temperature, get_power_usage
+    from dualgpuopt.gpu.monitor import get_memory_info, get_utilization, get_temperature, get_power_usage, GpuMonitor
 
     # Override with environment variables if set
     if ENV_MOCK_GPU:
@@ -108,6 +108,30 @@ except ImportError as e:
         except Exception as e:
             logger.error(f"Error getting power usage (fallback): {e}")
         return 0.0
+
+    # Define fallback classes
+    class GpuMetrics:
+        """Fallback metrics class"""
+        def __init__(self, gpu_id=0, name="Unknown", utilization=0, 
+                     memory_used=0, memory_total=0, temperature=0,
+                     power_usage=0, power_limit=0, fan_speed=0,
+                     clock_sm=0, clock_memory=0, pcie_tx=0, pcie_rx=0,
+                     timestamp=0, error_state=False):
+            self.gpu_id = gpu_id
+            self.name = name
+            self.utilization = utilization
+            self.memory_used = memory_used
+            self.memory_total = memory_total
+            self.temperature = temperature
+            self.power_usage = power_usage
+            self.power_limit = power_limit
+            self.fan_speed = fan_speed
+            self.clock_sm = clock_sm
+            self.clock_memory = clock_memory
+            self.pcie_tx = pcie_tx
+            self.pcie_rx = pcie_rx
+            self.timestamp = timestamp
+            self.error_state = error_state
 
 # Import error handling
 try:

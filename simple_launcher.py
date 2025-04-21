@@ -93,17 +93,30 @@ class DualGpuApp(ttk.Frame):
     def create_widgets(self):
         """Create the UI widgets."""
         # Title
-        title_label = ttk.Label(self, text="DualGPUOptimizer", font=("Segoe UI", 16, "bold"))
-        title_label.grid(row=0, column=0, columnspan=2, pady=10)
+        title_label = ttk.Label(
+                                self,
+                                text="DualGPUOptimizer",
+                                font=("Segoe UI",
+                                16,
+                                "bold"))
+        )        title_label.grid(row=0, column=0, columnspan=2, pady=10)
 
         # GPU Info
         gpu_frame = ttk.LabelFrame(self, text="Detected GPUs", padding=10)
         gpu_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
 
         for i, gpu in enumerate(self.gpus):
-            ttk.Label(gpu_frame, text=f"GPU {gpu.index}: {gpu.name}").grid(row=i, column=0, sticky="w")
-            ttk.Label(gpu_frame, text=f"{gpu.mem_total_gb} GB").grid(row=i, column=1, sticky="e")
-
+            ttk.Label(
+                      gpu_frame,
+                      text=f"GPU {gpu.index}: {gpu.name}").grid(row=i,
+                      column=0,
+                      sticky="w")
+            )            ttk.Label(
+                      gpu_frame,
+                      text=f"{gpu.mem_total_gb} GB").grid(row=i,
+                      column=1,
+                      sticky="e")
+            )
         # Model Input
         input_frame = ttk.LabelFrame(self, text="Model Settings", padding=10)
         input_frame.grid(row=2, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
@@ -130,10 +143,25 @@ class DualGpuApp(ttk.Frame):
         button_frame = ttk.Frame(self, padding=10)
         button_frame.grid(row=4, column=0, columnspan=2, pady=5)
 
-        ttk.Button(button_frame, text="Generate Commands", command=self.update_output).grid(row=0, column=0, padx=5)
-        ttk.Button(button_frame, text="Browse", command=self.browse_model).grid(row=0, column=1, padx=5)
-        ttk.Button(button_frame, text="Exit", command=self.master.destroy).grid(row=0, column=2, padx=5)
-
+        ttk.Button(
+                   button_frame,
+                   text="Generate Commands",
+                   command=self.update_output).grid(row=0,
+                   column=0,
+                   padx=5)
+        )        ttk.Button(
+                   button_frame,
+                   text="Browse",
+                   command=self.browse_model).grid(row=0,
+                   column=1,
+                   padx=5)
+        )        ttk.Button(
+                   button_frame,
+                   text="Exit",
+                   command=self.master.destroy).grid(row=0,
+                   column=2,
+                   padx=5)
+        )
         # Configure grid
         self.columnconfigure(0, weight=1)
         self.rowconfigure(3, weight=1)
@@ -163,18 +191,29 @@ class DualGpuApp(ttk.Frame):
         self.output_text.insert(tk.END, "GPU INFORMATION:\n")
         for i, gpu in enumerate(self.gpus):
             self.output_text.insert(tk.END, f"  GPU {gpu.index}: {gpu.name}\n")
-            self.output_text.insert(tk.END, f"    Memory: {gpu.mem_total_gb} GB total, {gpu.mem_free//1024} GB free\n")
+            self.output_text.insert(tk.END, f"    Memory: {gpu.mem_total_gb} GB total, {gpu.mem_free//1024} GB f" +
+            "ree\n")
 
         # Add optimization info
         self.output_text.insert(tk.END, "\nOPTIMIZATION RESULTS:\n")
         self.output_text.insert(tk.END, f"  Recommended Split: {split}\n")
-        self.output_text.insert(tk.END, f"  Tensor Fractions: {', '.join(str(f) for f in fractions)}\n")
-
+        self.output_text.insert(
+                                tk.END,
+                                f"  Tensor Fractions: {',
+                                '.join(str(f) for f in fractions)}\n")
+        )
         # Add commands
         self.output_text.insert(tk.END, "\nCOMMANDS:\n")
-        self.output_text.insert(tk.END, f"  llama.cpp:\n    {llama_command(model_path, ctx_size, split)}\n\n")
-        self.output_text.insert(tk.END, f"  vLLM:\n    {vllm_command(model_path, len(self.gpus))}\n")
-
+        self.output_text.insert(
+                                tk.END,
+                                f"  llama.cpp:\n    {llama_command(model_path,
+                                ctx_size,
+                                split)}\n\n")
+        )        self.output_text.insert(
+                                tk.END,
+                                f"  vLLM:\n    {vllm_command(model_path,
+                                len(self.gpus))}\n")
+        )
 
 def main():
     """Main function to run the app."""

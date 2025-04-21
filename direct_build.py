@@ -55,8 +55,14 @@ def install_pyinstaller():
         print("PyInstaller is already installed.")
     except ImportError:
         print("Installing PyInstaller...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
-        print("PyInstaller installed successfully.")
+        subprocess.run(
+                       [sys.executable,
+                       "-m",
+                       "pip",
+                       "install",
+                       "pyinstaller"],
+                       check=True)
+        )        print("PyInstaller installed successfully.")
 
 def build_executable(icon_path):
     """Build the executable directly using PyInstaller command line."""
@@ -104,7 +110,8 @@ def build_executable(icon_path):
         if onefile:
             print(f"\n🎉 Build complete → {exe_path}")
         else:
-            print(f"\n🎉 Build complete → {os.path.abspath('dist/DualGPUOptimizer/DualGPUOptimizer.exe')}")
+            print(f"\n🎉 Build complete → {os.path.abspath('dist/DualGPUOptimizer/DualG" +
+            "PUOptimizer.exe')}")
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error building executable: {e}")
@@ -127,7 +134,8 @@ def main():
 
     if success:
         print("\nBuild successful! You can find the executable in the 'dist' folder.")
-        print("The taskbar icon should now display correctly when running the executable.")
+        print("The taskbar icon should now display correctly when running the executa" +
+        "ble.")
 
         # Ask if user wants to run the executable
         if input("\nRun the executable now? (y/n): ").strip().lower() == 'y':

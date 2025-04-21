@@ -57,8 +57,14 @@ def install_pyinstaller():
         print("PyInstaller is already installed.")
     except ImportError:
         print("Installing PyInstaller...")
-        subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
-        print("PyInstaller installed successfully.")
+        subprocess.run(
+                       [sys.executable,
+                       "-m",
+                       "pip",
+                       "install",
+                       "pyinstaller"],
+                       check=True)
+        )        print("PyInstaller installed successfully.")
 
 def build_executable():
     """Build the executable using PyInstaller."""
@@ -102,7 +108,8 @@ def main():
 
     if success:
         print("\nBuild successful! You can find the executable in the 'dist' folder.")
-        print("The taskbar icon should now display correctly when running the executable.")
+        print("The taskbar icon should now display correctly when running the executa" +
+        "ble.")
     else:
         print("\nBuild failed. Please check the error messages above.")
 

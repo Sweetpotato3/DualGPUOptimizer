@@ -55,23 +55,71 @@ def create_test_window():
 
     # Display current theme
     current_theme_var = tk.StringVar()
-    ttk.Label(info_frame, text="Current Theme:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=current_theme_var).grid(row=0, column=1, padx=10, pady=5, sticky="w")
-
+    ttk.Label(
+              info_frame,
+              text="Current Theme:").grid(row=0,
+              column=0,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )    ttk.Label(
+              info_frame,
+              textvariable=current_theme_var).grid(row=0,
+              column=1,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )
     # Display theme colors
     bg_var = tk.StringVar()
     fg_var = tk.StringVar()
     accent_var = tk.StringVar()
 
-    ttk.Label(info_frame, text="Background:").grid(row=1, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=bg_var).grid(row=1, column=1, padx=10, pady=5, sticky="w")
-
-    ttk.Label(info_frame, text="Foreground:").grid(row=2, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=fg_var).grid(row=2, column=1, padx=10, pady=5, sticky="w")
-
-    ttk.Label(info_frame, text="Accent:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=accent_var).grid(row=3, column=1, padx=10, pady=5, sticky="w")
-
+    ttk.Label(
+              info_frame,
+              text="Background:").grid(row=1,
+              column=0,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )    ttk.Label(
+              info_frame,
+              textvariable=bg_var).grid(row=1,
+              column=1,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )
+    ttk.Label(
+              info_frame,
+              text="Foreground:").grid(row=2,
+              column=0,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )    ttk.Label(
+              info_frame,
+              textvariable=fg_var).grid(row=2,
+              column=1,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )
+    ttk.Label(
+              info_frame,
+              text="Accent:").grid(row=3,
+              column=0,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )    ttk.Label(
+              info_frame,
+              textvariable=accent_var).grid(row=3,
+              column=1,
+              padx=10,
+              pady=5,
+              sticky="w")
+    )
     # Add buttons to switch themes
     themes_frame = ttk.Frame(frame)
     themes_frame.pack(pady=10)

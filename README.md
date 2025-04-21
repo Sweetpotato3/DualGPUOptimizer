@@ -17,6 +17,34 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
 - **NEW: CPU-Based Resource Management**: Preserves GPU memory by running non-critical tasks on CPU
 
+## Code Quality Tools
+
+The repository includes several code quality tools to maintain consistent code standards:
+
+### Pre-commit Hook
+
+A Python-based pre-commit hook checks for:
+- Trailing whitespace
+- Unused imports
+
+To bypass the pre-commit check for a specific commit:
+```
+git commit --no-verify -m "Your commit message"
+```
+
+See [code_quality.md](code_quality.md) for detailed information on using and troubleshooting the pre-commit hook.
+
+### Helper Scripts
+
+- `install_autoflake.py`: Installs the autoflake dependency for checking unused imports
+- `fix_whitespace.py`: Removes trailing whitespace from Python files
+
+Run these scripts from your virtual environment:
+```
+.venv\Scripts\python.exe install_autoflake.py
+.venv\Scripts\python.exe fix_whitespace.py
+```
+
 ## Recent Improvements
 
 ### NEW: CPU-Based Resource Management System
@@ -158,6 +186,16 @@ These optimizations significantly improve performance, particularly when working
 - Fixed circular dependencies between telemetry and GPU modules
 - Created independent local classes to avoid import cycles
 - Improved module initialization with proper error handling
+
+### Recent Bug Fixes (April 2025)
+
+- **Fixed Dashboard Initialization**: Resolved MEMORY_PROFILER_AVAILABLE undefined variable issue in dashboard.py
+- **Fixed Direct Launcher**: Properly handled ttk module imports for minimal UI mode
+- **Resolved GPU Module Import Error**: Fixed issue with GpuMetrics class import in gpu_info.py
+- **Enhanced run_direct_app.py**: Added proper mock parameter support to main() function
+- **Improved Error Handling**: Added better error messages and graceful degradation with missing dependencies
+
+These fixes improve application stability and ensure proper startup even in environments with limited dependencies.
 
 ### Robust Chat Dependency Management
 

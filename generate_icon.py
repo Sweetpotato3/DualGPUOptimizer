@@ -21,9 +21,35 @@ for y in range(64):
     draw.line([(0, y), (64, y)], fill=color)
 
 # Draw simple GPU-like rectangles
-draw.rectangle([10, 15, 54, 35], fill=(200, 80, 230, 255), outline=(255, 255, 255, 200), width=1)
-draw.rectangle([10, 40, 54, 60], fill=(120, 200, 230, 255), outline=(255, 255, 255, 200), width=1)
-
+draw.rectangle(
+               [10,
+               15,
+               54,
+               35],
+               fill=(200,
+               80,
+               230,
+               255),
+               outline=(255,
+               255,
+               255,
+               200),
+               width=1)
+)draw.rectangle(
+               [10,
+               40,
+               54,
+               60],
+               fill=(120,
+               200,
+               230,
+               255),
+               outline=(255,
+               255,
+               255,
+               200),
+               width=1)
+)
 # Draw connecting lines
 draw.line([(32, 35), (32, 40)], fill=(255, 255, 255, 200), width=2)
 draw.line([(22, 35), (22, 40)], fill=(255, 255, 255, 200), width=2)
@@ -46,7 +72,17 @@ except Exception as e:
         img_32 = img.resize((32, 32), Image.LANCZOS)
         img_48 = img.resize((48, 48), Image.LANCZOS)
 
-        img_16.save(ico_path, format='ICO', sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
-        print(f"ICO icon created at {ico_path} (alternative method)")
+        img_16.save(
+                    ico_path,
+                    format='ICO',
+                    sizes=[(16,
+                    16),
+                    (32,
+                    32),
+                    (48,
+                    48),
+                    (64,
+                    64)])
+        )        print(f"ICO icon created at {ico_path} (alternative method)")
     except Exception as e2:
         print(f"Failed to create ICO file (alternative method): {e2}")

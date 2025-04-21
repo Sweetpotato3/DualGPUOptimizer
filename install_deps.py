@@ -179,28 +179,32 @@ def print_dependency_status() -> None:
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
+            print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not" +
+            " run")
 
     print("\nCore Dependencies:")
     for name, info in CORE_DEPENDENCIES.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - FALLBACK available but features limited")
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available but feature" +
+            "s limited")
 
     print("\nUI Dependencies:")
     for name, info in UI_DEPENDENCIES.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic UI")
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic " +
+            "UI")
 
     print("\nChat Dependencies:")
     for name, info in CHAT_DEPENDENCIES.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - FALLBACK available with limited chat")
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with limite" +
+            "d chat")
 
     print("\nMachine Learning Dependencies:")
     for name, info in ML_DEPENDENCIES.items():
@@ -255,7 +259,8 @@ def install_dependencies(args: argparse.Namespace) -> int:
 
     # Check for tkinter separately
     if "required" in missing and "tkinter" in missing["required"]:
-        logger.warning("tkinter is required and must be installed through your system package manager")
+        logger.warning("tkinter is required and must be installed through your system package " +
+        "manager")
         if sys.platform == "win32":
             logger.info("For Windows, reinstall Python and check 'tcl/tk and IDLE'")
         elif sys.platform == "darwin":
@@ -307,9 +312,11 @@ def install_dependencies(args: argparse.Namespace) -> int:
                 still_missing.extend(new_missing[category])
 
         if still_missing:
-            logger.warning(f"Some dependencies could not be installed: {', '.join(still_missing)}")
+            logger.warning(f"Some dependencies could not be installed: {', '.join(still_missing" +
+            ")}")
             if "tkinter" in still_missing:
-                logger.warning("Note: tkinter must be installed through your system package manager")
+                logger.warning("Note: tkinter must be installed through your system package ma" +
+                "nager")
             return 1
         return 0
     else:
@@ -344,7 +351,8 @@ def install_package(package_name, description, verbose=False):
             return True
         else:
             error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
-            print(f"{Colors.RED}✗ Failed to install {package_name}: {error_msg}{Colors.ENDC}")
+            print(f"{Colors.RED}✗ Failed to install {package_name}: {error_msg}{Colors" +
+            ".ENDC}")
             return False
     except Exception as e:
         print(f"{Colors.RED}✗ Error installing {package_name}: {str(e)}{Colors.ENDC}")
@@ -370,27 +378,41 @@ def install_pytorch(verbose=False):
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         if result.returncode == 0:
-            print(f"{Colors.GREEN}✓ Successfully installed PyTorch with CUDA support{Colors.ENDC}")
+            print(f"{Colors.GREEN}✓ Successfully installed PyTorch with CUDA support{C" +
+            "olors.ENDC}")
             return True
         else:
             error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
             print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
 
             # Try without CUDA
-            print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Colors.ENDC}")
-            cmd = [sys.executable, "-m", "pip", "install", "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1"]
-
+            print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Co" +
+            "lors.ENDC}")
+            cmd = [
+                   sys.executable,
+                   "-m",
+                   "pip",
+                   "install",
+                   "torch==2.5.1",
+                   "torchvision==0.20.1",
+                   "torchaudio==2.5.1"]
+            ]
             if verbose:
                 result = subprocess.run(cmd)
             else:
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
+                result = subprocess.run(
+                                        cmd,
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE)
+                )
             if result.returncode == 0:
-                print(f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}")
+                print(f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA su" +
+                "pport{Colors.ENDC}")
                 return True
             else:
                 error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
-                print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
+                print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.EN" +
+                "DC}")
                 return False
     except Exception as e:
         print(f"{Colors.RED}✗ Error installing PyTorch: {str(e)}{Colors.ENDC}")
@@ -441,16 +463,38 @@ def main() -> int:
 
     # Dependency selection options
     group = parser.add_mutually_exclusive_group()
-    group.add_argument("--all", action="store_true", help="Install all dependencies (default)")
-    group.add_argument("--core-only", action="store_true", help="Install only core dependencies")
-    group.add_argument("--ui-only", action="store_true", help="Install only UI dependencies")
-    group.add_argument("--chat-only", action="store_true", help="Install only chat dependencies")
-    group.add_argument("--ml-only", action="store_true", help="Install only ML dependencies")
-
+    group.add_argument(
+                       "--all",
+                       action="store_true",
+                       help="Install all dependencies (default)")
+    )    group.add_argument(
+                       "--core-only",
+                       action="store_true",
+                       help="Install only core dependencies")
+    )    group.add_argument(
+                       "--ui-only",
+                       action="store_true",
+                       help="Install only UI dependencies")
+    )    group.add_argument(
+                       "--chat-only",
+                       action="store_true",
+                       help="Install only chat dependencies")
+    )    group.add_argument(
+                       "--ml-only",
+                       action="store_true",
+                       help="Install only ML dependencies")
+    )
     # Other options
-    parser.add_argument("--check", action="store_true", help="Check dependencies and exit")
-    parser.add_argument("-y", "--yes", action="store_true", help="Answer yes to all prompts")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
+    parser.add_argument(
+                        "--check",
+                        action="store_true",
+                        help="Check dependencies and exit")
+    )    parser.add_argument(
+                        "-y",
+                        "--yes",
+                        action="store_true",
+                        help="Answer yes to all prompts")
+    )    parser.add_argument("-v", "--verbose", action="store_true", help="Verbose output")
 
     args = parser.parse_args()
 

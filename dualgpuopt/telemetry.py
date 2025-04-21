@@ -115,14 +115,19 @@ class TelemetryService:
     """Service for collecting and distributing GPU telemetry"""
 
     def __init__(
-        self, poll_interval: float = ENV_POLL_INTERVAL, use_mock: bool = ENV_MOCK_TELEMETRY
+        self, poll_interval: float = ENV_POLL_INTERVAL, use_mock: bool = ENV_MOCK_TELEMETRY, mock: bool = None
     ):
         """Initialize the telemetry service
 
         Args:
             poll_interval: How frequently to poll GPU data (seconds)
             use_mock: Force using mock data even if NVML is available
+            mock: Alternative parameter for enabling mock mode (for backward compatibility)
         """
+        # Allow 'mock' parameter as an alternative to 'use_mock' for backward compatibility
+        if mock is not None:
+            use_mock = mock
+            
         self.poll_interval = poll_interval
         self.force_mock = use_mock
         self.use_mock = not NVML_AVAILABLE or use_mock

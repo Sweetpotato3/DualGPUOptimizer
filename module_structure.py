@@ -79,8 +79,11 @@ INTEGRATION_PHASES = [
     },
     {
         "name": "Phase 4: Services and Commands",
-        "modules": ["services.state_service", "services.event_bus", "commands.gpu_commands"]
-    },
+        "modules": [
+                    "services.state_service",
+                    "services.event_bus",
+                    "commands.gpu_commands"]
+        ]    },
     {
         "name": "Phase 5: UI Components",
         "modules": ["gui.dashboard", "gui.launcher", "gui.optimizer_tab"]

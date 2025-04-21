@@ -1546,6 +1546,4 @@ def run_app() -> None:
 
     # Make it respond to window close
     root.protocol("WM_DELETE_WINDOW", root.destroy)
-
     root.mainloop()
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)

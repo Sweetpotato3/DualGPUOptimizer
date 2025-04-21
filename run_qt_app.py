@@ -18,8 +18,10 @@ def setup_logging(verbose=False):
     os.makedirs('logs', exist_ok=True)
 
     # Set up file handler
-    log_file = os.path.join('logs', f'dualgpuopt_qt_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
-
+    log_file = os.path.join(
+                            'logs',
+                            f'dualgpuopt_qt_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+    )
     # Configure logging
     log_level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
@@ -39,8 +41,12 @@ def parse_args():
     """Parse command line arguments."""
     parser = argparse.ArgumentParser(description='DualGPUOptimizer Qt Edition')
     parser.add_argument('--mock', action='store_true', help='Use mock GPU data')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
-    return parser.parse_args()
+    parser.add_argument(
+                        '--verbose',
+                        '-v',
+                        action='store_true',
+                        help='Enable verbose logging')
+    )    return parser.parse_args()
 
 def main():
     """Main entry point for the application."""
@@ -62,8 +68,10 @@ def main():
             from PySide6.QtWidgets import QApplication
             from PySide6.QtCore import Qt, QCoreApplication
         except ImportError:
-            logger.error("PySide6 is not installed. Please install it with: pip install PySide6==6.5.2")
-            print("Error: PySide6 is not installed. Please install it with: pip install PySide6==6.5.2")
+            logger.error("PySide6 is not installed. Please install it with: pip install PySi" +
+            "de6==6.5.2")
+            print("Error: PySide6 is not installed. Please install it with: pip insta" +
+            "ll PySide6==6.5.2")
             return 1
 
         # Set application attributes for high DPI screens

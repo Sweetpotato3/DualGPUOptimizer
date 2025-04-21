@@ -75,8 +75,13 @@ def create_gpu_icon(size=256, bg_color="#2D1E40", fg_color="#8A54FD", save_to=No
     # Create different sizes for the ico file
     sizes = [16, 32, 48, 64, 128, 256]
     imgs = [img.resize((s, s), Image.LANCZOS) for s in sizes]
-    imgs[0].save(ico_path, format='ICO', sizes=[(s, s) for s in sizes], append_images=imgs[1:])
-
+    imgs[0].save(
+                 ico_path,
+                 format='ICO',
+                 sizes=[(s,
+                 s) for s in sizes],
+                 append_images=imgs[1:])
+    )
     print(f"Icon saved to {png_path} and {ico_path}")
     return ico_path
 

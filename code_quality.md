@@ -131,4 +131,53 @@ Add to your `.emacs`:
 
 ```
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-``` 
+```
+
+# Code Quality Guidelines
+
+This project uses pre-commit hooks to maintain code quality standards. The hooks check for:
+
+1. **Trailing whitespace**: Eliminates unnecessary whitespace at the end of lines
+2. **Unused imports**: Identifies and flags imports that aren't used in the code
+
+## Pre-commit Hook Setup
+
+The pre-commit hook is automatically enabled for all commits. If you encounter any issues, you can:
+
+1. Install the required dependencies:
+   ```
+   .venv\Scripts\python.exe install_autoflake.py
+   ```
+
+2. Bypass the pre-commit check for a specific commit:
+   ```
+   git commit --no-verify -m "Your commit message"
+   ```
+
+## Fixing Issues
+
+When the pre-commit hook identifies issues:
+
+### Trailing Whitespace
+
+Run the following command on the affected file:
+```
+python -c "import re, sys; f = open(sys.argv[1], 'r'); content = f.read(); f.close(); content = re.sub(r'[ \t]+$', '', content, flags=re.MULTILINE); f = open(sys.argv[1], 'w'); f.write(content); f.close()" <file_path>
+```
+
+### Unused Imports
+
+Fix unused imports with:
+```
+python -m autoflake --in-place --remove-all-unused-imports <file_path>
+```
+
+## Troubleshooting
+
+If you encounter Git errors related to Python not being found:
+
+1. Ensure your virtual environment is activated
+2. Use the `--no-verify` flag temporarily if needed
+3. Check that pre-commit-hook.py is properly configured
+
+The pre-commit hook uses the Python from your virtual environment to ensure all dependencies are available. 

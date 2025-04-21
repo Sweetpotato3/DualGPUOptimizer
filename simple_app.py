@@ -58,9 +58,15 @@ class SimpleApp:
         # Set up style
         self.style = ttk.Style()
         self.style.configure('TFrame', background=DARK_BACKGROUND)
-        self.style.configure('TLabel', background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
-        self.style.configure('TButton', background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND)
-
+        self.style.configure(
+                             'TLabel',
+                             background=DARK_BACKGROUND,
+                             foreground=LIGHT_FOREGROUND)
+        )        self.style.configure(
+                             'TButton',
+                             background=PURPLE_PRIMARY,
+                             foreground=LIGHT_FOREGROUND)
+        )
         # Create header
         self.header_label = ttk.Label(
             self.main_frame,
@@ -223,8 +229,12 @@ def create_simple_app():
     notebook.add(dashboard_tab, text="Dashboard")
 
     # Add content to dashboard tab
-    dashboard_label = ttk.Label(dashboard_tab, text="Dashboard Tab Content", font=("TkDefaultFont", 14))
-    dashboard_label.pack(pady=20)
+    dashboard_label = ttk.Label(
+                                dashboard_tab,
+                                text="Dashboard Tab Content",
+                                font=("TkDefaultFont",
+                                14))
+    )    dashboard_label.pack(pady=20)
 
     # Add GPU info frame
     gpu_frame = ttk.LabelFrame(dashboard_tab, text="GPU Information")
@@ -242,41 +252,92 @@ def create_simple_app():
     notebook.add(optimizer_tab, text="Optimizer")
 
     # Add content to optimizer tab
-    optimizer_label = ttk.Label(optimizer_tab, text="Optimizer Tab Content", font=("TkDefaultFont", 14))
-    optimizer_label.pack(pady=20)
+    optimizer_label = ttk.Label(
+                                optimizer_tab,
+                                text="Optimizer Tab Content",
+                                font=("TkDefaultFont",
+                                14))
+    )    optimizer_label.pack(pady=20)
 
     # Add some controls
     controls_frame = ttk.Frame(optimizer_tab)
     controls_frame.pack(pady=10, fill=tk.X)
 
-    ttk.Label(controls_frame, text="Context Size:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-    ttk.Entry(controls_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(
+              controls_frame,
+              text="Context Size:").grid(row=0,
+              column=0,
+              padx=5,
+              pady=5,
+              sticky=tk.W)
+    )    ttk.Entry(controls_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
-    ttk.Label(controls_frame, text="GPU Split:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-    ttk.Entry(controls_frame).grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(
+              controls_frame,
+              text="GPU Split:").grid(row=1,
+              column=0,
+              padx=5,
+              pady=5,
+              sticky=tk.W)
+    )    ttk.Entry(controls_frame).grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
-    ttk.Button(controls_frame, text="Calculate").grid(row=2, column=0, columnspan=2, padx=5, pady=10)
-
+    ttk.Button(
+               controls_frame,
+               text="Calculate").grid(row=2,
+               column=0,
+               columnspan=2,
+               padx=5,
+               pady=10)
+    )
     # Add launcher tab
     launcher_tab = ttk.Frame(notebook)
     notebook.add(launcher_tab, text="Launcher")
 
     # Add content to launcher tab
-    launcher_label = ttk.Label(launcher_tab, text="Launcher Tab Content", font=("TkDefaultFont", 14))
-    launcher_label.pack(pady=20)
+    launcher_label = ttk.Label(
+                               launcher_tab,
+                               text="Launcher Tab Content",
+                               font=("TkDefaultFont",
+                               14))
+    )    launcher_label.pack(pady=20)
 
     # Add launch controls
     launch_frame = ttk.Frame(launcher_tab)
     launch_frame.pack(pady=10, fill=tk.X)
 
-    ttk.Label(launch_frame, text="Model Path:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
-    ttk.Entry(launch_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(
+              launch_frame,
+              text="Model Path:").grid(row=0,
+              column=0,
+              padx=5,
+              pady=5,
+              sticky=tk.W)
+    )    ttk.Entry(launch_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
-    ttk.Label(launch_frame, text="Framework:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-    ttk.Combobox(launch_frame, values=["llama.cpp", "vLLM"]).grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
-
-    ttk.Button(launch_frame, text="Launch Model").grid(row=2, column=0, columnspan=2, padx=5, pady=10)
-
+    ttk.Label(
+              launch_frame,
+              text="Framework:").grid(row=1,
+              column=0,
+              padx=5,
+              pady=5,
+              sticky=tk.W)
+    )    ttk.Combobox(
+                 launch_frame,
+                 values=["llama.cpp",
+                 "vLLM"]).grid(row=1,
+                 column=1,
+                 padx=5,
+                 pady=5,
+                 sticky=tk.W)
+    )
+    ttk.Button(
+               launch_frame,
+               text="Launch Model").grid(row=2,
+               column=0,
+               columnspan=2,
+               padx=5,
+               pady=10)
+    )
     # Create status bar
     status_frame = ttk.Frame(main_frame, relief="sunken", borderwidth=1)
     status_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=5)

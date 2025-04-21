@@ -41,7 +41,8 @@ def check_and_install_torch():
             vision_version = "0.20.1" if cuda_version == "cu121" else "0.18.1"
             audio_version = "2.5.1" if cuda_version == "cu121" else "2.3.1"
 
-            print(f"Installing PyTorch {torch_version} with {cuda_version} for Python {py_version[0]}.{py_version[1]}")
+            print(f"Installing PyTorch {torch_version} with {cuda_version} for Python " +
+            "{py_version[0]}.{py_version[1]}")
 
             # Use PowerShell-friendly command syntax (backtick for line continuation if needed)
             subprocess.check_call([
@@ -79,9 +80,11 @@ def main():
                     for i in range(torch.cuda.device_count()):
                         print(f"Device {i}: {torch.cuda.get_device_name(i)}")
                 else:
-                    print("WARNING: CUDA not available. DualGPUOptimizer requires GPU support!")
+                    print("WARNING: CUDA not available. DualGPUOptimizer requires GPU" +
+                    " support!")
                     print("Please reinstall PyTorch with CUDA support using:")
-                    print("pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121")
+                    print("pip install torch torchvision torchaudio --index-url https" +
+                    "://download.pytorch.org/whl/cu121")
             except Exception as e:
                 print(f"Warning when initializing PyTorch: {e}")
                 print("Continuing with application startup...")

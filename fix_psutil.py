@@ -9,8 +9,15 @@ import os
 # Uninstall and reinstall psutil
 print("Fixing psutil installation for PyInstaller...")
 subprocess.run([sys.executable, "-m", "pip", "uninstall", "-y", "psutil"], check=True)
-subprocess.run([sys.executable, "-m", "pip", "install", "--no-cache-dir", "psutil"], check=True)
-
+subprocess.run(
+               [sys.executable,
+               "-m",
+               "pip",
+               "install",
+               "--no-cache-dir",
+               "psutil"],
+               check=True)
+)
 # Create a simple test script
 test_file = "test_psutil.py"
 with open(test_file, "w") as f:

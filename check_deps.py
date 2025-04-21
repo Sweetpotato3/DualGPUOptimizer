@@ -138,23 +138,27 @@ def print_dependency_status() -> None:
             print(f"  ✅ {name}: {info['description']}")
         else:
             if name == "tkinter":
-                print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
+                print(f"  ❌ {name}: {info['description']} - REQUIRED, application will" +
+                " not run")
             else:
-                print(f"  ❌ {name}: {info['description']} - FALLBACK available but features limited")
+                print(f"  ❌ {name}: {info['description']} - FALLBACK available but fea" +
+                "tures limited")
 
     print("\nUI Dependencies:")
     for name, info in UI_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic UI")
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with basic " +
+            "UI")
 
     print("\nChat Dependencies:")
     for name, info in CHAT_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
         else:
-            print(f"  ❌ {name}: {info['description']} - FALLBACK available with limited chat")
+            print(f"  ❌ {name}: {info['description']} - FALLBACK available with limite" +
+            "d chat")
 
     print("\nMachine Learning Dependencies:")
     for name, info in ML_DEPS.items():
