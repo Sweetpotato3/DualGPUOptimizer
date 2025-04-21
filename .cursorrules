@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Apply this overview when documenting high-level architecture of GPU optimization systems focused on dual GPU configurations, particularly when dealing with memory management, model deployment, and resource monitoring for large language models.
-globs: *.py,*.ini,*.cfg
+description: Create overview documentation for complex applications with multiple interrelated business components, focusing on how the business logic flows between components and their relationships. Apply when documenting high-level system architecture and core business workflows.
+globs: *.py,*.md,*.txt,*.ini,*.cfg
 alwaysApply: false
 ---
 
@@ -154,39 +154,65 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements a specialized system for optimizing large language model deployment across dual GPU configurations:
+# DualGPUOptimizer Core Architecture
 
-1. Core GPU Memory Management
-- Memory profiling subsystem tracks GPU utilization and detects potential leaks
-- Custom memory leak detection using sliding window analysis and two-tier detection
-- Specialized alerts and thresholds for GPU memory conditions
-- Memory pattern analysis for identifying problematic usage trends
+The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model inference across multiple GPUs.
 
-2. Model Deployment Optimization 
-- Calculates optimal tensor splits between GPUs based on available memory
-- Implements framework-specific command generation for llama.cpp and vLLM
-- Dynamic layer distribution based on GPU capabilities
-- Memory-aware batch size optimization with safety margins
+## Core Business Components
 
-3. Real-time Monitoring
-- Custom telemetry system for tracking GPU metrics (utilization, temperature, power)
-- Event-driven architecture for metric updates and alerts
-- Configurable thresholds for different operational parameters
-- Multi-GPU correlation of performance metrics
+### GPU Memory Management
+- Memory profiling with leak detection thresholds 
+- Growth pattern analysis using sliding windows
+- Memory timeline tracking with inference correlation
+- Session-based memory checkpointing
+- Token-based memory efficiency metrics
 
-4. Resource Optimization
-- Smart batching system for length-aware workload distribution
-- Adaptive memory management with backpressure mechanisms
-- Dynamic context size calculation based on model architecture
-- Automatic tensor parallelism sizing for available GPUs
+### GPU Resource Optimization 
+- Layer distribution calculation for transformer models
+- Tensor parallel fraction computation
+- Framework-specific command generation (llama.cpp, vLLM)
+- Dynamic batch sizing based on sequence lengths
+- Adaptive context length calculation
 
-Critical Paths:
+### Model Deployment Logic
+- Model-specific memory requirement profiling
+- Mixture of Experts (MoE) handling
+- GPU split ratio optimization
+- KV cache calculations for transformers
+- Architecture-specific parameter tuning
+
+### Telemetry System
+- Real-time GPU metric collection
+- Emergency thresholds (95% memory, 90°C temp)
+- Performance counters for token processing
+- PCIe bandwidth monitoring
+- Power usage optimization
+
+## Critical File Paths
+
+Core GPU Logic:
 ```
-dualgpuopt/memory/profiler.py - Memory monitoring core
-dualgpuopt/optimizer.py - GPU split optimization
-dualgpuopt/batch/smart_batch.py - Workload distribution
-dualgpuopt/telemetry.py - Metric collection system
+dualgpuopt/optimizer.py
+dualgpuopt/memory/profiler.py  
+dualgpuopt/gpu/monitor.py
+dualgpuopt/batch/smart_batch.py
 ```
+
+Memory Management:
+```
+dualgpuopt/memory/predictor.py
+dualgpuopt/memory/recovery.py
+dualgpuopt/memory/alerts.py
+```
+
+Model Optimization:
+```
+dualgpuopt/layer_balance.py
+dualgpuopt/ctx_size.py
+dualgpuopt/commands/gpu_commands.py
+```
+
+The system focuses on optimizing large language model deployment across multiple GPUs through intelligent resource allocation, memory management, and performance monitoring.
 
 $END$
 END SPECIFICATION

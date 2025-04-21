@@ -1,71 +1,73 @@
 ---
-description: Specification for managing LLM inference execution, GPU resource allocation, and command generation across multiple ML frameworks
-globs: **/optimizer.py,**/commands/*,**/gpu/**,**/memory/**,**/batch/**
+description: Defines comprehensive LLM execution workflows for GPU optimized inference including command generation and resource allocation.
+globs: **/*.py,**/run*.py,**/launch*.py,**/model*.py,**/gpu/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Execution Components
+Core LLM Execution Workflows:
 
-1. GPU Memory Split Generation:
-```python
-def calculate_split(model_size, gpu_memory):
-    split_ratio = min(0.85, gpu_memory[0] / sum(gpu_memory))
-    return f"{split_ratio:.2f},{1-split_ratio:.2f}"
-```
+1. Framework-Specific Command Generation
+- Implements specialized command builders for different LLM frameworks:
+  * llama.cpp: GPU split configurations and layer distribution
+  * vLLM: Tensor parallel sizing and memory utilization
+- Handles dynamic parameter generation based on:
+  * Available GPU memory 
+  * Model architecture requirements
+  * Layer balancing configurations
 
-2. Command Generation Pipeline:
-- Generates framework-specific commands for model execution:
-  * llama.cpp: GPU layer distribution and memory splits 
-  * vLLM: Tensor parallel configuration and memory thresholds
+2. Model Launch Pipeline 
+- Pre-launch validation and resource allocation
+- Dynamic batch size configuration based on:
+  * Token length distribution
+  * Available GPU memory
+  * Model architecture parameters
+- Smart batching system with:
+  * Length-aware grouping
+  * Memory pressure monitoring
+  * Automatic batch size adjustment
 
-3. Smart Batch Management:
-- Length-aware batch scheduling with throttling
-- Memory pressure detection with dynamic batch size reduction
-- Token budget enforcement (max 16384 tokens/batch)
-- Backpressure mechanism for OOM prevention
+3. Memory Management 
+- VRAM allocation strategy with dual GPU optimization:
+  * Base model allocation
+  * KV cache memory estimates
+  * Per-token memory tracking
+  * Dynamic memory reclamation
+- Smart memory prediction system for:
+  * MoE model scaling
+  * Attention mechanism overhead
+  * Model-specific heuristics
 
-4. Memory Recovery Protocol:
-```python
-RECOVERY_STEPS = [
-  CLEAR_CACHE,    # Clear CUDA cache
-  REDUCE_BATCH,   # Cut batch size by 50%
-  OFFLOAD,        # Move data to CPU
-  TERMINATE       # Kill low priority processes
-]
-```
+4. Resource Optimization
+- Layer balancing across GPUs using:
+  * Short sequence profiling (64 tokens)
+  * Long sequence profiling (1024 tokens)
+  * 20/80 weighted performance metrics
+- Automatic tensor parallel configuration:
+  * GPU memory ratio calculations
+  * Layer distribution optimization
+  * Block size constraints (min 3 layers)
 
-## Resource Allocation
+5. Execution Monitoring
+- Real-time metrics tracking:
+  * Tokens per second 
+  * Memory utilization
+  * Temperature thresholds
+  * Power consumption patterns
+- Automatic recovery strategies:
+  * Cache clearing
+  * Batch size reduction
+  * Process termination
 
-1. GPU Memory Budget:
-- Dynamic VRAM allocation based on model architecture:
-  * Base model weights
-  * KV cache per token
-  * Attention overhead
-  * Safety margins
+Key File Paths:
+- dualgpuopt/optimizer.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/layer_balance.py
+- dualgpuopt/memory/predictor.py
+- dualgpuopt/commands/gpu_commands.py
 
-2. Layer Distribution:
-- Model-specific layer placement across GPUs:
-  * 70B models: 0-39 on GPU0, 40-79 on GPU1
-  * Mixtral: 0-15 on GPU0, 16-31 on GPU1 
-  * 13B models: Even distribution
-
-3. Context Length Management:
-```python
-max_ctx = min(
-    available_memory / bytes_per_token,
-    model.max_sequence_length
-)
-```
-
-## File Paths
-- dualgpuopt/optimizer.py: Core optimization logic
-- dualgpuopt/commands/gpu_commands.py: Command generation
-- dualgpuopt/memory/recovery.py: OOM handling
-- dualgpuopt/batch/smart_batch.py: Batch management
-
-Importance Score: 95 (Core model execution flow and resource management)
+The model execution flow implements specialized handling of LLM deployment across dual GPU configurations with emphasis on memory efficiency, performance optimization and automatic resource management.
 
 $END$

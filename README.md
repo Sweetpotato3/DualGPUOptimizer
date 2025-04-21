@@ -17,8 +17,24 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
 - **NEW: Enhanced Alert System**: Multi-level GPU alert classification with priority-based notifications
 - **NEW: Telemetry History**: Historical metrics storage with time-based filtering capabilities
+- **NEW: Improved Event System**: Robust typed events for GPU telemetry with enhanced testing support
 
 ## Recent Improvements
+
+### NEW: Enhanced Event Bus System
+
+We've significantly improved the event bus system used for component communication:
+
+- **Universal Subscribe Method**: Simplified subscription API that accepts both class types and string event names
+- **Enhanced Event Type Support**: Improved handling of event class hierarchies for better type safety
+- **Test-Friendly Events**: Added specialized event classes for testing with rich metrics dictionaries
+- **Backward Compatibility**: Maintained compatibility with existing event consumers
+- **GPU Metrics Event Enhancement**: Added support for comprehensive GPU metrics data in events
+- **Thread-Safe Event Distribution**: Improved synchronization for concurrent event publishing
+- **Event Priority System**: Ensures critical events are processed before less important ones
+- **Robust Error Handling**: Better isolation of error handling between event handlers
+
+The enhanced event system provides a more robust foundation for component communication throughout the application, improving reliability and testability of the GPU monitoring and telemetry subsystems.
 
 ### NEW: Advanced GPU Alert System
 

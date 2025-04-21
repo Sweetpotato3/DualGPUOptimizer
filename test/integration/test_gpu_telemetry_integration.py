@@ -101,7 +101,7 @@ class TestGPUTelemetryIntegration:
         """Test that GPU monitor correctly responds to telemetry events."""
         # Create telemetry service with mocked GPU provider
         telemetry = TelemetryService(gpu_provider=mock_gpu_provider, event_bus=event_bus)
-        
+
         # Create a test monitor class that uses the monitor module functions instead of GPUMonitor class
         class TestMonitor:
             def __init__(self, event_bus):
@@ -116,10 +116,18 @@ class TestGPUTelemetryIntegration:
                 # Test implementation
                 memory_usages = [m.memory_percent for m in metrics.values()]
                 return any(m > 90 for m in memory_usages)
-        
+                
+            def handle_metrics(self, metrics):
+                # This will call both check methods
+                self.check_temperature_alerts(metrics)
+                self.check_memory_pressure(metrics)
+
         # Use the test monitor instead of GPUMonitor
         monitor = TestMonitor(event_bus=event_bus)
         
+        # Register the monitor's handle_metrics method as a callback
+        telemetry.register_callback(monitor.handle_metrics)
+
         # Track calls to the monitor's alert methods
         with patch.object(monitor, 'check_temperature_alerts') as mock_temp_check:
             with patch.object(monitor, 'check_memory_pressure') as mock_memory_check:

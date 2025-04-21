@@ -1,51 +1,50 @@
 ---
-description: Specialized monitoring system for tracking GPU resources, memory usage, and performance metrics in ML workloads
-globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/monitor.py,dualgpuopt/memory/monitor.py,dualgpuopt/batch/smart_batch.py
+description: Manages and monitors GPU resources, metrics, and telemetry for multi-GPU ML inference systems
+globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/**,dualgpuopt/memory/**,dualgpuopt/services/**,dualgpuopt/gui/dashboard.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The GPU resource monitoring system consists of several core components:
+GPU Telemetry Collection:
+- Implements real-time GPU metrics monitoring service tracking critical hardware parameters:
+  * Memory utilization
+  * Temperature thresholds (90°C emergency, 80°C critical)
+  * Power consumption (98% critical)
+  * Core utilization
+  * PCIe bandwidth
+  * Fan speeds
 
-## Real-time Telemetry Collection (telemetry.py)
-- Custom alert level system (NORMAL, WARNING, CRITICAL, EMERGENCY) based on GPU metrics
-- Alert threshold rules:
-  * Memory: Emergency >95%, Critical >90%, Warning >75%
-  * Temperature: Emergency >90°C, Critical >80°C, Warning >70°C
-  * Power: Critical >98%, Warning >90% of power limit
-- Maintains 60-second rolling history of GPU metrics
-- Implements mock data generation for different GPU tiers:
-  * High-end: 24GB memory, 350W power limit, 2100MHz base clock
-  * Mid-range: 12GB memory, 200W power limit, 1800MHz base clock
+Alert Management:
+- Three-tier alert system with specific thresholds:
+  * Emergency: Memory ≥95%, Temperature ≥90°C 
+  * Critical: Memory ≥90%, Temperature ≥80°C, Power ≥98%
+  * Warning: Memory ≥75%, Temperature ≥70°C, Power ≥90%
 
-## Smart Batch Processing (batch/smart_batch.py)
-- Implements length-aware batch scheduling for GPU inference
-- Dynamic batch size optimization based on model memory profiles
-- Token budget management (max 16384 tokens per batch)
-- Memory pressure monitoring with automatic backpressure
-- Reduces to 25% capacity after OOM events, gradually recovers to 95%
+Fault Recovery:
+- Exponential backoff system for NVML failures
+- Automatic mock data generation after 3 consecutive failures
+- 60-second rolling metrics history per GPU
+- Self-healing through NVML reinitialization
 
-## Memory Monitoring (memory/monitor.py)
-- Real-time memory allocation tracking with process granularity
-- Predictive analysis for impending OOM conditions
-- Memory growth rate calculation with linear regression
-- Memory leak detection through sliding window analysis
-- Event classification for allocation/deallocation patterns
+Mock Data Generation:
+- Simulates realistic GPU behavior patterns:
+  * Power usage correlates with utilization (20-90% range)
+  * Temperature scaling from 40°C baseline plus utilization/3
+  * Memory usage follows utilization trends
+  * Different characteristics for high vs mid-range GPUs
 
-## GPU Resource Monitor (gpu/monitor.py) 
-- Multi-GPU synchronization for resource tracking
-- PCIe bandwidth utilization monitoring
-- Clock speed synchronization across GPUs
-- Temperature correlation with workload intensity
-- Power draw tracking with dynamic limits
+Dashboard Integration:
+- Real-time visualization system for GPU metrics
+- Rolling 60-sample history buffer
+- Color-coded metrics for quick status assessment
+- Synchronized multi-GPU performance graphs
 
-## Key Business Rules
-- Alert thresholds scale based on GPU generation and capabilities
-- Memory recovery triggered at 95% utilization
-- Batch size adjusts dynamically based on memory pressure
-- Memory leaks identified through sustained growth patterns
-- Temperature thresholds adjust based on GPU model specifications
+File Paths:
+- dualgpuopt/telemetry.py
+- dualgpuopt/gui/dashboard.py
+- dualgpuopt/memory/monitor.py
+- dualgpuopt/gpu/monitor.py
 
 $END$

@@ -137,28 +137,35 @@ class EventBus:
 
     def subscribe(
         self,
-        event_type: str,
+        event_type: Union[str, Type[Event]],
         callback: Callable[[Any], Any],
         priority: EventPriority = EventPriority.NORMAL
     ) -> None:
         """
-        Subscribe to a string-based event type.
+        Universal subscribe method supporting both string and typed events.
 
         Args:
-            event_type: The string name of the event
+            event_type: String event name or event type class
             callback: Function to call when event is published
             priority: Priority level for this handler
         """
+        # Handle class types
+        if isinstance(event_type, type) and issubclass(event_type, Event):
+            self.subscribe_typed(event_type, callback, priority)
+            return
+        
+        # Handle string types
+        event_name = str(event_type)
         with self._lock:
-            if event_type not in self._string_subscribers:
-                self._string_subscribers[event_type] = []
+            if event_name not in self._string_subscribers:
+                self._string_subscribers[event_name] = []
 
             cb = EventCallback(callback, priority)
-            self._string_subscribers[event_type].append(cb)
-            self._string_subscribers[event_type].sort()  # Sort by priority
+            self._string_subscribers[event_name].append(cb)
+            self._string_subscribers[event_name].sort()  # Sort by priority
 
             self.logger.debug(
-                f"Subscribed to event '{event_type}' with "
+                f"Subscribed to event '{event_name}' with "
                 f"priority={priority.name}"
             )
 
@@ -265,6 +272,21 @@ class EventBus:
                     if h.callback != callback
                 ]
                 self.logger.debug(f"Unsubscribed from event '{event_name}'")
+
+    def publish_async(self, event: Event) -> None:
+        """
+        Publish an event asynchronously in a separate thread.
+
+        Args:
+            event: The event instance to publish
+        """
+        threading.Thread(
+            target=self.publish_typed,
+            args=(event,),
+            daemon=True,
+            name=f"EventThread-{type(event).__name__}"
+        ).start()
+        self.logger.debug(f"Started async thread for event '{type(event).__name__}'")
 
     def clear_all_subscribers(self) -> None:
         """Clear all subscribers (mainly for testing purposes)."""

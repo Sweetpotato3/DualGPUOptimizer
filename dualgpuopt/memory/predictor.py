@@ -68,24 +68,28 @@ class MemoryProfile:
         self._max_seq_cache.clear()
 
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
-    def _estimate_usage_cached(self, batch_size: int, token_count: int) -> int:
+    def _estimate_usage_cached(self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0) -> int:
         """Cached version of memory estimation
         
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
+            kv_cache_factor: Multiplier for token memory (KV cache scaling)
             
         Returns:
             Estimated memory usage in bytes
         """
-        return self.base_usage + (self.per_batch_usage * batch_size) + (self.per_token_usage * token_count)
+        # Apply the KV cache factor to the token memory calculation
+        token_memory = self.per_token_usage * token_count * kv_cache_factor
+        return self.base_usage + (self.per_batch_usage * batch_size) + token_memory
 
-    def estimate_usage(self, batch_size: int, token_count: int) -> int:
+    def estimate_usage(self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0) -> int:
         """Estimate memory usage for given batch size and token count
         
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
+            kv_cache_factor: Multiplier for token memory (KV cache scaling)
             
         Returns:
             Estimated memory usage in bytes
@@ -93,9 +97,10 @@ class MemoryProfile:
         # Convert to positive integers
         batch_size = max(1, int(batch_size))
         token_count = max(1, int(token_count))
+        kv_cache_factor = max(0.1, float(kv_cache_factor))  # Ensure positive factor
 
         # Use the cached version
-        return self._estimate_usage_cached(batch_size, token_count)
+        return self._estimate_usage_cached(batch_size, token_count, kv_cache_factor)
 
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
@@ -263,11 +268,12 @@ class MemoryProfile:
             except:
                 return None  # Error in projection
 
-    def batch_estimate_usage(self, batch_configs: List[Tuple[int, int]]) -> List[int]:
+    def batch_estimate_usage(self, batch_configs: List[Tuple[int, int]], kv_cache_factor: float = 1.0) -> List[int]:
         """Estimate memory usage for multiple batch configurations at once
         
         Args:
             batch_configs: List of (batch_size, token_count) tuples
+            kv_cache_factor: Multiplier for token memory (KV cache scaling)
             
         Returns:
             List of estimated memory usage in bytes
@@ -277,15 +283,15 @@ class MemoryProfile:
             batch_sizes = np.array([bs for bs, _ in batch_configs])
             token_counts = np.array([tc for _, tc in batch_configs])
 
-            # Vectorized calculation
+            # Vectorized calculation with kv_cache_factor
             batch_memory = self.per_batch_usage * batch_sizes
-            token_memory = self.per_token_usage * token_counts
+            token_memory = self.per_token_usage * token_counts * kv_cache_factor
             total_memory = self.base_usage + batch_memory + token_memory
 
             return total_memory.tolist()
         else:
             # Standard loop-based calculation
-            return [self.estimate_usage(bs, tc) for bs, tc in batch_configs]
+            return [self.estimate_usage(bs, tc, kv_cache_factor) for bs, tc in batch_configs]
 
 
 # Default memory profiles for common models

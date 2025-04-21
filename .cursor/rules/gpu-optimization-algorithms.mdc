@@ -1,62 +1,67 @@
 ---
-description: Defines GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies
-globs: 
+description: GPU optimization algorithms and memory management techniques for efficiently distributing AI model layers across multiple GPUs
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/gpu/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Memory Distribution Logic:
+Key algorithms and memory management strategies for optimizing dual GPU systems:
 
-1. Memory Split Calculator (optimizer.py)
-- Implements split ratio algorithm for dual GPU memory allocation
-- Calculates optimal tensor parallel split based on:
-  * Available GPU VRAM 
-  * Model architecture parameters
-  * KV cache requirements
-  * Layer distribution needs
-- Enforces memory safety margins (10% minimum free VRAM)
-- Supports asymmetric GPU configurations with weighted distribution
+1. Memory Distribution Algorithm (optimizer.py):
+- Implements adaptive memory allocation across GPUs:
+  * Per-token KV cache requirements calculation 
+  * Tensor parallelism overhead (20% default)
+  * System overhead buffer (2GB default)
+  * Safety margin (10% default)
+- Context length optimization considering:
+  * Available GPU memory
+  * Model architecture (layers, heads, dimensions)
+  * Tensor parallel size
+  * KV cache scaling factor (2.0x)
+- Round context lengths to 128-token increments
 
-2. Memory Pattern Analysis (memory/profiler.py)
-- Memory leak detection using sliding window analysis
-- Two-tier detection system:
-  * Rapid growth detection for memory spikes
-  * Sustained growth monitoring for gradual leaks
-- Session-based profiling with inference boundary tracking
-- Classification of memory events into business categories
+2. Layer Balancing (layer_balance.py):
+- Latency-aware layer distribution algorithm:
+  * Weighted profiling using 64 and 1024 token sequences
+  * 20/80 weight ratio favoring long sequence performance
+  * Dynamic quota-based layer assignment respecting VRAM limits
+  * Minimum block size constraints (3 layers)
+- Post-processes layer assignments to create contiguous blocks
 
-3. Smart Batching System (batch/smart_batch.py) 
-- Length-aware batch scheduling for GPU inference
-- Token budget management (max 16384 tokens/batch)
-- Dynamic batch sizing with OOM prevention
-- Backpressure mechanism for memory pressure
+3. Memory Leak Detection (profiler.py):
+- Real-time anomaly detection:
+  * Growth spikes above configured MB/s threshold
+  * Sustained leaks above baseline with 5MB+ change
+  * 30s cooldown between alerts
+  * Inference session correlation
+- Token-based efficiency tracking
+- Session lifecycle memory checkpoints
 
-4. Layer Distribution Optimizer
-- Weighted profiling with dual sequence analysis:
-  * Short sequence (64 tokens) - 20% weight
-  * Long sequence (1024 tokens) - 80% weight  
-- Block optimization with 3-layer minimum groups
-- Layer placement rules:
-  * Input embeddings to first/fast GPU
-  * Output components to last/slow GPU
+4. Smart Batching (smart_batch.py):
+- Length-aware batch scheduling:
+  * Similarity-based sequence grouping
+  * Dynamic batch size with backpressure
+  * Scale factor (0.25-0.95) for OOM recovery
+  * 20-batch rolling window for adjustments
+  * Token thresholds (max 16384 per batch)
+  * 256 token grouping threshold
 
-5. Recovery Strategy System (memory/recovery.py)
-- Progressive memory recovery strategies:
-  * REDUCE_BATCH: Lower batch size
-  * CLEAR_CACHE: Force cache clearing  
-  * OFFLOAD: Move data to CPU
-  * TERMINATE: Stop low priority processes
-- Exponential backoff for recovery attempts
-- Memory thresholds for triggering recovery
+5. Memory Usage Prediction (predictor.py):
+- Model-specific memory estimation:
+  * Base model memory requirements 
+  * KV cache scaling with context/batch size
+  * Activation buffer overhead
+  * Per-framework adjustments
+  * Token-based growth projections
+- Predefined profiles for common architectures
 
-File Paths:
-```
-dualgpuopt/optimizer.py
-dualgpuopt/memory/profiler.py
-dualgpuopt/batch/smart_batch.py
-dualgpuopt/memory/recovery.py
-```
+Relevant files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/memory/predictor.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/layer_balance.py
 
 $END$
