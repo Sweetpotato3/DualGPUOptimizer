@@ -1,60 +1,71 @@
 ---
-description: Defines how LLM models are loaded and executed, including command generation, batching, and GPU resource handling
-globs: **/services/*.py,**/batch/*.py,**/commands/*.py,**/launcher/*.py
+description: Specification for managing LLM inference execution, GPU resource allocation, and command generation across multiple ML frameworks
+globs: **/optimizer.py,**/commands/*,**/gpu/**,**/memory/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components (Importance: 95):
+## Core Execution Components
 
-1. Framework-Specific Launch Orchestration
-- Specialized command generation for LLM frameworks:
-  * llama.cpp: GPU split optimization with memory fraction calculations
-  * vLLM: Tensor parallel size configuration and memory allocation
-- Model-specific parameter optimization:
-  * Context length based on model architecture
-  * Layer distribution for multi-GPU deployments
-  * Memory per token allocation tracking
+1. GPU Memory Split Generation:
+```python
+def calculate_split(model_size, gpu_memory):
+    split_ratio = min(0.85, gpu_memory[0] / sum(gpu_memory))
+    return f"{split_ratio:.2f},{1-split_ratio:.2f}"
+```
 
-File paths:
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/gui/launcher/launch_controller.py
+2. Command Generation Pipeline:
+- Generates framework-specific commands for model execution:
+  * llama.cpp: GPU layer distribution and memory splits 
+  * vLLM: Tensor parallel configuration and memory thresholds
 
-2. Smart Batching System (Importance: 90):
-- Length-aware sequence batching for optimized throughput
-- Dynamic batch size calculation considering:
-  * Available GPU memory per device
-  * Model architecture requirements
-  * Token sequence lengths
-  * Safety margins for OOM prevention
-- Backpressure mechanism with configurable queue depths
+3. Smart Batch Management:
+- Length-aware batch scheduling with throttling
+- Memory pressure detection with dynamic batch size reduction
+- Token budget enforcement (max 16384 tokens/batch)
+- Backpressure mechanism for OOM prevention
 
-File paths:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/batch/heuristics.py
+4. Memory Recovery Protocol:
+```python
+RECOVERY_STEPS = [
+  CLEAR_CACHE,    # Clear CUDA cache
+  REDUCE_BATCH,   # Cut batch size by 50%
+  OFFLOAD,        # Move data to CPU
+  TERMINATE       # Kill low priority processes
+]
+```
 
-3. Model Loading Pipeline (Importance: 85):
-- Progressive loading states with validation
-- Memory prediction for model requirements
-- Resource allocation verification across GPUs
-- Layer distribution optimization for multi-GPU setups
+## Resource Allocation
 
-File paths:
-- dualgpuopt/services/event_service.py
-- dualgpuopt/gui/launcher/parameter_resolver.py
+1. GPU Memory Budget:
+- Dynamic VRAM allocation based on model architecture:
+  * Base model weights
+  * KV cache per token
+  * Attention overhead
+  * Safety margins
 
-4. Execution Monitoring (Importance: 80):
-- Real-time token processing rate tracking
-- GPU memory utilization monitoring
-- Framework-specific error handling
-- OOM detection and recovery strategies
+2. Layer Distribution:
+- Model-specific layer placement across GPUs:
+  * 70B models: 0-39 on GPU0, 40-79 on GPU1
+  * Mixtral: 0-15 on GPU0, 16-31 on GPU1 
+  * 13B models: Even distribution
 
-File paths:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/monitor.py
+3. Context Length Management:
+```python
+max_ctx = min(
+    available_memory / bytes_per_token,
+    model.max_sequence_length
+)
+```
 
-The system implements a comprehensive model execution pipeline optimized for dual-GPU configurations, with specialized handling for different ML frameworks and dynamic resource management based on model architectures and GPU capabilities.
+## File Paths
+- dualgpuopt/optimizer.py: Core optimization logic
+- dualgpuopt/commands/gpu_commands.py: Command generation
+- dualgpuopt/memory/recovery.py: OOM handling
+- dualgpuopt/batch/smart_batch.py: Batch management
+
+Importance Score: 95 (Core model execution flow and resource management)
 
 $END$

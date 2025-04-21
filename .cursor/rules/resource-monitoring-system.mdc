@@ -1,58 +1,51 @@
 ---
-description: Specification for implementing real-time GPU resource monitoring and telemetry systems with alerts
-globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py
+description: Specialized monitoring system for tracking GPU resources, memory usage, and performance metrics in ML workloads
+globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/monitor.py,dualgpuopt/memory/monitor.py,dualgpuopt/batch/smart_batch.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core Telemetry System Components:
+The GPU resource monitoring system consists of several core components:
 
-1. GPU Metrics Collection (telemetry.py)
-- Real-time monitoring of critical GPU metrics:
-  * Memory utilization with percentage thresholds (75%, 90%)
-  * Temperature monitoring with warning levels (70°C, 80°C) 
-  * Power consumption relative to GPU power limits
-  * Clock speeds for SM and Memory
-  * PCIe bandwidth (TX/RX rates)
+## Real-time Telemetry Collection (telemetry.py)
+- Custom alert level system (NORMAL, WARNING, CRITICAL, EMERGENCY) based on GPU metrics
+- Alert threshold rules:
+  * Memory: Emergency >95%, Critical >90%, Warning >75%
+  * Temperature: Emergency >90°C, Critical >80°C, Warning >70°C
+  * Power: Critical >98%, Warning >90% of power limit
+- Maintains 60-second rolling history of GPU metrics
+- Implements mock data generation for different GPU tiers:
+  * High-end: 24GB memory, 350W power limit, 2100MHz base clock
+  * Mid-range: 12GB memory, 200W power limit, 1800MHz base clock
 
-2. Alert System (telemetry.py)
-- Four-tier alert classification:
-  * NORMAL: Standard operating conditions
-  * WARNING: Approaching thresholds (75% memory, 70°C)
-  * CRITICAL: Threshold exceeded (90% memory, 80°C)
-  * EMERGENCY: Dangerous conditions (95% memory, 90°C)
-- Intelligent throttling of alerts:
-  * 3-second cooldown between notifications
-  * Alert priority queueing system
-  * Context-aware recommendations based on alert severity
+## Smart Batch Processing (batch/smart_batch.py)
+- Implements length-aware batch scheduling for GPU inference
+- Dynamic batch size optimization based on model memory profiles
+- Token budget management (max 16384 tokens per batch)
+- Memory pressure monitoring with automatic backpressure
+- Reduces to 25% capacity after OOM events, gradually recovers to 95%
 
-3. History Management
-- Rolling 60-second history buffer for metrics tracking
-- Timeline markers for significant events:
-  * Out of memory conditions
-  * Temperature spikes
-  * Power limit throttling
-- Custom event classification system for tracking GPU state changes
+## Memory Monitoring (memory/monitor.py)
+- Real-time memory allocation tracking with process granularity
+- Predictive analysis for impending OOM conditions
+- Memory growth rate calculation with linear regression
+- Memory leak detection through sliding window analysis
+- Event classification for allocation/deallocation patterns
 
-4. Mock Data Generation
-- Simulated metrics for testing and development:
-  * Correlated power usage with GPU utilization (20-90%)
-  * Temperature scaling based on utilization
-  * Memory usage patterns following workload profiles
-  * Fan speed correlation with temperature readings
+## GPU Resource Monitor (gpu/monitor.py) 
+- Multi-GPU synchronization for resource tracking
+- PCIe bandwidth utilization monitoring
+- Clock speed synchronization across GPUs
+- Temperature correlation with workload intensity
+- Power draw tracking with dynamic limits
 
-Relevant Files:
-- dualgpuopt/telemetry.py: Core telemetry implementation
-- dualgpuopt/gpu/monitor.py: GPU state monitoring
-- dualgpuopt/memory/metrics.py: Memory-specific metrics
-- dualgpuopt/memory/alerts.py: Alert system implementation
-
-Business Impact Scores:
-- Telemetry System: 95 (Critical for GPU monitoring)
-- Alert System: 85 (Key for system stability)
-- History Management: 75 (Important for trend analysis)
-- Mock System: 45 (Supporting development functionality)
+## Key Business Rules
+- Alert thresholds scale based on GPU generation and capabilities
+- Memory recovery triggered at 95% utilization
+- Batch size adjusts dynamically based on memory pressure
+- Memory leaks identified through sustained growth patterns
+- Temperature thresholds adjust based on GPU model specifications
 
 $END$

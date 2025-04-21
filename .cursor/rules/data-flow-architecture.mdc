@@ -1,60 +1,89 @@
 ---
-description: Specification for analyzing data flow between GPU optimization and monitoring components
-globs: dualgpuopt/**/*.py,integrated_app/**/*.py
+description: Documents data flow patterns and integration points between GPU resource management, optimization parameters, and monitoring metrics.
+globs: 
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+## Core Data Flow Patterns
 
-1. GPU Telemetry Pipeline (dualgpuopt/telemetry.py, dualgpuopt/gui/dashboard.py)
-Importance: 95
-- Real-time GPU metrics collection and distribution
-- Event-driven metric updates from NVML to GUI components
-- GPU data flow includes: utilization, memory, temperature, power, clocks
-- Custom middleware processes raw GPU data into normalized metrics
+### GPU Resource Data Flow
+1. Memory Profiler -> Event Bus -> Optimization Engine:
+- Memory profiler collects real-time GPU memory metrics
+- Aggregated metrics flow through event bus system
+- Optimizer engine consumes metrics to adjust allocation strategies
+- Key metrics: VRAM usage, tensor distribution ratios, temperature
 
-2. Memory Profiling Flow (dualgpuopt/memory/profiler.py)
-Importance: 90
-- Continuous memory event streaming between GPU hardware and analysis components
-- Event classification system for memory patterns:
-  * Inference boundaries
-  * Memory allocations/deallocations 
-  * Growth spikes
-  * Leak detection
-- Memory analytics pipeline with sliding window analysis
+2. GPU Command Generation Flow:
+- Model parameters flow into command generators
+- Command generators produce framework-specific launch configurations
+- Launch configurations flow to process monitor
+- Process monitor streams execution metrics back to telemetry system
 
-3. Model Parameter Distribution (dualgpuopt/optimizer.py)
-Importance: 85
-- Bi-directional flow of model configurations between UI and optimizer
-- Parameter validation pipeline for context lengths and layer counts
-- Dynamic configuration updates based on GPU capability detection
-- Resource allocation broadcasting to execution components
+### Optimization Parameter Flow
+1. Model -> Split Calculator -> GPU Allocator:
+- Model architecture parameters flow into split calculator
+- Split calculator determines optimal tensor splits
+- Split ratios flow to GPU allocator
+- Allocator applies memory distribution across GPUs
 
-4. GPU Command Pipeline (dualgpuopt/commands/gpu_commands.py)
-Importance: 80
-- Command generation workflow for framework-specific optimizations
-- Parameter transformation for different ML frameworks:
-  * llama.cpp: GPU split strings
-  * vLLM: Tensor parallel configurations
-- Resource allocation parameters flow from optimizer to launch system
+2. Settings -> State Service -> Components:
+- User settings flow through state service
+- State changes trigger event notifications
+- Components react to state updates
+- Settings persistence through config service
 
-5. Event Bus Architecture (dualgpuopt/services/event_bus.py)
-Importance: 75
-- Centralized event distribution for GPU metrics and status updates
-- Priority-based event routing system
-- Typed event flow with specialized GPU event hierarchy
-- Error event propagation with recovery triggers
+### Monitoring Metrics Flow
+1. Telemetry -> Event Bus -> Dashboard:
+- GPU metrics collected by telemetry service
+- Metrics flow through event bus to subscribers 
+- Dashboard components visualize real-time data
+- Alert system processes threshold violations
 
-6. Configuration Flow (dualgpuopt/services/config_service.py)
-Importance: 65
-- Settings distribution across components
-- GPU-specific configuration persistence
-- Theme and appearance settings propagation
-- Idle detection parameter distribution
+2. Memory Monitor -> Recovery System:
+- Memory usage patterns flow to monitor
+- Monitor detects potential issues
+- Recovery system receives alert triggers
+- Recovery actions flow back to GPU management
 
-The data flow architecture emphasizes real-time GPU metric distribution and optimization parameter propagation across the system, with specialized handling for memory profiling and model configuration management.
+## Key Integration Points
+
+### Event Bus Integration
+- Centralized event distribution system
+- Connects monitoring, optimization and UI layers
+- Handles metric aggregation and distribution
+- Manages state change notifications
+
+### State Service Integration  
+- Maintains application-wide state
+- Distributes configuration changes
+- Handles settings persistence
+- Manages optimization parameters
+
+### Telemetry Integration
+- Collects GPU performance metrics
+- Distributes metrics to monitoring components
+- Handles alert threshold evaluation
+- Provides historical metric storage
+
+## Data Flow Files
+
+Core Components:
+```
+dualgpuopt/memory/profiler.py
+dualgpuopt/services/event_bus.py 
+dualgpuopt/services/state_service.py
+dualgpuopt/telemetry.py
+dualgpuopt/optimizer.py
+```
+
+Integration Points:
+```
+dualgpuopt/gui/dashboard.py
+dualgpuopt/commands/gpu_commands.py
+dualgpuopt/memory/monitor.py
+```
 
 $END$

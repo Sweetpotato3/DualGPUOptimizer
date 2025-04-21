@@ -24,7 +24,7 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 
 We've implemented a comprehensive alert system for GPU monitoring:
 
-- **Four-Tier Alert Classification**: 
+- **Four-Tier Alert Classification**:
   - NORMAL: Standard operating conditions
   - WARNING: Approaching thresholds (75% memory, 70°C)
   - CRITICAL: Threshold exceeded (90% memory, 80°C)
@@ -156,18 +156,21 @@ The Memory Profiler is accessible through a dedicated tab in the Dashboard and h
 ### Performance Optimizations
 
 - **Enhanced Telemetry System**:
+
   - Improved GPU metrics collection with caching and reduced lock contention
   - Parallel batch collection for faster multi-GPU monitoring
   - Optimized data distribution to UI components
   - Thread-safe metrics processing with reduced overhead
 
 - **Optimized Model Calculation Engine**:
+
   - Vectorized memory calculations using NumPy when available
   - Intelligent caching for repeated operations like context size calculations
   - Reduced redundant GPU information queries
   - Enhanced memory estimation algorithm with improved accuracy
 
 - **Accelerated Layer Balancing**:
+
   - Multiprocessing GPU profiling for faster layer distribution
   - Thread pool implementation for parallel operations
   - Optimized contiguous block algorithm for better memory locality
@@ -331,21 +334,21 @@ All tabs feature graceful fallbacks when components are unavailable, ensuring th
 
 DualGPUOptimizer now supports configuration through environment variables:
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `DUALGPUOPT_MOCK_GPU` | Force mock GPU mode | `false` |
-| `DUALGPUOPT_GPU_COUNT` | Override detected GPU count | Auto-detect |
-| `DUALGPUOPT_POLL_INTERVAL` | Telemetry polling interval (seconds) | `1.0` |
-| `DUALGPUOPT_MOCK_TELEMETRY` | Force mock telemetry data | `false` |
-| `DUALGPUOPT_MAX_RECOVERY` | Maximum recovery attempts | `3` |
-| `DUALGPUOPT_SYSTEM_OVERHEAD` | System memory overhead (MB) | `2048` |
-| `DUALGPUOPT_SAFETY_MARGIN` | Memory safety margin | `0.1` |
-| `DUALGPUOPT_TP_OVERHEAD` | Tensor parallelism overhead | `0.2` |
-| `DUALGPUOPT_KV_CACHE_FACTOR` | KV cache size multiplier | `2.0` |
-| `DUALGPUOPT_MIN_CONTEXT` | Minimum context size | `128` |
-| `DUALGPUOPT_METRIC_CACHE_TTL` | Metrics cache lifetime (seconds) | `0.05` |
-| `DUALGPUOPT_OPT_CACHE_TIMEOUT` | Optimizer cache timeout (seconds) | `30` |
-| `DUALGPUOPT_PROFILE_CACHE` | Memory profile cache size | `64` |
+| Variable                       | Description                          | Default     |
+| ------------------------------ | ------------------------------------ | ----------- |
+| `DUALGPUOPT_MOCK_GPU`          | Force mock GPU mode                  | `false`     |
+| `DUALGPUOPT_GPU_COUNT`         | Override detected GPU count          | Auto-detect |
+| `DUALGPUOPT_POLL_INTERVAL`     | Telemetry polling interval (seconds) | `1.0`       |
+| `DUALGPUOPT_MOCK_TELEMETRY`    | Force mock telemetry data            | `false`     |
+| `DUALGPUOPT_MAX_RECOVERY`      | Maximum recovery attempts            | `3`         |
+| `DUALGPUOPT_SYSTEM_OVERHEAD`   | System memory overhead (MB)          | `2048`      |
+| `DUALGPUOPT_SAFETY_MARGIN`     | Memory safety margin                 | `0.1`       |
+| `DUALGPUOPT_TP_OVERHEAD`       | Tensor parallelism overhead          | `0.2`       |
+| `DUALGPUOPT_KV_CACHE_FACTOR`   | KV cache size multiplier             | `2.0`       |
+| `DUALGPUOPT_MIN_CONTEXT`       | Minimum context size                 | `128`       |
+| `DUALGPUOPT_METRIC_CACHE_TTL`  | Metrics cache lifetime (seconds)     | `0.05`      |
+| `DUALGPUOPT_OPT_CACHE_TIMEOUT` | Optimizer cache timeout (seconds)    | `30`        |
+| `DUALGPUOPT_PROFILE_CACHE`     | Memory profile cache size            | `64`        |
 
 ## Installation
 
@@ -664,6 +667,7 @@ The Qt interface includes several key tabs:
 2. **Optimizer Tab**: Calculate optimal GPU memory splits for large language models with customizable parameters and command generation
 
 3. **Launcher Tab**: Interface for launching and managing model execution with:
+
    - Framework-specific command generation (llama.cpp, vLLM)
    - Process management with real-time output monitoring
    - Multiple concurrent model execution support
