@@ -531,3 +531,42 @@ The project aims for high test coverage in critical areas:
 - Error handling: >90% coverage
 
 The comprehensive test suite ensures the application remains stable and reliable, even as new features are added or components are refactored.
+
+## New: Modern Qt Interface
+
+DualGPUOptimizer now features a brand new Qt-based user interface that provides:
+
+- **Modern Design**: Sleek, responsive UI with card-based components and improved visual hierarchy
+- **Enhanced Stability**: More robust rendering and dependency management compared to Tkinter
+- **Improved Aesthetics**: High-quality visuals with consistent styling and intuitive controls
+- **Single Dependency**: Simplifies installation by relying on PySide6 instead of multiple Tkinter extensions
+
+### Qt Interface Benefits
+
+- **Better Error Handling**: Comprehensive error recovery and graceful fallbacks
+- **Consistent Theming**: Unified dark theme with proper visual feedback
+- **Responsive Layouts**: Automatically adjusts to window size changes
+- **Enhanced GPU Monitoring**: More detailed and visually appealing GPU metrics display
+- **Improved Optimizer**: More intuitive interface for calculating GPU configurations
+
+### Running the Qt Interface
+
+To use the new Qt interface, first install PySide6:
+
+```
+pip install PySide6==6.5.2
+```
+
+Then run the Qt application:
+
+```
+python run_qt_app.py
+```
+
+For mock mode (no GPU required):
+
+```
+python run_qt_app.py --mock
+```
+
+The Qt interface runs in parallel with the existing Tkinter interface and doesn't replace it, allowing you to choose whichever version works best for your environment.
