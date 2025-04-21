@@ -1,44 +1,50 @@
 ---
-description: Documents LLM execution workflows, command generation, configuration parameters, and GPU resource allocation strategies for machine learning model deployment.
-globs: **/optimizer.py,**/commands/*.py,**/launcher/*.py,**/direct_launcher.py,**/services/*.py
+description: Documents LLM model execution strategies, command generation and GPU resource management for optimized inference
+globs: **/gpu_commands.py,**/launch_controller.py,**/optimizer.py,**/runner.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Core Model Execution Control 
-Orchestrates model execution across dual GPUs, providing commands for both llama.cpp and vLLM frameworks. Key capabilities:
-- **Model Loading:** Loads model weights with optimized memory splits across GPUs. Calculates optimal split ratios based on available VRAM and device capabilities.
-- **Tensor Parallelization:** Auto-detects optimal tensor parallel configurations for both frameworks. For llama.cpp, generates layer distribution commands based on memory ratios. For vLLM, sets tensor parallel size and device mappings.
-- **Command Generation:** Creates framework-specific commands with optimized parameters:
-  - llama.cpp: `model_path`, `context_size`, `gpu_split`, and layer distribution options
-  - vLLM: `model_path`, `tensor_parallel_size`, memory configurations
+The system implements specialized execution flows for running large language models across multiple GPUs:
 
-## Memory Management
-- Real-time monitoring of GPU memory utilization
-- Dynamic memory reclamation using CUDA cache clearing
-- OOM prevention through batch size adjustment
+1. Command Generation Pipeline (dualgpuopt/commands/gpu_commands.py)
+- Framework-specific command construction for llama.cpp and vLLM backends
+- Tensor parallel configuration based on available GPU count
+- GPU memory split ratio calculations for model distribution
+- Environment variable setup for each framework's requirements
 
-## Configuration Parameters
-- Model-specific configurations (context length, hidden size, layers, heads)
-- GPU split recommendations based on device capabilities
-- Environment variable generation for optimized execution
+2. Launch Controller Logic (dualgpuopt/gui/launcher/launch_controller.py)
+- Model deployment orchestration with configurable parameters
+- GPU memory reservation and validation before model loading
+- OOM recovery logic with cache clearing and retry mechanisms
+- Dynamic batch size adjustment based on available resources
 
-## Resource Allocation Flow
-1. Model Parameter Detection
-2. GPU Memory Analysis 
-3. Split Ratio Calculation
-4. Command Generation
-5. Process Launch and Monitoring
+3. Model Resource Calculator (dualgpuopt/optimizer.py)
+- Context window size calculation based on model architecture
+- KV cache estimation for attention mechanisms
+- Memory requirement projections for different model sizes
+- Load balancing logic for dual GPU configurations
 
-Relevant File Paths:
+Key Command Generation Templates:
+
+llama.cpp:
 ```
-dualgpuopt/optimizer.py - Core optimization logic
-dualgpuopt/commands/command_base.py - Base command generation
-dualgpuopt/commands/gpu_commands.py - GPU-specific commands
-dualgpuopt/launcher/launch_controller.py - Process control
-dualgpuopt/services/event_bus.py - Execution event coordination
+./main -m {model} --gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}
 ```
+
+vLLM:
+```
+--model {model} --dtype float16 --tensor-parallel-size {tp} --gpu-memory-utilization 0.9
+```
+
+Notable Domain-Specific Elements:
+- Model-aware resource estimation
+- Framework-specific parameter optimization
+- Multi-GPU workload distribution
+- Memory pressure monitoring and recovery
+
+The implementation focuses on optimizing model execution across multiple GPUs while maintaining stability through intelligent resource management and error recovery.
 
 $END$

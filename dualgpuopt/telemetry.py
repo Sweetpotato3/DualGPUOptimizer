@@ -26,6 +26,15 @@ except ImportError:
     error_handler_available = False
     logger.warning("Error handler not available for telemetry, using basic error handling")
 
+# Import event bus if available
+try:
+    from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
+    event_bus_available = True
+    logger.debug("Event bus available for telemetry events")
+except ImportError:
+    event_bus_available = False
+    logger.warning("Event bus not available, falling back to callback-based telemetry")
+
 # Always try to import pynvml
 try:
     import pynvml
@@ -293,6 +302,10 @@ class TelemetryService:
                 # Notify all registered callbacks
                 self._notify_callbacks(metrics)
 
+                # Publish metrics via event bus if available
+                if event_bus_available:
+                    self._publish_to_event_bus(metrics)
+
             except Exception as e:
                 logger.error(f"Error in telemetry loop: {e}")
                 self._consecutive_errors += 1
@@ -320,6 +333,34 @@ class TelemetryService:
             except Exception as e:
                 logger.error(f"Error in telemetry callback: {e}")
                 # Don't remove the callback automatically, let the client handle it
+    
+    def _publish_to_event_bus(self, metrics: Dict[int, GPUMetrics]) -> None:
+        """Publish metrics to the event bus system
+
+        Args:
+            metrics: The current metrics to publish
+        """
+        if not event_bus_available:
+            return
+        
+        try:
+            for gpu_id, gpu_metrics in metrics.items():
+                # Create and publish a GPUMetricsEvent for each GPU
+                metrics_event = GPUMetricsEvent(
+                    gpu_index=gpu_id,
+                    utilization=gpu_metrics.utilization,
+                    memory_used=gpu_metrics.memory_used,
+                    memory_total=gpu_metrics.memory_total,
+                    temperature=gpu_metrics.temperature,
+                    power_draw=gpu_metrics.power_usage,
+                    fan_speed=gpu_metrics.fan_speed
+                )
+                event_bus.publish_typed(metrics_event)
+                
+            # Also publish a comprehensive update event with string type
+            event_bus.publish("gpu_metrics_updated", metrics)
+        except Exception as e:
+            logger.error(f"Error publishing metrics to event bus: {e}")
 
     def _get_gpu_metrics(self, gpu_id: int, timestamp: float) -> GPUMetrics:
         """Get metrics for a specific GPU using NVML

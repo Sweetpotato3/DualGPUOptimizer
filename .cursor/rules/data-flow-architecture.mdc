@@ -1,65 +1,44 @@
 ---
-description: Defines data flow patterns and architecture for GPU resource monitoring, optimization metrics, and component communication.
-globs: **/*.py,**/services/**/*.py,**/commands/**/*.py
+description: Data flow documentation for GPU resource management and optimization across distributed components
+globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-### Core Data Flow Components
+The dual GPU optimization system implements a multi-layered data flow architecture:
 
-1. GPU Telemetry Pipeline
-- **TelemetryService** collects real-time GPU metrics including utilization, memory, temperature
-- Metrics flow through configurable middleware chain for processing
-- Event bus publishes metrics to registered subscribers
-- Data flows to visualization components and monitoring systems
-- File: `dualgpuopt/telemetry.py`
+1. Core Telemetry Flow
+- GPU metrics originate in telemetry.py through NVML/mock providers
+- Metrics flow through EventBusMiddleware for standardization 
+- Dashboard components consume metrics via event subscriptions
+- Historical metrics retained in 60-sample rolling buffers
 
-2. State Management
-- Centralized state service manages application configuration and GPU settings
-- State changes trigger events for UI updates and optimization recalculation
-- Components subscribe to specific state keys
-- File: `dualgpuopt/services/state_service.py`
+2. Model Parameter Flow
+- Model configurations enter through optimizer_tab.py
+- Parameter resolver validates and transforms configurations
+- Launch controller generates framework-specific commands
+- Commands flow to process execution layer
 
-3. Command Generation Pipeline
-- GPU split calculator determines optimal tensor distribution
-- Results flow to command generator for framework-specific formatting
-- Generated commands transmitted to launcher component
-- Files: `dualgpuopt/commands/gpu_commands.py`
+3. Memory Management Flow
+- Memory predictor analyzes model requirements
+- Layer balancer calculates optimal distributions
+- Memory monitor tracks utilization metrics
+- Recovery system triggers staged interventions
 
-4. Memory Monitoring Flow
-- Memory predictor estimates usage based on model profiles
-- Alerts flow through recovery manager when thresholds exceeded
-- Recovery strategies executed based on severity
-- Files: `dualgpuopt/memory/predictor.py`, `dualgpuopt/memory/recovery.py`
+4. Resource Optimization Flow
+- GPU split calculations originate in optimizer.py
+- Context size optimizer determines safe limits
+- Layer distribution flows to execution environment
+- Real-time metrics flow back for validation
 
-5. Event Bus Architecture 
-- Central event bus coordinates component communication
-- Components publish domain events (GPUMetricsEvent, ModelSelectedEvent)
-- Subscribers receive filtered events based on type/priority
-- File: `dualgpuopt/services/event_bus.py`
+Key Integration Points:
+- Event bus provides centralized metric distribution
+- Memory monitor coordinates with recovery system
+- Parameter resolver feeds launch controller
+- Telemetry system supplies all monitoring components
 
-### Key Data Flows
-
-1. GPU Metrics Flow:
-```
-GPU Hardware -> Telemetry Service -> Middleware Chain -> Event Bus -> UI Components
-```
-
-2. Optimization Command Flow:
-```
-Model Selection -> Split Calculator -> Command Generator -> Launcher
-```
-
-3. Memory Management Flow:
-```
-Memory Monitor -> Predictor -> Alert System -> Recovery Manager
-```
-
-4. Configuration Flow:
-```
-State Service -> Event Bus -> Component Updates
-```
+The architecture emphasizes GPU resource coordination through event-driven communication patterns, with metrics flowing from hardware interfaces through processing middleware to visualization and control components.
 
 $END$

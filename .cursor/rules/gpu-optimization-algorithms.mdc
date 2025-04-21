@@ -1,65 +1,55 @@
 ---
-description: Specification for GPU optimization algorithms, tensor parallelism, memory distribution and VRAM management components
-globs: 
+description: Documents GPU optimization logic for machine learning model deployment across multiple GPUs, focusing on memory management and model partitioning
+globs: **/gpu/**,**/optimizer/**,**/memory/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Optimization Components
+## Core Distribution Logic
+Key algorithms for partitioning models across multiple GPUs, located in optimizer.py:
 
-### GPU Memory Split Calculator
-- Calculates optimal tensor parallel splits across multiple GPUs based on relative VRAM capacities
-- Implements weighted distribution algorithms to handle asymmetric GPU configurations 
-- Dynamically adjusts split ratios based on model architecture requirements
-- Located in `optimizer.py`
+```python
+def calculate_tensor_splits(gpus, model_size):
+    memory_ratios = [gpu.available_memory/total_memory for gpu in gpus]
+    return adjust_splits_for_overhead(memory_ratios, model_size) 
+```
 
-### Layer Distribution Manager
-- Balances model layers across available GPUs using latency-aware distribution
-- Implements contiguous block optimization to minimize inter-GPU communication
-- Profiles layer execution times and adjusts distribution accordingly
-- Located in `layer_balance.py`
+Determines optimal tensor parallel splits based on:
+- Available GPU memory ratios
+- Model architecture requirements  
+- Memory overhead estimations
+- Layer-wise distribution patterns
 
-### Memory Monitor & Recovery 
-- Tracks GPU memory usage with configurable alert thresholds (warning at 80%, critical at 90%)
-- Implements staged recovery strategies:
+## Memory Management
+Memory allocation and tracking in gpu_info.py:
+- Implements dynamic memory quota calculation per GPU
+- Tracks memory pressure through watchdog system
+- Handles OOM recovery with progressive fallback strategy:
   1. Cache clearing
-  2. Batch size reduction 
-  3. Layer offloading
-  4. Process termination
-- Located in `memory/monitor.py`
+  2. Batch size reduction  
+  3. Layer redistribution
+  4. Process restart
 
-### Batch Size Optimizer
-- Dynamically calculates optimal batch sizes based on:
+## Model Layer Distribution
+Layer balancing algorithms in layer_balance.py:
+- Multi-sequence profiling (64/1024 token ratios)
+- Weighted workload distribution considering:
+  - Layer computational intensity
+  - Memory transfer costs
+  - GPU memory constraints
+- Block optimization to minimize cross-GPU transfers
+
+## Smart Batch Processing
+Batch optimization system in batch/smart_batch.py:
+- Token-aware batch assembly
+- Dynamic sizing based on:
   - Available GPU memory
-  - Model architecture 
-  - Sequence length
-  - KV cache requirements
-- Implements length-aware batching for improved throughput
-- Located in `batch/smart_batch.py`
+  - Model architecture
+  - Sequence length distribution
+- Backpressure mechanisms to prevent OOM
 
-### Memory Predictor
-- Estimates memory requirements based on:
-  - Base model size
-  - Per-token memory usage
-  - Attention mechanism overhead
-  - MoE gating factors (if applicable)
-- Provides safety margins to prevent OOM conditions
-- Located in `memory/predictor.py`
-
-## File Paths
-```
-dualgpuopt/
-  optimizer.py
-  layer_balance.py
-  memory/
-    monitor.py
-    predictor.py
-  batch/
-    smart_batch.py
-```
-
-Importance Score: 95 - Core GPU optimization algorithms represent critical business logic for model deployment and execution
+The architecture specifically optimizes for language model inference across multiple GPUs, with core focus on memory management and workload distribution.
 
 $END$

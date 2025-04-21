@@ -5,8 +5,18 @@ import json
 import os
 import logging
 from pathlib import Path
+from typing import Any
 
 logger = logging.getLogger("DualGPUOpt.ConfigService")
+
+# Import event bus if available
+try:
+    from dualgpuopt.services.event_bus import event_bus, ConfigChangedEvent
+    event_bus_available = True
+    logger.debug("Event bus available for configuration events")
+except ImportError:
+    event_bus_available = False
+    logger.warning("Event bus not available for configuration events")
 
 class ConfigService:
     """Service for managing application configuration"""
@@ -72,8 +82,49 @@ class ConfigService:
             key: Configuration key
             value: Configuration value
         """
+        old_value = self.config.get(key)
         self.config[key] = value
         self.save()
+        
+        # Publish configuration change event
+        self._publish_config_change(key, value, old_value)
+    
+    def _publish_config_change(self, key: str, new_value: Any, old_value: Any) -> None:
+        """Publish configuration change event
+        
+        Args:
+            key: Configuration key that changed
+            new_value: New configuration value
+            old_value: Previous configuration value
+        """
+        if not event_bus_available:
+            return
+            
+        try:
+            # Publish as typed event
+            config_event = ConfigChangedEvent(
+                config_key=key,
+                new_value=new_value,
+                old_value=old_value
+            )
+            event_bus.publish_typed(config_event)
+            
+            # Also publish as string event for non-typed subscribers
+            event_bus.publish("config_changed", {
+                "key": key,
+                "value": new_value,
+                "old_value": old_value
+            })
+            
+            # Publish key-specific event for targeted subscribers
+            event_bus.publish(f"config_changed.{key}", {
+                "value": new_value,
+                "old_value": old_value
+            })
+            
+            logger.debug(f"Published config change event for key: {key}")
+        except Exception as e:
+            logger.error(f"Error publishing config change event: {e}")
 
 # Singleton instance
 config_service = ConfigService()
