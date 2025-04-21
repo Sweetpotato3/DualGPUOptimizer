@@ -1,66 +1,100 @@
 ---
-description: Documentation of data flows between components, including GPU resource tracking, optimization parameters, and monitoring metrics.
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
+description: Specification for data flow patterns and architecture in GPU optimization and monitoring systems
+globs: dualgpuopt/**,integrated_app/**,hooks/**,custom_hooks/**,test_*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Component Architecture:
+The data flow architecture centers around GPU optimization with several key components:
 
-1. GPU Metrics Flow
-- GPUMonitor emits raw GPU metrics (temp, memory, utilization)
-- Metrics flow through TelemetryService middleware pipeline for normalization
-- MemoryProfiler tracks allocation/deallocation events
-- Dashboard consumes metrics for visualization
-- EventBus handles priority-based metric distribution
+## Memory Profiling Data Flow
+File: `dualgpuopt/memory/profiler.py`
+Importance: 95
 
-File: dualgpuopt/gpu/monitor.py
+Memory profiling system implements real-time data flow for GPU memory tracking:
+- Session-based memory profiles with timeline tracking 
+- Inference-specific memory patterns with token counts
+- Two-tier detection pipeline:
+  1. Spike Detection: Rapid memory growth analysis
+  2. Leak Detection: Sustained growth monitoring
+- Memory event classification with domain events:
+  - ALLOCATION/DEALLOCATION
+  - GROWTH_SPIKE 
+  - LEAK_DETECTED
+  - INFERENCE_START/END
 
-2. Memory Management Flow
-- MemoryProfiler tracks GPU memory events:
-  * AllocEvent: New memory allocations
-  * FreeEvent: Memory deallocations
-  * LeakEvent: Detected memory leaks
-  * SpikesEvent: Sudden memory spikes
-- Events flow to:
-  * MemoryAnalyzer for leak detection
-  * Recovery system for OOM handling
-  * Dashboard for visualization
+## GUI Data Flow Pipeline 
+Files: `dualgpuopt/gui/dashboard.py`, `dualgpuopt/gui/optimizer_tab.py`
+Importance: 85
 
-File: dualgpuopt/memory/profiler.py
+Dashboard implements real-time GPU metrics visualization with:
+- Color-coded temperature thresholds (70°C, 80°C)
+- Memory usage alerts (75%, 90%)
+- Power consumption monitoring
+- Clock speed tracking
+- 60-second circular buffer history
+- Timeline marker annotations
 
-3. Optimization Parameter Flow
-- OptimizerTab generates model configs
-- Parameters flow through validation layer
-- ConfigService distributes to:
-  * LauncherTab for model execution
-  * ModelRunner for process management
-  * Dashboard for monitoring
+## GPU Telemetry Flow
+File: `dualgpuopt/telemetry.py`
+Importance: 90
 
-File: dualgpuopt/optimizer.py
+Telemetry service implements:
+- Real-time GPU metrics collection pipeline
+- Custom middleware for metrics processing
+- Middleware for event bus publishing
+- Fallback to mock data on hardware errors
+- Background thread for continuous collection
+- Configurable collection intervals
 
-4. Alert/Warning Flow
-- MemoryMonitor detects threshold violations
-- Alerts flow through priority queue
-- SystemTray receives critical alerts
-- Dashboard displays warning states
-- Recovery system triggers mitigation
+## Memory Management Pipeline
+File: `dualgpuopt/memory/monitor.py`
+Importance: 92
 
-Files:
-- dualgpuopt/memory/alerts.py
-- dualgpuopt/services/event_bus.py
+Memory monitoring system with:
+- Real-time memory usage tracking
+- OOM prevention with recovery strategies
+- Memory projection calculations
+- Automatic memory cleanup triggers
+- Profile-based usage estimation
+- Safe context size calculations
 
-5. Model Execution Flow
-- LauncherTab initiates model execution
-- Parameters flow to ModelRunner
-- Runner distributes work across GPUs
-- Metrics flow back through TelemetryService
-- Dashboard visualizes execution state
+## Event Bus Architecture
+Files: `dualgpuopt/services/event_bus.py`, `dualgpuopt/services/event_bus_cpu.py`
+Importance: 88
 
-File: dualgpuopt/gui/launcher.py
+Event system manages data flow with:
+- GPU metrics event publishing
+- Model selection event propagation
+- Split calculation event handling
+- Resource allocation notifications
+- Priority-based event dispatching
+- CPU-bound event processing
 
-The architecture emphasizes real-time GPU metric collection and distribution, with specialized flows for memory management, optimization parameters, and execution monitoring in a dual-GPU environment.
+## Resource Management Flow
+File: `dualgpuopt/services/resource_manager.py`
+Importance: 86
+
+Resource allocation system:
+- CPU/GPU task distribution
+- Dynamic resource reallocation
+- Component-specific defaults
+- Thread pool management
+- Resource type validation
+- Global allocation tracking
+
+## Smart Batching Pipeline
+File: `dualgpuopt/batch/smart_batch.py`
+Importance: 89
+
+Batch processing system:
+- Length-aware inference scheduling
+- Back-pressure control mechanisms
+- Automatic retry on OOM errors
+- Bucket policy implementation
+- Memory-based batch size calculation
+- Token ratio optimization
 
 $END$

@@ -1,59 +1,70 @@
 ---
-description: Documents the model execution workflow and GPU optimization for large language model inference across multiple GPUs.
-globs: **/*.py,**/dualgpuopt/**
+description: Handles model execution workflows, command generation, GPU resource allocation and batch management for running LLM inference
+globs: **/*llm*.py,**/*model*.py,**/*inference*.py,**/*exec*.py,**/runner.py,**/launcher*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The system implements a comprehensive model execution pipeline optimized for multi-GPU language model inference:
+## Launch Command Generation Flow
+The command generation system handles customized launch commands for LLM inference across different model frameworks:
 
-1. Model Parameter Distribution System (optimizer.py, 90)
-- Dynamically splits model layers across GPUs based on memory availability
-- Calculates optimal tensor parallel sizes for different model architectures
-- Generates environment-specific launch configurations for multiple frameworks (llama.cpp, vLLM)
-- Handles specialized architectures like MoE (Mixture of Experts) models
+### Framework-Specific Command Building
+- `llama.cpp` commands include GPU split parameters, context sizes, layer allocations
+- `vLLM` commands configure tensor parallelism, GPU visibility, CUDA_VISIBLE_DEVICES
+- Environment variable generation for NCCL configurations and memory splits
 
-2. Layer Balancing System (layer_balance.py, 85)
-- Profiles layer performance using dual-pass strategy:
-  * Short sequences (64 tokens) weighted at 20%
-  * Long sequences (1024 tokens) weighted at 80%
-- Distributes layers across GPUs based on performance characteristics and memory constraints
-- Applies optimized block assignments with minimum block size constraints
+### Resource Configuration 
+- Dynamically calculates maximum context lengths based on GPU memory availability
+- Determines optimal layer splits and tensor parallel configurations
+- Generates framework-specific model deployment parameters like batch size
 
-3. Command Generation Engine (commands/gpu_commands.py, 80)
-- Creates framework-specific execution commands
-- Configures tensor parallel parameters for multi-GPU deployments
-- Manages GPU split ratios and memory allocations
-- Handles specialized quantization parameters
+File: `dualgpuopt/optimizer.py`
 
-4. Memory Management Pipeline (memory/profiler.py, 85)
-- Tracks memory patterns across GPU devices
-- Implements leak detection using sliding window analysis
-- Maintains token count and memory efficiency metrics
-- Provides real-time memory alerts and optimization recommendations
+## Model Process Control Flow
+The process control system manages LLM model execution:
 
-5. Process Execution Controller (launcher/launch_controller.py, 75)
-- Manages model process lifecycle across GPUs
-- Handles OOM detection and recovery
-- Implements graceful termination with configurable timeouts
-- Coordinates between framework-specific launch configurations
+### Process Lifecycle
+- Maintains separate process tracking for llama.cpp and vLLM model execution
+- Implements graceful shutdown with configurable timeouts (3s default)
+- Handles process output streaming and error capture
 
-6. Context Size Optimizer (ctx_size.py, 80)
-- Calculates maximum safe context length based on:
-  * Available GPU memory
-  * Model architecture parameters
-  * KV cache requirements
-  * Overhead factors
-- Implements model-specific memory estimation
+### GPU Resource Management
+- Allocates GPU memory based on framework requirements
+- Configures tensor parallel deployments for vLLM
+- Manages GPU split configurations for llama.cpp
 
-7. Recovery System (memory/recovery.py, 70)
-- Provides tiered recovery strategies:
-  * Cache clearing
-  * Batch size reduction
-  * Memory offloading
-  * Process termination
-- Implements cascading recovery attempts with escalating impact
+File: `dualgpuopt/qt/launcher_tab.py`
+
+## Batch Processing Flow
+Smart batching system for optimized inference:
+
+### Length-Aware Batching
+- Groups similar-length sequences to optimize throughput
+- Dynamic batch size adjustment based on GPU memory
+- Automatic OOM recovery by reducing batch sizes
+
+### Memory Management
+- Memory usage tracking per batch
+- Proactive cache clearing on OOM events
+- Memory growth monitoring with alerts
+
+File: `dualgpuopt/batch/smart_batch.py`
+
+## Model Memory Optimization
+Memory optimization system for dual GPU deployments:
+
+### Memory Calculation
+- Per-token memory estimation based on model architecture
+- KV cache overhead calculation
+- Layer distribution optimization across GPUs
+
+### Split Configuration
+- Optimal memory split ratios for dual GPUs
+- Tensor parallelism overhead adjustments
+- Memory split caching with timeout invalidation
+
+File: `dualgpuopt/optimizer.py`
 
 $END$

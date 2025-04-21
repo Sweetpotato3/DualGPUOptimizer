@@ -1,79 +1,66 @@
 ---
-description: Specialized rules and documentation for GPU memory optimization algorithms and tensor parallel distribution logic
-globs: **/optimizer.py,**/gpu/*.py,**/memory/*.py,**/batch/*.py
+description: Documentation focused on GPU memory allocation, tensor parallelism, and optimization algorithms used in the dual-GPU optimization system
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/gpu/info.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Memory Optimization Components:
+## Memory Distribution Algorithm
+Implements algorithmic decision making for distributing model layers and memory across dual GPUs:
 
-1. Memory Split Calculator (optimizer.py)
-- Calculates optimal memory distribution across multiple GPUs based on:
-  * Model parameters (layers, heads, dimensions)
-  * Available VRAM per GPU 
-  * KV cache requirements per token
-  * Safety margins (10% default)
-  * Tensor parallelism overhead (20% default)
-
-2. Layer Distribution System (layer_balance.py)
-- Distributes model layers across GPUs based on:
-  * Layer profiling data for short sequences (64 tokens, 20% weight)
-  * Layer profiling data for long sequences (1024 tokens, 80% weight)
-  * Available GPU memory quotas
-  * Memory reservation ratios
-
-3. Smart Batch Optimization (batch/smart_batch.py)
-- Groups similar-length sequences to optimize throughput
-- Dynamic batch size adjustment based on:
-  * Memory pressure thresholds
-  * OOM event detection
-  * Backpressure monitoring
-  * Total token limits (16,384 default)
-
-4. Memory Recovery System (memory/recovery.py)
-- Graduated recovery strategies:
-  * CLEAR_CACHE: Basic cache clearing
-  * REDUCE_BATCH: Batch size reduction
-  * OFFLOAD: CPU/disk offloading
-  * TERMINATE: Process termination
-- Implements cascading recovery attempt logic
-
-5. Memory Prediction Engine (memory/predictor.py) 
-- Projects memory requirements based on:
-  * Base model footprint
-  * Per-token scaling factors
-  * Batch size impact
-  * Non-linear growth patterns
-
-Core Business Rules:
-- Minimum 20% model allocation per GPU
-- MoE models get 20% extra memory allocation
-- OOM triggers 25% batch size reduction
-- Maximum token count per batch: 16,384
-- KV cache overhead factor: 2.0x
-- Memory safety margin: 10%
-- Temperature emergency threshold: 80°C
-- Utilization warning threshold: 90%
-
-File Paths:
-```
-dualgpuopt/
-  optimizer.py
-  layer_balance.py
-  batch/
-    smart_batch.py
-  memory/
-    predictor.py
-    recovery.py
+```python
+memory_split = calculate_memory_split(total_memory, gpu_info)
+# Returns optimal split ratio based on relative GPU memory sizes
+# Example: Returns [0.6, 0.4] for 60/40 split between GPUs
 ```
 
-Importance Scores:
-- Memory Split Calculator: 95 (core optimization logic)
-- Layer Distribution: 90 (critical for multi-GPU performance)
-- Smart Batching: 85 (key throughput optimization)
-- Memory Recovery: 80 (stability maintenance)
-- Memory Prediction: 75 (proactive optimization)
+Key business rules:
+- Reserves 2GB safety buffer per GPU for system operations
+- Allocates proportionally to available VRAM 
+- Maintains minimum 10% allocation per GPU
+- Dynamically adjusts for model architecture requirements
+
+## Tensor Parallel Split Calculation
+Determines optimal tensor parallelism configuration:
+
+```python
+tp_size = calculate_tensor_parallel(model_size, available_gpus)
+# Returns recommended tensor parallel size
+# Considers model architecture and memory requirements
+```
+
+Business rules:
+- Evaluates model parameter count vs available GPU memory
+- Recommends tensor parallelism when model exceeds 80% of min GPU memory
+- Maintains optimal communication overhead vs parallelism tradeoff
+- Factors KV cache sizing into memory calculations
+
+## Token Memory Allocation 
+Calculates per-token memory requirements:
+```python
+bytes_per_token = hidden_size * num_layers * 2  # For float16
+total_memory = bytes_per_token * seq_length
+```
+
+Memory Constraints:
+- KV cache overhead factored at 2x for attention calculations
+- System memory reserve of 2GB per GPU
+- Tensor parallelism overhead multiplier based on TP size
+- Dynamic batch size adjustment based on available memory
+
+## Memory Profile Analysis
+Implements memory usage pattern detection:
+- Growth patterns using linear regression 
+- Leak detection with configurable thresholds
+- Fragmentation analysis through peak-valley ratios
+- Spike detection using statistical analysis
+
+## Relevant Files
+- optimizer.py: Core optimization algorithms
+- gpu_info.py: Hardware capability detection
+- memory/profiler.py: Memory pattern analysis
+- gpu/info.py: GPU resource management
 
 $END$
