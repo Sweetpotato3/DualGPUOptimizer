@@ -1,46 +1,82 @@
 #!/usr/bin/env python3
 """
-DualGPUOptimizer Qt Launcher
-
-This script launches the Qt version of DualGPUOptimizer with proper
-environment setup and command-line argument handling.
+Run script for DualGPUOptimizer Qt Edition
 """
-
-import sys
-import os
 import argparse
 import logging
-from datetime import datetime
+import os
+import sys
+from pathlib import Path
 
 def setup_logging(verbose=False):
-    """Configure logging for the application."""
+    """Set up logging configuration"""
     # Create logs directory if it doesn't exist
-    os.makedirs('logs', exist_ok=True)
+    log_dir = Path("logs")
+    log_dir.mkdir(exist_ok=True)
     
-    # Set up file handler
-    log_file = os.path.join('logs', f'dualgpuopt_qt_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+    # Generate log file name with timestamp
+    import datetime
+    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    log_file = log_dir / f"dualgpuopt_qt_{timestamp}.log"
     
     # Configure logging
     log_level = logging.DEBUG if verbose else logging.INFO
-    logging.basicConfig(
-        level=log_level,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_file),
-            logging.StreamHandler()
-        ]
-    )
     
-    logger = logging.getLogger('DualGPUOptimizer')
+    logger = logging.getLogger("DualGPUOptimizer")
+    logger.setLevel(log_level)
+    
+    # Add file handler
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setLevel(log_level)
+    
+    # Add console handler
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(log_level)
+    
+    # Create formatter and add to handlers
+    formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    file_handler.setFormatter(formatter)
+    console_handler.setFormatter(formatter)
+    
+    # Add handlers to logger
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+    
     logger.info(f"Log file created at: {log_file}")
+    
     return logger
 
 def parse_args():
-    """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description='DualGPUOptimizer Qt Edition')
-    parser.add_argument('--mock', action='store_true', help='Use mock GPU data')
-    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
+    """Parse command-line arguments"""
+    parser = argparse.ArgumentParser(description="DualGPUOptimizer Qt Edition")
+    parser.add_argument("--mock", action="store_true", help="Use mock GPU data")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
+    
     return parser.parse_args()
+
+def ensure_required_files():
+    """Ensure all required directories and files exist"""
+    # Create Qt directory if it doesn't exist
+    qt_dir = Path("dualgpuopt/qt")
+    qt_dir.mkdir(exist_ok=True)
+    
+    # Required files
+    required_files = [
+        "dualgpuopt/qt/__init__.py",
+        "dualgpuopt/qt/app_window.py", 
+        "dualgpuopt/qt/dashboard_tab.py",
+        "dualgpuopt/qt/launcher_tab.py",
+        "dualgpuopt/qt/optimizer_tab.py",
+        "dualgpuopt/qt/system_tray.py"
+    ]
+    
+    # Check each file
+    missing_files = []
+    for file_path in required_files:
+        if not Path(file_path).exists():
+            missing_files.append(file_path)
+    
+    return missing_files
 
 def main():
     """Main entry point for the application."""
@@ -50,6 +86,14 @@ def main():
     # Set up logging
     logger = setup_logging(args.verbose)
     logger.info("Starting DualGPUOptimizer Qt Edition")
+    
+    # Check for required files
+    missing_files = ensure_required_files()
+    if missing_files:
+        logger.error(f"Missing required files: {missing_files}")
+        print(f"Error: The following required files are missing: {missing_files}")
+        print("Please make sure all Qt implementation files are present.")
+        return 1
     
     # Configure environment variables
     if args.mock:

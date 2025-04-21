@@ -5,10 +5,8 @@ Build script with custom hooks to override built-in torch hook.
 import os
 import subprocess
 import sys
-import site
 from pathlib import Path
 import shutil
-import glob
 
 # Increase Python's recursion limit for analyzing deep modules
 sys.setrecursionlimit(5000)
@@ -111,7 +109,7 @@ def create_spec_file(hooks_dir, torch_dlls, nvml_path, assets_dir, presets_dir, 
     spec_path = Path("DualGPUOptimizer_full.spec")
 
     # Format the binaries and data for the spec file
-    binaries_str = f"[('C:\\\\Windows\\\\System32\\\\nvml.dll', '.')]"
+    binaries_str = "[('C:\\\\Windows\\\\System32\\\\nvml.dll', '.')]"
     for dll_path, target_dir in torch_dlls:
         binaries_str = binaries_str[:-1] + f", (r'{dll_path}', '{target_dir}')]"
 

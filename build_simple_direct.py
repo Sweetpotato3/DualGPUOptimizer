@@ -5,9 +5,7 @@ Simple direct build script for DualGPUOptimizer.
 import os
 import subprocess
 import sys
-import glob
 from pathlib import Path
-import shutil
 
 def main():
     """

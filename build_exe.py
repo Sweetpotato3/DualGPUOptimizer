@@ -4,17 +4,18 @@ Build script for DualGPUOptimizer
 Creates an executable package using PyInstaller
 """
 
-import os
-import sys
 import shutil
 import subprocess
+import sys
 from pathlib import Path
+
 
 def run_command(cmd):
     """Run a command and print output"""
     print(f"Running: {cmd}")
     process = subprocess.run(cmd, shell=True, check=False)
     return process.returncode == 0
+
 
 def create_bootstrap_file():
     """Create a bootstrap file to ensure the app starts in the correct directory"""
@@ -41,20 +42,17 @@ main()
     print("Created bootstrap.py file")
     return True
 
+
 def install_dependencies():
     """Install required dependencies for the build"""
-    dependencies = [
-        "pyinstaller",
-        "pillow",
-        "ttkthemes",
-        "pynvml"
-    ]
+    dependencies = ["pyinstaller", "pillow", "ttkthemes", "pynvml"]
 
     for dep in dependencies:
         print(f"Ensuring {dep} is installed...")
         run_command(f"pip install {dep}")
 
     return True
+
 
 def build_executable():
     """Build the executable package"""
@@ -67,7 +65,10 @@ def build_executable():
     install_dependencies()
 
     # Generate icons if needed
-    if not (Path("dualgpuopt/resources/icon.ico").exists() and Path("dualgpuopt/resources/icon.png").exists()):
+    if not (
+        Path("dualgpuopt/resources/icon.ico").exists()
+        and Path("dualgpuopt/resources/icon.png").exists()
+    ):
         print("Generating application icons...")
         if Path("create_icon.py").exists():
             run_command("python create_icon.py")
@@ -141,7 +142,7 @@ def build_executable():
         "--name=DualGPUOptimizer",
         "--windowed",
         "--clean",
-        *data_args
+        *data_args,
     ]
 
     if icon_arg:
@@ -174,13 +175,16 @@ def build_executable():
         print("\n❌ Build failed: PyInstaller returned an error")
         return False
 
+
 if __name__ == "__main__":
     print("=== DualGPUOptimizer Build Script ===\n")
     if build_executable():
         print("\nDone! The executable can be found in the dist/DualGPUOptimizer directory.")
         print("To ensure the icon displays correctly in Windows Explorer:")
         print("1. Try renaming the executable and changing it back")
-        print("2. If that doesn't work, clear the Windows icon cache by running 'ie4uinit.exe -show'")
+        print(
+            "2. If that doesn't work, clear the Windows icon cache by running 'ie4uinit.exe -show'"
+        )
     else:
         print("\nBuild failed. Please check the errors above.")
         sys.exit(1)

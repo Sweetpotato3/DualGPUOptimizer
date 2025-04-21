@@ -1,9 +1,13 @@
+"""
+System tray integration for DualGPUOptimizer
+"""
 import logging
 import os
 from typing import Optional, List, Dict, Any, Callable
+
 from PySide6.QtWidgets import QSystemTrayIcon, QMenu, QAction
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtCore import Qt, Signal, QTimer, QSize
+from PySide6.QtCore import Qt, Signal, QTimer, QSize, QObject
 
 logger = logging.getLogger('DualGPUOptimizer')
 
@@ -15,32 +19,41 @@ class TrayNotification:
         self.message = message
         self.icon_type = icon_type
 
-
-class GPUTrayManager:
+class GPUTrayManager(QObject):
     """Manages the system tray icon and notifications for the application"""
     
     # Signals
     show_app_requested = Signal()
     exit_app_requested = Signal()
-    launch_model_requested = Signal(str)  # model name
+    launch_model_requested = Signal(str)
+    reset_gpu_memory_requested = Signal()
     
-    def __init__(self, settings: Optional[Dict[str, Any]] = None):
-        self.logger = logging.getLogger('DualGPUOptimizer')
-        self.settings = settings or {}
-        self.is_visible = True
+    def __init__(self, parent=None):
+        """Initialize the tray manager
+        
+        Args:
+            parent: Parent QObject
+        """
+        super().__init__(parent)
+        
         self.tray_icon = None
         self.context_menu = None
-        self.notification_queue: List[TrayNotification] = []
-        self.notification_timer = QTimer()
+        self.launch_menu = None
+        self.is_visible = False
+        
+        # Queue for notifications
+        self.notification_queue = []
+        self.is_showing_notification = False
+        
+        # Setup notification timer
+        self.notification_timer = QTimer(self)
         self.notification_timer.timeout.connect(self._process_notification_queue)
-        self.notification_timer.setInterval(3000)  # 3 seconds between notifications
+        self.notification_timer.setInterval(3000)  # 3 second delay between notifications
         
         # Initialize tray icon
         self._init_tray()
-        
-        self.logger.info("System tray manager initialized")
     
-    def _init_tray(self) -> None:
+    def _init_tray(self):
         """Initialize the system tray icon and menu"""
         # Create context menu
         self.context_menu = QMenu()
@@ -60,7 +73,7 @@ class GPUTrayManager:
         
         # Quick Actions
         reset_action = QAction("Reset GPU Memory", self.context_menu)
-        reset_action.triggered.connect(lambda: self._reset_gpu_memory())
+        reset_action.triggered.connect(lambda: self.reset_gpu_memory_requested.emit())
         self.context_menu.addAction(reset_action)
         
         self.context_menu.addSeparator()
@@ -82,155 +95,135 @@ class GPUTrayManager:
         
         # Show the tray icon
         self.tray_icon.show()
+        self.is_visible = True
+        
+        logger.info("System tray initialized")
     
-    def _set_tray_icon(self) -> None:
-        """Set the tray icon from available resources"""
+    def _set_tray_icon(self):
+        """Set the system tray icon"""
+        # Check for icon files
         icon_paths = [
-            os.path.join(os.path.dirname(__file__), '..', 'resources', 'icon.png'),
-            os.path.join(os.path.dirname(__file__), '..', '..', 'resources', 'icon.png'),
-            os.path.join('resources', 'icon.png')
+            "dualgpuopt/assets/icon.ico",
+            "dualgpuopt/assets/icon.png",
+            "dualgpuopt/resources/icon.ico",
+            "dualgpuopt/resources/icon.png",
         ]
         
-        for icon_path in icon_paths:
-            if os.path.exists(icon_path):
-                self.logger.info(f"Using icon at: {icon_path}")
+        for path in icon_paths:
+            if os.path.exists(path):
                 try:
-                    self.tray_icon.setIcon(QIcon(icon_path))
-                    self.tray_icon.setToolTip("DualGPUOptimizer")
+                    icon = QIcon(path)
+                    self.tray_icon.setIcon(icon)
+                    logger.info(f"Set tray icon from {path}")
                     return
                 except Exception as e:
-                    self.logger.warning(f"Failed to set tray icon: {e}")
+                    logger.warning(f"Failed to set tray icon from {path}: {e}")
         
-        # Fallback: create a simple colored icon
-        self.logger.warning("No tray icon found, using fallback")
-        pixmap = QPixmap(QSize(32, 32))
-        pixmap.fill(Qt.transparent)
-        icon = QIcon(pixmap)
-        self.tray_icon.setIcon(icon)
-        self.tray_icon.setToolTip("DualGPUOptimizer")
+        # If no icon file is found, create a basic icon
+        self._create_basic_icon()
     
-    def _icon_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
-        """Handle tray icon activation"""
+    def _create_basic_icon(self):
+        """Create a basic icon when no icon file is available"""
+        try:
+            # Create a simple colored square icon
+            pixmap = QPixmap(QSize(64, 64))
+            pixmap.fill(Qt.darkMagenta)
+            icon = QIcon(pixmap)
+            self.tray_icon.setIcon(icon)
+            logger.info("Created basic tray icon")
+        except Exception as e:
+            logger.error(f"Failed to create basic tray icon: {e}")
+    
+    def _icon_activated(self, reason):
+        """Handle tray icon activation
+        
+        Args:
+            reason: The activation reason
+        """
         if reason == QSystemTrayIcon.DoubleClick:
+            # Show the main window
             self.show_app_requested.emit()
     
-    def update_settings(self, settings: Dict[str, Any]) -> None:
-        """Update settings for the tray manager"""
-        self.settings = settings
-    
-    def show_notification(self, title: str, message: str, 
-                          icon_type: QSystemTrayIcon.MessageIcon = QSystemTrayIcon.Information,
-                          show_immediately: bool = False) -> None:
-        """Show a notification from the tray icon
+    def show_notification(self, title: str, message: str, icon_type: QSystemTrayIcon.MessageIcon = QSystemTrayIcon.Information, show_immediately: bool = False):
+        """Show a notification in the system tray
         
         Args:
             title: Notification title
             message: Notification message
-            icon_type: Icon type (Information, Warning, Critical)
-            show_immediately: If True, show immediately; otherwise queue
+            icon_type: Type of notification icon
+            show_immediately: Whether to show immediately, bypassing the queue
         """
-        if not self.tray_icon.supportsMessages():
-            self.logger.warning("System tray notifications not supported")
-            return
-        
         notification = TrayNotification(title, message, icon_type)
         
-        if show_immediately:
+        if show_immediately and self.tray_icon and not self.is_showing_notification:
             self._show_notification(notification)
         else:
+            # Add to queue
             self.notification_queue.append(notification)
             
-            # Start the timer if not already running
+            # Start timer if not already running
             if not self.notification_timer.isActive():
                 self.notification_timer.start()
     
-    def _show_notification(self, notification: TrayNotification) -> None:
-        """Show a single notification"""
+    def _show_notification(self, notification: TrayNotification):
+        """Show a notification
+        
+        Args:
+            notification: The notification to show
+        """
+        if not self.tray_icon:
+            logger.warning("Cannot show notification: no tray icon")
+            return
+        
+        self.is_showing_notification = True
         self.tray_icon.showMessage(
             notification.title,
             notification.message,
             notification.icon_type,
-            5000  # Display for 5 seconds
+            3000  # Show for 3 seconds
         )
-    
-    def _process_notification_queue(self) -> None:
-        """Process the next notification in the queue"""
-        if self.notification_queue:
-            notification = self.notification_queue.pop(0)
-            self._show_notification(notification)
         
-        # Stop timer if queue is empty
+    def _process_notification_queue(self):
+        """Process pending notifications in the queue"""
         if not self.notification_queue:
+            # Stop timer if queue is empty
             self.notification_timer.stop()
+            self.is_showing_notification = False
+            return
+        
+        # Get the next notification
+        notification = self.notification_queue.pop(0)
+        self._show_notification(notification)
     
-    def update_metrics(self, metrics_list: List[Dict[str, Any]]) -> None:
-        """Update tray tooltip with current GPU metrics
+    def update_metrics(self, metrics: List[Dict[str, Any]]):
+        """Update metrics for display in tooltip
         
         Args:
-            metrics_list: List of GPU metrics dicts
+            metrics: List of GPU metrics dictionaries
         """
         if not self.tray_icon:
             return
         
-        # Create tooltip text with formatted metrics
-        tooltip = "DualGPUOptimizer\n"
+        # Create tooltip with GPU metrics
+        tooltip = "DualGPUOptimizer\n\n"
         
-        for i, metrics in enumerate(metrics_list):
-            name = metrics.get("name", f"GPU {i}")
-            mem_used = metrics.get("memory_used", 0)
-            mem_total = metrics.get("memory_total", 1)
-            mem_percent = (mem_used / mem_total) * 100 if mem_total > 0 else 0
-            util = metrics.get("utilization", 0)
-            temp = metrics.get("temperature", 0)
+        for i, gpu in enumerate(metrics):
+            name = gpu.get("name", f"GPU {i}")
+            util = gpu.get("utilization", 0)
+            mem_used = gpu.get("memory_used", 0)
+            mem_total = gpu.get("memory_total", 1)
+            temp = gpu.get("temperature", 0)
             
-            tooltip += f"\n{name}:\n"
-            tooltip += f"Memory: {mem_used}/{mem_total} MB ({mem_percent:.1f}%)\n"
-            tooltip += f"Util: {util}%, Temp: {temp}°C\n"
+            # Calculate memory percentage
+            mem_percent = (mem_used / mem_total) * 100 if mem_total > 0 else 0
+            
+            tooltip += f"{name}:\n"
+            tooltip += f"  Util: {util}%  Temp: {temp}°C\n"
+            tooltip += f"  Mem: {mem_used}/{mem_total} MB ({mem_percent:.1f}%)\n\n"
         
         self.tray_icon.setToolTip(tooltip)
-        
-        # Check for temperature alerts
-        if self.settings.get("notify_temperature", True):
-            threshold = self.settings.get("temperature_threshold", 80)
-            for i, metrics in enumerate(metrics_list):
-                temp = metrics.get("temperature", 0)
-                if temp >= threshold:
-                    self.show_notification(
-                        "Temperature Warning",
-                        f"GPU {i} temperature is {temp}°C (threshold: {threshold}°C)",
-                        QSystemTrayIcon.Warning
-                    )
-        
-        # Check for memory alerts
-        if self.settings.get("notify_memory", True):
-            threshold = self.settings.get("memory_threshold", 90)
-            for i, metrics in enumerate(metrics_list):
-                mem_used = metrics.get("memory_used", 0)
-                mem_total = metrics.get("memory_total", 1)
-                mem_percent = (mem_used / mem_total) * 100 if mem_total > 0 else 0
-                
-                if mem_percent >= threshold:
-                    self.show_notification(
-                        "Memory Warning",
-                        f"GPU {i} memory usage is {mem_percent:.1f}% (threshold: {threshold}%)",
-                        QSystemTrayIcon.Warning
-                    )
     
-    def _reset_gpu_memory(self) -> None:
-        """Reset GPU memory from tray icon"""
-        try:
-            import torch
-            torch.cuda.empty_cache()
-            self.show_notification("Memory Reset", "GPU memory cache has been reset", QSystemTrayIcon.Information, True)
-            self.logger.info("Reset GPU memory from tray icon")
-        except ImportError:
-            self.show_notification("Error", "PyTorch not available for memory reset", QSystemTrayIcon.Warning, True)
-            self.logger.warning("PyTorch not available for memory reset (tray)")
-        except Exception as e:
-            self.show_notification("Error", f"Failed to reset GPU memory: {e}", QSystemTrayIcon.Critical, True)
-            self.logger.error(f"Error resetting GPU memory from tray: {e}")
-    
-    def _update_launch_menu(self, models: List[str]) -> None:
+    def _update_launch_menu(self, models: List[str]):
         """Update the launch model submenu with available models
         
         Args:
@@ -251,7 +244,7 @@ class GPUTrayManager:
             model_action.triggered.connect(lambda checked=False, m=model: self.launch_model_requested.emit(m))
             self.launch_menu.addAction(model_action)
     
-    def update_available_models(self, models: List[str]) -> None:
+    def update_available_models(self, models: List[str]):
         """Update available models in the launch menu
         
         Args:
@@ -259,7 +252,7 @@ class GPUTrayManager:
         """
         self._update_launch_menu(models)
     
-    def set_visible(self, visible: bool) -> None:
+    def set_visible(self, visible: bool):
         """Set visibility of the tray icon
         
         Args:
@@ -272,7 +265,7 @@ class GPUTrayManager:
                 self.tray_icon.hide()
             self.is_visible = visible
     
-    def cleanup(self) -> None:
+    def cleanup(self):
         """Clean up resources used by the tray icon"""
         if self.notification_timer.isActive():
             self.notification_timer.stop()

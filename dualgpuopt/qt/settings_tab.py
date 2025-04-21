@@ -1,3 +1,7 @@
+"""
+Settings tab for DualGPUOptimizer Qt implementation.
+Provides configuration options for the application.
+"""
 import logging
 import json
 import os
@@ -5,11 +9,17 @@ from typing import Dict, Any, Optional
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                               QPushButton, QComboBox, QCheckBox, QFrame,
                               QFormLayout, QSpinBox, QTabWidget, QFileDialog,
-                              QMessageBox, QSpacerItem, QSizePolicy)
+                              QMessageBox, QSpacerItem, QSizePolicy, QGroupBox)
 from PySide6.QtCore import Qt, Signal, Slot, QSettings
 from PySide6.QtGui import QFont, QIcon, QColor
 
-logger = logging.getLogger('DualGPUOptimizer')
+# Import config service
+try:
+    from dualgpuopt.services.config_service import get_config_service
+except ImportError:
+    get_config_service = None
+
+logger = logging.getLogger('DualGPUOptimizer.Settings')
 
 # Default settings
 DEFAULT_SETTINGS = {
@@ -33,47 +43,49 @@ THEMES = [
 ]
 
 class SettingsManager:
-    """Manages application settings persistence"""
+    """Manages settings storage and retrieval"""
     
     def __init__(self):
-        self.settings = QSettings("DualGPUOptimizer", "Settings")
-        self.current_settings = self._load_settings()
-        
-    def _load_settings(self) -> Dict[str, Any]:
-        """Load settings from QSettings"""
-        settings = DEFAULT_SETTINGS.copy()
-        
-        # Load each setting
-        for key in DEFAULT_SETTINGS:
-            if self.settings.contains(key):
-                value = self.settings.value(key)
-                
-                # Convert string to bool if needed
-                if isinstance(DEFAULT_SETTINGS[key], bool) and isinstance(value, str):
-                    value = value.lower() in ("true", "1", "yes")
-                
-                # Convert string to int if needed
-                if isinstance(DEFAULT_SETTINGS[key], int) and isinstance(value, str):
-                    value = int(value)
-                    
-                settings[key] = value
-                
-        return settings
+        """Initialize settings manager"""
+        self.config_service = get_config_service() if get_config_service else None
+        self._default_settings = {
+            "minimize_to_tray": True,
+            "start_with_system": False,
+            "check_for_updates": True,
+            "poll_interval": 1000,
+            "temperature_alert": 80,
+            "memory_alert": 90,
+            "theme": "dark",
+        }
     
-    def save_settings(self, settings: Dict[str, Any]) -> None:
-        """Save settings to QSettings"""
-        self.current_settings = settings
-        
-        # Save each setting
-        for key, value in settings.items():
-            self.settings.setValue(key, value)
-            
-        self.settings.sync()
-        logger.info("Settings saved successfully")
-        
     def get_settings(self) -> Dict[str, Any]:
-        """Get current settings"""
-        return self.current_settings
+        """Get current settings
+        
+        Returns:
+            Dictionary of settings
+        """
+        if self.config_service:
+            settings = self.config_service.get("settings", {})
+            # Apply defaults for missing settings
+            for key, value in self._default_settings.items():
+                if key not in settings:
+                    settings[key] = value
+            return settings
+        return self._default_settings
+    
+    def save_settings(self, settings: Dict[str, Any]) -> bool:
+        """Save settings
+        
+        Args:
+            settings: Settings dictionary
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        if self.config_service:
+            self.config_service.set("settings", settings)
+            return self.config_service.save()
+        return False
 
 
 class SettingsSection(QFrame):
@@ -329,104 +341,166 @@ class PathSettings(SettingsSection):
 
 
 class SettingsTab(QWidget):
-    """Settings tab allowing configuration of application preferences"""
+    """Settings tab for application configuration"""
     
-    settings_applied = Signal(dict)
+    # Signals
+    settings_applied = Signal(dict)  # Emitted when settings are applied
     
-    def __init__(self):
-        super().__init__()
-        self.logger = logging.getLogger('DualGPUOptimizer')
-        self.logger.info("Initializing Settings tab")
+    def __init__(self, parent: Optional[QWidget] = None):
+        """Initialize the settings tab
+        
+        Args:
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        
+        # Create settings manager
         self.settings_manager = SettingsManager()
-        self.current_settings = self.settings_manager.get_settings()
-        self.setup_ui()
-        self.apply_settings(self.current_settings)
+        
+        # Get current settings
+        self.settings = self.settings_manager.get_settings()
+        
+        # Setup UI
+        self._setup_ui()
+        
+        # Load current settings
+        self._load_settings()
     
-    def setup_ui(self):
+    def _setup_ui(self):
+        """Set up the UI components"""
         # Main layout
         main_layout = QVBoxLayout(self)
-        main_layout.setSpacing(16)
-        main_layout.setContentsMargins(16, 16, 16, 16)
-        
-        # Header
-        header_layout = QHBoxLayout()
         
         # Title
-        title = QLabel("Settings")
-        title_font = QFont()
-        title_font.setPointSize(16)
+        title_label = QLabel("Settings")
+        title_font = title_label.font()
         title_font.setBold(True)
-        title.setFont(title_font)
-        header_layout.addWidget(title)
+        title_font.setPointSize(title_font.pointSize() + 2)
+        title_label.setFont(title_font)
+        main_layout.addWidget(title_label)
         
-        # Spacer
-        header_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        # General settings group
+        general_group = QGroupBox("General Settings")
+        general_layout = QFormLayout(general_group)
         
-        main_layout.addLayout(header_layout)
+        # Minimize to tray
+        self.minimize_checkbox = QCheckBox("Minimize to tray when closed")
+        general_layout.addRow("", self.minimize_checkbox)
         
-        # Description label
-        desc_label = QLabel("Configure application preferences and behavior")
-        desc_label.setStyleSheet("color: #A0A0A0;")
-        main_layout.addWidget(desc_label)
+        # Start with system
+        self.start_with_system = QCheckBox("Start with system")
+        general_layout.addRow("", self.start_with_system)
         
-        # Settings sections
-        self.appearance_settings = AppearanceSettings(self)
-        main_layout.addWidget(self.appearance_settings)
+        # Check for updates
+        self.check_updates = QCheckBox("Check for updates on startup")
+        general_layout.addRow("", self.check_updates)
         
-        self.monitoring_settings = MonitoringSettings(self)
-        main_layout.addWidget(self.monitoring_settings)
+        # Polling interval
+        general_layout.addRow("Polling Interval (ms):", QLabel(""))
+        self.poll_interval = QSpinBox()
+        self.poll_interval.setRange(500, 5000)
+        self.poll_interval.setSingleStep(100)
+        self.poll_interval.setValue(1000)
+        general_layout.addRow("", self.poll_interval)
         
-        self.path_settings = PathSettings(self)
-        main_layout.addWidget(self.path_settings)
+        main_layout.addWidget(general_group)
+        
+        # Alert settings group
+        alert_group = QGroupBox("Alert Settings")
+        alert_layout = QFormLayout(alert_group)
+        
+        # Temperature alert
+        alert_layout.addRow("Temperature Alert (°C):", QLabel(""))
+        self.temp_alert = QSpinBox()
+        self.temp_alert.setRange(60, 100)
+        self.temp_alert.setValue(80)
+        alert_layout.addRow("", self.temp_alert)
+        
+        # Memory alert
+        alert_layout.addRow("Memory Usage Alert (%):", QLabel(""))
+        self.memory_alert = QSpinBox()
+        self.memory_alert.setRange(50, 100)
+        self.memory_alert.setValue(90)
+        alert_layout.addRow("", self.memory_alert)
+        
+        main_layout.addWidget(alert_group)
+        
+        # Appearance settings group
+        appearance_group = QGroupBox("Appearance")
+        appearance_layout = QFormLayout(appearance_group)
+        
+        # Theme selection
+        appearance_layout.addRow("Theme:", QLabel(""))
+        self.theme_combo = QComboBox()
+        self.theme_combo.addItems(["Dark", "Light"])
+        appearance_layout.addRow("", self.theme_combo)
+        
+        main_layout.addWidget(appearance_group)
         
         # Buttons layout
         buttons_layout = QHBoxLayout()
-        buttons_layout.setSpacing(8)
         
-        buttons_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
-        
-        self.reset_button = QPushButton("Reset to Defaults")
-        self.reset_button.clicked.connect(self._reset_to_defaults)
-        buttons_layout.addWidget(self.reset_button)
-        
+        # Apply button
         self.apply_button = QPushButton("Apply")
         self.apply_button.clicked.connect(self._apply_settings)
         buttons_layout.addWidget(self.apply_button)
         
+        # Reset button
+        self.reset_button = QPushButton("Reset to Defaults")
+        self.reset_button.clicked.connect(self._reset_settings)
+        buttons_layout.addWidget(self.reset_button)
+        
         main_layout.addLayout(buttons_layout)
         
-        self.logger.info("Settings UI setup complete")
-    
-    def apply_settings(self, settings: Dict[str, Any]) -> None:
-        """Apply settings to all sections"""
-        self.appearance_settings.apply_settings(settings)
-        self.monitoring_settings.apply_settings(settings)
-        self.path_settings.apply_settings(settings)
-    
-    def _reset_to_defaults(self) -> None:
-        """Reset all settings to defaults"""
-        confirmation = QMessageBox.question(
-            self, "Reset Settings", 
-            "Are you sure you want to reset all settings to defaults?",
-            QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
+        # Status label
+        self.status_label = QLabel("")
+        main_layout.addWidget(self.status_label)
         
-        if confirmation == QMessageBox.Yes:
-            self.apply_settings(DEFAULT_SETTINGS)
-            self.logger.info("Settings reset to defaults")
+        # Add stretch to push everything to the top
+        main_layout.addStretch(1)
     
-    def _apply_settings(self) -> None:
-        """Apply and save current settings"""
-        # Collect settings from all sections
-        settings = {}
-        settings.update(self.appearance_settings.get_settings())
-        settings.update(self.monitoring_settings.get_settings())
-        settings.update(self.path_settings.get_settings())
+    def _load_settings(self):
+        """Load current settings into UI"""
+        # General settings
+        self.minimize_checkbox.setChecked(self.settings.get("minimize_to_tray", True))
+        self.start_with_system.setChecked(self.settings.get("start_with_system", False))
+        self.check_updates.setChecked(self.settings.get("check_for_updates", True))
+        self.poll_interval.setValue(self.settings.get("poll_interval", 1000))
+        
+        # Alert settings
+        self.temp_alert.setValue(self.settings.get("temperature_alert", 80))
+        self.memory_alert.setValue(self.settings.get("memory_alert", 90))
+        
+        # Appearance settings
+        theme = self.settings.get("theme", "dark")
+        self.theme_combo.setCurrentText("Dark" if theme == "dark" else "Light")
+    
+    def _apply_settings(self):
+        """Apply settings from UI"""
+        # Update settings dictionary
+        self.settings["minimize_to_tray"] = self.minimize_checkbox.isChecked()
+        self.settings["start_with_system"] = self.start_with_system.isChecked()
+        self.settings["check_for_updates"] = self.check_updates.isChecked()
+        self.settings["poll_interval"] = self.poll_interval.value()
+        self.settings["temperature_alert"] = self.temp_alert.value()
+        self.settings["memory_alert"] = self.memory_alert.value()
+        self.settings["theme"] = "dark" if self.theme_combo.currentText() == "Dark" else "light"
         
         # Save settings
-        self.settings_manager.save_settings(settings)
+        if self.settings_manager.save_settings(self.settings):
+            self.status_label.setText("Settings saved successfully")
+        else:
+            self.status_label.setText("Failed to save settings")
         
-        # Emit signal with new settings
-        self.settings_applied.emit(settings)
+        # Emit signal with settings
+        self.settings_applied.emit(self.settings)
+    
+    def _reset_settings(self):
+        """Reset settings to defaults"""
+        # Reset settings to defaults
+        self.settings = self.settings_manager._default_settings.copy()
         
-        QMessageBox.information(self, "Settings Saved", "Settings have been saved successfully.") 
+        # Update UI
+        self._load_settings()
+        
+        self.status_label.setText("Settings reset to defaults") 

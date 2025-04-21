@@ -3,18 +3,20 @@
 Build script for creating standalone executable of DualGPUOptimizer
 Uses PyInstaller to package the application
 """
+import argparse
 import os
-import sys
-import subprocess
 import platform
 import shutil
-import argparse
+import subprocess
+import sys
 from pathlib import Path
+
 
 def check_pyinstaller():
     """Check if PyInstaller is installed, install if not"""
     try:
         import PyInstaller
+
         print("PyInstaller is already installed")
         return True
     except ImportError:
@@ -27,6 +29,7 @@ def check_pyinstaller():
             print("Failed to install PyInstaller")
             return False
 
+
 def get_icon_path():
     """Get the path to the application icon"""
     # Check different possible locations
@@ -34,7 +37,7 @@ def get_icon_path():
         "dualgpuopt/resources/icon.ico",
         "dualgpuopt/resources/icon.png",
         "dualgpuopt/assets/icon.ico",
-        "dualgpuopt/assets/icon.png"
+        "dualgpuopt/assets/icon.png",
     ]
 
     for path in icon_paths:
@@ -43,6 +46,7 @@ def get_icon_path():
             if platform.system() == "Windows" and path.endswith(".png"):
                 try:
                     from PIL import Image
+
                     ico_path = path.replace(".png", ".ico")
                     Image.open(path).save(ico_path)
                     return ico_path
@@ -54,6 +58,7 @@ def get_icon_path():
     # No icon found
     print("No application icon found")
     return None
+
 
 def copy_runtime_dependencies():
     """Copy runtime dependencies to include with the executable"""
@@ -72,6 +77,7 @@ def copy_runtime_dependencies():
     config_dir.mkdir(exist_ok=True)
 
     return runtime_dir
+
 
 def build_executable(args):
     """Build the executable using PyInstaller"""
@@ -103,14 +109,12 @@ def build_executable(args):
         "--hidden-import=tkinter",
         "--hidden-import=dualgpuopt.gpu",
         "--hidden-import=dualgpuopt.ui",
-        "--hidden-import=dualgpuopt.error_handler"
+        "--hidden-import=dualgpuopt.error_handler",
     ]
     additional_options.extend(hidden_imports)
 
     # Add data files
-    data_files = [
-        f"--add-data={runtime_dir};runtime_dependencies"
-    ]
+    data_files = [f"--add-data={runtime_dir};runtime_dependencies"]
     additional_options.extend(data_files)
 
     # Add exclusions to reduce size
@@ -120,7 +124,7 @@ def build_executable(args):
         "--exclude-module=PySide6",
         "--exclude-module=PyQt5",
         "--exclude-module=PyQt6",
-        "--exclude-module=IPython"
+        "--exclude-module=IPython",
     ]
     additional_options.extend(excludes)
 
@@ -140,14 +144,7 @@ def build_executable(args):
         additional_options.append("--noconsole")
 
     # Build the command
-    command = [
-        sys.executable,
-        "-m",
-        "PyInstaller",
-        *icon_option,
-        *additional_options,
-        entry_point
-    ]
+    command = [sys.executable, "-m", "PyInstaller", *icon_option, *additional_options, entry_point]
 
     # Print command for debugging
     print("Running command:", " ".join(command))
@@ -160,6 +157,7 @@ def build_executable(args):
     except subprocess.CalledProcessError as e:
         print(f"Build failed: {e}")
         return False
+
 
 def clean_build_files():
     """Clean up build artifacts"""
@@ -183,18 +181,27 @@ def clean_build_files():
     # Don't remove the dist directory as it contains the built executable
     print("Clean up completed")
 
+
 def main():
     """Main entry point"""
     parser = argparse.ArgumentParser(description="Build DualGPUOptimizer executable")
 
-    parser.add_argument("--direct", action="store_true",
-                        help="Build the direct app version (run_direct_app.py)")
-    parser.add_argument("--onefile", action="store_true",
-                        help="Build a single executable file (default is directory)")
-    parser.add_argument("--console", action="store_true",
-                        help="Include console window for debugging (default is hidden)")
-    parser.add_argument("--clean", action="store_true",
-                        help="Clean build artifacts after successful build")
+    parser.add_argument(
+        "--direct", action="store_true", help="Build the direct app version (run_direct_app.py)"
+    )
+    parser.add_argument(
+        "--onefile",
+        action="store_true",
+        help="Build a single executable file (default is directory)",
+    )
+    parser.add_argument(
+        "--console",
+        action="store_true",
+        help="Include console window for debugging (default is hidden)",
+    )
+    parser.add_argument(
+        "--clean", action="store_true", help="Clean build artifacts after successful build"
+    )
 
     args = parser.parse_args()
 
@@ -206,6 +213,7 @@ def main():
         clean_build_files()
 
     return 0 if success else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

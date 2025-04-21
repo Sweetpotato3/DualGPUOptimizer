@@ -1,11 +1,12 @@
 """
-Configuration service for DualGPUOptimizer
+Configuration service for DualGPUOptimizer.
+Manages persistent storage of application settings.
 """
 import json
-import os
 import logging
+import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, Optional
 
 logger = logging.getLogger("DualGPUOpt.ConfigService")
 
@@ -20,75 +21,102 @@ except ImportError:
 
 class ConfigService:
     """Service for managing application configuration"""
-
-    def __init__(self):
-        """Initialize config service with default values"""
-        self.config = {
-            "theme": "dark_purple",
-            "gpu_layers": -1,
-            "context_size": 4096,
-            "thread_count": 8,
-            "last_model_path": "",
-            "gpu_split": "0.60,0.40"
-        }
-
-        # Config file path in user directory
-        self.config_dir = Path.home() / ".dualgpuopt"
-        self.config_file = self.config_dir / "config.json"
-
-        # Create config directory if it doesn't exist
-        self.config_dir.mkdir(exist_ok=True)
-
-        # Load configuration from file
+    
+    def __init__(self, config_dir: Optional[str] = None, config_file: str = "config.json"):
+        """Initialize the config service
+        
+        Args:
+            config_dir: Directory for config files (defaults to ~/.dualgpuopt)
+            config_file: Configuration file name
+        """
+        # Default to user home directory if not specified
+        if config_dir is None:
+            home_dir = os.path.expanduser("~")
+            config_dir = os.path.join(home_dir, ".dualgpuopt")
+        
+        self.config_dir = Path(config_dir)
+        self.config_file = self.config_dir / config_file
+        self.config: Dict[str, Any] = {}
+        
+        # Ensure config directory exists
+        self.config_dir.mkdir(exist_ok=True, parents=True)
+        
+        # Load config
         self.load()
-
-    def load(self):
-        """Load configuration from file"""
+        
+        logger.info(f"Config service initialized with config file: {self.config_file}")
+    
+    def load(self) -> bool:
+        """Load configuration from file
+        
+        Returns:
+            True if loaded successfully, False otherwise
+        """
         try:
             if self.config_file.exists():
                 with open(self.config_file, "r") as f:
-                    loaded_config = json.load(f)
-                    # Update config with loaded values
-                    self.config.update(loaded_config)
-                    logger.info(f"Loaded configuration from {self.config_file}")
+                    self.config = json.load(f)
+                logger.info(f"Loaded configuration from {self.config_file}")
+                return True
+            else:
+                logger.info(f"Config file {self.config_file} not found, using defaults")
+                self.config = {}
+                return False
         except Exception as e:
-            logger.error(f"Error loading configuration: {e}")
-
-    def save(self):
-        """Save configuration to file"""
+            logger.error(f"Error loading config: {e}")
+            self.config = {}
+            return False
+    
+    def save(self) -> bool:
+        """Save configuration to file
+        
+        Returns:
+            True if saved successfully, False otherwise
+        """
         try:
             with open(self.config_file, "w") as f:
-                json.dump(self.config, f, indent=4)
-                logger.info(f"Saved configuration to {self.config_file}")
+                json.dump(self.config, f, indent=2)
+            logger.info(f"Saved configuration to {self.config_file}")
+            return True
         except Exception as e:
-            logger.error(f"Error saving configuration: {e}")
-
-    def get(self, key, default=None):
-        """Get a configuration value
-
+            logger.error(f"Error saving config: {e}")
+            return False
+    
+    def get(self, key: str, default: Any = None) -> Any:
+        """Get configuration value
+        
         Args:
             key: Configuration key
             default: Default value if key not found
-
+        
         Returns:
             Configuration value or default
         """
         return self.config.get(key, default)
-
-    def set(self, key, value):
-        """Set a configuration value and save
-
+    
+    def set(self, key: str, value: Any) -> None:
+        """Set configuration value
+        
         Args:
             key: Configuration key
-            value: Configuration value
+            value: Value to set
         """
-        old_value = self.config.get(key)
         self.config[key] = value
-        self.save()
-        
-        # Publish configuration change event
-        self._publish_config_change(key, value, old_value)
     
+    def delete(self, key: str) -> bool:
+        """Delete configuration key
+        
+        Args:
+            key: Configuration key
+        
+        Returns:
+            True if key was deleted, False if not found
+        """
+        if key in self.config:
+            del self.config[key]
+            return True
+        return False
+
     def _publish_config_change(self, key: str, new_value: Any, old_value: Any) -> None:
         """Publish configuration change event
         
@@ -127,4 +155,15 @@ class ConfigService:
             logger.error(f"Error publishing config change event: {e}")
 
 # Singleton instance
-config_service = ConfigService()
+_config_service: Optional[ConfigService] = None
+
+def get_config_service() -> ConfigService:
+    """Get the config service singleton
+    
+    Returns:
+        Config service instance
+    """
+    global _config_service
+    if _config_service is None:
+        _config_service = ConfigService()
+    return _config_service

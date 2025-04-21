@@ -630,3 +630,34 @@ The Qt interface includes several key tabs:
    - Session statistics and analysis reports
    - CSV export functionality for external analysis
    - Inference tracking with token count recording
+
+## Quick Start
+
+To quickly get started with DualGPUOptimizer:
+
+1. **Install dependencies**:
+
+```bash
+pip install PySide6==6.5.2 pynvml psutil numpy
+```
+
+2. **Run the application**:
+
+```bash
+# With real GPU monitoring (requires NVIDIA GPUs)
+python run.py
+
+# In mock mode (no real GPUs required for testing)
+python run.py --mock
+```
+
+3. **Using the interface**:
+   - The **Dashboard** tab shows real-time GPU metrics
+   - The **Optimizer** tab calculates memory splits for models
+   - The **Launcher** tab controls model execution
+
+For developers, you can also run directly with:
+
+```bash
+python run_qt_app.py --mock --verbose
+```
