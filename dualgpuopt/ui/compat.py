@@ -8,7 +8,6 @@ import logging
 import sys
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Dict, Optional, Type, Callable
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI.Compat")

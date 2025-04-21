@@ -116,7 +116,7 @@ class TelemetryService:
         self._metrics_lock = threading.RLock()
         self._callback_lock = threading.RLock()
         self._gpu_handles: Dict[int, Any] = {}
-        
+
         # Initialize NVML if available
         self._init_nvml()
 
@@ -143,12 +143,12 @@ class TelemetryService:
             self._nvml_initialized = True
             self.gpu_count = pynvml.nvmlDeviceGetCount()
             logger.info(f"NVML initialized with {self.gpu_count} GPUs")
-            
+
             # Pre-cache GPU handles for faster access
             self._gpu_handles = {}
             for gpu_id in range(self.gpu_count):
                 self._gpu_handles[gpu_id] = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
-            
+
             self.use_mock = False
             return True
         except Exception as e:
@@ -201,12 +201,12 @@ class TelemetryService:
             pynvml.nvmlInit()
             self._nvml_initialized = True
             self.gpu_count = pynvml.nvmlDeviceGetCount()
-            
+
             # Rebuild handle cache
             self._gpu_handles = {}
             for gpu_id in range(self.gpu_count):
                 self._gpu_handles[gpu_id] = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
-                
+
             self.use_mock = False
             self._consecutive_errors = 0
             logger.info(f"NVML successfully reinitialized with {self.gpu_count} GPUs")
@@ -281,7 +281,7 @@ class TelemetryService:
 
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
-        # Create batch collection helper 
+        # Create batch collection helper
         def collect_batch_metrics(gpu_ids: List[int], current_time: float) -> Dict[int, GPUMetrics]:
             batch_metrics = {}
             for gpu_id in gpu_ids:
@@ -296,7 +296,7 @@ class TelemetryService:
                     batch_metrics[gpu_id] = self._get_mock_metrics(gpu_id, current_time, error_state=True)
                     self._consecutive_errors += 1
             return batch_metrics
-        
+
         while self.running and not self._stop_event.is_set():
             try:
                 # Collect metrics from all GPUs
@@ -306,10 +306,10 @@ class TelemetryService:
                 # Determine the number of GPUs to monitor
                 gpu_count = self.gpu_count
                 gpu_ids = list(range(gpu_count))
-                
+
                 # Batch collection for better performance
                 batch_metrics = collect_batch_metrics(gpu_ids, current_time)
-                
+
                 # Try to recover NVML if we have consecutive errors
                 if self._consecutive_errors >= 3 and not self.use_mock:
                     if self._try_reinit_nvml():
@@ -342,23 +342,23 @@ class TelemetryService:
 
             # Sleep until next collection (with cancellation support)
             self._stop_event.wait(self.poll_interval)
-            
+
     def _process_metrics_update(self, metrics: Dict[int, GPUMetrics]) -> None:
         """Process metrics update by notifying callbacks and publishing to event bus
         
         Args:
             metrics: The current metrics to distribute
         """
-        # Notify all registered callbacks with thread safety 
+        # Notify all registered callbacks with thread safety
         with self._callback_lock:
             callbacks = list(self.callbacks)  # Create a copy to avoid issues if the list changes during iteration
-        
+
         for callback in callbacks:
             try:
                 callback(metrics)
             except Exception as e:
                 logger.error(f"Error in telemetry callback: {e}")
-    
+
         # Publish metrics to the event bus system
         if event_bus_available:
             try:
@@ -374,7 +374,7 @@ class TelemetryService:
                         fan_speed=gpu_metrics.fan_speed
                     )
                     event_bus.publish_typed(metrics_event)
-                    
+
                 # Also publish a comprehensive update event with string type
                 event_bus.publish("gpu_metrics_updated", metrics)
             except Exception as e:
@@ -393,7 +393,7 @@ class TelemetryService:
         """
         if not self._nvml_initialized or self.use_mock:
             return f"NVIDIA GPU {gpu_id} (MOCK)"
-            
+
         try:
             handle = self._gpu_handles.get(gpu_id, pynvml.nvmlDeviceGetHandleByIndex(gpu_id))
             name_bytes = pynvml.nvmlDeviceGetName(handle)
@@ -422,7 +422,7 @@ class TelemetryService:
             if not handle:
                 handle = pynvml.nvmlDeviceGetHandleByIndex(gpu_id)
                 self._gpu_handles[gpu_id] = handle
-                
+
             # Get name with caching
             name = self._get_cached_gpu_name(gpu_id)
 
@@ -607,10 +607,10 @@ class TelemetryService:
         # Reset error counters
         self._consecutive_errors = 0
         self._recovery_attempts = 0
-        
+
         # Clear the handle cache
         self._gpu_handles = {}
-        
+
         # Clear LRU caches
         self._get_cached_gpu_name.cache_clear()
 

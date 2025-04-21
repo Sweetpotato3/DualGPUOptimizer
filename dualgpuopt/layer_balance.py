@@ -2,12 +2,14 @@
 Layer balancing module for distributing model layers across multiple GPUs
 """
 from __future__ import annotations
-import time, logging, json, pathlib
-from typing import Dict, List, Optional, Tuple, Any
+import time
+import logging
+import json
+import pathlib
+from typing import Dict, List, Optional, Any
 import math
 import os
-import functools
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger("DualGPUOpt.LayerBalance")
 
@@ -26,7 +28,7 @@ class LayerProfiler:
         self.cache_dir = cache_dir or os.path.join(os.path.expanduser("~"), ".dualgpuopt")
         self.profile_runs = max(3, profile_runs)  # Ensure at least 3 runs
         os.makedirs(self.cache_dir, exist_ok=True)
-        
+
         # Thread pool for parallel profiling
         self._executor = None
 
@@ -37,14 +39,14 @@ class LayerProfiler:
             # Add 1 for the main thread to handle coordination
             self._executor = ThreadPoolExecutor(max_workers=3, thread_name_prefix="LayerProfiler")
         return self._executor
-        
+
     def _cleanup_executor(self):
         """Clean up executor when done"""
         if self._executor is not None:
             self._executor.shutdown(wait=False)
             self._executor = None
 
-    def profile_layer(self, model: Any, layer_idx: int, test_ids: Any, dev: int, 
+    def profile_layer(self, model: Any, layer_idx: int, test_ids: Any, dev: int,
                      warmup: bool = False) -> float:
         """Profile a single layer's execution time
         
@@ -60,16 +62,16 @@ class LayerProfiler:
         """
         try:
             import torch
-            
+
             # Get the layer to profile
             blk = model.model.layers[layer_idx]
-            
+
             # Warmup runs
             if warmup:
                 for _ in range(2):
                     blk(test_ids)
                 return 0.0
-                
+
             # Multiple measurement runs
             layer_times = []
             for _ in range(self.profile_runs):
@@ -78,16 +80,16 @@ class LayerProfiler:
                 blk(test_ids)
                 torch.cuda.synchronize(dev)
                 layer_times.append(time.perf_counter() - t0)
-                
+
             # Discard highest and lowest if we have enough samples
             if len(layer_times) >= 4:
                 layer_times.sort()
                 avg_time = sum(layer_times[1:-1]) / len(layer_times[1:-1])
             else:
                 avg_time = sum(layer_times) / len(layer_times)
-                
+
             return avg_time
-            
+
         except Exception as e:
             logger.error(f"Error profiling layer {layer_idx}: {e}")
             # Return estimated time on error
@@ -107,7 +109,7 @@ class LayerProfiler:
         """
         try:
             import torch
-            
+
             # Resize input tensor to required sequence length
             if seq_len != dummy_ids.shape[1]:
                 if seq_len > dummy_ids.shape[1]:
@@ -119,30 +121,30 @@ class LayerProfiler:
                     test_ids = dummy_ids[:, :seq_len]
             else:
                 test_ids = dummy_ids
-                
+
             # Move to the target device
             test_ids = test_ids.to(dev)
-            
+
             # Get layer count
             n_layers = len(model.model.layers)
-            
+
             # Warm up all layers first to avoid cold start effects
             for layer_idx in range(n_layers):
                 self.profile_layer(model, layer_idx, test_ids, dev, warmup=True)
-            
+
             # Profile each layer
             layer_times = []
             for layer_idx in range(n_layers):
                 avg_time = self.profile_layer(model, layer_idx, test_ids, dev, warmup=False)
                 layer_times.append(avg_time)
-                
+
             return layer_times
-            
+
         except Exception as e:
             logger.error(f"Error profiling sequence length {seq_len}: {e}")
             # Generate mock data with a sensible pattern
             n_layers = len(model.model.layers) if hasattr(model, 'model') and hasattr(model.model, 'layers') else 32
-            
+
             # Create realistic mock data where later layers tend to be slower
             import random
             base_time = 0.001  # Base time in seconds
@@ -158,7 +160,7 @@ class LayerProfiler:
 
             return times
 
-    def profile(self, model: Any, dummy_ids: Any, dev: int, seq_lengths: List[int] = [64, 1024]) -> Dict[int, List[float]]:
+    def profile(self, model: Any, dummy_ids: Any, dev: int, seq_lengths: List[int] = None) -> Dict[int, List[float]]:
         """
         Profile execution time of each transformer layer on a specific GPU with multiple sequence lengths
 
@@ -171,9 +173,10 @@ class LayerProfiler:
         Returns:
             Dictionary mapping sequence length to list of execution times per layer
         """
-        try:
-            import torch
+        if seq_lengths is None:
+            seq_lengths = [64, 1024]
 
+        try:
             # Check for cached results
             cache_file = os.path.join(self.cache_dir, f"profile_gpu{dev}_{model.__class__.__name__}.json")
             if self.use_cache and os.path.exists(cache_file):
@@ -189,20 +192,23 @@ class LayerProfiler:
                 except Exception as e:
                     logger.warning(f"Failed to load profiling cache: {e}")
 
+            # Import torch inside function
+            import torch
+
             # Move model to the target device
             model.to(dev)
-            
+
             # Profile each sequence length in parallel (if available)
             try:
                 # Results container
                 results = {}
-                
+
                 # Run profiling for sequence lengths
                 for seq_len in seq_lengths:
                     # Profile directly
                     layer_times = self._profile_sequence_length(model, dummy_ids, dev, seq_len)
                     results[seq_len] = layer_times
-                
+
             except Exception as e:
                 logger.error(f"Error during parallel profiling: {e}")
                 # Fall back to sequential profiling
@@ -252,7 +258,7 @@ class LayerProfiler:
             import random
             return {64: [random.uniform(0.001, 0.005) for _ in range(32)],
                     1024: [random.uniform(0.005, 0.015) for _ in range(32)]}
-                    
+
         finally:
             # Clean up the executor
             self._cleanup_executor()
@@ -286,7 +292,7 @@ def balance_layers(model: Any,
     except ImportError:
         multiprocessing_available = False
         logger.warning("PyTorch multiprocessing not available")
-        
+
     try:
         import torch
         # Create dummy input for profiling (128 tokens)
@@ -294,13 +300,13 @@ def balance_layers(model: Any,
 
         # Enhanced profiling with multiple sequence lengths
         profiler = LayerProfiler()
-        
+
         # Profile both GPUs - parallelize if multiprocessing available
         if multiprocessing_available:
             logger.info("Using multiprocessing for GPU profiling")
             # Create multiprocessing context
             ctx = mp.get_context('spawn')
-            
+
             # Define profiling function for a process
             def profile_gpu(gpu_id, result_queue):
                 try:
@@ -313,34 +319,34 @@ def balance_layers(model: Any,
                 except Exception as e:
                     logger.error(f"Error in GPU {gpu_id} profiling process: {e}")
                     result_queue.put((gpu_id, None))
-            
+
             # Create queue for results
             result_queue = ctx.Queue()
-            
+
             # Start processes
             processes = []
             for gpu_id in [dev_fast, dev_slow]:
                 p = ctx.Process(target=profile_gpu, args=(gpu_id, result_queue))
                 p.start()
                 processes.append(p)
-                
+
             # Collect results
             results = {}
             for _ in range(len(processes)):
                 gpu_id, profiles = result_queue.get()
                 if profiles is not None:
                     results[gpu_id] = profiles
-                    
+
             # Wait for processes to finish
             for p in processes:
                 p.join(timeout=30)
                 if p.is_alive():
                     p.terminate()
-                    
+
             # Extract profiles
             fast_profiles = results.get(dev_fast)
             slow_profiles = results.get(dev_slow)
-            
+
             # Fall back to sequential profiling if needed
             if fast_profiles is None or slow_profiles is None:
                 logger.warning("Multiprocessing profiling failed, falling back to sequential")
@@ -472,18 +478,18 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
     for i in range(1, n_layers):
         if devices[i] != devices[i-1]:
             device_changes[i] = 1
-    
+
     # Count initial transitions
     transition_count = sum(device_changes)
-    
+
     # If 0 or 1 transitions, already optimal
     if transition_count <= 1:
         return mapping
-    
+
     # Use dynamic programming to optimize block assignments
     # Set a limit on small blocks to clean up
     MIN_BLOCK_SIZE = 3  # Minimum desirable block size
-    
+
     # Find blocks
     blocks = []
     start = 0
@@ -492,21 +498,21 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
             blocks.append((start, i-1, devices[i-1]))
             start = i
     blocks.append((start, n_layers-1, devices[n_layers-1]))
-    
-    # Optimize small blocks strategically 
+
+    # Optimize small blocks strategically
     changes_made = True
     while changes_made and len(blocks) > 1:
         changes_made = False
-        
+
         # Find small blocks
         for i in range(len(blocks)):
             start, end, device = blocks[i]
             block_size = end - start + 1
-            
+
             # Skip if block is large enough
             if block_size >= MIN_BLOCK_SIZE:
                 continue
-                
+
             # Determine if we should merge with previous or next block
             if i == 0:
                 # First block, merge with next if small
@@ -533,19 +539,19 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
                 if block_size < MIN_BLOCK_SIZE:
                     prev_size = blocks[i-1][1] - blocks[i-1][0] + 1
                     next_size = blocks[i+1][1] - blocks[i+1][0] + 1
-                    
+
                     # Prefer merging with the larger neighbor for stability
                     if prev_size >= next_size:
                         target_device = blocks[i-1][2]
                     else:
                         target_device = blocks[i+1][2]
-                        
+
                     # Update device assignments
                     for j in range(start, end+1):
                         devices[j] = target_device
                     changes_made = True
                     break
-        
+
         # Rebuild blocks if changes were made
         if changes_made:
             blocks = []
@@ -555,7 +561,7 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
                     blocks.append((start, i-1, devices[i-1]))
                     start = i
             blocks.append((start, n_layers-1, devices[n_layers-1]))
-    
+
     # Create new mapping
     optimized = {}
     for i in range(n_layers):

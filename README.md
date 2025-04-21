@@ -14,7 +14,7 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 
 ### Performance Optimizations
 
-- **Enhanced Telemetry System**: 
+- **Enhanced Telemetry System**:
   - Improved GPU metrics collection with caching and reduced lock contention
   - Parallel batch collection for faster multi-GPU monitoring
   - Optimized data distribution to UI components

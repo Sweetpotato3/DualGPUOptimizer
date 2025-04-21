@@ -74,12 +74,12 @@ class ModelParameters:
     def kv_hidden_size(self) -> int:
         """Calculate the effective hidden size for KV attention heads"""
         return self.kv_head_count * self.head_size * 2  # Both K and V
-        
+
     def __hash__(self):
         """Make ModelParameters hashable for caching"""
         return hash((
             self.name, self.context_length, self.hidden_size,
-            self.num_layers, self.num_heads, 
+            self.num_layers, self.num_heads,
             self.kv_heads if self.kv_heads is not None else -1
         ))
 
@@ -106,7 +106,7 @@ class GPUMemoryInfo:
         if self.available_memory > 1024:
             return f"{self.available_memory / 1024:.1f} GB"
         return f"{self.available_memory} MB"
-        
+
     def __hash__(self):
         """Make GPUMemoryInfo hashable for caching"""
         return hash((self.gpu_id, self.name, self.total_memory, self.available_memory, self.is_primary))
@@ -165,7 +165,7 @@ class Optimizer:
                 is_primary=False
             )
         ]
-        
+
         # Cache for optimization results
         self._memory_cache = {}
         self._context_cache = {}
@@ -185,7 +185,7 @@ class Optimizer:
         if self._cached_gpu_info and (current_time - self._last_gpu_info_time < self._cache_timeout):
             logger.debug("Using cached GPU info")
             return self._cached_gpu_info
-            
+
         try:
             gpu_data = gpu_info.query()
 
@@ -219,7 +219,7 @@ class Optimizer:
             if not gpu_info_list:
                 logger.warning("No valid GPUs found, using fallback values")
                 return self.fallback_gpus
-                
+
             # Update cache
             self._cached_gpu_info = gpu_info_list
             self._last_gpu_info_time = current_time
@@ -243,7 +243,7 @@ class Optimizer:
         cache_key = hash(model)
         if cache_key in self._memory_cache:
             return self._memory_cache[cache_key]
-            
+
         try:
             # Calculate bytes needed for one token's key and value states across all layers
             bytes_per_token = (
@@ -260,7 +260,7 @@ class Optimizer:
 
             # Safety bounds - ensure reasonable values
             mb_per_token = max(0.01, min(10.0, mb_per_token))
-            
+
             # Store in cache
             self._memory_cache[cache_key] = mb_per_token
 
@@ -288,7 +288,7 @@ class Optimizer:
         cache_key = (hash(model), available_memory, tensor_parallel_size)
         if cache_key in self._context_cache:
             return self._context_cache[cache_key]
-            
+
         try:
             # Account for tensor parallelism
             effective_memory = available_memory
@@ -319,7 +319,7 @@ class Optimizer:
 
             # Final sanity check - ensure max_context is valid
             max_context = max(recommended_context, max_context)
-            
+
             # Store in cache
             self._context_cache[cache_key] = (max_context, recommended_context)
 
@@ -344,7 +344,7 @@ class Optimizer:
         try:
             if gpus is None:
                 gpus = self.get_gpu_info()
-                
+
             # Check cache if we have a valid configuration
             gpu_tuple = tuple(hash(gpu) for gpu in gpus)
             cache_key = (hash(model), gpu_tuple)
@@ -376,7 +376,7 @@ class Optimizer:
                     max_context_length=max_context,
                     recommended_context_length=recommended_context
                 )
-                
+
                 self._split_cache[cache_key] = config
                 return config
 
@@ -392,20 +392,20 @@ class Optimizer:
                 # Convert to arrays for faster calculation
                 available_memory = np.array([gpu.available_memory for gpu in valid_gpus])
                 total_memory = np.sum(available_memory)
-                
+
                 # Calculate split ratios proportional to available memory
                 split_ratios = available_memory / total_memory
-                
+
                 # Calculate memory allocation per GPU
                 memory_per_gpu = (split_ratios * total_memory).astype(int).tolist()
                 split_ratios = split_ratios.tolist()
             else:
                 # Standard calculation without NumPy
                 total_memory = sum(gpu.available_memory for gpu in valid_gpus)
-                
+
                 # Calculate split ratios proportional to available memory
                 split_ratios = [gpu.available_memory / total_memory for gpu in valid_gpus]
-                
+
                 # Calculate memory allocation per GPU
                 memory_per_gpu = [int(ratio * total_memory) for ratio in split_ratios]
 
@@ -421,10 +421,10 @@ class Optimizer:
                 max_context_length=max_context,
                 recommended_context_length=recommended_context
             )
-            
+
             # Store in cache
             self._split_cache[cache_key] = config
-            
+
             return config
         except Exception as e:
             logger.error(f"Error optimizing GPU split: {e}")
@@ -436,7 +436,7 @@ class Optimizer:
                 max_context_length=model.context_length,
                 recommended_context_length=min(2048, model.context_length)
             )
-            
+
     def clear_caches(self) -> None:
         """Clear all optimization caches"""
         self._memory_cache.clear()

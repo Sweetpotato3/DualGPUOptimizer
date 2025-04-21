@@ -2,24 +2,29 @@
 Main application module for DualGPUOptimizer
 Provides the primary entry point for the GUI application
 """
-import tkinter as tk
-from tkinter import ttk
-import threading
-import time
+
+"""
+Main application module for DualGPUOptimizer
+Provides the primary entry point for the GUI application
+"""
+
 import logging
-import sys
-import os
-import tempfile
-from pathlib import Path
 import queue
-from ..gui.theme.compatibility import ensure_status_var
+import sys
+import tempfile
+import tkinter as tk
+from pathlib import Path
+from tkinter import ttk
+
+from dualgpuopt.gui.theme.compatibility import ensure_status_var
+
 
 # Determine log directory - use temp directory or user home
 def get_log_directory():
     """Get an appropriate directory for log files"""
     try:
         # First try to use the same directory as the executable/script
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             # We're running in a PyInstaller bundle
             base_dir = Path(sys._MEIPASS).parent
         else:
@@ -50,6 +55,7 @@ def get_log_directory():
         temp_dir.mkdir(exist_ok=True)
         return temp_dir
 
+
 # Get log directory and configure logging
 log_dir = get_log_directory()
 log_file = log_dir / "dualgpuopt.log"
@@ -57,11 +63,8 @@ log_file = log_dir / "dualgpuopt.log"
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(),
-        logging.FileHandler(log_file)
-    ]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(), logging.FileHandler(log_file)],
 )
 
 logger = logging.getLogger("DualGPUOpt.MainApp")
@@ -70,20 +73,29 @@ logger.info(f"Starting application with log file at: {log_file}")
 # Import UI compatibility modules first to handle missing dependencies
 # This needs to be before other imports to ensure proper initialization
 try:
-    from ..ui.compat import get_themed_tk, create_widget, get_meter_widget, get_scrolled_frame
     from ..ui.chat_compat import get_chat_tab
+    from ..ui.compat import (
+        create_widget,
+        get_meter_widget,
+        get_scrolled_frame,
+        get_themed_tk,
+    )
+
     logger.info("UI compatibility modules loaded successfully")
 except ImportError as e:
     logger.error(f"Failed to import UI compatibility modules: {e}")
     # Set up minimal fallbacks if even the compatibility modules fail
-    from tkinter import ttk
     from tkinter import Tk as get_themed_tk
+    from tkinter import ttk
+
     def get_meter_widget(parent, **kwargs):
         frame = ttk.Frame(parent)
         ttk.Label(frame, text="0").pack()
         return frame
+
     def get_scrolled_frame(parent, **kwargs):
         return ttk.Frame(parent)
+
     def create_widget(widget_name, parent, **kwargs):
         try:
             return getattr(ttk, widget_name)(parent, **kwargs)
@@ -91,38 +103,50 @@ except ImportError as e:
             frame = ttk.Frame(parent)
             ttk.Label(frame, text=f"{widget_name} unavailable").pack()
             return frame
+
     def get_chat_tab(master, out_q):
         frame = ttk.Frame(master)
         ttk.Label(frame, text="Chat not available").pack()
         frame.handle_queue = lambda *args: None
         return frame
 
+
 # Try to import event bus first
 try:
-    from ..services.event_bus import event_bus, GPUMetricsEvent, ConfigChangedEvent
+    from ..services.event_bus import ConfigChangedEvent, GPUMetricsEvent, event_bus
+
     event_bus_available = True
     logger.info("Event bus available")
 except ImportError:
     event_bus_available = False
     logger.warning("Could not import event_bus, creating minimal implementation")
+
     # Create a minimal event bus if the real one isn't available
     class MinimalEventBus:
-        def subscribe_typed(self, *args, **kwargs): pass
-        def subscribe(self, *args, **kwargs): pass
-        def publish_typed(self, *args, **kwargs): pass
-        def publish(self, *args, **kwargs): pass
-        def unsubscribe(self, *args, **kwargs): pass
+        def subscribe_typed(self, *args, **kwargs):
+            pass
+
+        def subscribe(self, *args, **kwargs):
+            pass
+
+        def publish_typed(self, *args, **kwargs):
+            pass
+
+        def publish(self, *args, **kwargs):
+            pass
+
+        def unsubscribe(self, *args, **kwargs):
+            pass
+
     event_bus = MinimalEventBus()
 
 # Import our components
 try:
-    from . import dashboard
-    from . import optimizer_tab
-    from . import launcher
-    from . import theme
     from ..telemetry import get_telemetry_service
+    from . import dashboard, launcher, optimizer_tab, theme
+
     # We don't import ChatTab directly anymore - using get_chat_tab instead
-    from .theme_selector import ThemeSelector  # Import theme selector
+    # ThemeSelector is imported and used in the MainApplication class
 except ImportError as e:
     logger.error(f"Failed to import UI components: {e}")
     sys.exit(1)
@@ -130,12 +154,12 @@ except ImportError as e:
 # Check for advanced feature dependencies
 try:
     # Create necessary directories if they don't exist
-    for dir_path in ['batch', 'services']:
+    for dir_path in ["batch", "services"]:
         Path(__file__).parent.parent.joinpath(dir_path).mkdir(exist_ok=True)
 
     # Create __init__.py in subdirectories if it doesn't exist
-    for dir_path in ['batch', 'services']:
-        init_path = Path(__file__).parent.parent.joinpath(dir_path, '__init__.py')
+    for dir_path in ["batch", "services"]:
+        init_path = Path(__file__).parent.parent.joinpath(dir_path, "__init__.py")
         if not init_path.exists():
             init_path.write_text('"""Package for {}."""'.format(dir_path))
 
@@ -162,13 +186,21 @@ class MainApplication(ttk.Frame):
             self.telemetry.start()
         except Exception as e:
             logger.error(f"Failed to start telemetry service: {e}")
+
             # Create a minimal telemetry service that won't break the app
             class MinimalTelemetry:
                 def __init__(self):
                     self.running = False
-                def start(self): self.running = True
-                def stop(self): self.running = False
-                def get_metrics(self): return {}
+
+                def start(self):
+                    self.running = True
+
+                def stop(self):
+                    self.running = False
+
+                def get_metrics(self):
+                    return {}
+
             self.telemetry = MinimalTelemetry()
             self.telemetry.start()
 
@@ -204,7 +236,7 @@ class MainApplication(ttk.Frame):
             event_bus.subscribe_typed(GPUMetricsEvent, self._handle_gpu_metrics)
             # Subscribe to configuration changes
             event_bus.subscribe_typed(ConfigChangedEvent, self._handle_config_change)
-        
+
         # Header with status
         header_frame = ttk.Frame(self, padding=10)
         header_frame.grid(row=0, column=0, sticky="ew")
@@ -217,18 +249,24 @@ class MainApplication(ttk.Frame):
         title_label.grid(row=0, column=0, sticky="w")
 
         # Add theme toggle button to header - use create_widget for safe creation
-        self.theme_toggle = create_widget("ThemeToggleButton", header_frame, 
-                                      module_name="theme", 
-                                      fallback_class=ttk.Button)
-        if isinstance(self.theme_toggle, ttk.Button) and not hasattr(self.theme_toggle, "toggle_theme"):
+        self.theme_toggle = create_widget(
+            "ThemeToggleButton", header_frame, module_name="theme", fallback_class=ttk.Button
+        )
+        if isinstance(self.theme_toggle, ttk.Button) and not hasattr(
+            self.theme_toggle, "toggle_theme"
+        ):
             # We got a fallback button, set up minimal functionality
-            self.theme_toggle.configure(text="Toggle Theme",
-                                     command=lambda: theme.toggle_theme(self.parent))
+            self.theme_toggle.configure(
+                text="Toggle Theme", command=lambda: theme.toggle_theme(self.parent)
+            )
         self.theme_toggle.grid(row=0, column=1, sticky="e", padx=10)
 
         # Status aligned right
-        status_label = ttk.Label(header_frame, textvariable=self.status_var,
-                                foreground=theme.current_theme.get("success", "green"))
+        status_label = ttk.Label(
+            header_frame,
+            textvariable=self.status_var,
+            foreground=theme.current_theme.get("success", "green"),
+        )
         status_label.grid(row=0, column=2, sticky="e")
 
         # Create a PanedWindow to allow resizing content area
@@ -251,11 +289,13 @@ class MainApplication(ttk.Frame):
         except Exception as e:
             logger.error(f"Error creating dashboard tab: {e}")
             self.dashboard_tab = ttk.Frame(self.notebook)
-            error_label = ttk.Label(self.dashboard_tab, 
-                                   text=f"Dashboard unavailable: {str(e)[:100]}...")
+            error_label = ttk.Label(
+                self.dashboard_tab, text=f"Dashboard unavailable: {str(e)[:100]}..."
+            )
             error_label.pack(pady=20)
-            retry_button = ttk.Button(self.dashboard_tab, text="Retry", 
-                                     command=self._retry_dashboard_tab)
+            retry_button = ttk.Button(
+                self.dashboard_tab, text="Retry", command=self._retry_dashboard_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.add(self.dashboard_tab, text="Dashboard")
 
@@ -267,10 +307,11 @@ class MainApplication(ttk.Frame):
         except Exception as e:
             logger.error(f"Error creating optimizer tab: {e}")
             self.optimizer_tab = ttk.Frame(self.notebook)
-            error_label = ttk.Label(self.optimizer_tab, 
-                                   text=f"Optimizer unavailable: {str(e)[:100]}...")
+            error_label = ttk.Label(
+                self.optimizer_tab, text=f"Optimizer unavailable: {str(e)[:100]}..."
+            )
             error_label.pack(pady=20)
-            
+
             # Add button to show detailed error
             def show_error_details():
                 top = tk.Toplevel(self.parent)
@@ -280,13 +321,15 @@ class MainApplication(ttk.Frame):
                 text.insert("1.0", f"Error creating optimizer tab:\n\n{str(e)}")
                 text.pack(fill="both", expand=True, padx=10, pady=10)
                 ttk.Button(top, text="Close", command=top.destroy).pack(pady=10)
-            
-            details_button = ttk.Button(self.optimizer_tab, text="Error Details", 
-                                      command=show_error_details)
+
+            details_button = ttk.Button(
+                self.optimizer_tab, text="Error Details", command=show_error_details
+            )
             details_button.pack(pady=5)
-            
-            retry_button = ttk.Button(self.optimizer_tab, text="Retry", 
-                                    command=self._retry_optimizer_tab)
+
+            retry_button = ttk.Button(
+                self.optimizer_tab, text="Retry", command=self._retry_optimizer_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.add(self.optimizer_tab, text="Optimizer")
 
@@ -298,11 +341,13 @@ class MainApplication(ttk.Frame):
         except Exception as e:
             logger.error(f"Error creating launcher tab: {e}")
             self.launcher_tab = ttk.Frame(self.notebook)
-            error_label = ttk.Label(self.launcher_tab, 
-                                   text=f"Launcher unavailable: {str(e)[:100]}...")
+            error_label = ttk.Label(
+                self.launcher_tab, text=f"Launcher unavailable: {str(e)[:100]}..."
+            )
             error_label.pack(pady=20)
-            retry_button = ttk.Button(self.launcher_tab, text="Retry", 
-                                     command=self._retry_launcher_tab)
+            retry_button = ttk.Button(
+                self.launcher_tab, text="Retry", command=self._retry_launcher_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.add(self.launcher_tab, text="Launcher")
 
@@ -315,11 +360,13 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error creating chat tab: {e}")
             self.chat_tab = ttk.Frame(self.notebook)
             ttk.Label(self.chat_tab, text=f"Chat unavailable: {str(e)[:100]}...").pack(pady=20)
-            
+
             # Add instructions for installing chat dependencies
-            ttk.Label(self.chat_tab, text="To enable chat functionality, install these dependencies:").pack(pady=10)
+            ttk.Label(
+                self.chat_tab, text="To enable chat functionality, install these dependencies:"
+            ).pack(pady=10)
             ttk.Label(self.chat_tab, text="pip install requests sseclient-py").pack()
-            
+
             self.notebook.add(self.chat_tab, text="Chat")
             # Create a minimal handler for chat queue
             self.chat_tab.handle_queue = lambda *args: None
@@ -344,9 +391,15 @@ class MainApplication(ttk.Frame):
 
         # Add tokens-per-second meter to status bar using our compatibility function
         try:
-            self.tps_meter = get_meter_widget(status_frame, metersize=50, amounttotal=100,
-                                          bootstyle="success", subtext="tok/s",
-                                          textright="", interactive=False)
+            self.tps_meter = get_meter_widget(
+                status_frame,
+                metersize=50,
+                amounttotal=100,
+                bootstyle="success",
+                subtext="tok/s",
+                textright="",
+                interactive=False,
+            )
             self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
         except Exception as e:
             logger.error(f"Error creating TPS meter: {e}")
@@ -355,7 +408,9 @@ class MainApplication(ttk.Frame):
             self.tps_meter = ttk.Label(status_frame, textvariable=self.tps_var)
             self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
             # Add configure method for compatibility
-            self.tps_meter.configure = lambda **kwargs: self.tps_var.set(f"{kwargs.get('amountused', 0)} tok/s")
+            self.tps_meter.configure = lambda **kwargs: self.tps_var.set(
+                f"{kwargs.get('amountused', 0)} tok/s"
+            )
 
         # Start GPU detection if not using event bus
         if not event_bus_available:
@@ -366,22 +421,22 @@ class MainApplication(ttk.Frame):
 
         # Initial resize handling
         self._handle_resize()
-        
+
         # Log successful initialization
         logger.info("MainApplication initialized successfully")
-        
+
     def _retry_dashboard_tab(self):
         """Retry loading the dashboard tab after failure"""
         try:
             # Remove the old tab
             self.notebook.forget(self.notebook.index(self.dashboard_tab))
-            
+
             # Create a new dashboard tab
             self.dashboard_tab = dashboard.DashboardView(self.notebook)
             self.notebook.insert(0, self.dashboard_tab, text="Dashboard")
             self.notebook.select(0)
             logger.info("Dashboard tab successfully reloaded")
-            
+
             # Show success message
             self.status_var.set("Dashboard tab reloaded successfully")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
@@ -389,33 +444,35 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error recreating dashboard tab: {e}")
             # Create a new error frame
             self.dashboard_tab = ttk.Frame(self.notebook)
-            ttk.Label(self.dashboard_tab, 
-                    text=f"Dashboard unavailable: {str(e)[:100]}...").pack(pady=20)
-            retry_button = ttk.Button(self.dashboard_tab, text="Retry", 
-                                    command=self._retry_dashboard_tab)
+            ttk.Label(self.dashboard_tab, text=f"Dashboard unavailable: {str(e)[:100]}...").pack(
+                pady=20
+            )
+            retry_button = ttk.Button(
+                self.dashboard_tab, text="Retry", command=self._retry_dashboard_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.insert(0, self.dashboard_tab, text="Dashboard")
             self.notebook.select(0)
-            
+
             # Show error message
             self.status_var.set("Failed to reload dashboard tab")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
-    
+
     def _retry_optimizer_tab(self):
         """Retry loading the optimizer tab after failure"""
         try:
             # Get tab index
             tab_index = self.notebook.index(self.optimizer_tab)
-            
+
             # Remove the old tab
             self.notebook.forget(tab_index)
-            
+
             # Create a new optimizer tab
             self.optimizer_tab = optimizer_tab.OptimizerTab(self.notebook)
             self.notebook.insert(tab_index, self.optimizer_tab, text="Optimizer")
             self.notebook.select(tab_index)
             logger.info("Optimizer tab successfully reloaded")
-            
+
             # Show success message
             self.status_var.set("Optimizer tab reloaded successfully")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
@@ -423,33 +480,35 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error recreating optimizer tab: {e}")
             # Create a new error frame
             self.optimizer_tab = ttk.Frame(self.notebook)
-            ttk.Label(self.optimizer_tab, 
-                    text=f"Optimizer unavailable: {str(e)[:100]}...").pack(pady=20)
-            retry_button = ttk.Button(self.optimizer_tab, text="Retry", 
-                                    command=self._retry_optimizer_tab)
+            ttk.Label(self.optimizer_tab, text=f"Optimizer unavailable: {str(e)[:100]}...").pack(
+                pady=20
+            )
+            retry_button = ttk.Button(
+                self.optimizer_tab, text="Retry", command=self._retry_optimizer_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.insert(tab_index, self.optimizer_tab, text="Optimizer")
             self.notebook.select(tab_index)
-            
+
             # Show error message
             self.status_var.set("Failed to reload optimizer tab")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
-    
+
     def _retry_launcher_tab(self):
         """Retry loading the launcher tab after failure"""
         try:
             # Get tab index
             tab_index = self.notebook.index(self.launcher_tab)
-            
+
             # Remove the old tab
             self.notebook.forget(tab_index)
-            
+
             # Create a new launcher tab
             self.launcher_tab = launcher.LauncherTab(self.notebook)
             self.notebook.insert(tab_index, self.launcher_tab, text="Launcher")
             self.notebook.select(tab_index)
             logger.info("Launcher tab successfully reloaded")
-            
+
             # Show success message
             self.status_var.set("Launcher tab reloaded successfully")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
@@ -457,14 +516,16 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error recreating launcher tab: {e}")
             # Create a new error frame
             self.launcher_tab = ttk.Frame(self.notebook)
-            ttk.Label(self.launcher_tab, 
-                    text=f"Launcher unavailable: {str(e)[:100]}...").pack(pady=20)
-            retry_button = ttk.Button(self.launcher_tab, text="Retry", 
-                                    command=self._retry_launcher_tab)
+            ttk.Label(self.launcher_tab, text=f"Launcher unavailable: {str(e)[:100]}...").pack(
+                pady=20
+            )
+            retry_button = ttk.Button(
+                self.launcher_tab, text="Retry", command=self._retry_launcher_tab
+            )
             retry_button.pack(pady=10)
             self.notebook.insert(tab_index, self.launcher_tab, text="Launcher")
             self.notebook.select(tab_index)
-            
+
             # Show error message
             self.status_var.set("Failed to reload launcher tab")
             self.after(3000, lambda: self.status_var.set("Status: Ready"))
@@ -479,7 +540,7 @@ class MainApplication(ttk.Frame):
                     self.chat_tab.handle_queue(kind, val)
                 except Exception as e:
                     logger.error(f"Error handling chat message: {e}")
-                
+
                 # Update TPS meter if we got TPS info
                 if kind == "tps":
                     try:
@@ -503,7 +564,7 @@ class MainApplication(ttk.Frame):
 
             if gpu_count > 0:
                 # Extract GPU names if available, otherwise use generic description
-                if hasattr(next(iter(metrics.values())), 'name'):
+                if hasattr(next(iter(metrics.values())), "name"):
                     names = [m.name for m in metrics.values()]
                     self.gpu_count_var.set(f"GPUs: {gpu_count} - {', '.join(names)}")
                 else:
@@ -517,10 +578,10 @@ class MainApplication(ttk.Frame):
 
         # Schedule another check in 5 seconds
         self.after(5000, self.detect_gpus)
-    
+
     def _handle_gpu_metrics(self, event):
         """Handle GPU metrics events from the event bus
-        
+
         Args:
             event: GPUMetricsEvent object
         """
@@ -528,9 +589,9 @@ class MainApplication(ttk.Frame):
         if event.gpu_index == 0:
             metrics = self.telemetry.get_metrics()
             gpu_count = len(metrics)
-            
+
             if gpu_count > 0:
-                if hasattr(next(iter(metrics.values())), 'name'):
+                if hasattr(next(iter(metrics.values())), "name"):
                     names = [m.name for m in metrics.values()]
                     self.gpu_count_var.set(f"GPUs: {gpu_count} - {', '.join(names[:2])}")
                     if len(names) > 2:
@@ -542,7 +603,7 @@ class MainApplication(ttk.Frame):
 
     def _handle_config_change(self, event):
         """Handle configuration change events
-        
+
         Args:
             event: ConfigChangedEvent object
         """
@@ -565,9 +626,13 @@ class MainApplication(ttk.Frame):
                 event_bus.unsubscribe("config_changed.theme", self._handle_theme_change)
             if hasattr(self, "_handle_config_change"):
                 event_bus.unsubscribe(ConfigChangedEvent, self._handle_config_change)
-        
+
         # Stop telemetry service
-        if hasattr(self, "telemetry") and self.telemetry and getattr(self.telemetry, "running", False):
+        if (
+            hasattr(self, "telemetry")
+            and self.telemetry
+            and getattr(self.telemetry, "running", False)
+        ):
             self.telemetry.stop()
 
         super().destroy()
@@ -579,7 +644,7 @@ class MainApplication(ttk.Frame):
             event: The resize event (optional)
         """
         # Debounce resize events to avoid excessive processing
-        if hasattr(self, '_resize_timer'):
+        if hasattr(self, "_resize_timer"):
             self.after_cancel(self._resize_timer)
         self._resize_timer = self.after(100, self._handle_resize)
 
@@ -646,9 +711,9 @@ class MainApplication(ttk.Frame):
                 theme_name = theme_data
             else:
                 theme_name = str(theme_data)
-                
+
             logger.info(f"Theme change event received: {theme_name}")
-            
+
             # Apply the theme to the root window
             theme.set_theme(self.parent, theme_name)
 
@@ -670,42 +735,46 @@ def find_icon():
     potential_paths = []
 
     # If running in PyInstaller bundle
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         # Running in PyInstaller bundle
         base_dir = Path(sys._MEIPASS)
         exe_dir = Path(sys.executable).parent
 
-        potential_paths.extend([
-            base_dir / "dualgpuopt" / "resources" / "icon.png",
-            base_dir / "dualgpuopt" / "resources" / "icon.ico",
-            base_dir / "resources" / "icon.png",
-            base_dir / "resources" / "icon.ico",
-            exe_dir / "dualgpuopt" / "resources" / "icon.png",
-            exe_dir / "dualgpuopt" / "resources" / "icon.ico",
-            exe_dir / "resources" / "icon.png",
-            exe_dir / "resources" / "icon.ico",
-            exe_dir / "icon.png",
-            exe_dir / "icon.ico"
-        ])
+        potential_paths.extend(
+            [
+                base_dir / "dualgpuopt" / "resources" / "icon.png",
+                base_dir / "dualgpuopt" / "resources" / "icon.ico",
+                base_dir / "resources" / "icon.png",
+                base_dir / "resources" / "icon.ico",
+                exe_dir / "dualgpuopt" / "resources" / "icon.png",
+                exe_dir / "dualgpuopt" / "resources" / "icon.ico",
+                exe_dir / "resources" / "icon.png",
+                exe_dir / "resources" / "icon.ico",
+                exe_dir / "icon.png",
+                exe_dir / "icon.ico",
+            ]
+        )
     else:
         # Running in development mode
         current_dir = Path(__file__).parent
         root_dir = current_dir.parent.parent
 
-        potential_paths.extend([
-            current_dir / "resources" / "icon.png",
-            current_dir.parent / "resources" / "icon.png",
-            root_dir / "dualgpuopt" / "resources" / "icon.png",
-            root_dir / "assets" / "icon.png",
-            root_dir / "dualgpuopt" / "resources" / "icon.ico",
-            root_dir / "assets" / "icon.ico",
-            Path("dualgpuopt") / "resources" / "icon.png",
-            Path("dualgpuopt") / "resources" / "icon.ico",
-            Path("assets") / "icon.png",
-            Path("assets") / "icon.ico",
-            Path("icon.png"),
-            Path("icon.ico")
-        ])
+        potential_paths.extend(
+            [
+                current_dir / "resources" / "icon.png",
+                current_dir.parent / "resources" / "icon.png",
+                root_dir / "dualgpuopt" / "resources" / "icon.png",
+                root_dir / "assets" / "icon.png",
+                root_dir / "dualgpuopt" / "resources" / "icon.ico",
+                root_dir / "assets" / "icon.ico",
+                Path("dualgpuopt") / "resources" / "icon.png",
+                Path("dualgpuopt") / "resources" / "icon.ico",
+                Path("assets") / "icon.png",
+                Path("assets") / "icon.ico",
+                Path("icon.png"),
+                Path("icon.ico"),
+            ]
+        )
 
     # Check each path and return the first one that exists
     for path in potential_paths:
@@ -723,6 +792,7 @@ def run():
     # Import config service to ensure it's initialized
     try:
         from ..services.config_service import config_service
+
         logger.info("Config service initialized")
     except ImportError:
         logger.warning("Could not import config_service, theme persistence may not work")
@@ -738,10 +808,10 @@ def run():
         icon_path = find_icon()
         if icon_path:
             # Use PhotoImage for PNG or TkImage for ICO
-            if icon_path.suffix.lower() == '.png':
+            if icon_path.suffix.lower() == ".png":
                 icon = tk.PhotoImage(file=str(icon_path))
                 root.iconphoto(True, icon)
-            elif icon_path.suffix.lower() == '.ico' and not getattr(sys, 'frozen', False):
+            elif icon_path.suffix.lower() == ".ico" and not getattr(sys, "frozen", False):
                 # In development mode, try to use the .ico file directly
                 root.iconbitmap(str(icon_path))
         else:
@@ -762,10 +832,14 @@ def run():
         # Save theme preference if config service is available
         try:
             from ..services.config_service import config_service
+
             current_theme_name = next(
-                (name for name, colors in theme.AVAILABLE_THEMES.items()
-                 if colors == theme.current_theme),
-                "dark_purple"
+                (
+                    name
+                    for name, colors in theme.AVAILABLE_THEMES.items()
+                    if colors == theme.current_theme
+                ),
+                "dark_purple",
             )
             config_service.set("theme", current_theme_name)
             logger.info(f"Saved theme preference on exit: {current_theme_name}")
