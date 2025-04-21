@@ -1,65 +1,58 @@
 ---
-description: Standardizes dataflow documentation for GPU optimization systems including resource monitoring, model inference, and status reporting
-globs: **/*.py,**/*.cfg,**/*.toml,**/dualgpuopt/**
+description: Documents data flows between GPU optimization components including resource metrics, parameters, and monitoring data
+globs: dualgpuopt/**/*.py,integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-## Core Data Flow Components
+Primary Data Flow Components:
 
-### 1. GPU Metrics Collection Pipeline
-- Telemetry service (dualgpuopt/telemetry.py) collects raw GPU metrics:
-  - Memory utilization with custom thresholds (75%, 90%, 95%)  
-  - Temperature data (70°C, 80°C, 90°C warnings)
-  - Power consumption metrics (90%, 98% power limit alerts)
-  - Fan speeds and clock rates
-- Data flows through event bus to monitoring components
-- Recovery logic with exponential backoff handles collection failures
+1. GPU Telemetry Pipeline
+- GPU metrics flow from hardware monitoring through NVML interface 
+- Metrics include memory usage, temperature, utilization, power draw
+- Data flows through telemetry service to dashboard and optimizer components
+- Event bus handles real-time metric distribution to subscribers
+Path: dualgpuopt/telemetry.py
 
-### 2. Memory Management Flow
-- Memory profiler (dualgpuopt/memory/profiler.py) analyzes metrics:
-  - Real-time leak detection using sliding window analysis
-  - Linear regression identifies concerning patterns:
-    - Spike detection for rapid growth (configurable threshold)
-    - Leak detection for sustained growth
-  - Session-based memory delta tracking
-  - Custom timeline management per GPU
-  - Alert rate limiting with 30s cooldown
+2. Model Parameter Flow
+- Configuration parameters flow from UI to optimizer engine
+- Includes context sizes, layer counts, attention head configurations
+- GPU split ratios and tensor parallel settings propagate to launcher
+- Validation results flow back to UI components
+Path: dualgpuopt/optimizer.py
 
-### 3. Optimizer Data Pipeline
-- Layer balance calculator determines optimal split:
-  - Receives GPU capabilities and model requirements
-  - Calculates tensor fractions and memory split ratios
-  - Generates framework-specific launch configurations
-- Context size optimizer determines safe limits:
-  - Analyzes available GPU memory
-  - Considers model architecture parameters
-  - Applies safety margins and overhead factors
-- Results flow to launcher components
+3. Memory Profiling Data Flow
+- Memory usage metrics flow from profiler to analysis engine
+- Event classification and pattern detection results propagate to UI
+- Memory leak alerts flow through event system to notification handlers
+Path: dualgpuopt/memory/profiler.py
 
-### 4. Status Reporting Chain
-- GPU metrics flow through event bus
-- Dashboard receives real-time updates via subscriptions
-- System tray shows critical alerts
-- Status persistence service maintains history
+4. Command Generation Pipeline
+- Model parameters flow into command generator component
+- Framework-specific optimizations applied based on model architecture
+- Generated commands flow to launcher component for execution
+Path: dualgpuopt/commands/gpu_commands.py
 
-### 5. Model Execution Flow
-- Launcher receives optimized configurations
-- Handles framework-specific command generation
-- Monitors execution metrics and resource usage
-- Reports status back through event system
+5. Resource Monitoring Flow
+- Real-time GPU metrics flow through event bus architecture
+- Performance data aggregated in monitoring service
+- Alert thresholds trigger notifications through event system
+- Resource optimization recommendations flow to UI components
+Path: dualgpuopt/gpu/monitor.py
 
-### Key Data Paths:
-```
-GPU Hardware -> Telemetry Service -> Event Bus -> 
-  |-> Memory Profiler -> Alerts
-  |-> Optimizer -> Launch Configs
-  |-> Dashboard -> UI Updates
-  |-> Status History
-```
+Key Integration Points:
+- Event bus provides central hub for metric distribution
+- State service maintains synchronized configuration state
+- Memory profiler feeds optimization engine with usage patterns
+- Telemetry service coordinates real-time resource monitoring
 
-Importance Score: 95 (Critical data flow architecture for core GPU optimization functionality)
+Data Flow Importance Scores:
+- GPU Telemetry Pipeline: 95 (Core monitoring functionality)
+- Model Parameter Flow: 90 (Critical for optimization)
+- Memory Profiling: 85 (Key for resource management)
+- Command Generation: 80 (Essential for execution)
+- Resource Monitoring: 75 (Important for system health)
 
 $END$

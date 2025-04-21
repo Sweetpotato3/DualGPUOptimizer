@@ -1,61 +1,56 @@
 ---
-description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and alerts in a dual GPU optimization system
-globs: **/telemetry.py,**/tray.py,**/gpu_info.py,**/monitor.py,**/metrics.py
+description: Implements telemetry and resource monitoring system focused on GPU metrics, utilization tracking, and alert mechanisms.
+globs: dualgpuopt/telemetry.py,dualgpuopt/tray.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core telemetry system for monitoring GPU resources and metrics:
+The GPU resource monitoring system implements specialized telemetry collection and alert management for dual GPU configurations.
 
-1. GPU Metrics Collection (telemetry.py):
-- Collects critical GPU metrics with thresholds:
-  - Memory utilization: 75%, 90%, 95%
-  - Temperature thresholds: 70°C, 80°C, 90°C  
-  - Power consumption: 90%, 98% of limit
-- Alert severity levels: NORMAL -> WARNING -> CRITICAL -> EMERGENCY
-- Exponential backoff for NVML recovery (max 3 attempts)
-- Maintains 60-second history window per GPU
+Core Components:
 
-2. Mock GPU Simulation (telemetry.py):
-- Realistic GPU device simulation:
-  - RTX 5070 Ti: 24GB memory, 350W power limit
-  - RTX 4060: 12GB memory, 200W power limit
-- Correlates simulated metrics:
-  - Power usage: 20-90% of limit based on utilization
-  - Fan speed follows temperature curve
-  - Memory usage scales with utilization
-  - PCIe traffic aligns with GPU activity
+1. GPU Metrics Collection (telemetry.py)
+- Comprehensive GPU monitoring with key metrics:
+  * Memory utilization and pressure
+  * Temperature thresholds
+  * Power usage and limits
+  * PCIe bandwidth consumption
+  * Clock speeds (Graphics/Memory)
 
-3. Memory Monitoring System (monitor.py):
-- Dynamic memory tracking across dual GPUs:
-  - Per-device memory usage statistics
-  - Utilization percentage calculation 
-  - Usage pattern analysis with thresholds
-- Emergency memory response system:
-  - Critical threshold detection (>95% usage)
-  - Automatic cache clearing triggers
-  - OOM prevention through monitoring
+2. Alert Level Classification (telemetry.py)
+- Multi-tier alert system with severity thresholds:
+  * EMERGENCY: Memory usage ≥95%, Temperature ≥90°C
+  * CRITICAL: Memory usage ≥90%, Temperature ≥80°C, Power usage ≥98%
+  * WARNING: Memory usage ≥75%, Temperature ≥70°C, Power usage ≥90%
+  * NORMAL: Below warning thresholds
 
-4. Telemetry Event Processing:
-- Dual event publication system:
-  - Enhanced format with aggregated GPU metrics
-  - Legacy format for backward compatibility
-- Temperature monitoring callbacks
-- Memory pressure alerts
-- Utilization tracking and notification
+3. Fault Tolerance Design
+- Progressive recovery mechanism for NVML failures:
+  * Exponential backoff between recovery attempts
+  * Maximum recovery attempts configurable 
+  * Automatic fallback to mock data after failures
+  * Service continuity through hardware/driver issues
 
-5. GPU State Recovery:
-- NVML initialization retry logic:
-  - Exponential backoff between attempts
-  - Auto-fallback to mock data after failures
-  - State preservation during recovery
-  - Error tracking and history maintenance
+4. Historical Metrics Management
+- Rolling 60-second history buffer for GPU metrics
+- Time-window based metric queries
+- Memory-efficient storage with automatic pruning
+- Correlation tracking between related metrics
 
-File Paths:
-- dualgpuopt/telemetry.py
-- dualgpuopt/memory/monitor.py
-- dualgpuopt/memory/metrics.py
+5. Mock Data Generation
+- Realistic GPU behavior simulation:
+  * RTX 5070 Ti profile (24GB memory, 350W power limit)
+  * RTX 4060 profile (12GB memory, 200W power limit)
+  * Dynamic metric correlation (utilization affects temperature)
+  * Variance generation based on timestamps
+
+Importance Scores:
+- GPU Metrics Collection: 95 (Core telemetry functionality)
+- Alert Classification: 90 (Critical monitoring logic)
+- Fault Tolerance: 85 (Key reliability feature)
+- Historical Management: 75 (Important analysis capability)
+- Mock Generation: 60 (Supporting development feature)
 
 $END$

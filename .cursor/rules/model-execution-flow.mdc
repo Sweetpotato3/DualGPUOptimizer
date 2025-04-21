@@ -1,81 +1,60 @@
 ---
-description: Guidelines and specifications for managing model execution flows, GPU resource allocation, and runtime optimizations for LLM inference.
-globs: **/dualgpuopt/memory/*,**/dualgpuopt/gui/launcher/*,**/dualgpuopt/batch/*,**/dualgpuopt/commands/*
+description: Specification for LLM model execution workflows, command generation, and GPU resource management
+globs: **/commands/*.py,**/model/*.py,**/execution/*.py,**/launcher/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Model Execution Pipeline
+Model execution and resource management system implementing specialized GPU allocation strategies for LLM inferencing.
 
-The system implements a sophisticated model execution pipeline optimized for dual GPU setups:
+Core Command Generation (dualgpuopt/commands/gpu_commands.py):
+- Dynamic command-line parameter generation for llama.cpp and vLLM frameworks
+- Context length optimization with model-specific calculation engines
+- GPU split ratio formulas based on model architecture and memory constraints 
+- Layer distribution algorithms for tensor parallelism
 
-1. Smart Batch Processing (dualgpuopt/batch/smart_batch.py):
-- Length-aware batch scheduling for GPU inference
-- Dynamic batch size calculation based on available memory
-- Implements back-pressure mechanism with configurable queue depths
-- Automatic batch size reduction (25%) after OOM events
-- Recovery mechanism after 5 successful batches
-- Maximum token limit of 16384 per batch
+Framework-Specific Launch Logic:
+1. llama.cpp:
+- GPU layer splitting config generator
+- Memory-per-layer calculations
+- Context window size optimization
+- Split ratio enforcement (must sum to ~1.0)
 
-2. Framework-Specific Command Generation (dualgpuopt/commands/gpu_commands.py):
-- Specialized command construction for llama.cpp:
-  - GPU split parameters
-  - Layer distribution optimization
-  - Thread count configuration
-- vLLM command generation:
-  - Tensor parallel configurations
-  - Memory utilization settings
-  - Quantization parameters
+2. vLLM:
+- Tensor parallel size configuration 
+- Memory allocation ratios between GPUs
+- Peer-to-peer communication setup
+- Device visibility management
 
-3. Memory Management System (dualgpuopt/memory/profiler.py):
-- Real-time memory leak detection during inference
-- Linear regression analysis for memory growth patterns:
-  - Spike detection threshold
-  - Sustained growth detection
-- Session-based memory profiling:
-  - Baseline tracking
-  - Post-inference delta analysis
-  - Token count correlation
+Memory Management (dualgpuopt/memory/predictor.py):
+- Model-specific base memory requirements:
+  - Llama2-7B: 7GB base, 50MB/batch, 3KB/token
+  - Llama2-13B: 13GB base, 100MB/batch, 5KB/token
+  - Llama2-70B: 35GB base, 350MB/batch, 18KB/token
+  - Mistral-7B: 8GB base, 55MB/batch, 3KB/token
+  - Mixtral-8x7B: 25GB base, 200MB/batch, 12KB/token
 
-4. Launch Control System (dualgpuopt/gui/launcher/process_monitor.py):
-- Process monitoring for ML model execution
-- Resource cleanup on process termination
-- Framework-specific parameter validation:
-  - llama.cpp: GPU splits, context size
-  - vLLM: Tensor parallel constraints
-- Model preset configurations:
-  - Llama-2 family (7B, 13B, 70B)
-  - Mistral-7B specialized parameters
-  - Mixtral with expert layer handling
+Resource Allocation Rules:
+- Target 80% memory utilization across GPUs
+- Batch size limits: 1-64 sequences 
+- 20% overhead allocation for system operations
+- 5% per-sequence model size estimation
+- Automatic recovery triggers at 95% utilization
 
-## Model Execution Configuration
+Critical Processes:
+1. Memory allocation and model split calculations
+2. Framework-specific command generation
+3. Resource optimization and monitoring
+4. Batch size and context window optimization
+5. GPU layer distribution logic
 
-1. GPU Split Optimization:
-- Memory allocation ratios based on model architecture:
-  - 70B models: 70/30 split (layers 0-39 on GPU0, 40-79 on GPU1)
-  - Mixtral: 60/40 split (layers 0-15 on GPU0, 16-31 on GPU1)
-  - 13B models: 50/50 split with balanced layer distribution
-  - Default: 40/60 split with all layers on primary GPU
-
-2. Context Length Management:
-- Model-specific context limits:
-  - 70B models: 4096 tokens
-  - Mixtral: 8192 tokens
-  - 13B models: 12288 tokens
-  - Other architectures: 16384 tokens
-
-3. Environment Configuration:
-- CUDA_DEVICE_MAX_CONNECTIONS: Optimized for tensor parallel performance
-- NCCL_P2P_DISABLE: Conditional based on tensor parallelism
-- CUDA_VISIBLE_DEVICES: Multi-GPU visibility settings
-
-4. Recovery Strategies (dualgpuopt/memory/recovery.py):
-- Hierarchical recovery approach:
-  1. Cache clearing (CUDA memory)
-  2. Batch size reduction
-  3. Layer redistribution
-  4. Process restart with modified parameters
+Business Importance Scores:
+- Command Generation Engine: 95
+- Memory Management System: 90
+- Resource Allocation Rules: 85
+- Framework Integration Logic: 80
+- Process Management: 75
 
 $END$

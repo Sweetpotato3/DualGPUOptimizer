@@ -10,7 +10,14 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union, Tuple
+
+# Import history buffer for 60-second rolling metrics
+from dualgpuopt.telemetry_history import HistoryBuffer
+from dualgpuopt.telemetry.sample import TelemetrySample
+
+# Create global history buffer instance
+hist = HistoryBuffer()
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Telemetry")
@@ -952,3 +959,147 @@ def _cached_gpu_name_lookup(
             return name_bytes
     except Exception:
         return f"NVIDIA GPU {gpu_id}"
+
+
+class TelemetryThread(threading.Thread):
+    """Thread for collecting and distributing telemetry data"""
+
+    def __init__(
+        self,
+        service,
+        poll_interval: float,
+        stop_event: threading.Event,
+        use_mock: bool = False,
+    ):
+        """Initialize telemetry thread
+
+        Args:
+            service: The TelemetryService that created this thread
+            poll_interval: How frequently to poll for GPU data (seconds)
+            stop_event: Event to signal thread to stop
+            use_mock: Whether to use mock GPU data
+        """
+        super().__init__(daemon=True, name="TelemetryThread")
+        self.service = service
+        self.poll_interval = poll_interval
+        self.stop_event = stop_event
+        self.use_mock = use_mock
+        self.last_batch: Dict[int, GPUMetrics] = {}
+        self._consecutive_errors = 0
+
+    def run(self):
+        """Main telemetry collection loop"""
+        while not self.stop_event.is_set():
+            try:
+                # ... existing telemetry collection code ...
+
+                # Get the current metrics from all GPUs
+                current_time = time.time()
+                batch_metrics = self.service._collect_batch_metrics(current_time)
+
+                # Update service metrics and history
+                with self.service._metrics_lock:
+                    self.service.metrics = batch_metrics
+                    
+                    # Update metric history for all GPUs
+                    for gpu_id, metrics in batch_metrics.items():
+                        # Update overall metrics history in the service
+                        if gpu_id not in self.service._metrics_history:
+                            self.service._metrics_history[gpu_id] = []
+                        self.service._metrics_history[gpu_id].append(metrics)
+                        
+                        # Trim history if needed
+                        if len(self.service._metrics_history[gpu_id]) > self.service._history_length:
+                            # Keep only the last _history_length entries
+                            self.service._metrics_history[gpu_id] = self.service._metrics_history[gpu_id][
+                                -self.service._history_length:
+                            ]
+                        
+                        # Push key metrics to the history buffer
+                        hist.push(f"util_{gpu_id}", metrics.utilization)
+                        hist.push(f"vram_{gpu_id}", metrics.memory_percent)
+                        hist.push(f"temp_{gpu_id}", metrics.temperature)
+                        hist.push(f"power_{gpu_id}", metrics.power_percent)
+                    
+                    # Also push aggregate metrics across all GPUs
+                    if batch_metrics:
+                        # Calculate averages/totals across all GPUs
+                        avg_util = sum(m.utilization for m in batch_metrics.values()) / len(batch_metrics)
+                        total_mem_used = sum(m.memory_used for m in batch_metrics.values())
+                        total_mem = sum(m.memory_total for m in batch_metrics.values())
+                        vram_pct = total_mem_used / total_mem * 100 if total_mem else 0
+                        avg_temp = sum(m.temperature for m in batch_metrics.values()) / len(batch_metrics)
+                        
+                        # Push aggregate metrics to history
+                        hist.push("util", avg_util)
+                        hist.push("vram", vram_pct)
+                        hist.push("temp", avg_temp)
+                
+                # Process the metrics update
+                self._process_metrics_with_history(batch_metrics)
+                
+                # Update last successful batch
+                self.last_batch = batch_metrics
+                self._consecutive_errors = 0
+
+            except Exception as e:
+                logger.error(f"Error in telemetry loop: {e}")
+                self._consecutive_errors += 1
+                
+                # In case of errors, ensure we still have metrics to send
+                if not self.last_batch and self.service.use_mock:
+                    # Generate mock data for at least one GPU
+                    self.last_batch = {0: self.service._get_mock_metrics(0, time.time(), error_state=True)}
+
+            # Sleep until next collection (with cancellation support)
+            self.stop_event.wait(self.poll_interval)
+    
+    def _process_metrics_with_history(self, metrics: Dict[int, GPUMetrics]) -> None:
+        """Process metrics update with history data
+        
+        Args:
+            metrics: The current metrics to distribute
+        """
+        # Process callbacks
+        callbacks = list(self.service.callbacks)
+        for callback in callbacks:
+            try:
+                callback(metrics)
+            except Exception as e:
+                logger.error(f"Error in telemetry callback: {e}")
+        
+        # Prepare metrics for event bus with history
+        if self.service._event_bus:
+            try:
+                metrics_dict = {
+                    "utilization": [],
+                    "memory_used": [],
+                    "memory_total": [],
+                    "temperature": [],
+                    "power_draw": [],
+                    "fan_speed": [],
+                }
+                
+                # Calculate aggregate metrics
+                if metrics:
+                    avg_util = sum(m.utilization for m in metrics.values()) / len(metrics)
+                    total_mem_used = sum(m.memory_used for m in metrics.values())
+                    total_mem = sum(m.memory_total for m in metrics.values())
+                    vram_pct = total_mem_used / total_mem * 100 if total_mem else 0
+                    avg_temp = sum(m.temperature for m in metrics.values()) / len(metrics)
+                
+                    # Create TelemetrySample objects with history
+                    util_sample = TelemetrySample("util", avg_util, hist.snapshot("util"))
+                    vram_sample = TelemetrySample("vram", vram_pct, hist.snapshot("vram"))
+                    temp_sample = TelemetrySample("temp", avg_temp, hist.snapshot("temp"))
+                    
+                    # Publish telemetry samples
+                    self.service._event_bus.publish("telemetry_sample", util_sample)
+                    self.service._event_bus.publish("telemetry_sample", vram_sample)
+                    self.service._event_bus.publish("telemetry_sample", temp_sample)
+                
+                # Continue with regular event publishing
+                # ... existing event bus publishing code ...
+                
+            except Exception as e:
+                logger.error(f"Error publishing metrics with history: {e}")

@@ -1,5 +1,5 @@
 ---
-description: Documentation of GPU memory management, tensor parallelism, and memory allocation algorithms for dual-GPU optimization
+description: Technical documentation for GPU optimization algorithms used in dual GPU setups for deep learning model inference
 globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py
 alwaysApply: false
 ---
@@ -7,57 +7,52 @@ alwaysApply: false
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm
+GPU Memory Split Calculation (optimizer.py):
+- Calculates optimal memory distribution across dual GPUs based on model parameters
+- Determines tensor parallel fractions considering available GPU memory and model size
+- Implements safety margin calculations (10% default) to prevent OOM conditions
+- Handles KV cache overhead with configurable scaling factor (2.0x default)
+- Support for MoE models with expert cache considerations
 
-Key components in dualgpuopt/optimizer.py:
+Layer Balance Optimization (layer_balance.py):
+- Distributes model layers across GPUs using weighted sequence length sampling
+- Uses 20/80 split between short (64) and long (1024) sequences for profiling
+- Implements block merging logic to maintain contiguous layer groups (min 3 layers)
+- Considers relative GPU speeds and memory quotas for distribution decisions
 
-1. Tensor Split Calculation:
-- Calculates optimal memory splits between GPUs based on relative VRAM capacity
-- Applies fairness ratio to balance workload proportionally to memory size
-- Implements safety margin calculations (default 10%) to prevent OOM conditions
-- Generates split ratios for frameworks like llama.cpp and vLLM
+Batch Processing System (batch/smart_batch.py):
+- Length-aware batch scheduling with dynamic size adjustment
+- Implements backpressure mechanism for OOM prevention
+- Provides token-aware batching considering sequence lengths
+- Uses model-specific memory profiles for batch size optimization
 
-2. Layer Distribution Strategy:
-- Assigns model layers across GPUs based on memory capacity and layer characteristics
-- Uses weighted profiling with dual sequence lengths (64 and 1024 tokens)
-- Optimizes placement of compute-intensive layers on faster GPU
-- Maintains minimum block size of 3 layers to prevent fragmentation
+Memory Management (memory/profiler.py):
+- Real-time memory usage tracking with pattern analysis
+- Linear regression-based leak detection using configurable thresholds
+- Differentiates between temporary spikes and sustained leaks
+- Associates memory patterns with token processing counts
 
-3. Memory Management (dualgpuopt/memory/profiler.py):
-- Real-time leak detection using sliding window analysis
-- Memory growth pattern detection with regression-based analysis
-- Session-based profiling with baseline tracking
-- Alert thresholds for spikes (>threshold MB/s) and leaks (sustained growth)
+Memory Recovery System (memory/recovery.py):
+- Four-tier recovery strategy:
+  - REDUCE_BATCH: Dynamic batch size reduction
+  - CLEAR_CACHE: GPU cache management
+  - OFFLOAD: CPU/disk offloading
+  - TERMINATE: Process termination
+- Prioritized execution from least to most disruptive
+- Device-specific threshold management
 
-4. Smart Batching (dualgpuopt/batch/smart_batch.py):
-- Length-aware batch scheduling optimized for GPU inference 
-- Dynamic batch size calculation based on:
-  - Available GPU memory
-  - Model architecture parameters
-  - Token memory requirements
-  - Safety margins
-- OOM recovery with 25% batch size reduction
-- Automatic recovery after 5 successful batches
+Core Paths:
+/dualgpuopt/optimizer.py
+/dualgpuopt/layer_balance.py
+/dualgpuopt/memory/profiler.py
+/dualgpuopt/memory/recovery.py
+/dualgpuopt/batch/smart_batch.py
 
-## Memory Recovery System
-
-Located in dualgpuopt/memory/recovery.py:
-
-1. Recovery Strategy:
-- Implements multi-tier memory reclamation:
-  - Cache clearing (CUDA/PyTorch)
-  - Clock reset via NVML
-  - Full memory reset
-  - System-level commands
-- Cross-platform support (Windows/Linux)
-- Success verification through before/after comparisons
-
-2. Memory Monitoring:
-- Continuous monitoring of memory usage patterns
-- Early warning system with configurable thresholds:
-  - Warning: 80% usage
-  - Critical: 90% usage
-  - Emergency: 95% usage
-- Real-time projection system for OOM prevention
+Importance Scores:
+- GPU Memory Split: 95 (Core optimization algorithm)
+- Layer Balance: 90 (Critical for model performance)
+- Batch Processing: 85 (Key workload management)
+- Memory Management: 80 (Essential resource control)
+- Recovery System: 75 (Important stability feature)
 
 $END$
