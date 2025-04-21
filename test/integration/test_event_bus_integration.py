@@ -14,8 +14,7 @@ import time
 import threading
 import dataclasses
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Dict, List, Optional
-from unittest.mock import MagicMock
+from typing import Any, Dict
 
 import pytest
 

@@ -39,12 +39,23 @@ except ImportError:
 
 # Import event bus if available
 try:
-    # Import the event bus and the enhanced GPUMetricsEvent
-    from dualgpuopt.services.event_bus import event_bus
-    from dualgpuopt.services.events import BaseGPUMetricsEvent, GPUMetricsEvent
+    # Using importlib.util.find_spec to test for availability
+    import importlib.util
 
-    event_bus_available = True
-    logger.debug("Event bus available for telemetry events")
+    event_bus_spec = importlib.util.find_spec("dualgpuopt.services.event_bus")
+    events_spec = importlib.util.find_spec("dualgpuopt.services.events")
+    if event_bus_spec and events_spec:
+        # Import modules but don't import specific symbols until they're needed
+        event_bus_module = importlib.util.module_from_spec(event_bus_spec)
+        events_module = importlib.util.module_from_spec(events_spec)
+        event_bus_spec.loader.exec_module(event_bus_module)
+        events_spec.loader.exec_module(events_module)
+
+        event_bus_available = True
+        logger.debug("Event bus available for telemetry events")
+    else:
+        event_bus_available = False
+        logger.debug("Event bus modules not found")
 except ImportError:
     event_bus_available = False
     logger.warning("Event bus not available, falling back to callback-based telemetry")
@@ -595,9 +606,8 @@ class TelemetryService:
                     "power_draw": [],
                     "fan_speed": [],
                 }
-
                 # Convert individual GPU metrics to lists per metric type
-                for gpu_id, gpu_metrics in metrics.items():
+                for _, gpu_metrics in metrics.items():
                     # Populate the metrics dictionary for the enhanced event
                     metrics_dict["utilization"].append(gpu_metrics.utilization)
                     metrics_dict["memory_used"].append(gpu_metrics.memory_used)

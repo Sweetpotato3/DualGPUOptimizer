@@ -1,75 +1,68 @@
 ---
-description: Specification for managing execution flows of LLM models across dual GPU configurations, including command generation and resource allocation
-globs: **/memory/**,**/gpu/**,**/commands/**,**/launcher/**,**/optimizer/**,**/runner.py
+description: Defines business logic for executing AI models across multiple GPUs, including memory management, batching, and command generation.
+globs: **/model_execution.py,**/launcher/**,**/commands/**,**/memory/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core components for managing LLM model execution across dual GPU configurations:
+## Command Generation
+The system implements specialized command generation for different ML frameworks:
 
-1. Execution Pipeline Controller (dualgpuopt/memory/profiler.py):
-```python
-Memory Management Flow:
-- Pre-inference memory baseline capture
-- Token-based memory tracking during inference
-- Post-inference memory cleanup
-- Leak detection using dual thresholds:
-  - Spike threshold for rapid growth
-  - Leak threshold for sustained growth
-```
+1. llama.cpp Commands:
+- Generates commands with GPU layer distribution parameters
+- Handles tensor parallel split ratios across GPUs
+- Sets context length and batch size based on available memory
+- Configures thread count and model quantization
 
-2. Command Generation System (dualgpuopt/commands/gpu_commands.py):
-```python
-Framework-specific command generation:
-- llama.cpp: GPU layer distribution and split ratios
-- vLLM: Tensor parallel size and memory settings
-- Environment variables for CUDA optimizations
-```
+2. vLLM Commands: 
+- Manages tensor parallel size configuration
+- Sets maximum model lengths and batch sizes
+- Configures swap space and tensor parallel degree
+- Handles model loading parameters with quantization
 
-3. Smart Batch Processing (dualgpuopt/batch/smart_batch.py):
-- Length-aware sequence grouping 
-- Dynamic batch size optimization based on:
-  - Available GPU memory
-  - Model memory requirements
-  - Token sequence lengths
-- Backpressure system for OOM prevention
+## Memory Management
+Memory optimization implements:
 
-4. Memory Recovery (dualgpuopt/memory/recovery.py):
-- Tiered recovery strategies:
-  1. CACHE_ONLY: PyTorch cache clearing
-  2. CLOCK_RESET: GPU clock management
-  3. FULL_RESET: Complete memory reclamation
-  4. SYSTEM_CMD: OS-level GPU reset
+1. Profile Management:
+- Default profiles for common models (Llama-2, Mistral, Mixtral)
+- Per-model metrics for base usage, per-batch usage, growth rate
+- Token-based memory estimation with caching
+- Maximum batch/sequence length calculations
 
-5. Layer Balance Optimization (dualgpuopt/layer_balance.py):
-- Two-phase profiling approach:
-  - Short sequences (64 tokens): 20% weight
-  - Long sequences (1024 tokens): 80% weight
-- Dynamic quota system for VRAM allocation
-- Layer assignment prioritization by computation intensity
+2. Recovery Strategies:
+- Tiered recovery for OOM conditions:
+  1. Cache clearing
+  2. Batch size reduction
+  3. Memory reset
+  4. Process termination
+- CUDA cache management with cleaning intervals
+- Memory retention monitoring between inference runs
 
-6. Process Management (dualgpuopt/runner.py):
-- Non-blocking subprocess execution for model inference
-- Real-time output streaming through queue system
-- Graceful termination handling
-- Resource cleanup on process completion
+## Batch Processing
+Smart batching system provides:
 
-Flow Control Rules:
-1. Memory thresholds trigger recovery actions
-2. Batch sizes adjust dynamically based on OOM events
-3. Layer distribution optimizes for longest sequences
-4. Process termination follows staged approach:
-   - Soft termination attempt (2.5s timeout)
-   - Force kill if soft termination fails
+1. Length-aware Scheduling:
+- Groups sequences by length thresholds
+- Dynamic batch size optimization
+- Memory quota management (80% max utilization)
+- Sequence padding minimization
+
+2. Backpressure Control:
+- Queue depth monitoring
+- Automatic batch size reduction on OOM
+- Recovery cooldown periods
+- Gradual batch size restoration
 
 File Paths:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/memory/recovery.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/runner.py
+```
+dualgpuopt/commands/gpu_commands.py - Command generation
+dualgpuopt/memory/predictor.py - Memory profiling
+dualgpuopt/batch/smart_batch.py - Batch scheduling
+dualgpuopt/memory/recovery.py - OOM recovery
+```
+
+The system optimizes model execution across multiple GPUs through coordinated command generation, memory management, and batch processing optimizations.
 
 $END$

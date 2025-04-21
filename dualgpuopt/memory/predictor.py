@@ -70,7 +70,7 @@ class MemoryProfile:
         self._max_batch_cache.clear()
         self._max_seq_cache.clear()
 
-    @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
+    # Using method-level cache dictionary instead of lru_cache to avoid memory leaks
     def _estimate_usage_cached(
         self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
     ) -> int:
@@ -84,9 +84,27 @@ class MemoryProfile:
         Returns:
             Estimated memory usage in bytes
         """
+        # Create cache key
+        cache_key = (batch_size, token_count, kv_cache_factor)
+
+        # Check if result is in cache
+        if cache_key in self._estimation_cache:
+            self._cache_hits += 1
+            return self._estimation_cache[cache_key]
+
+        # Calculate result if not in cache
+        self._cache_misses += 1
         # Apply the KV cache factor to the token memory calculation
         token_memory = self.per_token_usage * token_count * kv_cache_factor
-        return self.base_usage + (self.per_batch_usage * batch_size) + token_memory
+        result = self.base_usage + (self.per_batch_usage * batch_size) + token_memory
+
+        # Store in cache (maintain cache size limit)
+        if len(self._estimation_cache) >= ENV_PROFILE_CACHE_SIZE:
+            # Remove a random entry when full
+            self._estimation_cache.pop(next(iter(self._estimation_cache)))
+
+        self._estimation_cache[cache_key] = result
+        return result
 
     def estimate_usage(
         self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
@@ -109,7 +127,7 @@ class MemoryProfile:
         # Use the cached version
         return self._estimate_usage_cached(batch_size, token_count, kv_cache_factor)
 
-    @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
+    # Using manual caching instead of lru_cache to avoid memory leaks
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
         """Calculate maximum batch size given available memory and token count
 
@@ -120,6 +138,17 @@ class MemoryProfile:
         Returns:
             Maximum batch size
         """
+        # Create cache key
+        cache_key = (available_memory, token_count)
+
+        # Check if result is in cache
+        if cache_key in self._max_batch_cache:
+            self._cache_hits += 1
+            return self._max_batch_cache[cache_key]
+
+        # Calculate result if not in cache
+        self._cache_misses += 1
+
         if self.per_batch_usage <= 0:
             return 1  # Avoid division by zero
 
@@ -133,12 +162,21 @@ class MemoryProfile:
 
         # Calculate max batch size and apply safety factor
         if batch_memory <= 0:
-            return 1  # No memory available for batches
+            result = 1  # No memory available for batches
+        else:
+            result = max(
+                1, int(batch_memory / self.per_batch_usage)
+            )  # Ensure at least batch size 1
 
-        max_batch = int(batch_memory / self.per_batch_usage)
-        return max(1, max_batch)  # Ensure at least batch size 1
+        # Store in cache (maintain cache size limit)
+        if len(self._max_batch_cache) >= ENV_PROFILE_CACHE_SIZE:
+            # Remove a random entry when full
+            self._max_batch_cache.pop(next(iter(self._max_batch_cache)))
 
-    @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
+        self._max_batch_cache[cache_key] = result
+        return result
+
+    # Using manual caching instead of lru_cache to avoid memory leaks
     def max_sequence_length(self, available_memory: int, batch_size: int) -> int:
         """Calculate maximum sequence length given available memory and batch size
 
@@ -149,6 +187,17 @@ class MemoryProfile:
         Returns:
             Maximum sequence length
         """
+        # Create cache key
+        cache_key = (available_memory, batch_size)
+
+        # Check if result is in cache
+        if cache_key in self._max_seq_cache:
+            self._cache_hits += 1
+            return self._max_seq_cache[cache_key]
+
+        # Calculate result if not in cache
+        self._cache_misses += 1
+
         if self.per_token_usage <= 0:
             return 2048  # Default to reasonable value
 
@@ -162,10 +211,17 @@ class MemoryProfile:
 
         # Calculate max sequence length
         if token_memory <= 0:
-            return 128  # Minimum reasonable length
+            result = 128  # Minimum reasonable length
+        else:
+            result = max(128, int(token_memory / self.per_token_usage))  # Ensure reasonable minimum
 
-        max_length = int(token_memory / self.per_token_usage)
-        return max(128, max_length)  # Ensure reasonable minimum
+        # Store in cache (maintain cache size limit)
+        if len(self._max_seq_cache) >= ENV_PROFILE_CACHE_SIZE:
+            # Remove a random entry when full
+            self._max_seq_cache.pop(next(iter(self._max_seq_cache)))
+
+        self._max_seq_cache[cache_key] = result
+        return result
 
     def update_history(self, memory_usage: int, max_history: int = 100) -> None:
         """Update usage history with current memory usage
@@ -226,7 +282,7 @@ class MemoryProfile:
 
                 # Apply growth factor to account for non-linear growth
                 return int(projected_usage * self.growth_rate)
-            except:
+            except Exception:
                 return None  # Error in projection
         else:
             # Standard Python implementation without numpy
@@ -274,7 +330,7 @@ class MemoryProfile:
 
                 # Apply growth factor
                 return int(projected_usage * self.growth_rate)
-            except:
+            except Exception:
                 return None  # Error in projection
 
     def batch_estimate_usage(
@@ -371,9 +427,7 @@ def clear_profile_caches():
     # Clear caches in all default profiles
     for profile in DEFAULT_PROFILES.values():
         profile.clear_caches()
-        profile._estimate_usage_cached.cache_clear()
-        profile.max_batch_size.cache_clear()
-        profile.max_sequence_length.cache_clear()
+        # Methods now use manual caching, no need to clear lru_cache
 
     logger.debug("Cleared all memory profile caches")
 

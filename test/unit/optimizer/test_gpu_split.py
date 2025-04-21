@@ -116,9 +116,8 @@ class TestGpuSplit:
         """Test with zero GPUs."""
         # Create an optimizer instance
         optimizer = Optimizer()
-
-        # Expect ValueError or similar exception
-        with pytest.raises(Exception):
+        # Expect ValueError for empty GPU list
+        with pytest.raises(ValueError, match="No GPUs available"):
             optimizer._calculate_gpu_split_configuration([])
 
     def test_with_overhead(self, mock_gpu_list):

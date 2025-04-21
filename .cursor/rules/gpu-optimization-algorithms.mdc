@@ -1,82 +1,82 @@
 ---
-description: Specification for GPU optimization algorithms focusing on memory allocation strategies, tensor parallel splitting, and load distribution across multiple GPUs.
-globs: **/gpu_info.py,**/optimizer.py,**/gpu/*.py,**/memory/*.py,**/batch/*.py
+description: GPU memory distribution algorithms, parallel splits calculation, and memory allocation strategies used by optimizer and monitoring components
+globs: *.py,dualgpuopt/memory/*.py,dualgpuopt/gpu/*.py,dualgpuopt/optimizer.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution System
-**Importance Score: 95**
+## Memory Distribution Algorithm (optimizer.py)
+Importance: 95
 
-Core algorithm for distributing model layers and memory across multiple GPUs:
+Implements GPU memory splitting and tensor parallel allocation:
+- Calculates optimal memory splits based on model architecture and GPU VRAM ratios 
+- Determines per-token memory requirements from model parameters (layers, heads, hidden size)
+- Applies tensor parallelism overhead factors based on split configs
+- Maintains memory safety margins and reserves
+- Handles KV cache sizing based on attention head configurations
 
-1. Dynamic Split Calculation:
-- Calculates optimal tensor fractions based on relative GPU memory capacities
-- Implements safety margins to prevent OOM conditions
-- Includes 20% overhead factor for activation memory
-- Handles asymmetric GPU configurations with minimum 20% allocation per GPU
+## Layer Balancing (layer_balance.py) 
+Importance: 90
 
-2. Model-Specific Memory Estimation:
-- Per-token memory calculation based on:
-  - Number of layers and attention heads
-  - Hidden size dimensions
-  - KV cache requirements
-  - MoE overhead for expert models
-- Supports specialized architectures:
-  - Mixtral models: 1.05x memory factor for gating
-  - LLaMA 2: Dynamic KV head scaling
-  - Mistral: Fixed 32 layer configuration
+Layer distribution algorithm for transformer models across GPUs:
+- Uses performance profiling with short (64 tokens) and long (1024 tokens) sequences
+- Weights sequence performance (20% short, 80% long) for real-world optimization
+- Maintains contiguous block grouping where possible
+- Ensures critical components remain on designated GPUs:
+  - Input embeddings on first GPU
+  - Output components on last GPU
+- Applies dynamic programming for block merging optimization
 
-## Batch Processing Optimization
-**Importance Score: 90**
+## Memory Monitoring (memory/profiler.py)
+Importance: 85
 
-Smart batching system with length-aware scheduling:
-- Groups sequences by length similarity
-- Implements dynamic batch sizing based on:
+Memory leak detection and profiling system:
+- Session-based memory tracking with inference counters
+- Two-tier leak detection:
+  - Spike detection for rapid memory growth
+  - Pattern analysis for steady memory leaks
+- Calculates growth rates using sliding window analysis
+- Filters false positives with minimum thresholds (5MB) and cooldown periods (30s)
+
+## GPU Split Optimization (batch/smart_batch.py)
+Importance: 85 
+
+Length-aware batch scheduling for GPU inference:
+- Dynamic batch size optimization based on:
   - Available GPU memory
-  - Model size requirements
-  - 5% per-sequence memory allocation
-  - Maximum 64 sequences per batch
-- Backpressure system reduces batch sizes after OOM events
+  - Token memory requirements 
+  - Model architecture parameters
+  - Sequence length patterns
+- Backpressure system for OOM prevention:
+  - Reduces batch sizes after OOM events
+  - Uses scale factor (0.25-0.95) for adjustment
+  - Gradually recovers sizes when stable
 
-File paths:
+## Memory Recovery (memory/recovery.py)
+Importance: 80
+
+Implements tiered memory recovery strategies:
+- Progressive actions based on severity:
+  1. Cache clearing
+  - Tensor cache cleanup
+  - CUDA memory flushing 
+  2. Batch size reduction
+  - Scale factor: 0.75
+  - Minimum threshold enforcement
+  3. Emergency deallocation
+  - Forces tensor deallocation
+  - Triggers garbage collection
+- Maintains recovery history to prevent thrashing
+
+File paths containing core algorithms:
 ```
 dualgpuopt/optimizer.py
+dualgpuopt/layer_balance.py
 dualgpuopt/memory/profiler.py
 dualgpuopt/batch/smart_batch.py
-dualgpuopt/gpu_info.py
+dualgpuopt/memory/recovery.py
 ```
-
-## Layer Balance Optimization
-**Importance Score: 85**
-
-Adaptive layer distribution algorithm:
-- Two-phase profiling approach:
-  - Short sequence (64 tokens): 20% weight
-  - Long sequence (1024 tokens): 80% weight
-- Dynamic quota system for VRAM allocation
-- Minimum block size of 3 layers to prevent fragmentation
-- Strategic merging of neighboring blocks based on performance metrics
-
-Memory recovery system:
-- Progressive memory reclamation:
-  1. Cache clearing (CUDA cache)
-  2. Batch size reduction (25% steps)
-  3. Layer rebalancing
-  4. Process termination as last resort
-
-## Memory Growth Prediction
-**Importance Score: 80**
-
-Memory usage projection system:
-- Linear regression on recent memory patterns
-- Token-based growth rate calculation
-- Model-specific overhead factors:
-  - Base model memory (1GB per billion parameters)
-  - KV cache scaling (2 bytes per token per billion parameters)
-  - 20% activation buffer
-- Adaptive threshold adjustment based on model architecture
 
 $END$

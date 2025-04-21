@@ -1,6 +1,6 @@
 ---
-description: Data flow specification for dual GPU optimization system managing GPU resources, model parameters, and performance metrics
-globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
+description: Documentation of data flow patterns and architectures for GPU resource optimization, memory management, and monitoring
+globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
@@ -9,44 +9,82 @@ alwaysApply: false
 
 ## Core Data Flow Components
 
-### 1. GPU Resource Telemetry Pipeline
-- GPU metrics collection from NVML/mock sources via telemetry.py
-- Real-time metrics including memory usage, utilization, temperature propagated through event bus
-- Metrics processed by dashboard for visualization and optimizer for resource allocation
-- Early warning detection system for memory pressure and temperature thresholds
+### 1. GPU Metrics Pipeline (90/100)
+- Telemetry service collects GPU metrics (memory, temperature, utilization)
+- Metrics flow through event bus to monitoring dashboard
+- Real-time metrics published through event system with priority queues
+- Dashboard updates visualizations based on metric stream
 
-### 2. Model Parameter Flow
-- Model configuration parameters flow from optimizer to launch controller
-- Tensor parallel size and GPU split ratios calculated based on available resources
-- Framework-specific command generation for llama.cpp and vLLM deployments
-- Dynamic adjustment of batch sizes and context lengths based on memory monitoring
-
-### 3. Memory Management Pipeline
-- Memory profiler tracks allocation patterns across multiple GPUs
-- Leak detection using sliding window analysis and linear regression
-- Memory events classified into allocation/deallocation/growth spikes
-- Recovery actions triggered based on memory pressure thresholds
-
-### 4. Performance Metrics Flow
-- Token processing speed (TPS) metrics from model inference
-- GPU utilization correlation with memory consumption patterns
-- Temperature/power metrics flow to UI components for visualization
-- PCIe bandwidth monitoring for inter-GPU communication
-
-### 5. Event Distribution System
-- Event bus manages distribution of GPU metrics, configuration changes
-- State service maintains application configuration and GPU settings
-- Config service handles persistent storage of optimization parameters
-- Smart batch processing coordinates workload distribution
-
-Key File Paths:
+File paths:
 ```
-dualgpuopt/
-  memory/profiler.py - Memory tracking and leak detection
-  telemetry.py - GPU metrics collection and processing
-  services/event_bus.py - Event distribution system
-  batch/smart_batch.py - Batch processing optimization
-  optimizer.py - GPU resource allocation logic
+dualgpuopt/telemetry.py
+dualgpuopt/services/event_bus.py
+dualgpuopt/gui/dashboard.py
+```
+
+### 2. Memory Management Flow (95/100)
+- Memory profiler tracks GPU memory allocation patterns
+- Session-based memory tracking with inference counters
+- Memory leak detection through sliding window analysis
+- Event classification system for memory-related events
+- Metrics collection for token counts and memory efficiency
+
+File paths:
+```
+dualgpuopt/memory/profiler.py
+dualgpuopt/memory/predictor.py
+dualgpuopt/memory/monitor.py
+```
+
+### 3. Model Optimization Pipeline (85/100)
+- Model parameters flow through optimizer to determine GPU splits
+- Layer balancing system distributes workload across GPUs
+- Context size calculator determines maximum safe context lengths
+- Memory requirement estimator guides resource allocation
+- Command generation system produces optimized launch configurations
+
+File paths:
+```
+dualgpuopt/optimizer.py
+dualgpuopt/layer_balance.py
+dualgpuopt/ctx_size.py
+dualgpuopt/commands/gpu_commands.py
+```
+
+### 4. Configuration Management Flow (75/100)
+- Settings service manages GPU configuration state
+- Event bus propagates configuration changes
+- State service maintains application configuration
+- Settings persistence through JSON storage
+
+File paths:
+```
+dualgpuopt/services/config_service.py
+dualgpuopt/services/state_service.py
+```
+
+### 5. Error Recovery Flow (80/100)
+- Error events flow through handler with severity classification
+- Recovery strategies executed based on error categories
+- Memory-related errors trigger cleanup cascade
+- Event bus propagates error states to UI components
+
+File paths:
+```
+dualgpuopt/error_handler/handler.py
+dualgpuopt/error_handler/recovery.py
+```
+
+### 6. Model Launch Pipeline (85/100)
+- Model configuration flows through parameter resolver
+- Launch controller manages process execution
+- Output streaming to dashboard components
+- Resource monitoring feedback loop
+
+File paths:
+```
+dualgpuopt/gui/launcher/launch_controller.py
+dualgpuopt/gui/launcher/parameter_resolver.py
 ```
 
 $END$

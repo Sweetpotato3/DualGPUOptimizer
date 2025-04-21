@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: This rule generates an overview for GPU optimization systems focused on machine learning workloads. It should be applied when documenting systems that manage dual GPU configurations, memory profiling, and model deployment optimizations.
-globs: *.py,*.config,*.json,*.yml
+description: Generate a high-level overview for projects focused on GPU optimization and management, particularly those handling dual GPU configurations, memory management, and model execution
+globs: *.py,*/gpu/*,*/memory/*,*/optimizer/*
 alwaysApply: false
 ---
 
@@ -154,55 +154,65 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning model deployment across dual GPU configurations.
+The DualGPUOptimizer system implements specialized GPU resource management and optimization for large language model execution across multiple GPUs.
 
-Core Business Components:
+Core Business Domains:
 
-1. GPU Memory Profiling & Optimization
-- Real-time memory tracking across multiple GPUs
-- Sliding window analysis for memory anomalies
-- Memory leak detection with dual thresholds
-- Memory event classification system
-- Session-based profiling with inference tracking
+1. Memory Management System:
+- Memory profiler tracks GPU inference sessions with memory baselines and deltas
+- Two-tier leak detection using spike detection and steady growth analysis
+- Event classification system for memory allocations, growth spikes, and leaks
+- Token-aware memory analysis for inference optimization
 File: dualgpuopt/memory/profiler.py
 
-2. GPU Telemetry System
-- Domain-specific GPU metrics monitoring including memory pressure, temperature thresholds
-- Alert level classification (EMERGENCY/CRITICAL/WARNING/NORMAL)
-- Intelligent recovery system with exponential backoff
-- GPU behavioral models for different hardware profiles
+2. GPU Telemetry:
+- Real-time monitoring with configurable thresholds for memory pressure, temperature, power usage
+- Exponential backoff recovery system for NVML failures
+- Historical metrics management with 60-second rolling window
+- Mock GPU simulation for testing with realistic hardware characteristics
 File: dualgpuopt/telemetry.py
 
-3. Model Deployment Optimization  
-- Context size calculation based on model architecture
-- Layer balancing across GPUs using weighted profiling
-- Framework-specific command generation (llama.cpp, vLLM)
-- Dynamic tensor parallel size configuration
-Files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
-
-4. Smart Batch Processing
-- Length-aware sequence batching
-- Dynamic batch size optimization based on memory constraints
-- Adaptive backpressure system for OOM prevention
-- Model-specific memory profiling
+3. Smart Batching System:
+- Length-aware batch scheduling for GPU inference
+- Dynamic batch size optimization based on available GPU memory
+- Adaptive backpressure system with OOM recovery
+- Token-based batch splitting with length thresholds
 File: dualgpuopt/batch/smart_batch.py
 
-5. GPU Overclocking Management
-- Hardware-specific parameter management (core/memory clocks, power limits)
-- Safety constraints enforcement
-- Command pattern for overclock operations
-- Undo/redo capability
-File: dualgpuopt/gui/settings/overclocking.py
+4. Layer Distribution Optimization:
+- Performance-based layer distribution across GPUs using weighted ratios
+- Profile-driven optimization considering sequence lengths and layer positions 
+- Block optimization for contiguous layer groups
+- Automatic tensor parallel sizing based on model architecture
+File: dualgpuopt/layer_balance.py
 
-Integration Points:
-- Memory profiler feeds metrics to optimization system
-- Telemetry system triggers recovery actions
-- Batch processor coordinates with memory management
-- Layer balancing integrates with deployment optimization
+5. Command Generation:
+- Framework-specific command generation for llama.cpp and vLLM
+- GPU split configuration management
+- Environment variable generation for tensor parallelism
+- Model-specific memory allocation strategies
+File: dualgpuopt/commands/gpu_commands.py
 
-The system prioritizes stable model deployment while maximizing GPU resource utilization through coordinated profiling, monitoring, and optimization components.
+Key Integration Points:
+
+1. Memory Recovery:
+- Multi-stage memory reclamation with cache clearing, clock reset, system commands
+- Hierarchical reset approach with progressive fallback options
+File: dualgpuopt/vram_reset.py
+
+2. Event Management:
+- Priority-based event handling (Critical, High, Normal, Low)
+- GPU metrics event publishing system
+- Framework-specific configuration events
+Files: dualgpuopt/services/event_bus.py
+
+3. State Management:
+- Centralized GPU state tracking
+- Persistent configuration storage
+- Event-driven state updates
+File: dualgpuopt/services/state_service.py
+
+The system focuses on optimizing GPU resource utilization for language model inference, with particular emphasis on memory management, performance monitoring, and automated optimization of multi-GPU configurations.
 
 $END$
 END SPECIFICATION

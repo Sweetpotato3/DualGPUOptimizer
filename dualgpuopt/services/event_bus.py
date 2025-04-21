@@ -11,7 +11,7 @@ import enum
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Generic, List, Set, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Generic, List, Set, Type, TypeVar, Union
 
 T = TypeVar('T')
 

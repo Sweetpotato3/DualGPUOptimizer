@@ -1,6 +1,6 @@
 ---
-description: Implements GPU resource monitoring, telemetry collection, and alert systems for multi-GPU environments
-globs: **/telemetry.py,**/tray.py,**/gpu/monitor.py,**/gpu/info.py
+description: Specification for the GPU resource monitoring and telemetry system components, including metrics collection, alerting, and visualization
+globs: **/telemetry.py,**/monitor.py,**/dashboard.py,**/metrics.py
 alwaysApply: false
 ---
 
@@ -10,49 +10,52 @@ alwaysApply: false
 ## Core Telemetry System (telemetry.py)
 
 GPU Metrics Collection:
-- Monitors domain-specific GPU metrics including memory pressure, temperature thresholds, power usage
-- Tracks PCIe bandwidth utilization for multi-GPU communication
+- Implements real-time monitoring of critical GPU metrics:
+  - Memory utilization with thresholds (95%/90%/75%) 
+  - Temperature tracking (90°C/80°C/70°C)
+  - Power usage monitoring (98%/90%)
+  - Fan speed and clock rates
+- Exponential backoff recovery for NVML failures
+- Mock GPU simulation with realistic metrics correlation
 
-Alert Classification:
-```python
-AlertLevel thresholds:
-- EMERGENCY: Memory ≥ 95% or Temperature ≥ 90°C 
-- CRITICAL: Memory ≥ 90% or Temperature ≥ 80°C or Power ≥ 98%
-- WARNING: Memory ≥ 75% or Temperature ≥ 70°C or Power ≥ 90%
-```
+Historical Data Management:
+- 60-second rolling metrics history
+- Thread-safe metrics collection
+- Filtered data access by time window and GPU ID
 
-Recovery System:
-- Progressive error recovery with exponential backoff for hardware failures
-- Auto-switches to mock data after multiple failures
-- Maintains error state history for intelligent fallback decisions
+## Dashboard Visualization 
 
-Mock GPU Profiles:
-- RTX 5070 Ti: 24GB memory, 350W power limit, 2100MHz base clock
-- RTX 4060: 12GB memory, 200W power limit, 1800MHz base clock
-- Models correlations between utilization, temperature, power and PCIe bandwidth
+Real-time Metrics Display:
+- GPU-specific color coding for multiple devices
+- Dynamic gauge updates with configurable thresholds
+- Alert indicators for temperature/memory/power warnings
+- PCIe bandwidth monitoring with TX/RX rates
 
-## Metrics Management System
+Monitoring Components:
+- Resource utilization graphs with 100ms update interval
+- Memory pressure visualization with warning levels
+- Temperature tracking with color-coded status
+- Power consumption relative to TDP limits
 
-Rolling Window Analytics:
-- Maintains 60-second history of GPU metrics
-- Implements selective metric retention based on importance
-- Correlates metrics across time periods for trend analysis
+## Event Publishing System
 
-Domain-Specific Tracking:
-- Memory pressure based on model size and token count
-- Temperature trends with fan speed correlation
-- Power draw patterns during inference operations
+Alert Management:
+- Multi-level alerting based on configurable thresholds
+- Deduplication of alerts with 3-second cooldown
+- Priority-based alert queue for critical notifications
+- GPU-specific alert contexts with detailed metrics
 
-Monitoring Thread Management: 
-- Dedicated telemetry thread with configurable sampling rates
-- Automatic thread cleanup on application exit
-- Resource-aware suspension during idle periods
+Status Monitoring:
+- Real-time health status tracking
+- GPU capability detection
+- Driver version compatibility checks
+- Resource allocation monitoring
 
 File Paths:
 - dualgpuopt/telemetry.py
-- dualgpuopt/gpu/monitor.py
-- dualgpuopt/gpu/info.py
+- dualgpuopt/gui/dashboard.py 
+- dualgpuopt/memory/monitor.py
 
-Importance Score: 95 - Core monitoring functionality essential for GPU optimization
+The system provides comprehensive GPU resource monitoring with real-time visualization and alerting capabilities focused on multi-GPU environments.
 
 $END$
