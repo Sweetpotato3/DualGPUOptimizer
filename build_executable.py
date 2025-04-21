@@ -14,7 +14,6 @@ from pathlib import Path
 def check_pyinstaller():
     """Check if PyInstaller is installed, install if not"""
     try:
-        import PyInstaller
         print("PyInstaller is already installed")
         return True
     except ImportError:

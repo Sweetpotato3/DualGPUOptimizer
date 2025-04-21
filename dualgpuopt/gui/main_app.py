@@ -791,7 +791,7 @@ def run():
     """Main entry point for the application"""
     # Import config service to ensure it's initialized
     try:
-        from ..services.config_service import config_service
+        pass
 
         logger.info("Config service initialized")
     except ImportError:

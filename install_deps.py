@@ -6,13 +6,11 @@ This script provides a simple way to install the dependencies required by DualGP
 It can install core dependencies only or all dependencies.
 """
 import sys
-import os
 import argparse
 import subprocess
 import importlib.util
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 import logging
-from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
@@ -79,7 +77,6 @@ def check_dependency(name: str) -> bool:
     """
     if name == "tkinter":
         try:
-            import tkinter
             return True
         except ImportError:
             return False
@@ -332,16 +329,16 @@ def install_package(package_name, description, verbose=False):
     if check_package(package_name.split('==')[0]):
         print(f"{Colors.GREEN}✓ {package_name} already installed{Colors.ENDC}")
         return True
-    
+
     print(f"{Colors.YELLOW}→ Installing {package_name} ({description}){Colors.ENDC}")
-    
+
     try:
         cmd = [sys.executable, "-m", "pip", "install", package_name]
         if verbose:
             result = subprocess.run(cmd)
         else:
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed {package_name}{Colors.ENDC}")
             return True
@@ -356,38 +353,38 @@ def install_package(package_name, description, verbose=False):
 def install_pytorch(verbose=False):
     """Install PyTorch with CUDA support."""
     cuda_version = "cu121"  # Default CUDA version
-    
+
     print(f"{Colors.YELLOW}→ Installing PyTorch with CUDA support{Colors.ENDC}")
-    
+
     try:
         # PyTorch 2.5.1 with CUDA 12.1
         cmd = [
-            sys.executable, "-m", "pip", "install", 
-            "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1", 
+            sys.executable, "-m", "pip", "install",
+            "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1",
             "--index-url", f"https://download.pytorch.org/whl/{cuda_version}"
         ]
-        
+
         if verbose:
             result = subprocess.run(cmd)
         else:
             result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed PyTorch with CUDA support{Colors.ENDC}")
             return True
         else:
             error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
             print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
-            
+
             # Try without CUDA
             print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Colors.ENDC}")
             cmd = [sys.executable, "-m", "pip", "install", "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1"]
-            
+
             if verbose:
                 result = subprocess.run(cmd)
             else:
                 result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
+
             if result.returncode == 0:
                 print(f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}")
                 return True
@@ -403,35 +400,35 @@ def check_dependencies(deps_dict, check_only=False, verbose=False):
     """Check and optionally install dependencies from a dictionary."""
     missing = {}
     installed = {}
-    
+
     for package, description in deps_dict.items():
         is_installed = check_package(package.split('==')[0])
         if is_installed:
             installed[package] = description
         else:
             missing[package] = description
-    
+
     if check_only:
         return installed, missing
-    
+
     # Install missing packages
     failed = {}
     for package, description in missing.items():
         if package in ML_DEPENDENCIES and package.startswith("torch"):
             # Skip individual torch packages, they'll be handled by install_pytorch
             continue
-        
+
         success = install_package(package, description, verbose)
         if not success:
             failed[package] = description
-    
+
     # If pytorch is missing, install it specially
     if any(p.startswith("torch") for p in missing.keys()):
         pytorch_success = install_pytorch(verbose)
         if not pytorch_success:
             for p in [p for p in missing.keys() if p.startswith("torch")]:
                 failed[p] = missing[p]
-    
+
     return installed, failed
 
 def main() -> int:

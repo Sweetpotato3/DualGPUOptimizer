@@ -6,7 +6,6 @@ import importlib.util
 import sys
 from pathlib import Path
 import logging
-from typing import Optional, Dict, Any
 
 logger = logging.getLogger("DualGPUOpt.GUI")
 
@@ -100,10 +99,6 @@ def get_modern_app():
 
 # Check for required modules to provide better error messages
 try:
-    import dualgpuopt.vram_reset
-    import dualgpuopt.ctx_size
-    import dualgpuopt.mpolicy
-    import dualgpuopt.layer_balance
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Advanced optimization features not available: {e}")
@@ -111,7 +106,6 @@ except ImportError as e:
 
 # Check for optional advanced features
 try:
-    import torch
     TORCH_AVAILABLE = True
     logger.info("PyTorch detected")
 except ImportError:

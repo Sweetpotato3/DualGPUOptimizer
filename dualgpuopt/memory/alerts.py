@@ -7,7 +7,7 @@ based on GPU usage thresholds.
 
 import time
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 
 class MemoryAlertLevel(Enum):

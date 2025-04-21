@@ -2,7 +2,7 @@
 Simplified tests for the GPU module
 """
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import sys
 import os
 

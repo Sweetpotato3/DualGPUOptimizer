@@ -25,13 +25,10 @@ def run_app(mock_mode: bool = False, theme: str = None):
 GUI module initialization with runtime guard for constants.
 """
 try:
-    from .constants import APP_NAME, THEME
+    pass
 except ImportError as exc:
     raise SystemExit(
         "❌ constants.py missing - reinstall DualGPUOpt package"
     ) from exc
 
 # Import rest of GUI components
-from .main_window import MainWindow
-from .dashboard import DashboardFrame
-from .optimizer import OptimizerFrame

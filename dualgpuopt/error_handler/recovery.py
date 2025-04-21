@@ -16,7 +16,6 @@ logger = logging.getLogger("DualGPUOpt.Recovery")
 
 # Import error handling if available
 try:
-    from dualgpuopt.error_handler.base import ErrorCategory, ErrorSeverity
     error_handler_available = True
 except ImportError:
     error_handler_available = False

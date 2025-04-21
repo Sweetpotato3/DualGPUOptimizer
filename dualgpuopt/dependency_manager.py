@@ -16,9 +16,8 @@ import sys
 import importlib.util
 import logging
 import subprocess
-from typing import Dict, List, Tuple, Optional, Any, Set, Callable
+from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass
-from pathlib import Path
 
 logger = logging.getLogger("DualGPUOpt.Dependencies")
 
@@ -158,7 +157,6 @@ def check_dependency(name: str) -> bool:
     """
     if name == "tkinter":
         try:
-            import tkinter
             return True
         except ImportError:
             return False

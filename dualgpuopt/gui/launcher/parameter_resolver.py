@@ -7,8 +7,7 @@ for different model frameworks and architectures.
 from __future__ import annotations
 
 import logging
-import os
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Any
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.optimizer import calculate_gpu_split
@@ -125,7 +124,7 @@ class ParameterResolver:
         """
         model_path = parameters["model_path"]
         tensor_parallel_size = parameters.get("tensor_parallel_size", 1)
-        max_memory = parameters.get("max_memory", "auto")
+        parameters.get("max_memory", "auto")
 
         return (
             f"python -m vllm.entrypoints.openai.api_server "

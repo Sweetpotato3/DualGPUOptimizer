@@ -5,10 +5,8 @@ GPU metrics dashboard component.
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
-import time
-import threading
 import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Dict, Any
 
 from dualgpuopt.gui_constants import (
     PAD, DARK_BACKGROUND, LIGHT_FOREGROUND, PURPLE_PRIMARY,

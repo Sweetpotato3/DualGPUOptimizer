@@ -5,7 +5,6 @@ This script patches the ttkbootstrap msgs.py file to fix the invalid escape sequ
 that cause warnings during PyInstaller build.
 """
 
-import os
 import re
 import site
 from pathlib import Path

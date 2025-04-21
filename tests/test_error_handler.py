@@ -6,9 +6,8 @@ including core components, decorators, and UI integration.
 """
 
 import unittest
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 import sys
-import logging
 from pathlib import Path
 
 # Add the parent directory to sys.path to make dualgpuopt importable
@@ -16,8 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dualgpuopt.error_handler import (
     ErrorCategory, ErrorDetails, ErrorSeverity,
-    handle_exceptions, track_errors,
-    get_error_handler
+    handle_exceptions, track_errors
 )
 
 

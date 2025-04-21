@@ -2,8 +2,7 @@
 Optimizer module for dual GPU setups
 Calculates optimal memory splits and context sizes for LLM inference
 """
-from typing import Dict, List, Optional, Tuple, Set, Any
-import math
+from typing import Dict, List, Optional, Tuple, Any
 import logging
 import os
 import functools
@@ -13,7 +12,6 @@ from enum import Enum
 
 # Import our core functionality
 from . import gpu_info
-from . import ctx_size
 from .commands.gpu_commands import generate_llama_cpp_cmd, generate_vllm_cmd
 
 # Initialize logger
@@ -37,7 +35,7 @@ except ImportError:
 
 # Import error handling if available
 try:
-    from dualgpuopt.error_handler import handle_exceptions, ErrorCategory, ErrorSeverity
+    from dualgpuopt.error_handler import handle_exceptions, ErrorSeverity
     error_handler_available = True
 except ImportError:
     error_handler_available = False

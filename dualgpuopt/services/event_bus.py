@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import inspect
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Generic, List, Set, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Generic, List, Set, Type, TypeVar, Union
 
 T = TypeVar('T')
 
@@ -275,4 +274,4 @@ class EventBus:
 
 
 # Create a global event bus instance
-event_bus = EventBus() 
+event_bus = EventBus()

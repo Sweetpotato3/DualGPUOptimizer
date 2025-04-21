@@ -4,7 +4,6 @@ Build script for DualGPUOptimizer
 Creates an executable package using PyInstaller
 """
 
-import os
 import sys
 import shutil
 import subprocess

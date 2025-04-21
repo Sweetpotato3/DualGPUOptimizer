@@ -1,11 +1,10 @@
 """
 Theme styling utilities for applying styles to widgets
 """
-import tkinter as tk
 from tkinter import ttk
 import logging
 
-from dualgpuopt.gui.theme.colors import current_theme, AVAILABLE_THEMES
+from dualgpuopt.gui.theme.colors import current_theme
 from dualgpuopt.gui.theme.dpi import scale_font_size, DEFAULT_FONT_SIZE, DEFAULT_HEADING_SIZE
 
 logger = logging.getLogger("DualGPUOpt.Theme.Styling")

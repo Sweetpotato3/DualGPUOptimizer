@@ -10,7 +10,6 @@ import pytest
 # Mock pynvml module to avoid requiring real GPU hardware
 class MockNVMLError(Exception):
     """Mock NVML Error class."""
-    pass
 
 
 @pytest.fixture(autouse=True, scope="session")

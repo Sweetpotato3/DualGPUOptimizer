@@ -7,7 +7,7 @@ automatically handle exceptions and apply appropriate error handling.
 
 import functools
 import logging
-from typing import Any, Callable, Dict, Optional, Union
+from typing import Optional, Union
 
 from dualgpuopt.error_handler.base import ErrorCategory, ErrorSeverity
 from dualgpuopt.error_handler.handler import get_error_handler

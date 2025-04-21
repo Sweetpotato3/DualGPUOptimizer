@@ -3,10 +3,9 @@ Optimizer tab for GPU memory allocation and tensor splitting
 """
 import tkinter as tk
 from tkinter import ttk, messagebox
-from typing import Dict, List, Optional, Callable, Any
 import logging
 
-from ..optimizer import get_optimizer, ModelParameters, GPUMemoryInfo, SplitConfiguration
+from ..optimizer import get_optimizer, ModelParameters, SplitConfiguration
 from ..integration import get_optimizer_integration
 
 # Initialize logger

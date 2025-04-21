@@ -4,7 +4,6 @@ This addresses the empty GUI issue by using a simplified implementation
 """
 import sys
 import logging
-import os
 import tkinter as tk
 from tkinter import ttk, messagebox
 from pathlib import Path
@@ -38,7 +37,7 @@ class PatchedGUI:
 
         # Try to import theme module
         try:
-            from dualgpuopt.gui.theme import apply_theme, toggle_theme, ThemeToggleButton
+            from dualgpuopt.gui.theme import apply_theme, ThemeToggleButton
             self.theme_module = sys.modules['dualgpuopt.gui.theme']
             apply_theme(self.root)
             logger.info("Theme applied successfully")

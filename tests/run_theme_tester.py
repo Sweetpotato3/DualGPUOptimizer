@@ -17,8 +17,7 @@ logging.basicConfig(
 
 # Import necessary modules
 try:
-    import tkinter as tk
-    from tkinter import ttk
+    pass
 except ImportError:
     print("Error: Tkinter is not available. Please install Python with Tkinter support.")
     sys.exit(1)

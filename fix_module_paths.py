@@ -3,7 +3,6 @@
 Fix module path issues for the DualGPUOptimizer application.
 """
 import sys
-import os
 import pathlib
 import importlib
 import importlib.util
@@ -49,7 +48,7 @@ def fix_module_paths():
         # Try creating a constants.py file directly in the package
         try:
             with open(constants_path, "r") as src_file:
-                constants_content = src_file.read()
+                src_file.read()
 
             # Create __init__.py files if not present
             init_paths = [

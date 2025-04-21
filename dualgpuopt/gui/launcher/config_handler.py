@@ -8,8 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Any
 
 from dualgpuopt.services.config_service import config_service
 

@@ -49,14 +49,14 @@ class LayerProfiler:
     def profile_layer(self, model: Any, layer_idx: int, test_ids: Any, dev: int,
                      warmup: bool = False) -> float:
         """Profile a single layer's execution time
-        
+
         Args:
             model: The transformer model
             layer_idx: Layer index to profile
             test_ids: Input tensor for profiling
             dev: Device ID to profile on
             warmup: Whether this is a warmup run (results ignored)
-            
+
         Returns:
             Average execution time in seconds
         """
@@ -97,13 +97,13 @@ class LayerProfiler:
 
     def _profile_sequence_length(self, model: Any, dummy_ids: Any, dev: int, seq_len: int) -> List[float]:
         """Profile all layers for a specific sequence length
-        
+
         Args:
             model: The transformer model
             dummy_ids: Base input tensor
             dev: Device ID
             seq_len: Sequence length to profile
-            
+
         Returns:
             List of layer execution times
         """
@@ -193,7 +193,6 @@ class LayerProfiler:
                     logger.warning(f"Failed to load profiling cache: {e}")
 
             # Import torch inside function
-            import torch
 
             # Move model to the target device
             model.to(dev)

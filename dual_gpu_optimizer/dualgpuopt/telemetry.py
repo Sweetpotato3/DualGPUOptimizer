@@ -7,9 +7,9 @@ import dataclasses as dc
 import queue
 import threading
 import logging
-from typing import Dict, List, Callable, Protocol, Optional, Any, TypedDict
+from typing import List, Protocol, TypedDict
 
-from dualgpuopt.gpu_info import probe_gpus, GPU
+from dualgpuopt.gpu_info import probe_gpus
 from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
 
 class GpuTelemetry(TypedDict):

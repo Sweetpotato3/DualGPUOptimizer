@@ -1,7 +1,7 @@
 import logging
 import os
 
-from PySide6.QtCore import QEvent, QSize, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtGui import QCloseEvent, QIcon
 from PySide6.QtWidgets import QMainWindow, QMessageBox, QTabWidget, QPushButton
 
@@ -67,15 +67,15 @@ class DualGPUOptimizerApp(QMainWindow):
         self.setStyleSheet(
             """
             QMainWindow, QTabWidget, QWidget {
-                background-color: #2D1E40; 
+                background-color: #2D1E40;
                 color: #FFFFFF;
             }
-            
+
             QTabWidget::pane {
                 border: 1px solid #3D2A50;
                 background-color: #2D1E40;
             }
-            
+
             QTabBar::tab {
                 background-color: #241934;
                 color: #FFFFFF;
@@ -83,16 +83,16 @@ class DualGPUOptimizerApp(QMainWindow):
                 margin-right: 2px;
                 margin-bottom: -1px;
             }
-            
+
             QTabBar::tab:selected {
                 background-color: #8A54FD;
                 border-bottom: 2px solid #A883FD;
             }
-            
+
             QTabBar::tab:hover:!selected {
                 background-color: #372952;
             }
-            
+
             QPushButton {
                 background-color: #8A54FD;
                 color: #FFFFFF;
@@ -100,15 +100,15 @@ class DualGPUOptimizerApp(QMainWindow):
                 padding: 6px 16px;
                 border-radius: 4px;
             }
-            
+
             QPushButton:hover {
                 background-color: #A883FD;
             }
-            
+
             QPushButton:pressed {
                 background-color: #6A3EBD;
             }
-            
+
             QProgressBar {
                 border: 1px solid #3D2A50;
                 border-radius: 4px;
@@ -116,16 +116,16 @@ class DualGPUOptimizerApp(QMainWindow):
                 text-align: center;
                 color: #FFFFFF;
             }
-            
+
             QProgressBar::chunk {
                 background-color: #8A54FD;
                 border-radius: 3px;
             }
-            
+
             QLabel {
                 color: #FFFFFF;
             }
-            
+
             QComboBox {
                 background-color: #241934;
                 color: #FFFFFF;
@@ -133,25 +133,25 @@ class DualGPUOptimizerApp(QMainWindow):
                 border: 1px solid #3D2A50;
                 border-radius: 4px;
             }
-            
+
             QComboBox:hover {
                 background-color: #372952;
             }
-            
+
             QComboBox::drop-down {
                 subcontrol-origin: padding;
                 subcontrol-position: top right;
                 width: 18px;
                 border-left: 1px solid #3D2A50;
             }
-            
+
             QComboBox QAbstractItemView {
                 background-color: #241934;
                 color: #FFFFFF;
                 selection-background-color: #8A54FD;
                 selection-color: #FFFFFF;
             }
-            
+
             QLineEdit, QTextEdit, QPlainTextEdit {
                 background-color: #241934;
                 color: #FFFFFF;
@@ -159,64 +159,64 @@ class DualGPUOptimizerApp(QMainWindow):
                 border-radius: 4px;
                 padding: 4px;
             }
-            
+
             QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {
                 border: 1px solid #8A54FD;
             }
-            
+
             QScrollBar:vertical {
                 background-color: #241934;
                 width: 12px;
                 margin: 0px;
             }
-            
+
             QScrollBar::handle:vertical {
                 background-color: #3D2A50;
                 border-radius: 6px;
                 min-height: 20px;
             }
-            
+
             QScrollBar::handle:vertical:hover {
                 background-color: #8A54FD;
             }
-            
+
             QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 height: 0px;
             }
-            
+
             QScrollBar:horizontal {
                 background-color: #241934;
                 height: 12px;
                 margin: 0px;
             }
-            
+
             QScrollBar::handle:horizontal {
                 background-color: #3D2A50;
                 border-radius: 6px;
                 min-width: 20px;
             }
-            
+
             QScrollBar::handle:horizontal:hover {
                 background-color: #8A54FD;
             }
-            
+
             QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
                 width: 0px;
             }
-            
+
             QStatusBar {
                 background-color: #241934;
                 color: #FFFFFF;
             }
-            
+
             QStatusBar::item {
                 border: none;
             }
-            
+
             QCheckBox {
                 spacing: 5px;
             }
-            
+
             QCheckBox::indicator {
                 width: 18px;
                 height: 18px;
@@ -224,16 +224,16 @@ class DualGPUOptimizerApp(QMainWindow):
                 border-radius: 3px;
                 background-color: #241934;
             }
-            
+
             QCheckBox::indicator:checked {
                 background-color: #8A54FD;
                 border: 1px solid #8A54FD;
             }
-            
+
             QCheckBox::indicator:hover {
                 border: 1px solid #A883FD;
             }
-            
+
             QSpinBox {
                 background-color: #241934;
                 color: #FFFFFF;
@@ -241,12 +241,12 @@ class DualGPUOptimizerApp(QMainWindow):
                 border-radius: 4px;
                 padding: 4px;
             }
-            
+
             QSpinBox::up-button, QSpinBox::down-button {
                 background-color: #372952;
                 border-radius: 2px;
             }
-            
+
             QSpinBox::up-button:hover, QSpinBox::down-button:hover {
                 background-color: #8A54FD;
             }
@@ -560,7 +560,7 @@ class DualGPUOptimizerApp(QMainWindow):
                 self.logger.info(f"Updated poll interval to {poll_interval}ms")
 
         # Apply theme changes if needed
-        theme_id = settings.get("theme", "dark_purple")
+        settings.get("theme", "dark_purple")
         # TODO: Implement theme switching when multiple themes are available
 
     def _init_tabs(self):
@@ -570,43 +570,43 @@ class DualGPUOptimizerApp(QMainWindow):
         self.tab_widget.setTabPosition(QTabWidget.North)
         self.tab_widget.setMovable(False)
         self.tab_widget.setDocumentMode(True)
-        
+
         # Initialize tabs in the correct order
         try:
             # Dashboard Tab
             self.dashboard_tab = DashboardTab(mock_mode=self.mock_mode)
             self.tab_widget.addTab(self.dashboard_tab, "Dashboard")
             self.logger.info("Dashboard tab initialized")
-            
+
             # Optimizer Tab
             self.optimizer_tab = OptimizerTab(mock_mode=self.mock_mode)
             self.tab_widget.addTab(self.optimizer_tab, "Optimizer")
             self.logger.info("Optimizer tab initialized")
-            
+
             # Launcher Tab
             self.launcher_tab = LauncherTab(mock_mode=self.mock_mode)
             self.tab_widget.addTab(self.launcher_tab, "Launcher")
             self.logger.info("Launcher tab initialized")
-            
+
             # Connect optimizer and launcher tabs
             self._connect_optimizer_launcher()
-            
+
             # Memory Profiler Tab
             self.memory_profiler_tab = MemoryProfilerTab(mock_mode=self.mock_mode)
             self.tab_widget.addTab(self.memory_profiler_tab, "Memory Profiler")
             self.logger.info("Memory Profiler tab initialized")
-            
+
             # Settings Tab
             self.settings_tab = SettingsTab()
             self.tab_widget.addTab(self.settings_tab, "Settings")
             self.logger.info("Settings tab initialized")
-            
+
             # Connect settings changes
             self.settings_tab.settings_applied.connect(self._on_settings_applied)
-            
+
         except Exception as e:
             self.logger.error(f"Error initializing tabs: {e}")
-            
+
         # Add tab widget to central layout
         self.central_layout.addWidget(self.tab_widget)
 
@@ -616,17 +616,17 @@ class DualGPUOptimizerApp(QMainWindow):
             if hasattr(self, 'optimizer_tab') and hasattr(self, 'launcher_tab'):
                 # Add any additional connections beyond the event bus if needed
                 self.logger.info("Connected optimizer and launcher tabs")
-                
+
                 # Use the event_bus mechanism for the main connections
                 # The launcher tab subscribes to the "optimizer_settings" event
-                
+
                 # Add direct method to switch to launcher tab after applying settings
                 optimizer_apply_button = self.optimizer_tab.findChild(QPushButton, "apply_button")
                 if optimizer_apply_button:
                     optimizer_apply_button.clicked.connect(self._switch_to_launcher_tab)
         except Exception as e:
             self.logger.error(f"Error connecting optimizer and launcher tabs: {e}")
-    
+
     def _switch_to_launcher_tab(self):
         """Switch to the launcher tab."""
         for i in range(self.tab_widget.count()):

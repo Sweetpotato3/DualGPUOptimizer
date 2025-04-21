@@ -3,7 +3,7 @@ Integration code to connect the Optimizer to the UI
 """
 from __future__ import annotations
 import logging
-from typing import Dict, List, Optional, Callable, Any
+from typing import Optional
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Integration")

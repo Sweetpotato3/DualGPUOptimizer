@@ -54,7 +54,6 @@ def ensure_icon_exists():
 def install_pyinstaller():
     """Ensure PyInstaller is installed."""
     try:
-        import PyInstaller
         print("PyInstaller is already installed.")
     except ImportError:
         print("Installing PyInstaller...")

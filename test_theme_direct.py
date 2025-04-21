@@ -23,7 +23,6 @@ def test_colors_module():
         from dualgpuopt.gui.theme.colors import (
             current_theme,
             AVAILABLE_THEMES,
-            THEME_DARK_PURPLE,
             get_theme_by_name,
             update_current_theme
         )

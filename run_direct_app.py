@@ -3,14 +3,12 @@
 Direct entry point for DualGPUOptimizer
 Provides a simplified launch method that avoids complex module imports
 """
-import sys
 import logging
 import tkinter as tk
 from pathlib import Path
 import time
-import threading
 import dataclasses
-from typing import Dict, List, Callable, Any, Optional, Set
+from typing import List
 
 # Set up logging
 logging.basicConfig(
@@ -55,7 +53,6 @@ class GPUMetricsEvent(GPUEvent):
 @dataclasses.dataclass
 class OptimizerEvent(Event):
     """Base class for optimizer-related events"""
-    pass
 
 @dataclasses.dataclass
 class ModelSelectedEvent(OptimizerEvent):
@@ -129,7 +126,7 @@ except ImportError:
 
 # Try to import telemetry system
 try:
-    from dualgpuopt.telemetry import get_telemetry_service, GPUMetrics
+    from dualgpuopt.telemetry import get_telemetry_service
     TELEMETRY_AVAILABLE = True
     logger.info("Telemetry system available")
 except ImportError:
@@ -713,7 +710,7 @@ def main():
     optimizer_component.pack(fill="both", expand=True)
 
     # Add a status bar at the bottom
-    status_bar = StatusBar(main_frame)
+    StatusBar(main_frame)
 
     # Add button frame at the bottom
     button_frame = ttk.Frame(main_frame)

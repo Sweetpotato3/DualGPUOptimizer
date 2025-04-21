@@ -6,7 +6,6 @@ Simple implementation of chat widgets that don't depend on advanced UI libraries
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
-from typing import Optional, Dict, Any
 import logging
 
 # Configure logger
@@ -14,7 +13,6 @@ logger = logging.getLogger("DualGPUOpt.UI.ChatWidgets")
 
 # Try to import HTML and Markdown libraries for rich text, but provide fallbacks
 try:
-    import html
     HTML_SUPPORT = True
 except ImportError:
     HTML_SUPPORT = False

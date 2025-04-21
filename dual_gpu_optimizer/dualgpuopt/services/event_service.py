@@ -4,7 +4,7 @@ Event bus system for component communication.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any
 
 class EventBus:
     """Central event manager for component communication."""

@@ -6,7 +6,6 @@ Sets up the Python path and runs the application with mock GPU mode.
 import os
 import sys
 import pathlib
-import importlib.util
 import logging
 
 def setup_environment():
@@ -42,7 +41,6 @@ def run_application():
             sys.path.insert(0, str(dualgpuopt_path))
 
             # Try importing GUI components directly
-            from dualgpuopt import gpu_info, telemetry, gui
             from dualgpuopt.gui import run_app
 
             # Run the app

@@ -7,7 +7,7 @@ model profiles and historical data.
 
 import logging
 import time
-from typing import Dict, List, Optional, Tuple, Any, Set
+from typing import List, Optional, Tuple, Set
 import os
 from functools import lru_cache
 
@@ -70,11 +70,11 @@ class MemoryProfile:
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def _estimate_usage_cached(self, batch_size: int, token_count: int) -> int:
         """Cached version of memory estimation
-        
+
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
-            
+
         Returns:
             Estimated memory usage in bytes
         """
@@ -82,11 +82,11 @@ class MemoryProfile:
 
     def estimate_usage(self, batch_size: int, token_count: int) -> int:
         """Estimate memory usage for given batch size and token count
-        
+
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
-            
+
         Returns:
             Estimated memory usage in bytes
         """
@@ -100,11 +100,11 @@ class MemoryProfile:
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
         """Calculate maximum batch size given available memory and token count
-        
+
         Args:
             available_memory: Available memory in bytes
             token_count: Number of tokens per sequence
-            
+
         Returns:
             Maximum batch size
         """
@@ -129,11 +129,11 @@ class MemoryProfile:
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def max_sequence_length(self, available_memory: int, batch_size: int) -> int:
         """Calculate maximum sequence length given available memory and batch size
-        
+
         Args:
             available_memory: Available memory in bytes
             batch_size: Batch size
-            
+
         Returns:
             Maximum sequence length
         """
@@ -157,7 +157,7 @@ class MemoryProfile:
 
     def update_history(self, memory_usage: int, max_history: int = 100) -> None:
         """Update usage history with current memory usage
-        
+
         Args:
             memory_usage: Current memory usage in bytes
             max_history: Maximum history points to keep
@@ -171,10 +171,10 @@ class MemoryProfile:
 
     def project_growth(self, time_horizon: float = 60.0) -> Optional[int]:
         """Project memory growth over time horizon in seconds
-        
+
         Args:
             time_horizon: Time horizon for projection in seconds
-            
+
         Returns:
             Projected memory usage in bytes, or None if projection not possible
         """
@@ -265,10 +265,10 @@ class MemoryProfile:
 
     def batch_estimate_usage(self, batch_configs: List[Tuple[int, int]]) -> List[int]:
         """Estimate memory usage for multiple batch configurations at once
-        
+
         Args:
             batch_configs: List of (batch_size, token_count) tuples
-            
+
         Returns:
             List of estimated memory usage in bytes
         """
@@ -326,7 +326,7 @@ DEFAULT_PROFILES = {
 @lru_cache(maxsize=1)
 def get_available_profiles() -> Set[str]:
     """Get the set of available profile names
-    
+
     Returns:
         Set of profile names
     """
@@ -336,10 +336,10 @@ def get_available_profiles() -> Set[str]:
 @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
 def get_profile(name: str) -> Optional[MemoryProfile]:
     """Get a memory profile by name
-    
+
     Args:
         name: Profile name
-        
+
     Returns:
         MemoryProfile or None if not found
     """
@@ -376,13 +376,13 @@ def find_optimal_batch(available_memory: int,
                       token_lengths: List[int],
                       memory_buffer: float = 0.9) -> Tuple[int, int]:
     """Find optimal batch size and sequence length given available memory
-    
+
     Args:
         available_memory: Available memory in bytes
         profile: Memory profile to use
         token_lengths: List of possible token lengths to consider
         memory_buffer: Safety buffer factor (1.0 = use all memory)
-        
+
     Returns:
         Tuple of (batch_size, sequence_length)
     """

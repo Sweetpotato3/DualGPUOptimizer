@@ -3,7 +3,6 @@ dualgpuopt.ui.widgets
 Reusable neon‑styled ttkbootstrap widgets.
 """
 from __future__ import annotations
-import tkinter as tk
 import ttkbootstrap as ttk
 import time, math
 

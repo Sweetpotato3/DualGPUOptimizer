@@ -2,7 +2,7 @@
 Tests for the Settings module
 """
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock
 import sys
 import os
 import json

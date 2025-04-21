@@ -2,10 +2,7 @@
 """
 Standalone launcher for modern UI
 """
-import os
 import sys
-import tkinter as tk
-import importlib.util
 from pathlib import Path
 
 # Get the absolute path to this script
@@ -17,18 +14,15 @@ if parent_dir not in sys.path:
     sys.path.insert(0, parent_dir)
 
 # Make sure we can import from dualgpuopt
-import dualgpuopt
 
 # Try to import ttkbootstrap
 try:
-    import ttkbootstrap
     print("ttkbootstrap is available")
 except ImportError:
     print("ttkbootstrap is not available - UI will use standard ttk theme")
 
 # Try to import our custom widgets
 try:
-    from dualgpuopt.ui.neon import NeonButton, GradientBar, init_theme
     print("Custom UI components found")
 except ImportError as e:
     print(f"Error importing custom UI components: {e}")

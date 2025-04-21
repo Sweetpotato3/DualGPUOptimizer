@@ -3,7 +3,6 @@ DPI and font scaling utilities for theme system
 """
 import sys
 import logging
-import tkinter as tk
 from tkinter import font
 
 logger = logging.getLogger("DualGPUOpt.Theme.DPI")

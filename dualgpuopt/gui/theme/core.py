@@ -4,7 +4,6 @@ Core theme management functionality
 import os
 import sys
 import logging
-import tkinter as tk
 from tkinter import ttk
 from pathlib import Path
 

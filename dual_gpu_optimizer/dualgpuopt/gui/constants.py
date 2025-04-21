@@ -4,7 +4,7 @@ This script contains all the GUI constants in one place to avoid import issues.
 """
 
 from __future__ import annotations
-from typing import Dict, Tuple
+from typing import Dict
 from pathlib import Path
 
 # Application info

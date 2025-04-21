@@ -1,10 +1,6 @@
 """
 Test suite for the optimizer module.
 """
-import os
-import tempfile
-from pathlib import Path
-from unittest import mock
 
 import pytest
 

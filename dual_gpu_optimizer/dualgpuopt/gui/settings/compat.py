@@ -5,12 +5,9 @@ Preserves the original API for backward compatibility with the old settings.py m
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, List, Optional, Type
 
 # Import from refactored modules
 from dualgpuopt.gui.settings.settings_tab import SettingsTab
-from dualgpuopt.gpu_info import GPU
-from dualgpuopt.services.state_service import StateService
 
 logger = logging.getLogger("dualgpuopt.gui.settings.compat")
 logger.info("Using refactored settings module with compatibility layer")

@@ -33,22 +33,16 @@ try:
             raise ImportError("rich module not found")
 
         from rich.console import Console
-        from rich.progress import (
-            TaskProgressColumn,
-            TextColumn,
-        )
-        from rich.table import Table
-        from rich.text import Text
 
         logger.info("Successfully imported rich module")
     except ImportError as e:
         logger.error(f"Failed to import rich module: {e}")
-        print(f"Error: Missing 'rich' module. Try installing it with: pip install rich")
+        print("Error: Missing 'rich' module. Try installing it with: pip install rich")
         sys.exit(1)
 
     # Try to import optional dependencies
     try:
-        import torch
+        pass
 
         logger.info("Successfully imported torch")
         TORCH_AVAILABLE = True
@@ -59,19 +53,20 @@ try:
         TORCH_AVAILABLE = False
 
     try:
-        import prometheus_client
+        pass
 
         logger.info("Successfully imported prometheus_client")
         PROMETHEUS_AVAILABLE = True
     except ImportError:
         logger.warning(
-            "Optional dependency 'prometheus_client' not found - metrics will be disabled"
+            "Optional dependency 'prometheus_client' not found - "
+            "metrics will be disabled"
         )
         PROMETHEUS_AVAILABLE = False
 
     # Try to import application modules
     try:
-        from dualgpuopt import configio, gpu_info, optimizer
+        from dualgpuopt import gpu_info, optimizer
         from dualgpuopt.gui import run_app
         from dualgpuopt.logconfig import setup_logging
 
@@ -79,7 +74,8 @@ try:
     except ImportError as e:
         logger.error(f"Failed to import application modules: {e}")
         print(
-            f"Error: Application modules not found. Please ensure the package is installed with: pip install -e ./dual_gpu_optimizer"
+            "Error: Application modules not found. Please ensure the package is "
+            "installed with: pip install -e ./dual_gpu_optimizer"
         )
         sys.exit(1)
 
@@ -108,12 +104,13 @@ try:
             print("\nDetected GPUs:")
             for g in gpus:
                 print(
-                    f"  GPU {g.index}: {g.name} - {g.mem_total} MiB total, {g.mem_free} MiB free"
+                    f"  GPU {g.index}: {g.name} - {g.mem_total} MiB total, "
+                    f"{g.mem_free} MiB free"
                 )
 
             # Generate split configuration
             split = optimizer.split_string(gpus)
-            tensor_fractions = optimizer.tensor_fractions(gpus)
+            optimizer.tensor_fractions(gpus)
 
             print(f"\nRecommended GPU Split: {split}")
 
@@ -133,7 +130,8 @@ try:
                     print(f"\nEnvironment variables written to: {env_path}")
             else:
                 print(
-                    "\nNo model path specified. Use --model-path to generate framework-specific commands."
+                    "\nNo model path specified. Use --model-path to generate "
+                    "framework-specific commands."
                 )
 
             return 0
@@ -207,7 +205,8 @@ try:
                 # Show splash screen
                 if not args.no_splash:
                     print(
-                        "\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 ====="
+                        "\n===== DualGPUOptimizer - LLM Workload Optimization "
+                        "v0.2.0 ====="
                     )
                     print("Starting GUI application...\n")
 
@@ -228,7 +227,7 @@ except Exception as e:
     error_message = f"Critical startup error: {str(e)}\n{traceback.format_exc()}"
     try:
         logger.critical(error_message)
-    except:
+    except Exception:
         # If even the logger fails, write to a file directly
         with open(log_path, "a") as f:
             f.write(f"{error_message}\n")

@@ -3,7 +3,6 @@
 Test script that imports only the constants module directly
 """
 import importlib.util
-import sys
 from pathlib import Path
 
 # Direct import without going through __init__.py

@@ -9,7 +9,6 @@ for dual-GPU setups.
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from typing import Dict, List, Optional, Tuple, Union
-import math
 
 
 class ModelType(Enum):
@@ -392,7 +391,7 @@ def apply_profile(model_name: str, gpu_specs: Dict[str, float],
     sorted_gpus = sorted(gpu_specs.items(), key=lambda x: x[1], reverse=True)
 
     # Calculate total available memory across all GPUs
-    total_vram = sum(vram for _, vram in sorted_gpus)
+    sum(vram for _, vram in sorted_gpus)
 
     # Calculate memory required for the model
     memory_required = profile.base_memory

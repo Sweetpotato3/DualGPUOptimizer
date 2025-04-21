@@ -8,7 +8,6 @@ import threading
 import time
 import queue
 import random
-from pathlib import Path
 
 # Try to import ttkbootstrap for better styling
 try:

@@ -30,12 +30,12 @@ def mock_gpu_list():
     gpu1.name = "NVIDIA Test GPU 1"
     gpu1.total_memory = 8 * 1024 * 1024 * 1024  # 8GB
     gpu1.available_memory = 6 * 1024 * 1024 * 1024  # 6GB
-    
+
     gpu2 = MagicMock()
     gpu2.name = "NVIDIA Test GPU 2"
     gpu2.total_memory = 12 * 1024 * 1024 * 1024  # 12GB
     gpu2.available_memory = 10 * 1024 * 1024 * 1024  # 10GB
-    
+
     return [gpu1, gpu2]
 
 # Event bus fixture
@@ -69,16 +69,16 @@ def clean_env():
     """Provide a clean environment by temporarily clearing relevant env vars."""
     preserved = {}
     prefixes = ['DUALGPUOPT_', 'CUDA_', 'NVIDIA_']
-    
+
     for key in os.environ:
         for prefix in prefixes:
             if key.startswith(prefix):
                 preserved[key] = os.environ[key]
                 del os.environ[key]
                 break
-    
+
     yield
-    
+
     # Restore environment
     for key, value in preserved.items():
-        os.environ[key] = value 
+        os.environ[key] = value

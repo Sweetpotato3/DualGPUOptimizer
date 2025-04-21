@@ -11,7 +11,7 @@ This module provides centralized configuration management for all aspects of the
 import os
 import json
 import logging
-from typing import Dict, Any, Optional, List, Set, Union
+from typing import Dict, Any, Optional, List, Union
 from pathlib import Path
 import threading
 from enum import Enum
@@ -196,7 +196,6 @@ class ConfigChangeListener:
         Args:
             event: Configuration change event
         """
-        pass
 
 class ConfigurationSystem:
     """Centralized configuration system"""

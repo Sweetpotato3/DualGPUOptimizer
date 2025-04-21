@@ -7,12 +7,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
-from typing import Dict, List, Any, Optional
+from typing import List, Optional
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk

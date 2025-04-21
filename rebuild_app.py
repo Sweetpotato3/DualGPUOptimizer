@@ -3,7 +3,6 @@
 Rebuild script for DualGPUOptimizer.
 This script rebuilds the application with PyInstaller with all necessary dependencies.
 """
-import os
 import sys
 import pathlib
 import subprocess

@@ -13,8 +13,7 @@ try:
 
     from dualgpuopt.gui.theme.colors import (
         current_theme,
-        AVAILABLE_THEMES,
-        THEME_DARK_PURPLE
+        AVAILABLE_THEMES
     )
 
     from dualgpuopt.gui.theme.dpi import (

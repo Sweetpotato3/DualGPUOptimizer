@@ -6,11 +6,10 @@ This module handles monitoring and management of running model processes.
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
 import threading
 import time
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from typing import Dict, Optional, Callable
 
 from dualgpuopt.services.event_service import event_bus
 

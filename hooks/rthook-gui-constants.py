@@ -2,7 +2,6 @@
 Runtime hook to ensure dualgpuopt.gui.constants can be loaded
 This helps with PyInstaller bundling by adding fallback imports
 """
-import os
 import sys
 import importlib.util
 from pathlib import Path

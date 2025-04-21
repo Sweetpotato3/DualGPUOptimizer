@@ -4,7 +4,7 @@ GPU-specific commands for operations like overclocking.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from dualgpuopt.commands.command_base import Command
 from dualgpuopt.services.config_service import config_service
@@ -62,7 +62,8 @@ class ApplyOverclockCommand(Command):
             self.logger.info(f"  Core offset: {self.core_offset} MHz")
             self.logger.info(f"  Memory offset: {self.memory_offset} MHz")
             self.logger.info(f"  Power limit: {self.power_limit}%")
-            self.logger.info(f"  Fan speed: {'Auto' if self.auto_fan else f'{self.fan_speed}%'}")
+            fan_display = 'Auto' if self.auto_fan else f'{self.fan_speed}%'
+            self.logger.info(f"  Fan speed: {fan_display}")
 
             # Save to config
             self._save_to_config()
@@ -81,8 +82,12 @@ class ApplyOverclockCommand(Command):
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Overclock Error",
-                                    context={"operation": "apply_overclock", "gpu_index": self.gpu_index})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Overclock Error",
+                context={"operation": "apply_overclock", "gpu_index": self.gpu_index}
+            )
             return False
 
     def undo(self) -> bool:
@@ -125,8 +130,13 @@ class ApplyOverclockCommand(Command):
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Restore Error",
-                                    context={"operation": "restore_gpu_settings", "gpu_index": self.gpu_index})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Restore Error",
+                context={"operation": "restore_gpu_settings", 
+                         "gpu_index": self.gpu_index}
+            )
             return False
 
     def _get_current_values(self) -> Dict[str, Any]:

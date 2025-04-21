@@ -5,7 +5,6 @@ Neon‑style reusable widgets & styling helpers.
 from __future__ import annotations
 import ttkbootstrap as ttk
 from ttkbootstrap import utility
-import tkinter as tk
 import time, math
 
 # ---------- Theme bootstrap ----------

@@ -7,11 +7,7 @@ Used as a fallback when more advanced UI options are not available.
 from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
-import threading
-import time
 import logging
-import sys
-from typing import Dict, Any, List, Optional
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI.Simple")

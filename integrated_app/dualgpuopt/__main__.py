@@ -11,8 +11,6 @@ import os
 import sys
 import tkinter as tk
 from tkinter import ttk
-import threading
-from typing import Dict, List, Optional, Any
 
 # Import our module components
 from dualgpuopt import __version__, MOCK_MODE

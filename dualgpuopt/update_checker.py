@@ -6,11 +6,9 @@ Checks for updates from GitHub and notifies the user when a new version is avail
 import json
 import logging
 import threading
-import time
 from typing import Optional, Dict, Any, Tuple, Callable
 import re
 import os
-from pathlib import Path
 from datetime import datetime, timedelta
 
 logger = logging.getLogger("DualGPUOpt.UpdateChecker")

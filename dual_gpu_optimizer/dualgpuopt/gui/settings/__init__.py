@@ -13,7 +13,6 @@ from dualgpuopt.gui.settings.overclocking import OverclockingFrame
 from dualgpuopt.gui.settings.application_settings import ApplicationSettingsFrame
 
 # Ensure backward compatibility
-from dualgpuopt.gui.settings.compat import *
 
 __all__ = [
     'SettingsTab',

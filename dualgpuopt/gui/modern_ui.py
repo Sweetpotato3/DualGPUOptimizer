@@ -3,22 +3,19 @@ Modern UI implementation for DualGPUOptimizer
 Uses ttkbootstrap for a contemporary appearance with neon accents
 """
 
-import os
 import sys
 import time
 import logging
-import platform
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import List
 
 import tkinter as tk
-from tkinter import ttk, messagebox, filedialog
+from tkinter import ttk, messagebox
 
 # Import ttkbootstrap for modern UI elements
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
 
     # Check if Window class is available (newer versions of ttkbootstrap)
     if hasattr(ttk, 'Window'):
@@ -29,7 +26,6 @@ try:
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
-    from tkinter.constants import *
     TTKBOOTSTRAP_AVAILABLE = False
     TTKBOOTSTRAP_WINDOW_AVAILABLE = False
 
@@ -58,7 +54,6 @@ class TtkWindow:
 
     def pack(self, *args, **kwargs):
         """Pack this window (no-op for root window)"""
-        pass
 
     def destroy(self):
         """Destroy the root window"""

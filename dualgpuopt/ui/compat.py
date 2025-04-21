@@ -5,7 +5,6 @@ Provides graceful fallbacks for UI dependencies that might not be installed.
 """
 from __future__ import annotations
 import logging
-import sys
 import tkinter as tk
 from tkinter import ttk
 
@@ -19,7 +18,6 @@ try:
         Meter as FallbackMeter,
         Floodgauge as FallbackFloodgauge,
         DateEntry as FallbackDateEntry,
-        get_widget_class,
         create_widget_safely,
         DEFAULT_THEME
     )
@@ -28,7 +26,7 @@ try:
 except ImportError:
     fallback_widgets_available = False
     logger.warning("Fallback widget system not available - using basic compatibility")
-    
+
     # Default theme colors to use when ttkbootstrap is not available
     DEFAULT_THEME = {
         "bg": "#2b2b2b",
@@ -232,7 +230,7 @@ def create_widget(widget_name: str, parent: tk.Widget, module_name: str = "ttkbo
     # If we have the fallback widget system
     if fallback_widgets_available:
         return create_widget_safely(widget_name, parent, module, **kwargs)
-    
+
     # Manual fallbacks for common widgets
     if widget_name == "ScrolledFrame":
         return get_scrolled_frame(parent, **kwargs)
@@ -250,7 +248,7 @@ def create_widget(widget_name: str, parent: tk.Widget, module_name: str = "ttkbo
             return widget_class(parent, **kwargs)
         except (AttributeError, TypeError) as e:
             logger.warning(f"Failed to create {widget_name} from {module_name}: {e}")
-    
+
     # Fall back to ttk
     try:
         return getattr(ttk, widget_name)(parent, **kwargs)

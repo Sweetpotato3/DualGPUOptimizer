@@ -12,11 +12,10 @@ import subprocess
 import threading
 import time
 import uuid
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from typing import Dict, List, Optional, Tuple, Any, Callable
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.services.event_service import event_bus
-from dualgpuopt.services.config_service import config_service
 
 # Import process monitor
 from dualgpuopt.gui.launcher.process_monitor import ProcessMonitor
@@ -25,15 +24,10 @@ from dualgpuopt.gui.launcher.model_validation import ModelValidator
 
 # Try to import advanced optimization modules
 try:
-    from dualgpuopt.batch.smart_batch import optimize_batch_size
-    from dualgpuopt.ctx_size import calc_max_ctx, model_params_from_name
-    from dualgpuopt.layer_balance import rebalance
-    from dualgpuopt.vram_reset import reset_vram, ResetMethod, ResetResult
-    from dualgpuopt.mpolicy import autocast, scaler
-    from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel, MemoryAlert
-    from dualgpuopt.model_profiles import apply_profile, get_model_profile
-    from dualgpuopt.error_handler import get_error_handler, ErrorSeverity, ErrorCategory
-    from dualgpuopt.telemetry import get_telemetry_service
+    from dualgpuopt.ctx_size import model_params_from_name
+    from dualgpuopt.vram_reset import reset_vram
+    from dualgpuopt.memory_monitor import get_memory_monitor
+    from dualgpuopt.model_profiles import apply_profile
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Advanced optimization modules not available: {e}")

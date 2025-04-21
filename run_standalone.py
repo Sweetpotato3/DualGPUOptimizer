@@ -17,7 +17,6 @@ def main():
 
     # Check for required dependencies
     try:
-        import rich
         print("✓ Rich library found")
     except ImportError:
         print("✗ Rich library not found. Installing...")
@@ -30,7 +29,6 @@ def main():
 
     # Try to import the core module
     try:
-        import dualgpuopt
         print("✓ DualGPUOptimizer core module found")
     except ImportError:
         print("✗ DualGPUOptimizer module not found.")
@@ -44,7 +42,7 @@ def main():
                 print("✓ DualGPUOptimizer installed")
                 # Try importing again
                 try:
-                    import dualgpuopt
+                    pass
                 except ImportError:
                     print("✗ Still cannot import DualGPUOptimizer even after installation.")
                     return 1

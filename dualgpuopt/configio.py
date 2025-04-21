@@ -3,7 +3,6 @@ Configuration I/O module for DualGPUOptimizer
 Provides functions for loading and saving configuration settings
 """
 import json
-import os
 from pathlib import Path
 import logging
 

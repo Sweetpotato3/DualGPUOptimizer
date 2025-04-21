@@ -1,7 +1,6 @@
 """
 Unit tests for the telemetry module
 """
-import os
 import time
 import pytest
 from unittest.mock import MagicMock, patch

@@ -2,7 +2,6 @@
 Direct test of theme module by importing directly from files
 """
 import sys
-import os
 import importlib.util
 import logging
 from pathlib import Path

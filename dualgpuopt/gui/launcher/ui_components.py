@@ -8,13 +8,11 @@ from __future__ import annotations
 import logging
 import tkinter as tk
 from tkinter import ttk, filedialog
-import os
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from typing import Dict, List, Any
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk

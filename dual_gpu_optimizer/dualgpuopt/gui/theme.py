@@ -8,11 +8,11 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 
 # Import ttkthemes for better theme support
 try:
-    from ttkthemes import ThemedTk, ThemedStyle
+    from ttkthemes import ThemedStyle
     TTKTHEMES_AVAILABLE = True
 except ImportError:
     TTKTHEMES_AVAILABLE = False

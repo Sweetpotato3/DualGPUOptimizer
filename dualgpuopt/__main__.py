@@ -275,7 +275,6 @@ def main():
                     logger.debug("UI module imported via dependency manager")
                 else:
                     # Check for tkinter directly
-                    import tkinter as tk
                     logger.debug("tkinter is available")
             except ImportError:
                 logger.error("tkinter is not installed - required for GUI mode")
@@ -323,7 +322,6 @@ def main():
 
             # THIRD ATTEMPT: Try modern UI with compatibility layer
             try:
-                from dualgpuopt.ui import get_themed_tk
                 logger.debug("UI compatibility layer loaded")
 
                 # Try to run the application using our compatible run_app
@@ -349,7 +347,6 @@ def main():
 
             # Try to import ttkbootstrap for enhanced UI - just informational
             try:
-                import ttkbootstrap
                 logger.info("ttkbootstrap available for enhanced UI")
             except ImportError:
                 logger.warning("ttkbootstrap not found - falling back to standard theme")

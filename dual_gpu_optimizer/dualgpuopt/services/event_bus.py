@@ -12,7 +12,7 @@ import inspect
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union, cast
+from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
 
 T = TypeVar('T')
 

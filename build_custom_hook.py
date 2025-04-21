@@ -5,10 +5,8 @@ Build script with custom hooks to override built-in torch hook.
 import os
 import subprocess
 import sys
-import site
 from pathlib import Path
 import shutil
-import glob
 
 # Increase Python's recursion limit for analyzing deep modules
 sys.setrecursionlimit(5000)

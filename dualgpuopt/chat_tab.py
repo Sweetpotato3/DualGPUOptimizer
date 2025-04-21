@@ -2,7 +2,6 @@ from __future__ import annotations
 import queue, threading, time
 import logging
 import tkinter as tk
-from typing import Dict, Any, Optional, List, Tuple, Callable
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.ChatTab")

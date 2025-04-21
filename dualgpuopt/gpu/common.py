@@ -4,8 +4,7 @@ Common GPU module functionality
 from __future__ import annotations
 import platform
 import logging
-import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU")

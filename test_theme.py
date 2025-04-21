@@ -1,7 +1,6 @@
 """
 Test script for theme functionality in DualGPUOptimizer
 """
-import os
 import sys
 import logging
 import pathlib

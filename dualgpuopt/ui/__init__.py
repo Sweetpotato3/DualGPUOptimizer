@@ -6,7 +6,6 @@ This module ensures the application works even when optional dependencies are mi
 """
 from __future__ import annotations
 import logging
-from typing import Dict, Any, Optional
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI")
@@ -46,7 +45,6 @@ except ImportError as e:
 
     def get_meter_widget(parent, **kwargs):
         """Get a meter widget, falling back to a simple frame"""
-        import tkinter as tk
         from tkinter import ttk
         frame = ttk.Frame(parent)
         ttk.Label(frame, text="0").pack()
@@ -58,7 +56,6 @@ except ImportError as e:
 
     def get_chat_tab(master, out_q):
         """Get a chat tab, falling back to a simple frame"""
-        import tkinter as tk
         from tkinter import ttk
         frame = ttk.Frame(master)
         ttk.Label(frame, text="Chat not available - missing dependencies").pack(pady=20)

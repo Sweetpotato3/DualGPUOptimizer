@@ -6,12 +6,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
-from typing import Callable, Dict, Any, Optional
+from typing import Callable, Optional
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
@@ -19,7 +18,7 @@ except ImportError:
 
 from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.config_service import config_service
-from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES, AVAILABLE_THEMES
+from dualgpuopt.gui.theme import AVAILABLE_TTK_THEMES, AVAILABLE_THEMES
 from dualgpuopt.gui.theme_selector import ThemeSelector
 
 

@@ -8,30 +8,17 @@ while we transition to the new modular structure.
 from __future__ import annotations
 
 import logging
-import tkinter as tk
-from tkinter import ttk, scrolledtext
 import os
-import queue
 import threading
 import subprocess
-from typing import Dict, List, Optional, Any
 
 # Import refactored components
-from dualgpuopt.gui.launcher.ui_components import LauncherTab
-from dualgpuopt.gui.launcher.launch_controller import LaunchController
 from dualgpuopt.gui.launcher.process_monitor import ProcessMonitor
 
 # Try to import advanced features
 try:
-    from dualgpuopt.batch.smart_batch import optimize_batch_size, BatchStats
-    from dualgpuopt.ctx_size import calc_max_ctx, model_params_from_name
-    from dualgpuopt.layer_balance import rebalance
-    from dualgpuopt.vram_reset import reset_vram, ResetMethod, ResetResult
-    from dualgpuopt.mpolicy import autocast, scaler
-    from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel, MemoryAlert
-    from dualgpuopt.model_profiles import apply_profile, get_model_profile
-    from dualgpuopt.error_handler import get_error_handler, show_error_dialog, ErrorSeverity, ErrorCategory
-    from dualgpuopt.telemetry import get_telemetry_service
+    from dualgpuopt.vram_reset import reset_vram
+    from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Advanced optimization modules not available: {e}")

@@ -3,13 +3,11 @@ Direct launcher for DualGPUOptimizer
 
 Provides a simplified entry point with robust dependency handling
 """
-import os
 import sys
 import logging
-import tkinter as tk
 from pathlib import Path
 import importlib.util
-from typing import Dict, Any, Optional
+from typing import Any
 
 # Set up logging
 logging.basicConfig(
@@ -94,7 +92,6 @@ def run_direct_app(**kwargs):
         logger.warning("Dependency manager not available, using basic imports")
         # Basic dependency checks
         try:
-            import tkinter as tk
             from tkinter import ttk
         except ImportError:
             logger.error("tkinter is required but not installed")
@@ -534,7 +531,6 @@ def check_dependency(name: str) -> bool:
     """
     if name == "tkinter":
         try:
-            import tkinter
             return True
         except ImportError:
             return False

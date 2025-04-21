@@ -42,7 +42,7 @@ def test_apply_profile():
             for quant in quantization_types:
                 try:
                     # Get the profile first for reference
-                    profile = get_model_profile(model, quant)
+                    get_model_profile(model, quant)
                     logger.info(f"Testing {model} with {quant or 'no'} quantization on {config_name}")
 
                     # Apply the profile

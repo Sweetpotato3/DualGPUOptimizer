@@ -5,14 +5,13 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable, Dict, Any, Optional
+from typing import Any
 
 import ttkbootstrap as ttkb
 
 from dualgpuopt.gpu_info import probe_gpus, GPU
 from dualgpuopt.optimizer import split_string, tensor_fractions
 from dualgpuopt.services.state_service import state_service
-from dualgpuopt.gui.constants import COLORS
 
 
 class OptimizerWidget(ttk.Frame):
@@ -234,7 +233,6 @@ class OptimizerTab(ttk.Frame):
     def _browse_model(self) -> None:
         """Open file dialog to browse for model path."""
         # This would use tkinter.filedialog in a real implementation
-        pass
 
     def _generate_commands(self) -> None:
         """Generate framework-specific commands based on settings."""

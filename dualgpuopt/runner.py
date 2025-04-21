@@ -7,7 +7,7 @@ import threading
 import queue
 import pathlib
 import shlex
-from typing import List, Optional
+from typing import Optional
 
 class Runner:
     def __init__(self, cmd: str, workdir: str|pathlib.Path=".") -> None:

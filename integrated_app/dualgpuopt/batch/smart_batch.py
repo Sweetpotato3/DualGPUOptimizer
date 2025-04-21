@@ -4,7 +4,7 @@ Smart batching system for length-aware inference scheduling.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Tuple
 
 logger = logging.getLogger("dualgpuopt.batch")
 

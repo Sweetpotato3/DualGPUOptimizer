@@ -491,6 +491,25 @@ If you need to override default behavior:
   - `error_handler/`: Error handling and recovery system
   - `dependency_manager.py`: Dependency management system
 
+### Code Quality Tools
+
+To maintain code quality, the following tools are provided:
+
+- **fix_whitespace.py**: Automatically removes trailing whitespace and unused imports
+  ```bash
+  python fix_whitespace.py
+  ```
+
+- **Pre-commit Hook**: Prevents committing code with trailing whitespace or unused imports
+  ```bash
+  python install_autoflake.py
+  ```
+
+- **Code Quality Documentation**: See `code_quality.md` for detailed information about:
+  - Setting up the pre-commit hook
+  - Configuring your editor to automatically remove trailing whitespace
+  - Best practices for import management
+
 ### Building from Source
 
 ```

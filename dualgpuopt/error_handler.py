@@ -24,7 +24,6 @@ warnings.warn(
 )
 
 # Re-export everything from the compatibility layer
-from dualgpuopt.error_handler.compat import *
 
 # Initialize module-level logger for backward compatibility
 logger = logging.getLogger("DualGPUOpt.ErrorHandler")
@@ -33,7 +32,7 @@ import functools
 import sys
 import traceback
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 
 class ErrorSeverity(Enum):

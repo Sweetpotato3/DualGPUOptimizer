@@ -3,10 +3,9 @@ GPU-specific command generation for model execution.
 """
 from __future__ import annotations
 
-import os
 import pathlib
 import logging
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Optional
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt import optimizer

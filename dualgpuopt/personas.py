@@ -5,7 +5,7 @@ Provides functionality for managing different AI personas in chat
 import json
 from pathlib import Path
 import logging
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 logger = logging.getLogger("DualGPUOpt.Personas")
 

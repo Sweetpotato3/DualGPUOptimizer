@@ -6,8 +6,6 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 import logging
-import sys
-from typing import Dict, List, Any, Callable, Optional
 
 try:
     from dualgpuopt.services.event_service import event_bus
@@ -23,11 +21,11 @@ except ImportError:
     HAS_CONFIG_SERVICE = False
     print("Warning: config_service not available, theme persistence will not be tested")
 
-from dualgpuopt.gui.theme import AVAILABLE_THEMES, set_theme, current_theme
+from dualgpuopt.gui.theme import AVAILABLE_THEMES, current_theme
 from dualgpuopt.gui.theme_selector import ThemeSelector
 from dualgpuopt.gui.theme_observer import register_themed_widget, register_theme_callback
 from dualgpuopt.gui.themed_widgets import (
-    ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry, ThemedListbox, ColorSwatch
+    ThemedLabel, ThemedButton, ThemedEntry, ColorSwatch
 )
 
 logger = logging.getLogger("DualGPUOpt.ThemeTester")

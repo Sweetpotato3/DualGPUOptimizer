@@ -8,9 +8,8 @@ import os
 import threading
 import time
 from dataclasses import dataclass
-from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Telemetry")
@@ -28,7 +27,7 @@ ENV_METRIC_CACHE_TTL = float(os.environ.get("DUALGPUOPT_METRIC_CACHE_TTL", "0.05
 
 # Import error handling if available
 try:
-    from dualgpuopt.error_handler import ErrorCategory, ErrorSeverity, handle_exceptions
+    pass
 
     error_handler_available = True
 except ImportError:
@@ -47,7 +46,7 @@ except ImportError:
 
 # Import resource manager if available
 try:
-    from dualgpuopt.services.resource_manager import get_resource_manager, ResourceType
+    from dualgpuopt.services.resource_manager import get_resource_manager
 
     resource_manager_available = True
     resource_manager = get_resource_manager()
@@ -318,7 +317,7 @@ class TelemetryService:
         else:
             # Fallback to direct implementation if resource manager not available
             return self._collect_gpu_metrics_impl()
-        
+
     def _collect_gpu_metrics_impl(self) -> Dict[int, GPUMetrics]:
         """Implementation of GPU metrics collection
 
@@ -326,7 +325,6 @@ class TelemetryService:
             Dictionary of GPU metrics indexed by GPU ID
         """
         # Collect metrics from all GPUs
-        metrics = {}
         current_time = time.time()
 
         # Determine the number of GPUs to monitor
@@ -385,16 +383,16 @@ class TelemetryService:
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
         logger.info("Starting telemetry collection loop")
-        
+
         while not self._stop_event.is_set():
             try:
                 # Collect metrics
                 metrics = self._collect_gpu_metrics()
-                
+
                 # Update stored metrics with thread safety
                 with self._metrics_lock:
                     self.metrics = metrics
-                
+
                 # Process the metrics update (notifies callbacks and publishes to event bus)
                 if resource_manager_available:
                     # Process metrics on CPU thread to avoid VRAM impact
@@ -402,12 +400,12 @@ class TelemetryService:
                 else:
                     # Fallback to direct processing
                     self._process_metrics_update(metrics)
-                
+
                 # Reset error counters on successful update
                 self._consecutive_errors = 0
             except Exception as e:
                 self._handle_telemetry_error(e)
-            
+
             # Sleep until next collection (with cancellation support)
             self._stop_event.wait(self.poll_interval)
 
@@ -441,7 +439,7 @@ class TelemetryService:
                         power_draw=gpu_metrics.power_usage,
                         fan_speed=gpu_metrics.fan_speed,
                     )
-                    
+
                     # Use CPU processing for event handling when available
                     if resource_manager_available:
                         resource_manager.run_on_cpu(event_bus.publish_typed, metrics_event)

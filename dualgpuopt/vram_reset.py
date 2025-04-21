@@ -2,9 +2,8 @@
 VRAM Reset helper for GPU memory reclamation
 Provides functions to reclaim GPU memory through NVML
 """
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional
 import logging
-import os
 import time
 import platform
 import subprocess
@@ -289,7 +288,6 @@ def _reset_system_cmd() -> bool:
             except:
                 # If PowerShell command fails, try a simpler approach
                 logger.debug("PowerShell command failed, trying simpler approach")
-                pass
 
         elif system == "Linux":
             # Linux - sync and echo to clear GPU
@@ -308,7 +306,6 @@ def _reset_system_cmd() -> bool:
                 return True
             except:
                 logger.debug("Linux system commands failed")
-                pass
 
         # Generic - just wait for memory to be freed naturally
         time.sleep(1.0)

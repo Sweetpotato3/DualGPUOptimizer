@@ -6,7 +6,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import queue
-from typing import Dict, List, Optional, Callable, Any
+from typing import List
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.runner import Runner

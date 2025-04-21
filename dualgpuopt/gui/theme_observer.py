@@ -6,7 +6,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 import logging
-from typing import Dict, List, Set, Any, Callable, Optional, Type, Union
+from typing import List, Set, Callable
 
 try:
     from dualgpuopt.services.event_service import event_bus
@@ -15,7 +15,7 @@ except ImportError:
     HAS_EVENT_BUS = False
     print("Warning: event_bus not available, theme observation will be limited")
 
-from dualgpuopt.gui.theme import AVAILABLE_THEMES, current_theme
+from dualgpuopt.gui.theme import AVAILABLE_THEMES
 
 logger = logging.getLogger("DualGPUOpt.ThemeObserver")
 

@@ -2,7 +2,6 @@
 Bundle smoke test for DualGPUOptimizer
 Verifies DLLs are loaded correctly and constants.py is accessible
 """
-import os
 import sys
 import unittest
 from pathlib import Path

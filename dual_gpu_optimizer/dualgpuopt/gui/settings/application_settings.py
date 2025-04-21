@@ -11,7 +11,6 @@ from typing import Callable, Optional
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk

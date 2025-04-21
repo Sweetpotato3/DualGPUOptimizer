@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Any, Dict, List, Optional, Callable
 
 # Import everything from the refactored settings module
 from dualgpuopt.gui.settings.settings_tab import SettingsTab

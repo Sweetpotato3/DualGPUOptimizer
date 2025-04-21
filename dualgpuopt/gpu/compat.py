@@ -5,8 +5,7 @@ Provides graceful fallbacks when pynvml or other dependencies are missing
 from __future__ import annotations
 import logging
 import platform
-import sys
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU.Compat")

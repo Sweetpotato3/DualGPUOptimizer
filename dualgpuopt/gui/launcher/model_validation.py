@@ -7,9 +7,8 @@ before launching models.
 from __future__ import annotations
 
 import logging
-import os
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Dict, List, Optional, Tuple, Any
 
 from dualgpuopt.gpu_info import GPU
 

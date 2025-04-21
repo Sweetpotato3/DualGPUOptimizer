@@ -2,8 +2,7 @@
 GPU monitoring module for retrieving specific metrics
 """
 from __future__ import annotations
-import logging
-from typing import Dict, Any, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Union
 
 from dualgpuopt.gpu.info import query
 from dualgpuopt.gpu.common import GpuMetrics, ensure_float, ensure_int

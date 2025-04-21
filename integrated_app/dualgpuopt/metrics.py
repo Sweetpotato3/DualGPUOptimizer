@@ -6,7 +6,7 @@ Importing this module never raises ImportError; if `prometheus_client`
 is missing, stub collectors discard data silently.
 """
 from __future__ import annotations
-import types, typing as _t
+import typing as _t
 
 try:
     from prometheus_client import Counter, Histogram  # type: ignore

@@ -4,12 +4,10 @@ Theme-aware custom widgets for DualGPUOptimizer
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
 import logging
-from typing import Dict, List, Any, Callable, Optional, Union, Tuple
+from typing import Dict, Any
 
 try:
-    from dualgpuopt.services.event_service import event_bus
     HAS_EVENT_BUS = True
 except ImportError:
     HAS_EVENT_BUS = False

@@ -1,7 +1,6 @@
 """
 Simple script to check if the theme module files exist
 """
-import os
 from pathlib import Path
 
 def check_files():

@@ -2,12 +2,14 @@
 dualgpuopt.gui – modern neon‑styled GUI
 """
 from __future__ import annotations
-import queue, platform, threading, time, tkinter as tk
+import queue
+import threading
+import time
+import tkinter as tk
 import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
-from ttkbootstrap.scrolled import ScrolledFrame
 from pathlib import Path
-from dualgpuopt.ui.neon import init_theme, NeonButton, GradientBar
+from dualgpuopt.ui.neon import NeonButton, GradientBar
 
 # Create a simple Tooltip class
 class Tooltip:

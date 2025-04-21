@@ -1,7 +1,6 @@
 import unittest
 from unittest.mock import patch, MagicMock
 import sys
-import importlib
 from pathlib import Path
 
 # Add the parent directory to sys.path to make dualgpuopt importable

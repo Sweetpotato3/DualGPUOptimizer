@@ -4,18 +4,16 @@ Mock GPU module for testing without actual hardware
 
 from __future__ import annotations
 
-import logging
 import random
 import sys
 from typing import Dict, Any, List
 
-from dualgpuopt.gpu.common import MOCK_MODE, logger
+from dualgpuopt.gpu.common import logger
 
 
 def set_mock_mode(enabled: bool) -> None:
     """Enable or disable mock GPU mode"""
     global MOCK_MODE
-    from dualgpuopt.gpu.common import MOCK_MODE as COMMON_MOCK_MODE
 
     # Update in both modules to maintain consistency
     MOCK_MODE = enabled

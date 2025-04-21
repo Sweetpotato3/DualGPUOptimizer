@@ -8,7 +8,7 @@ from tkinter import ttk, filedialog
 import json
 import pathlib
 import logging
-from typing import Dict, List, Callable, Any, Optional
+from typing import Dict, List, Any
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt import optimizer

@@ -3,7 +3,7 @@ GPU command generation for llama.cpp and vLLM
 """
 from __future__ import annotations
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Dict, List
 
 logger = logging.getLogger("DualGPUOpt.Commands")
 
@@ -51,7 +51,7 @@ def generate_llama_cpp_cmd(
                 threads,
                 additional_args
             )
-    
+
     # Default generation method
     return _cpu_generate_llama_cmd(
         model_path,
@@ -72,7 +72,7 @@ def _cpu_generate_llama_cmd(
 ) -> str:
     """
     CPU-optimized implementation for generating llama.cpp command
-    
+
     Args:
         model_path: Path to the model file
         gpu_split: List of GPU split ratios
@@ -130,7 +130,7 @@ def generate_vllm_cmd(
                 max_tokens,
                 additional_args
             )
-    
+
     # Default generation method
     return _cpu_generate_vllm_cmd(
         model_path,
@@ -147,7 +147,7 @@ def _cpu_generate_vllm_cmd(
 ) -> str:
     """
     CPU-optimized implementation for generating vLLM command
-    
+
     Args:
         model_path: Path to the model file or HuggingFace model name
         tensor_parallel: Number of GPUs for tensor parallelism
@@ -193,7 +193,7 @@ def generate_env_vars(
                 ctx_size,
                 format_type
             )
-    
+
     # Default generation method
     return _cpu_generate_env_vars(
         gpu_split,
@@ -208,7 +208,7 @@ def _cpu_generate_env_vars(
 ) -> Dict[str, str]:
     """
     CPU-optimized implementation for generating environment variables
-    
+
     Args:
         gpu_split: List of GPU split ratios
         ctx_size: Context size in tokens
@@ -223,11 +223,11 @@ def _cpu_generate_env_vars(
         "NCCL_P2P_DISABLE": "1",  # Disable NCCL P2P for better performance
         "CUDA_DEVICE_MAX_CONNECTIONS": "1"  # Better memory allocation
     }
-    
+
     # Add GPU split if provided
     if gpu_split and len(gpu_split) > 1:
         split_str = ",".join(f"{ratio:.2f}" for ratio in gpu_split)
         env_vars["DUALGPUOPT_GPU_SPLIT"] = split_str
-    
+
     logger.info(f"Generated environment variables: {env_vars}")
     return env_vars

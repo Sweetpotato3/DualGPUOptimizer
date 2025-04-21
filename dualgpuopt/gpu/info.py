@@ -2,11 +2,9 @@
 GPU information module for querying GPU details
 """
 from __future__ import annotations
-import platform
-import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
-from dualgpuopt.gpu.common import IS_NVIDIA, IS_MAC, MOCK_MODE, NVML_INITIALIZED, logger
+from dualgpuopt.gpu.common import IS_NVIDIA, MOCK_MODE, NVML_INITIALIZED, logger
 from dualgpuopt.gpu.mock import generate_mock_gpus
 
 def query() -> List[Dict[str, Any]]:

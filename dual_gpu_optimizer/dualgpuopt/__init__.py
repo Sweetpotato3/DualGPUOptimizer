@@ -4,7 +4,6 @@ DualGPUOptimizer - A tool for optimizing dual GPU setups.
 from __future__ import annotations
 
 import os
-import sys
 
 # Version information
 VERSION = "0.2.0"

@@ -2,7 +2,8 @@
 pystray icon – right‑click → show, Quit; idle checker warning.
 """
 from __future__ import annotations
-import threading, time, pathlib, sys
+import threading
+import sys
 import pystray
 from PIL import Image, ImageDraw
 from dualgpuopt.telemetry import start_stream

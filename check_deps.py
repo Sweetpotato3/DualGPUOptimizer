@@ -8,7 +8,7 @@ import sys
 import importlib.util
 import platform
 import subprocess
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List
 
 # Define dependencies by category
 CORE_DEPS = {
@@ -49,7 +49,6 @@ def check_dependency(name: str) -> bool:
     """
     if name == "tkinter":
         try:
-            import tkinter
             return True
         except ImportError:
             return False

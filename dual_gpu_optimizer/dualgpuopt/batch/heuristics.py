@@ -2,7 +2,7 @@
 Pluggable batching heuristics.
 """
 from __future__ import annotations
-import math, typing as _t
+import typing as _t
 
 class BucketPolicy(_t.Protocol):
     """Return bucket ID for a given sequence length."""

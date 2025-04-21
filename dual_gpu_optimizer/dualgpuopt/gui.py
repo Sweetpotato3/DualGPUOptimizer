@@ -7,26 +7,27 @@ from __future__ import annotations
 
 <<<<<<< HEAD
 from dualgpuopt.gui.app import DualGpuApp, run_app
+
 # Re-export for backward compatibility
 __all__ = ["DualGpuApp", "run_app"]
 =======
+import colorsys
 import json
+import logging
 import pathlib
 import queue
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import colorsys
 import sys
-import logging
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 
-from dualgpuopt import gpu_info, optimizer, configio
-from dualgpuopt.telemetry import start_stream
+from dualgpuopt import configio, gpu_info, optimizer
 from dualgpuopt.runner import Runner
+from dualgpuopt.telemetry import start_stream
 from dualgpuopt.tray import init_tray
 
 # Import ttkthemes for better theme support
 try:
-    from ttkthemes import ThemedTk, ThemedStyle
+    from ttkthemes import ThemedStyle, ThemedTk
     TTKTHEMES_AVAILABLE = True
 except ImportError:
     TTKTHEMES_AVAILABLE = False
@@ -101,9 +102,10 @@ THEMES = {
         "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
     }
 }
-
 # Available ttk themes from ttkthemes
-AVAILABLE_TTK_THEMES = ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+AVAILABLE_TTK_THEMES = (
+    ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+)
 
 
 def generate_colors(count: int) -> list[str]:
@@ -201,11 +203,17 @@ class DualGpuApp(ttk.Frame):
             frame = ttk.Frame(self)
             frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-            ttk.Label(frame, text="GPU detection failed. Would you like to:").pack(pady=10)
+            ttk.Label(
+                frame, 
+                text="GPU detection failed. Would you like to:"
+            ).pack(pady=10)
 
             # Mock mode button
-            mock_btn = ttk.Button(frame, text="Launch in Mock Mode",
-                               command=self.enable_mock_mode)
+            mock_btn = ttk.Button(
+                frame,
+                text="Launch in Mock Mode",
+                command=self.enable_mock_mode
+            )
             mock_btn.pack(pady=10)
 
             # Exit button
@@ -297,11 +305,20 @@ class DualGpuApp(ttk.Frame):
 
                 # Configure other widget types
                 style.configure("TFrame", background=theme["bg"])
-                style.configure("TLabelframe", background=theme["bg"], foreground=theme["text"])
-                style.configure("TLabelframe.Label", background=theme["bg"], foreground=theme["text"])
-                style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
-                style.configure("TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0])
-                style.configure("TNotebook.Tab", background=theme["button"],
+                style.configure("TLabelframe", 
+                               background=theme["bg"], 
+                               foreground=theme["text"])
+                style.configure("TLabelframe.Label", 
+                               background=theme["bg"], 
+                               foreground=theme["text"])
+                style.configure("TLabel", 
+                               background=theme["bg"], 
+                               foreground=theme["text"])
+                style.configure("TNotebook", 
+                               background=theme["bg"], 
+                               tabmargins=[2, 5, 2, 0])
+                style.configure("TNotebook.Tab", 
+                               background=theme["button"],
                                foreground=theme["text"], padding=[10, 2])
 
                 # Map states for notebook tabs
@@ -358,9 +375,10 @@ class DualGpuApp(ttk.Frame):
 
         # Apply font for better readability
         default_font = ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
-        for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", "TCombobox"]:
+        style = ttk.Style()
+        for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", 
+                      "TCombobox"]:
             try:
-                style = ttk.Style()
                 style.configure(widget, font=default_font)
             except tk.TclError:
                 pass
@@ -420,9 +438,10 @@ class DualGpuApp(ttk.Frame):
         appearance_frame = ttk.LabelFrame(scrollable_frame, text="Appearance")
         appearance_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD)
         appearance_frame.columnconfigure(1, weight=1)
-
         # Theme selection
-        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(appearance_frame, text="Color Theme:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         theme_combo = ttk.Combobox(
             appearance_frame,
             textvariable=self.theme_var,
@@ -435,7 +454,9 @@ class DualGpuApp(ttk.Frame):
 
         # Add TTK theme selection if ttkthemes is available
         if TTKTHEMES_AVAILABLE and AVAILABLE_TTK_THEMES:
-            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+            ttk.Label(appearance_frame, text="Widget Style:").grid(
+                row=1, column=0, sticky="w", padx=self.PAD, pady=5
+            )
             ttk_theme_combo = ttk.Combobox(
                 appearance_frame,
                 textvariable=self.ttk_theme_var,
@@ -451,14 +472,18 @@ class DualGpuApp(ttk.Frame):
             text="Apply",
             command=self._apply_theme_change
         ).grid(row=0, column=2, padx=self.PAD, pady=5)
-
         # ------ Overclocking Section ------
-        self.overclocking_frame = ttk.LabelFrame(scrollable_frame, text="GPU Overclocking")
-        self.overclocking_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1)
+        self.overclocking_frame = ttk.LabelFrame(
+            scrollable_frame, text="GPU Overclocking"
+        )
+        self.overclocking_frame.grid(
+            sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1
+        )
         self.overclocking_frame.columnconfigure(1, weight=1)
-
         # GPU selection for overclocking
-        ttk.Label(self.overclocking_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(self.overclocking_frame, text="GPU:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.oc_gpu_var = tk.StringVar()
         gpu_values = [f"GPU {i}: {gpu.short_name}" for i, gpu in enumerate(self.gpus)]
         self.oc_gpu_combo = ttk.Combobox(
@@ -475,11 +500,15 @@ class DualGpuApp(ttk.Frame):
 
         # Create overclocking sliders frame
         oc_sliders_frame = ttk.Frame(self.overclocking_frame)
-        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=self.PAD, pady=5)
+        oc_sliders_frame.grid(
+            row=1, column=0, columnspan=3, sticky="ew", padx=self.PAD, pady=5
+        )
         oc_sliders_frame.columnconfigure(1, weight=1)
 
         # Core Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(
+            row=0, column=0, sticky="w", pady=2
+        )
         self.core_clock_var = tk.IntVar(value=0)
         self.core_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -487,14 +516,17 @@ class DualGpuApp(ttk.Frame):
             to=200,
             orient="horizontal",
             variable=self.core_clock_var,
-            command=lambda v: self._update_oc_label(self.core_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_oc_label(
+                self.core_clock_label, f"{int(float(v))} MHz"
+            )
         )
         self.core_clock_scale.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
         self.core_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.core_clock_label.grid(row=0, column=2, padx=5, pady=2)
-
         # Memory Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(
+            row=1, column=0, sticky="w", pady=2
+        )
         self.memory_clock_var = tk.IntVar(value=0)
         self.memory_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -502,14 +534,17 @@ class DualGpuApp(ttk.Frame):
             to=1500,
             orient="horizontal",
             variable=self.memory_clock_var,
-            command=lambda v: self._update_oc_label(self.memory_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_oc_label(
+                self.memory_clock_label, f"{int(float(v))} MHz"
+            )
         )
         self.memory_clock_scale.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
         self.memory_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.memory_clock_label.grid(row=1, column=2, padx=5, pady=2)
-
         # Power Limit slider
-        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(
+            row=2, column=0, sticky="w", pady=2
+        )
         self.power_limit_var = tk.IntVar(value=100)
         self.power_limit_scale = ttk.Scale(
             oc_sliders_frame,
@@ -517,7 +552,9 @@ class DualGpuApp(ttk.Frame):
             to=120,
             orient="horizontal",
             variable=self.power_limit_var,
-            command=lambda v: self._update_oc_label(self.power_limit_label, f"{int(float(v))}%")
+            command=lambda v: self._update_oc_label(
+                self.power_limit_label, f"{int(float(v))}%"
+            )
         )
         self.power_limit_scale.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
         self.power_limit_label = ttk.Label(oc_sliders_frame, text="100%", width=8)
@@ -565,9 +602,10 @@ class DualGpuApp(ttk.Frame):
         monitor_frame = ttk.LabelFrame(scrollable_frame, text="Monitoring")
         monitor_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=3)
         monitor_frame.columnconfigure(1, weight=1)
-
         self.interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
-        ttk.Label(monitor_frame, text="Update interval (sec):").grid(row=0, column=0, padx=self.PAD, pady=5, sticky="w")
+        ttk.Label(monitor_frame, text="Update interval (sec):").grid(
+            row=0, column=0, padx=self.PAD, pady=5, sticky="w"
+        )
         interval_spin = ttk.Spinbox(
             monitor_frame,
             from_=0.5,
@@ -577,9 +615,10 @@ class DualGpuApp(ttk.Frame):
             width=5
         )
         interval_spin.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
-
         self.alert_threshold_var = tk.IntVar(value=self.cfg["alert_threshold"])
-        ttk.Label(monitor_frame, text="Alert threshold (%):").grid(row=1, column=0, padx=self.PAD, pady=5, sticky="w")
+        ttk.Label(monitor_frame, text="Alert threshold (%):").grid(
+            row=1, column=0, padx=self.PAD, pady=5, sticky="w"
+        )
         threshold_spin = ttk.Spinbox(
             monitor_frame,
             from_=5,
@@ -656,7 +695,6 @@ class DualGpuApp(ttk.Frame):
     def _theme_changed(self, event=None) -> None:
         """Handle theme selection change."""
         # Just update the UI to show Apply button is needed
-        pass
 
     def _apply_theme_change(self) -> None:
         """Apply the selected theme immediately and save to config."""
@@ -1458,7 +1496,10 @@ class DualGpuApp(ttk.Frame):
                     self.cfg["env_overrides"][key] = str(int_value)
                 except ValueError:
                     # Skip invalid values
-                    messagebox.showwarning("Invalid Value", f"Memory override for {key} must be a number. Ignoring.")
+                    messagebox.showwarning(
+                        "Invalid Value", 
+                        f"Memory override for {key} must be a number. Ignoring."
+                    )
             else:
                 # Remove empty overrides
                 if key in self.cfg["env_overrides"]:

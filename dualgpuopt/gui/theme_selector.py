@@ -7,7 +7,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 import logging
-from typing import Dict, Any, Callable, Optional, List
+from typing import Callable, Optional
 
 from dualgpuopt.gui.theme import AVAILABLE_THEMES, set_theme
 from dualgpuopt.services.event_service import event_bus

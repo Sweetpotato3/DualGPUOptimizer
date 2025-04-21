@@ -13,8 +13,6 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 
 # Import the components to test
 from dualgpuopt.gui.settings.settings_tab import SettingsTab
-from dualgpuopt.services.config_service import config_service
-from dualgpuopt.services.state_service import state_service
 from dualgpuopt.gpu_info import GPU
 
 

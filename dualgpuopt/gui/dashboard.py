@@ -4,7 +4,6 @@ GPU monitoring dashboard for real-time metrics visualization
 import tkinter as tk
 from tkinter import ttk, messagebox
 import time
-import threading
 from typing import Dict
 import logging
 
@@ -273,7 +272,7 @@ class DashboardView(ttk.Frame):
             parent: Parent widget
         """
         super().__init__(parent, padding=10)
-        
+
         # Header section
         header_frame = ttk.Frame(self)
         header_frame.pack(fill=tk.X, pady=(0, 10))
@@ -283,15 +282,15 @@ class DashboardView(ttk.Frame):
             text="GPU Monitoring Dashboard",
             font=("Arial", 16, "bold")
         ).pack(side=tk.LEFT)
-        
+
         # Create notebook for tabs
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True)
-        
+
         # Create metrics tab
         self.metrics_tab = MetricsView(self.notebook)
         self.notebook.add(self.metrics_tab, text="GPU Metrics")
-        
+
         # Create memory profiler tab if available
         if MEMORY_PROFILER_AVAILABLE:
             try:
@@ -300,7 +299,6 @@ class DashboardView(ttk.Frame):
                 logger.info("Memory profiler tab added to dashboard")
             except Exception as e:
                 logger.error(f"Failed to create memory profiler tab: {e}")
-                MEMORY_PROFILER_AVAILABLE = False
 
     def destroy(self) -> None:
         """Clean up resources when widget is destroyed"""

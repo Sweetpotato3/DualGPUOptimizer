@@ -6,9 +6,9 @@ import os
 import sys
 import pathlib
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 # Set environment variable for mock GPU mode
 os.environ["DGPUOPT_MOCK_GPUS"] = "1"

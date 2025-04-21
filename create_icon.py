@@ -2,8 +2,7 @@
 Create an icon for DualGPUOptimizer
 This script generates a basic GPU icon with purple colors
 """
-import os
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 from pathlib import Path
 
 def create_gpu_icon(size=256, bg_color="#2D1E40", fg_color="#8A54FD", save_to=None):
@@ -37,7 +36,7 @@ def create_gpu_icon(size=256, bg_color="#2D1E40", fg_color="#8A54FD", save_to=No
 
     # Draw connection lines
     line_width = size//30
-    line_padding = size//16
+    size//16
 
     # Connection points
     draw.rounded_rectangle(

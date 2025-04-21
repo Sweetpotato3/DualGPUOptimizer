@@ -4,7 +4,6 @@ GPU Module for DualGPUOptimizer
 Provides GPU information and monitoring functionality.
 """
 from __future__ import annotations
-from typing import List, Dict, Any, Optional
 
 # Import public functions from submodules
 from dualgpuopt.gpu.info import query, get_gpu_count, get_gpu_names

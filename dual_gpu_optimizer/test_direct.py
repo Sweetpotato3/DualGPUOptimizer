@@ -1,5 +1,4 @@
 import importlib.util
-import sys
 import pathlib
 path = pathlib.Path("dualgpuopt/gui/constants.py")
 print(f"Constants path: {path}, exists: {path.exists()}")

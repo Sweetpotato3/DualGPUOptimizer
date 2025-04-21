@@ -1,10 +1,8 @@
 """
 Smart batching system for length-aware inference scheduling
 """
-from typing import List, Dict, Any, Optional, Tuple, Callable
+from typing import List, Tuple
 import logging
-import time
-import math
 from dataclasses import dataclass
 
 # Initialize logger

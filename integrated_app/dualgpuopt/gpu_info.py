@@ -8,7 +8,7 @@ import concurrent.futures as _fut
 import dataclasses as _dc
 import logging
 import os
-from typing import List, Optional
+from typing import List
 
 try:
     import pynvml  # external, tiny
