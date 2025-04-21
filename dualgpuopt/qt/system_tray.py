@@ -1,8 +1,8 @@
 import logging
 import os
 from typing import Optional, List, Dict, Any, Callable
-from PySide6.QtWidgets import QSystemTrayIcon, QMenu, QAction
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtWidgets import QSystemTrayIcon, QMenu
+from PySide6.QtGui import QIcon, QPixmap, QAction
 from PySide6.QtCore import Qt, Signal, QTimer, QSize
 
 logger = logging.getLogger('DualGPUOptimizer')

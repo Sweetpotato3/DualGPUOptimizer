@@ -118,6 +118,17 @@ class ResourceManager:
         """
         return self.get_allocation(component) == ResourceType.CPU
 
+    @staticmethod
+    def get_instance() -> ResourceManager:
+        """
+        Get the global resource manager instance.
+        Static method for consistent access across the application.
+        
+        Returns:
+            The global resource manager instance
+        """
+        return get_resource_manager()
+
 
 # Singleton instance
 _resource_manager: Optional[ResourceManager] = None

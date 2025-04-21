@@ -5,7 +5,7 @@ import json
 import os
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict
 
 logger = logging.getLogger("DualGPUOpt.ConfigService")
 
@@ -17,6 +17,15 @@ try:
 except ImportError:
     event_bus_available = False
     logger.warning("Event bus not available for configuration events")
+
+# Import resource manager if available
+try:
+    from dualgpuopt.services.resource_manager import ResourceManager
+    resource_manager_available = True
+    logger.debug("Resource manager available for configuration processing")
+except ImportError:
+    resource_manager_available = False
+    logger.warning("Resource manager not available for configuration processing")
 
 class ConfigService:
     """Service for managing application configuration"""
@@ -46,22 +55,68 @@ class ConfigService:
         """Load configuration from file"""
         try:
             if self.config_file.exists():
-                with open(self.config_file, "r") as f:
-                    loaded_config = json.load(f)
-                    # Update config with loaded values
-                    self.config.update(loaded_config)
-                    logger.info(f"Loaded configuration from {self.config_file}")
+                # Use resource manager to offload file loading to CPU if available
+                if resource_manager_available:
+                    resource_manager = ResourceManager.get_instance()
+                    if resource_manager.should_use_cpu("configuration"):
+                        loaded_config = resource_manager.run_on_cpu(self._cpu_load_config)
+                        self.config.update(loaded_config)
+                        logger.info(f"Loaded configuration from {self.config_file} (CPU)")
+                        return
+                
+                # Default loading method
+                loaded_config = self._cpu_load_config()
+                self.config.update(loaded_config)
+                logger.info(f"Loaded configuration from {self.config_file}")
         except Exception as e:
             logger.error(f"Error loading configuration: {e}")
+    
+    def _cpu_load_config(self) -> Dict[str, Any]:
+        """CPU-optimized configuration loading
+        
+        Returns:
+            Loaded configuration dictionary
+        """
+        if self.config_file.exists():
+            with open(self.config_file, "r") as f:
+                return json.load(f)
+        return {}
 
     def save(self):
         """Save configuration to file"""
         try:
-            with open(self.config_file, "w") as f:
-                json.dump(self.config, f, indent=4)
+            # Use resource manager to offload file saving to CPU if available
+            if resource_manager_available:
+                resource_manager = ResourceManager.get_instance()
+                if resource_manager.should_use_cpu("configuration"):
+                    success = resource_manager.run_on_cpu(self._cpu_save_config, self.config)
+                    if success:
+                        logger.info(f"Saved configuration to {self.config_file} (CPU)")
+                    return
+            
+            # Default saving method
+            success = self._cpu_save_config(self.config)
+            if success:
                 logger.info(f"Saved configuration to {self.config_file}")
         except Exception as e:
             logger.error(f"Error saving configuration: {e}")
+    
+    def _cpu_save_config(self, config_data: Dict[str, Any]) -> bool:
+        """CPU-optimized configuration saving
+        
+        Args:
+            config_data: Configuration data to save
+            
+        Returns:
+            Success status
+        """
+        try:
+            with open(self.config_file, "w") as f:
+                json.dump(config_data, f, indent=4)
+            return True
+        except Exception as e:
+            logger.error(f"Error in CPU save: {e}")
+            return False
 
     def get(self, key, default=None):
         """Get a configuration value
@@ -84,9 +139,27 @@ class ConfigService:
         """
         old_value = self.config.get(key)
         self.config[key] = value
-        self.save()
         
-        # Publish configuration change event
+        # Use resource manager for config processing if available
+        if resource_manager_available:
+            resource_manager = ResourceManager.get_instance()
+            if resource_manager.should_use_cpu("configuration"):
+                resource_manager.run_on_cpu(self._process_config_update, key, value, old_value)
+                return
+        
+        # Default processing
+        self.save()
+        self._publish_config_change(key, value, old_value)
+    
+    def _process_config_update(self, key: str, value: Any, old_value: Any) -> None:
+        """Process configuration update on CPU
+        
+        Args:
+            key: Configuration key
+            value: New value
+            old_value: Previous value
+        """
+        self._cpu_save_config(self.config)
         self._publish_config_change(key, value, old_value)
     
     def _publish_config_change(self, key: str, new_value: Any, old_value: Any) -> None:

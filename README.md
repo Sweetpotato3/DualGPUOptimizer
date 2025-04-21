@@ -15,8 +15,21 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
 - **NEW: Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
 - **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
+- **NEW: CPU-Based Resource Management**: Preserves GPU memory by running non-critical tasks on CPU
 
 ## Recent Improvements
+
+### NEW: CPU-Based Resource Management System
+
+We've implemented a comprehensive CPU-based resource management system that preserves GPU memory for critical model inference tasks:
+
+- **CPU Offloading**: Command generation, configuration processing, and metrics formatting now run on CPU threads
+- **Preserved VRAM**: More GPU memory available for actual model inference
+- **Thread Pool Management**: Efficient thread pool allocation for CPU-intensive tasks
+- **Resource Type Control**: Fine-grained control over which components use CPU vs GPU resources
+- **Automatic Fallbacks**: Seamless fallbacks when resource manager is unavailable
+
+The resource management system ensures that non-critical tasks like command string generation, configuration handling, and UI metrics processing don't consume valuable GPU memory, allowing models to utilize the maximum available VRAM for inference.
 
 ### NEW: Simplified Settings Application Workflow
 

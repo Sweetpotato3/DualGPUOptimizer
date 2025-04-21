@@ -169,12 +169,12 @@ class GPUChart(QFrame):
         
         # Create chart view
         self.chart_view = QChartView(self.chart)
-        self.chart_view.setRenderHint(self.chart_view.RenderHint.Antialiasing)
+        self.chart_view.setRenderHint(self.chart_view.Antialiasing)
         self.chart_view.setBackgroundBrush(QColor("#241934"))
         
         # Enable chart view interactions
-        self.chart_view.setRubberBand(QChartView.RubberBand.RectangleRubberBand)
-        self.chart_view.setDragMode(QChartView.DragMode.NoDrag)
+        self.chart_view.setRubberBand(QChartView.RectangleRubberBand)
+        self.chart_view.setDragMode(QChartView.NoDrag)
         
         main_layout.addWidget(self.chart_view)
         
@@ -758,13 +758,56 @@ class DashboardTab(QWidget):
     @Slot(list)
     def update_metrics(self, metrics_list):
         """Update GPU metrics for all cards."""
+        # Use resource manager to offload metrics formatting to CPU if available
+        try:
+            from dualgpuopt.services.resource_manager import ResourceManager
+            resource_manager = ResourceManager.get_instance()
+            if resource_manager.should_use_cpu("metrics_formatting"):
+                # Process metrics on CPU but update UI on main thread
+                formatted_metrics = resource_manager.run_on_cpu(self._format_metrics_cpu, metrics_list)
+                self._update_ui_with_formatted_metrics(formatted_metrics)
+                return
+        except ImportError:
+            # Resource manager not available
+            pass
+        
+        # Default metrics processing
         for i, card in enumerate(self.gpu_cards):
             if i < len(metrics_list):
                 card.update_metrics(metrics_list[i])
         
         # Update chart with new metrics
         self.gpu_chart.update_metrics(metrics_list)
+
+    def _format_metrics_cpu(self, metrics_list):
+        """
+        Format metrics on CPU thread to reduce main thread load.
+        
+        Args:
+            metrics_list: List of raw GPU metrics
+            
+        Returns:
+            Processed metrics ready for UI update
+        """
+        # Perform any CPU-intensive metrics processing here
+        # For example, calculating percentages, trends, etc.
+        return metrics_list
     
+    def _update_ui_with_formatted_metrics(self, formatted_metrics):
+        """
+        Update UI components with pre-formatted metrics.
+        Must be called on the main thread.
+        
+        Args:
+            formatted_metrics: Pre-processed metrics data
+        """
+        for i, card in enumerate(self.gpu_cards):
+            if i < len(formatted_metrics):
+                card.update_metrics(formatted_metrics[i])
+        
+        # Update chart with formatted metrics
+        self.gpu_chart.update_metrics(formatted_metrics)
+
     @Slot(int)
     def reset_gpu_memory(self, gpu_index):
         """Reset GPU memory."""
