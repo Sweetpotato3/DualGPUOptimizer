@@ -1,52 +1,63 @@
 ---
-description: Defines GPU memory allocation strategies, tensor parallel distribution mechanisms, and optimization algorithms for distributed model deployment
-globs: **/gpu_info.py,**/optimizer.py,**/gpu/**,**/memory/**,**/batch/**
+description: GPU memory optimization algorithms and parallel processing strategies for ML model execution
+globs: **/*.py,**/dualgpuopt/optimizer.py,**/dualgpuopt/gpu_info.py,**/dualgpuopt/memory/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core Memory Distribution Logic:
-- Calculates optimal GPU splits using transformer layer distribution algorithms
-- Memory allocation per token: KV hidden size * layers * 2 * precision factor
-- Tensor parallel fraction determination based on relative GPU memory sizes
-- Dynamic context length optimization with safety margin enforcement
-- Batch scheduling with automatic size reduction after OOM events
+The GPU optimization system implements specialized algorithms for memory distribution and parallel processing across multiple GPUs.
 
-Key Memory Management Components:
+Core Memory Management Components:
 
-1. Memory Profiling:
-- Token-based memory allocation tracking across inference sessions
-- Two-tier leak detection using linear regression for rapid spikes and sustained growth
-- Memory timeline analysis categorizing ALLOCATION, DEALLOCATION, GROWTH_SPIKE events
-- Memory retention pattern analysis specific to inference operations
+1. Memory Split Calculation (dualgpuopt/optimizer.py):
+- Calculates optimal memory distribution across GPUs using:
+  * Per-token KV cache requirements
+  * Tensor parallel processing overhead
+  * Model-specific safety margins
+  * Memory reservation factors for cache growth
+- Implements split ratio determination:
+  * Analyzes available VRAM per GPU
+  * Calculates proportional splits based on memory capacity
+  * Adjusts for minimum viable splits (20% threshold)
 
-2. Batch Processing:
-- Length-aware batch scheduling for GPU inference workloads 
-- Adaptive backpressure system reducing batch size 25% after OOM
-- Gradual batch size recovery after 5 successful processes
-- Maintains scaling factor between 0.25-0.95
-- Prioritizes fastest GPU for compute-intensive layers
+2. Memory Growth Prediction (dualgpuopt/memory/predictor.py):
+- Projects memory growth patterns using:
+  * Historical allocation patterns
+  * Model-specific cache scaling factors
+  * Token count projections
+  * Activation memory requirements
+- Provides dynamic adjustment of memory allocations
 
-3. Memory Recovery:
-- Multi-stage memory reclamation:
-  - CACHE_ONLY: Conservative PyTorch cache reset
-  - CLOCK_RESET: GPU clock manipulation 
-  - FULL_RESET: Complete tensor cleanup
-  - SYSTEM_CMD: OS-level resource release
+3. Layer Distribution Algorithm (dualgpuopt/layer_balance.py):
+- Optimizes transformer layer placement across GPUs:
+  * Profiles layer execution times
+  * Uses weighted sequence length sampling (20% short, 80% long)
+  * Ensures balanced memory usage
+  * Minimizes cross-GPU communication
 
-Core File Paths:
-- dualgpuopt/optimizer.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/memory/recovery.py
-- dualgpuopt/gpu/info.py
+4. Memory Profiling System (dualgpuopt/memory/profiler.py):
+- Tracks real-time memory patterns:
+  * Spike detection with configurable thresholds
+  * Leak detection using sliding windows
+  * Per-inference memory deltas
+  * Token processing efficiency metrics
 
-Business Impact Scores:
-- Memory Distribution Logic: 95
-- Memory Profiling System: 85
-- Batch Processing: 80
-- Recovery Mechanisms: 75
+5. Recovery Mechanisms (dualgpuopt/memory/recovery.py):
+- Implements tiered recovery strategies:
+  * Cache clearing
+  * Batch size reduction
+  * Memory defragmentation
+  * Process termination as last resort
+
+6. Batch Optimization (dualgpuopt/batch/smart_batch.py):
+- Length-aware batch scheduling:
+  * Groups similar length sequences
+  * Adjusts batch sizes based on memory availability
+  * Implements backpressure when approaching limits
+  * Recovers batch sizes after stability periods
+
+The system provides comprehensive memory management for dual-GPU ML model execution, with particular focus on preventing OOM conditions while maximizing throughput.
 
 $END$

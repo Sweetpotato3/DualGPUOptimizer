@@ -1,17 +1,33 @@
 import logging
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                               QProgressBar, QFrame, QGridLayout, QSizePolicy,
-                              QPushButton, QSpacerItem, QComboBox)
-from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
-from PySide6.QtGui import QFont, QIcon, QColor
-from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
+                              QPushButton, QSpacerItem, QComboBox, QFileDialog,
+                              QToolButton, QMenu)
+from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer, QPointF
+from PySide6.QtGui import QFont, QIcon, QColor, QPen, QBrush, QAction
+from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis, QScatterSeries
 import datetime
 import collections
+import csv
+import os
 
 logger = logging.getLogger('DualGPUOptimizer')
 
 # Define maximum history length for metrics
 MAX_HISTORY_LENGTH = 60  # 60 data points (1 minute at 1s polling)
+
+class TimelineMarker:
+    """Represents a marker on the chart timeline."""
+    
+    def __init__(self, timestamp, label, color=None, description=None):
+        self.timestamp = timestamp
+        self.label = label
+        self.color = color or QColor("#FF9800")  # Orange by default
+        self.description = description or ""
+        
+    def __repr__(self):
+        return f"Marker({self.timestamp}, {self.label})"
+
 
 class GPUChart(QFrame):
     """Line chart showing historical GPU metrics."""
@@ -22,6 +38,10 @@ class GPUChart(QFrame):
         self.metric_histories = {}
         self.current_metric = "memory"
         self.series = {}
+        self.markers = []
+        self.timeline_start = 0
+        self.zoom_level = 1.0
+        self.auto_scale_y = True
         
     def setup_ui(self):
         # Set up chart frame styling
@@ -51,8 +71,57 @@ class GPUChart(QFrame):
         self.title_label.setFont(title_font)
         header_layout.addWidget(self.title_label)
         
-        # Spacer to push selector to right
+        # Spacer to push controls to right
         header_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        # Add zoom controls
+        zoom_layout = QHBoxLayout()
+        zoom_layout.setSpacing(2)
+        
+        self.zoom_in_btn = QToolButton()
+        self.zoom_in_btn.setText("+")
+        self.zoom_in_btn.setToolTip("Zoom In")
+        self.zoom_in_btn.clicked.connect(self.zoom_in)
+        zoom_layout.addWidget(self.zoom_in_btn)
+        
+        self.zoom_out_btn = QToolButton()
+        self.zoom_out_btn.setText("-")
+        self.zoom_out_btn.setToolTip("Zoom Out")
+        self.zoom_out_btn.clicked.connect(self.zoom_out)
+        zoom_layout.addWidget(self.zoom_out_btn)
+        
+        self.reset_zoom_btn = QToolButton()
+        self.reset_zoom_btn.setText("R")
+        self.reset_zoom_btn.setToolTip("Reset Zoom")
+        self.reset_zoom_btn.clicked.connect(self.reset_zoom)
+        zoom_layout.addWidget(self.reset_zoom_btn)
+        
+        header_layout.addLayout(zoom_layout)
+        
+        # Add marker and export button
+        self.add_marker_btn = QToolButton()
+        self.add_marker_btn.setText("M")
+        self.add_marker_btn.setToolTip("Add Timeline Marker")
+        self.add_marker_btn.clicked.connect(self.add_marker)
+        header_layout.addWidget(self.add_marker_btn)
+        
+        self.export_btn = QToolButton()
+        self.export_btn.setText("E")
+        self.export_btn.setToolTip("Export Chart Data")
+        
+        # Create export menu
+        export_menu = QMenu(self)
+        export_csv_action = QAction("Export as CSV", self)
+        export_csv_action.triggered.connect(lambda: self.export_data("csv"))
+        export_menu.addAction(export_csv_action)
+        
+        export_png_action = QAction("Export as PNG", self)
+        export_png_action.triggered.connect(lambda: self.export_data("png"))
+        export_menu.addAction(export_png_action)
+        
+        self.export_btn.setMenu(export_menu)
+        self.export_btn.setPopupMode(QToolButton.InstantPopup)
+        header_layout.addWidget(self.export_btn)
         
         # Metric selector
         self.metric_selector = QComboBox()
@@ -81,10 +150,12 @@ class GPUChart(QFrame):
         self.axis_x = QValueAxis()
         self.axis_x.setRange(0, MAX_HISTORY_LENGTH)
         self.axis_x.setLabelFormat("%d")
-        self.axis_x.setLabelsVisible(False)
+        self.axis_x.setLabelsVisible(True)
         self.axis_x.setGridLineVisible(True)
         self.axis_x.setGridLineColor(QColor("#3D2A50"))
         self.axis_x.setLabelsColor(QColor("#CCCCCC"))
+        self.axis_x.setTitleText("Time (seconds)")
+        self.axis_x.setTitleBrush(QColor("#CCCCCC"))
         
         self.axis_y = QValueAxis()
         self.axis_y.setRange(0, 100)
@@ -101,10 +172,23 @@ class GPUChart(QFrame):
         self.chart_view.setRenderHint(self.chart_view.RenderHint.Antialiasing)
         self.chart_view.setBackgroundBrush(QColor("#241934"))
         
+        # Enable chart view interactions
+        self.chart_view.setRubberBand(QChartView.RubberBand.RectangleRubberBand)
+        self.chart_view.setDragMode(QChartView.DragMode.NoDrag)
+        
         main_layout.addWidget(self.chart_view)
         
         # Initialize empty series for each GPU (we'll create series on first update)
         self.gpu_colors = [QColor("#8A54FD"), QColor("#4CAF50")]
+        
+        # Create marker series
+        self.marker_series = QScatterSeries()
+        self.marker_series.setName("Events")
+        self.marker_series.setMarkerSize(10)
+        self.marker_series.setColor(QColor("#FF9800"))
+        self.chart.addSeries(self.marker_series)
+        self.marker_series.attachAxis(self.axis_x)
+        self.marker_series.attachAxis(self.axis_y)
         
     def init_series_for_gpus(self, gpu_count):
         """Initialize line series for each GPU"""
@@ -134,6 +218,15 @@ class GPUChart(QFrame):
                     "temperature": collections.deque(maxlen=MAX_HISTORY_LENGTH),
                     "power": collections.deque(maxlen=MAX_HISTORY_LENGTH)
                 }
+        
+        # Re-add marker series
+        self.marker_series = QScatterSeries()
+        self.marker_series.setName("Events")
+        self.marker_series.setMarkerSize(10)
+        self.marker_series.setColor(QColor("#FF9800"))
+        self.chart.addSeries(self.marker_series)
+        self.marker_series.attachAxis(self.axis_x)
+        self.marker_series.attachAxis(self.axis_y)
     
     def update_metrics(self, metrics_list):
         """Update chart with new metrics data"""
@@ -163,15 +256,20 @@ class GPUChart(QFrame):
     
     def refresh_chart(self):
         """Refresh the chart with current data"""
-        # Get y-axis range based on metric
+        # Set y-axis title based on metric
         if self.current_metric == "temperature":
-            self.axis_y.setRange(0, 100)
             self.axis_y.setTitleText("Temperature (°C)")
-        elif self.current_metric in ["memory", "utilization", "power"]:
-            self.axis_y.setRange(0, 100)
-            self.axis_y.setTitleText("Percentage (%)")
+        elif self.current_metric == "memory":
+            self.axis_y.setTitleText("Memory Usage (%)")
+        elif self.current_metric == "utilization":
+            self.axis_y.setTitleText("GPU Utilization (%)")
+        elif self.current_metric == "power":
+            self.axis_y.setTitleText("Power Usage (%)")
+        else:
+            self.axis_y.setTitleText("Value")
         
         # Update each series
+        max_value = 0
         for gpu_id, series in self.series.items():
             # Skip if no history for this GPU
             if gpu_id not in self.metric_histories:
@@ -183,14 +281,169 @@ class GPUChart(QFrame):
             # Clear the series
             series.clear()
             
+            # Find maximum value for auto-scaling
+            if self.auto_scale_y and history:
+                max_value = max(max_value, max(history))
+            
             # Add points
             for i, value in enumerate(history):
                 series.append(i, value)
+        
+        # Auto-scale Y axis if enabled
+        if self.auto_scale_y and max_value > 0:
+            # Add 10% headroom
+            max_value = min(max_value * 1.1, 100) if self.current_metric != "temperature" else min(max_value * 1.1, 100)
+            self.axis_y.setRange(0, max(max_value, 10))  # At least show 0-10 range
+        
+        # Update markers
+        self.update_markers()
+        
+        # Apply zoom if needed
+        if self.zoom_level != 1.0:
+            self.apply_zoom()
     
     def change_metric(self, index):
         """Change the displayed metric"""
         self.current_metric = self.metric_selector.currentData()
         self.refresh_chart()
+    
+    def zoom_in(self):
+        """Zoom in on the chart"""
+        if self.zoom_level < 4.0:  # Limit max zoom
+            self.zoom_level *= 1.5
+            self.apply_zoom()
+    
+    def zoom_out(self):
+        """Zoom out on the chart"""
+        if self.zoom_level > 0.25:  # Limit min zoom
+            self.zoom_level /= 1.5
+            self.apply_zoom()
+    
+    def reset_zoom(self):
+        """Reset zoom to default"""
+        self.zoom_level = 1.0
+        self.axis_x.setRange(0, MAX_HISTORY_LENGTH)
+        if self.current_metric == "temperature":
+            self.axis_y.setRange(0, 100)
+        else:
+            self.axis_y.setRange(0, 100)
+        self.refresh_chart()
+    
+    def apply_zoom(self):
+        """Apply current zoom level to chart"""
+        # Calculate new visible range based on zoom level
+        visible_points = MAX_HISTORY_LENGTH / self.zoom_level
+        
+        # Center on the most recent data
+        if visible_points < MAX_HISTORY_LENGTH:
+            start = max(0, MAX_HISTORY_LENGTH - visible_points)
+            end = MAX_HISTORY_LENGTH
+        else:
+            start = 0
+            end = MAX_HISTORY_LENGTH
+        
+        # Apply the range
+        self.axis_x.setRange(start, end)
+    
+    def add_marker(self):
+        """Add a marker at the current time"""
+        timestamp = len(next(iter(self.metric_histories.values())[self.current_metric])) - 1 if self.metric_histories else 0
+        
+        # Create marker with current timestamp
+        marker = TimelineMarker(
+            timestamp=timestamp,
+            label=f"Event {len(self.markers) + 1}",
+            color=QColor("#FF9800"),
+            description=f"Manual marker at {datetime.datetime.now().strftime('%H:%M:%S')}"
+        )
+        
+        self.markers.append(marker)
+        logger.info(f"Added timeline marker: {marker.label} at position {timestamp}")
+        
+        # Update display
+        self.update_markers()
+    
+    def update_markers(self):
+        """Update marker points on chart"""
+        self.marker_series.clear()
+        
+        # Find max value to position markers appropriately
+        max_val = self.axis_y.max()
+        marker_height = max_val * 0.95  # Position at 95% of chart height
+        
+        for marker in self.markers:
+            if 0 <= marker.timestamp < MAX_HISTORY_LENGTH:
+                # Add point for marker
+                self.marker_series.append(QPointF(marker.timestamp, marker_height))
+    
+    def export_data(self, format_type):
+        """Export chart data in specified format"""
+        if format_type == "csv":
+            self.export_to_csv()
+        elif format_type == "png":
+            self.export_to_png()
+    
+    def export_to_csv(self):
+        """Export chart data to CSV file"""
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getSaveFileName(
+            self, "Export Chart Data", "", "CSV Files (*.csv);;All Files (*)",
+            options=options
+        )
+        
+        if not file_name:
+            return
+            
+        try:
+            with open(file_name, 'w', newline='') as f:
+                writer = csv.writer(f)
+                
+                # Headers
+                headers = ["Index"] + [f"GPU {gpu_id}" for gpu_id in self.series.keys()]
+                writer.writerow(headers)
+                
+                # Data rows
+                max_len = max([len(self.metric_histories[gpu_id][self.current_metric]) 
+                              for gpu_id in self.metric_histories.keys()])
+                
+                for i in range(max_len):
+                    row = [i]
+                    for gpu_id in self.series.keys():
+                        history = self.metric_histories[gpu_id][self.current_metric]
+                        value = history[i] if i < len(history) else ""
+                        row.append(value)
+                    writer.writerow(row)
+            
+            logger.info(f"Exported chart data to {file_name}")
+        except Exception as e:
+            logger.error(f"Error exporting chart data: {e}")
+    
+    def export_to_png(self):
+        """Export chart as PNG image"""
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getSaveFileName(
+            self, "Export Chart as Image", "", "PNG Files (*.png);;All Files (*)",
+            options=options
+        )
+        
+        if not file_name:
+            return
+            
+        try:
+            # Add .png extension if not provided
+            if not file_name.lower().endswith('.png'):
+                file_name += '.png'
+                
+            # Save chart as image
+            pixmap = self.chart_view.grab()
+            success = pixmap.save(file_name)
+            
+            if success:
+                logger.info(f"Exported chart image to {file_name}")
+            else:
+                logger.error(f"Failed to save chart image to {file_name}")
+        except Exception as e:
+            logger.error(f"Error exporting chart image: {e}")
 
 
 class GPUCard(QFrame):

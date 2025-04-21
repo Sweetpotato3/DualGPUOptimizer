@@ -1,60 +1,57 @@
 ---
-description: Documents LLM execution flow including command generation, configuration and GPU resource management
-globs: dualgpuopt/**/*.py,dualgpuopt/commands/*.py,dualgpuopt/batch/*.py
+description: Defines and documents how LLM model execution is handled, including process launching, parameter management, and GPU resource allocation.
+globs: '**/*.py','**/gui/launcher/**','**/gpu/**','**/optimizer/**'
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow centers around orchestrating LLM inference across multiple GPUs and frameworks.
+Core Model Execution Components:
 
-Core Execution Components:
+1. Framework-Specific Command Generation
+- Generates optimized command strings for llama.cpp and vLLM
+- Handles parameter distribution between GPUs based on memory capacity
+- Built-in presets for common models (Llama-2, Mixtral, Mistral)
+- Dynamic tensor parallel size calculation for vLLM
+- GPU split ratio optimization for llama.cpp
+- File: dualgpuopt/commands/gpu_commands.py
 
-1. Command Generation System
-- Framework-specific command builders:
-  * llama.cpp: Generates GPU split commands with layer distribution
-  * vLLM: Creates tensor parallel configurations
-- Environment variable configuration for each framework
-- Dynamic parameter generation based on model architecture:
-  * Context length calculation 
-  * Memory split ratios
-  * GPU layer allocation
+2. Smart Batch Processing
+- Length-aware batch scheduling with profiled memory constraints
+- Adaptive batch size adjustment based on OOM events
+- Backpressure mechanism for preventing memory exhaustion
+- Token count tracking and optimization
+- File: dualgpuopt/batch/smart_batch.py
 
-2. Resource Allocation Engine
-- GPU memory allocation calculation:
-  * Model size estimation
-  * KV cache requirements per token
-  * Safety buffer allocation (20%)
-- Layer distribution optimization across GPUs:
-  * Performance-based distribution
-  * Memory constraint validation
-  * Tensor parallel configuration
+3. GPU Memory Management 
+- Real-time memory monitoring across multiple GPUs
+- Memory leak detection with configurable thresholds
+- Pre/post inference memory baseline tracking
+- Custom memory pattern analysis for growth detection
+- Files: dualgpuopt/memory/profiler.py, dualgpuopt/memory/monitor.py
 
-3. Model Execution Workflow
-- Pre-execution configuration:
-  * Environment setup with GPU assignments
-  * Memory split validation
-  * Process isolation setup
-- Runtime monitoring:
-  * Memory pressure tracking
-  * OOM detection and recovery
-  * Performance metrics collection
-- Graceful termination handling with staged shutdown
+4. Model Parameter Validation
+- Validates model architectures and configurations
+- Enforces constraints on head counts and dimensions
+- Handles specialized MoE model requirements
+- Implements validation rules for tensor parallel setups
+- File: dualgpuopt/optimizer.py
 
-Key File Paths:
-```
-dualgpuopt/commands/gpu_commands.py      # Command generation logic
-dualgpuopt/batch/smart_batch.py          # Batch optimization system  
-dualgpuopt/optimizer.py                  # Core GPU split optimization
-dualgpuopt/memory/profiler.py           # Memory monitoring system
-dualgpuopt/runner.py                    # Process execution management
-```
+5. Resource Allocation Flow
+- Dynamic GPU split calculation based on available memory
+- Tensor parallel processing configuration
+- KV cache allocation optimization
+- Safety margin enforcement for stable execution
+- Files: dualgpuopt/optimizer.py, dualgpuopt/layer_balance.py
 
-Importance Scores:
-- Command Generation: 95 (Critical for model execution)
-- Resource Allocation: 90 (Core optimization logic) 
-- Execution Workflow: 85 (Key runtime management)
-- Memory Management: 80 (Supporting optimization)
+6. Launch Process Management
+- Non-blocking execution with output streaming
+- Process lifecycle tracking and cleanup
+- Error recovery and automatic retries
+- Environment variable configuration
+- File: dualgpuopt/runner.py
+
+The system implements sophisticated model execution workflows with particular focus on memory management, resource allocation, and process control across multiple GPUs. Key aspects include dynamic resource distribution, intelligent batch processing, and framework-specific optimizations.
 
 $END$

@@ -3,11 +3,12 @@ import time
 from typing import Dict, List, Optional, Tuple, Any
 from collections import deque
 import threading
+import datetime
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QFrame, QGridLayout, 
     QPushButton, QSizePolicy, QSpacerItem, QComboBox, QTextEdit,
-    QTabWidget, QCheckBox, QFileDialog
+    QTabWidget, QCheckBox, QFileDialog, QInputDialog, QLineEdit, QProgressBar
 )
 from PySide6.QtCore import Qt, Signal, Slot, QTimer
 from PySide6.QtGui import QFont, QColor
@@ -143,6 +144,12 @@ class MemoryChart(QFrame):
         self.timeline_data = {0: [], 1: []}
         self.gpu_colors = ['#8A54FD', '#4CAF50']  # Purple, Green
         self.show_gpu = {0: True, 1: True}  # Which GPUs to display
+        self.zoom_active = False
+        self.zoom_start = None
+        self.zoom_end = None
+        self.filtered_data = {}
+        self.markers = []
+        self.show_markers = True
     
     def setup_ui(self):
         # Set up frame
@@ -168,8 +175,8 @@ class MemoryChart(QFrame):
         title_label.setFont(title_font)
         self.layout.addWidget(title_label)
         
-        # GPU selection layout
-        self.gpu_selection = QHBoxLayout()
+        # GPU selection and controls layout
+        controls_layout = QHBoxLayout()
         
         # Add checkboxes for GPU selection
         self.gpu0_checkbox = QCheckBox("GPU 0")
@@ -180,16 +187,56 @@ class MemoryChart(QFrame):
         self.gpu1_checkbox.setChecked(True)
         self.gpu1_checkbox.toggled.connect(lambda checked: self.toggle_gpu(1, checked))
         
-        self.gpu_selection.addWidget(self.gpu0_checkbox)
-        self.gpu_selection.addWidget(self.gpu1_checkbox)
-        self.gpu_selection.addItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        controls_layout.addWidget(self.gpu0_checkbox)
+        controls_layout.addWidget(self.gpu1_checkbox)
+        
+        # Markers toggle
+        self.markers_checkbox = QCheckBox("Show Markers")
+        self.markers_checkbox.setChecked(True)
+        self.markers_checkbox.toggled.connect(self.toggle_markers)
+        controls_layout.addWidget(self.markers_checkbox)
+        
+        controls_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        # Add zoom control buttons
+        self.zoom_in_button = QPushButton("Zoom In")
+        self.zoom_in_button.clicked.connect(self.zoom_in)
+        self.zoom_out_button = QPushButton("Zoom Out")
+        self.zoom_out_button.clicked.connect(self.zoom_out)
+        self.reset_zoom_button = QPushButton("Reset")
+        self.reset_zoom_button.clicked.connect(self.reset_zoom)
+        
+        controls_layout.addWidget(self.zoom_in_button)
+        controls_layout.addWidget(self.zoom_out_button)
+        controls_layout.addWidget(self.reset_zoom_button)
         
         # Export button
         self.export_button = QPushButton("Export Data")
         self.export_button.clicked.connect(self.export_data)
-        self.gpu_selection.addWidget(self.export_button)
+        controls_layout.addWidget(self.export_button)
         
-        self.layout.addLayout(self.gpu_selection)
+        self.layout.addLayout(controls_layout)
+        
+        # Add filter control
+        filter_layout = QHBoxLayout()
+        filter_layout.addWidget(QLabel("Filter:"))
+        
+        self.filter_combo = QComboBox()
+        self.filter_combo.addItem("All Data", "all")
+        self.filter_combo.addItem("Last 5 Minutes", 300)
+        self.filter_combo.addItem("Last 1 Minute", 60)
+        self.filter_combo.addItem("Last 30 Seconds", 30)
+        self.filter_combo.currentIndexChanged.connect(self.apply_filter)
+        
+        filter_layout.addWidget(self.filter_combo)
+        filter_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        # Add marker button
+        self.add_marker_button = QPushButton("Add Marker")
+        self.add_marker_button.clicked.connect(self.add_marker)
+        filter_layout.addWidget(self.add_marker_button)
+        
+        self.layout.addLayout(filter_layout)
         
         if MATPLOTLIB_AVAILABLE:
             # Create matplotlib figure
@@ -213,6 +260,11 @@ class MemoryChart(QFrame):
             
             # Add to layout
             self.layout.addWidget(self.canvas)
+            
+            # Connect mouse events for interactive zooming
+            self.canvas.mpl_connect('button_press_event', self.on_mouse_press)
+            self.canvas.mpl_connect('button_release_event', self.on_mouse_release)
+            self.canvas.mpl_connect('motion_notify_event', self.on_mouse_move)
         else:
             # Fallback message if matplotlib is not available
             fallback = QLabel("Matplotlib not available. Install it for memory visualization.")
@@ -225,9 +277,35 @@ class MemoryChart(QFrame):
         self.show_gpu[gpu_id] = show
         self.update_chart()
     
+    def toggle_markers(self, show):
+        """Toggle visibility of markers in the chart"""
+        self.show_markers = show
+        self.update_chart()
+    
     def update_data(self, timeline_data):
         """Update chart with new timeline data"""
         self.timeline_data = timeline_data
+        # Initialize filtered data with the complete dataset
+        self.filtered_data = self.timeline_data.copy()
+        self.update_chart()
+    
+    def apply_filter(self):
+        """Apply time filter to the data"""
+        filter_value = self.filter_combo.currentData()
+        
+        if filter_value == "all":
+            # Show all data
+            self.filtered_data = self.timeline_data.copy()
+        else:
+            # Filter by time (last N seconds)
+            filter_seconds = int(filter_value)
+            current_time = time.time()
+            cut_off = current_time - filter_seconds
+            
+            self.filtered_data = {}
+            for gpu_id, data in self.timeline_data.items():
+                self.filtered_data[gpu_id] = [point for point in data if point[0] >= cut_off]
+        
         self.update_chart()
     
     def update_chart(self):
@@ -240,10 +318,10 @@ class MemoryChart(QFrame):
         
         # Draw each visible GPU's data
         for gpu_id, visible in self.show_gpu.items():
-            if not visible or gpu_id not in self.timeline_data:
+            if not visible or gpu_id not in self.filtered_data:
                 continue
                 
-            data = self.timeline_data[gpu_id]
+            data = self.filtered_data[gpu_id]
             if not data:
                 continue
                 
@@ -260,6 +338,24 @@ class MemoryChart(QFrame):
                     self.axes.plot(rel_times, memory_values, 
                                   label=f'GPU {gpu_id}',
                                   color=self.gpu_colors[gpu_id % len(self.gpu_colors)])
+        
+        # Add markers if enabled
+        if self.show_markers and self.markers:
+            for marker in self.markers:
+                # Find relative position for marker
+                if marker['time'] >= min([point[0] for gpu_data in self.filtered_data.values() for point in gpu_data], default=0):
+                    rel_time = marker['time'] - min([point[0] for gpu_data in self.filtered_data.values() for point in gpu_data], default=0)
+                    # Draw vertical line for marker
+                    self.axes.axvline(x=rel_time, color=marker['color'], linestyle='--', alpha=0.7)
+                    # Add label
+                    ymin, ymax = self.axes.get_ylim()
+                    text_y = ymax * 0.95
+                    self.axes.text(rel_time, text_y, marker['label'], color=marker['color'], 
+                                  rotation=90, verticalalignment='top', weight='bold')
+        
+        # Apply zoom if active
+        if self.zoom_active and self.zoom_start is not None and self.zoom_end is not None:
+            self.axes.set_xlim(self.zoom_start, self.zoom_end)
         
         # Set labels and legend
         self.axes.set_xlabel('Time (s)', color='#FFFFFF')
@@ -278,6 +374,99 @@ class MemoryChart(QFrame):
         self.figure.tight_layout()
         self.canvas.draw()
     
+    def zoom_in(self):
+        """Zoom in on the current view"""
+        if not MATPLOTLIB_AVAILABLE or not self.axes:
+            return
+            
+        xlim = self.axes.get_xlim()
+        center = sum(xlim) / 2
+        width = xlim[1] - xlim[0]
+        new_width = width * 0.6  # Zoom in by reducing width to 60%
+        
+        self.zoom_active = True
+        self.zoom_start = center - new_width/2
+        self.zoom_end = center + new_width/2
+        self.update_chart()
+    
+    def zoom_out(self):
+        """Zoom out from the current view"""
+        if not MATPLOTLIB_AVAILABLE or not self.axes:
+            return
+            
+        xlim = self.axes.get_xlim()
+        center = sum(xlim) / 2
+        width = xlim[1] - xlim[0]
+        new_width = width * 1.6  # Zoom out by increasing width to 160%
+        
+        self.zoom_active = True
+        self.zoom_start = center - new_width/2
+        self.zoom_end = center + new_width/2
+        self.update_chart()
+    
+    def reset_zoom(self):
+        """Reset zoom to show all data"""
+        self.zoom_active = False
+        self.zoom_start = None
+        self.zoom_end = None
+        self.update_chart()
+    
+    def on_mouse_press(self, event):
+        """Handle mouse press for interactive zoom"""
+        if not event.inaxes:
+            return
+        
+        # Start zoom selection
+        self.zoom_rect_start = (event.xdata, event.ydata)
+    
+    def on_mouse_move(self, event):
+        """Handle mouse movement for interactive zoom"""
+        pass  # This will be used for drawing zoom rectangle in future enhancement
+    
+    def on_mouse_release(self, event):
+        """Handle mouse release for interactive zoom"""
+        if not event.inaxes or not hasattr(self, 'zoom_rect_start'):
+            return
+        
+        # Complete zoom selection
+        zoom_rect_end = (event.xdata, event.ydata)
+        
+        # Check if it's a valid zoom area (some minimum width)
+        if abs(zoom_rect_end[0] - self.zoom_rect_start[0]) > 1.0:
+            self.zoom_active = True
+            self.zoom_start = min(self.zoom_rect_start[0], zoom_rect_end[0])
+            self.zoom_end = max(self.zoom_rect_start[0], zoom_rect_end[0])
+            self.update_chart()
+        
+        # Clear the temp stored values
+        delattr(self, 'zoom_rect_start')
+    
+    def add_marker(self):
+        """Add a marker at the current time"""
+        # Generate marker with current time
+        current_time = time.time()
+        
+        # Create marker label dialog
+        marker_label, ok = QInputDialog.getText(self, "Add Timeline Marker", 
+                                               "Enter marker label:", 
+                                               QLineEdit.Normal, 
+                                               f"Marker {len(self.markers) + 1}")
+        
+        if ok and marker_label:
+            # Add the marker
+            marker = {
+                'time': current_time,
+                'label': marker_label,
+                'color': '#FF9800',  # Orange
+                'description': f"Manual marker added at {datetime.datetime.now().strftime('%H:%M:%S')}"
+            }
+            
+            self.markers.append(marker)
+            logger.info(f"Added timeline marker: {marker_label}")
+            
+            # Update chart to show new marker
+            self.update_chart()
+    
     def export_data(self):
         """Export timeline data to CSV file"""
         options = QFileDialog.Options()
@@ -293,7 +482,7 @@ class MemoryChart(QFrame):
                     f.write("timestamp,gpu_id,memory_mb\n")
                     
                     # Write data for each GPU
-                    for gpu_id, data in self.timeline_data.items():
+                    for gpu_id, data in self.filtered_data.items():
                         for point in data:
                             if len(point) >= 2:
                                 timestamp = point[0]
@@ -303,6 +492,25 @@ class MemoryChart(QFrame):
                 logger.info(f"Exported memory timeline to {file_name}")
             except Exception as e:
                 logger.error(f"Error exporting timeline data: {e}")
+                
+    def export_chart_image(self):
+        """Export chart as image"""
+        if not MATPLOTLIB_AVAILABLE:
+            logger.error("Matplotlib not available for image export")
+            return
+            
+        options = QFileDialog.Options()
+        file_name, _ = QFileDialog.getSaveFileName(
+            self, "Export Chart Image", "", "PNG Files (*.png);;PDF Files (*.pdf);;All Files (*)",
+            options=options
+        )
+        
+        if file_name:
+            try:
+                self.figure.savefig(file_name, facecolor=self.figure.get_facecolor())
+                logger.info(f"Exported chart image to {file_name}")
+            except Exception as e:
+                logger.error(f"Error exporting chart image: {e}")
 
 
 class EventLogView(QFrame):
@@ -405,6 +613,8 @@ class MemoryStatsPanel(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setup_ui()
+        self.stats = {}
+        self.patterns = []
     
     def setup_ui(self):
         # Set up frame
@@ -421,6 +631,33 @@ class MemoryStatsPanel(QFrame):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(16, 16, 16, 16)
         
+        # Create tab widget for different analysis views
+        self.tab_widget = QTabWidget()
+        self.tab_widget.setStyleSheet("""
+            QTabWidget::pane {
+                border: 1px solid #3D2A50;
+                background-color: #2D1E40;
+                border-radius: 4px;
+            }
+            QTabBar::tab {
+                background-color: #241934;
+                color: #FFFFFF;
+                padding: 8px 12px;
+                margin-right: 2px;
+                border-top-left-radius: 4px;
+                border-top-right-radius: 4px;
+            }
+            QTabBar::tab:selected {
+                background-color: #3D2A50;
+                font-weight: bold;
+            }
+        """)
+        layout.addWidget(self.tab_widget)
+        
+        # Create Overview Tab
+        overview_widget = QWidget()
+        overview_layout = QVBoxLayout(overview_widget)
+        
         # Add title
         title_font = QFont()
         title_font.setBold(True)
@@ -428,12 +665,12 @@ class MemoryStatsPanel(QFrame):
         
         title_label = QLabel("Memory Analysis")
         title_label.setFont(title_font)
-        layout.addWidget(title_label)
+        overview_layout.addWidget(title_label)
         
         # Session info grid
         info_grid = QGridLayout()
         info_grid.setColumnStretch(1, 1)
-        layout.addLayout(info_grid)
+        overview_layout.addLayout(info_grid)
         
         # Session ID
         info_grid.addWidget(QLabel("Session ID:"), 0, 0)
@@ -455,17 +692,22 @@ class MemoryStatsPanel(QFrame):
         self.token_label = QLabel("0")
         info_grid.addWidget(self.token_label, 3, 1)
         
+        # Memory efficiency
+        info_grid.addWidget(QLabel("Mem Efficiency:"), 4, 0)
+        self.efficiency_label = QLabel("N/A")
+        info_grid.addWidget(self.efficiency_label, 4, 1)
+        
         # Separator
         separator = QFrame()
         separator.setFrameShape(QFrame.HLine)
         separator.setFrameShadow(QFrame.Sunken)
         separator.setStyleSheet("background-color: #3D2A50;")
-        layout.addWidget(separator)
+        overview_layout.addWidget(separator)
         
         # Analysis Title
         analysis_title = QLabel("Memory Issues")
         analysis_title.setFont(title_font)
-        layout.addWidget(analysis_title)
+        overview_layout.addWidget(analysis_title)
         
         # Analysis text
         self.analysis_text = QTextEdit()
@@ -479,12 +721,166 @@ class MemoryStatsPanel(QFrame):
                 padding: 8px;
             }
         """)
-        layout.addWidget(self.analysis_text)
+        overview_layout.addWidget(self.analysis_text)
+        
+        # Add to tab widget
+        self.tab_widget.addTab(overview_widget, "Overview")
+        
+        # Create Pattern Analysis Tab
+        pattern_widget = QWidget()
+        pattern_layout = QVBoxLayout(pattern_widget)
+        
+        # Pattern analysis title
+        pattern_title = QLabel("Memory Pattern Analysis")
+        pattern_title.setFont(title_font)
+        pattern_layout.addWidget(pattern_title)
+        
+        # Pattern description
+        pattern_desc = QLabel("Detected memory usage patterns and anomalies")
+        pattern_desc.setStyleSheet("color: #A0A0A0;")
+        pattern_layout.addWidget(pattern_desc)
+        
+        # Pattern list
+        self.pattern_list = QTextEdit()
+        self.pattern_list.setReadOnly(True)
+        self.pattern_list.setStyleSheet("""
+            QTextEdit {
+                background-color: #241934;
+                color: #FFFFFF;
+                border-radius: 4px;
+                border: 1px solid #3D2A50;
+                padding: 8px;
+            }
+        """)
+        pattern_layout.addWidget(self.pattern_list)
+        
+        # Action buttons
+        action_layout = QHBoxLayout()
+        
+        self.analyze_button = QPushButton("Run Deep Analysis")
+        self.analyze_button.clicked.connect(self.run_deep_analysis)
+        action_layout.addWidget(self.analyze_button)
+        
+        self.clear_button = QPushButton("Clear Analysis")
+        self.clear_button.clicked.connect(self.clear_analysis)
+        action_layout.addWidget(self.clear_button)
+        
+        pattern_layout.addLayout(action_layout)
+        
+        # Add to tab widget
+        self.tab_widget.addTab(pattern_widget, "Pattern Analysis")
+        
+        # Create GPU Comparison Tab
+        comparison_widget = QWidget()
+        comparison_layout = QVBoxLayout(comparison_widget)
+        
+        # Comparison title
+        comparison_title = QLabel("GPU Memory Comparison")
+        comparison_title.setFont(title_font)
+        comparison_layout.addWidget(comparison_title)
+        
+        # Statistics grid for GPU comparison
+        gpu_grid = QGridLayout()
+        gpu_grid.setColumnStretch(1, 1)
+        gpu_grid.setColumnStretch(2, 1)
+        
+        # Headers
+        gpu_grid.addWidget(QLabel("Metric"), 0, 0)
+        gpu_grid.addWidget(QLabel("GPU 0"), 0, 1)
+        gpu_grid.addWidget(QLabel("GPU 1"), 0, 2)
+        
+        # Peak memory
+        gpu_grid.addWidget(QLabel("Peak Memory:"), 1, 0)
+        self.peak_gpu0 = QLabel("0 MB")
+        self.peak_gpu1 = QLabel("0 MB")
+        gpu_grid.addWidget(self.peak_gpu0, 1, 1)
+        gpu_grid.addWidget(self.peak_gpu1, 1, 2)
+        
+        # Average memory
+        gpu_grid.addWidget(QLabel("Avg Memory:"), 2, 0)
+        self.avg_gpu0 = QLabel("0 MB")
+        self.avg_gpu1 = QLabel("0 MB")
+        gpu_grid.addWidget(self.avg_gpu0, 2, 1)
+        gpu_grid.addWidget(self.avg_gpu1, 2, 2)
+        
+        # Growth rate
+        gpu_grid.addWidget(QLabel("Growth Rate:"), 3, 0)
+        self.growth_gpu0 = QLabel("0 MB/min")
+        self.growth_gpu1 = QLabel("0 MB/min")
+        gpu_grid.addWidget(self.growth_gpu0, 3, 1)
+        gpu_grid.addWidget(self.growth_gpu1, 3, 2)
+        
+        # Spike count
+        gpu_grid.addWidget(QLabel("Spike Count:"), 4, 0)
+        self.spikes_gpu0 = QLabel("0")
+        self.spikes_gpu1 = QLabel("0")
+        gpu_grid.addWidget(self.spikes_gpu0, 4, 1)
+        gpu_grid.addWidget(self.spikes_gpu1, 4, 2)
+        
+        comparison_layout.addLayout(gpu_grid)
+        
+        # Usage efficiency visualization
+        vis_frame = QFrame()
+        vis_frame.setFrameShape(QFrame.StyledPanel)
+        vis_frame.setStyleSheet("background-color: #241934; border-radius: 4px; padding: 12px;")
+        vis_layout = QVBoxLayout(vis_frame)
+        
+        vis_title = QLabel("Memory Utilization Efficiency")
+        vis_title.setFont(title_font)
+        vis_layout.addWidget(vis_title)
+        
+        # GPU 0 efficiency
+        vis_layout.addWidget(QLabel("GPU 0 Efficiency:"))
+        self.eff_bar0 = QProgressBar()
+        self.eff_bar0.setFixedHeight(16)
+        self.eff_bar0.setRange(0, 100)
+        self.eff_bar0.setValue(0)
+        self.eff_bar0.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #3D2A50;
+                border-radius: 4px;
+                background-color: #241934;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #8A54FD;
+                border-radius: 3px;
+            }
+        """)
+        vis_layout.addWidget(self.eff_bar0)
+        
+        # GPU 1 efficiency
+        vis_layout.addWidget(QLabel("GPU 1 Efficiency:"))
+        self.eff_bar1 = QProgressBar()
+        self.eff_bar1.setFixedHeight(16)
+        self.eff_bar1.setRange(0, 100)
+        self.eff_bar1.setValue(0)
+        self.eff_bar1.setStyleSheet("""
+            QProgressBar {
+                border: 1px solid #3D2A50;
+                border-radius: 4px;
+                background-color: #241934;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+                border-radius: 3px;
+            }
+        """)
+        vis_layout.addWidget(self.eff_bar1)
+        
+        comparison_layout.addWidget(vis_frame)
+        
+        # Add to tab widget
+        self.tab_widget.addTab(comparison_widget, "GPU Comparison")
     
     def update_stats(self, stats):
         """Update memory statistics panel"""
         if not stats:
             return
+            
+        # Store stats for later analysis
+        self.stats = stats
             
         # Update session info
         self.session_id_label.setText(stats.get("session_id", "None"))
@@ -497,6 +893,15 @@ class MemoryStatsPanel(QFrame):
         # Update counts
         self.inference_label.setText(str(stats.get("inference_count", 0)))
         self.token_label.setText(str(stats.get("token_count", 0)))
+        
+        # Memory efficiency calculation
+        token_count = stats.get("token_count", 0)
+        total_peak_memory = sum(stats.get("peak_memory", {0: 0, 1: 0}).values())
+        if token_count > 0 and total_peak_memory > 0:
+            efficiency = token_count / (total_peak_memory / 1024)  # tokens per GB
+            self.efficiency_label.setText(f"{efficiency:.2f} tokens/GB")
+        else:
+            self.efficiency_label.setText("N/A")
         
         # Update analysis text
         self.analysis_text.clear()
@@ -534,6 +939,190 @@ class MemoryStatsPanel(QFrame):
             self.analysis_text.insertHtml(
                 "<p style='color: #4CAF50; text-align: center;'>No memory issues detected</p>"
             )
+        
+        # Update GPU comparison tab
+        peak_memory = stats.get("peak_memory", {})
+        self.peak_gpu0.setText(f"{peak_memory.get(0, 0)} MB")
+        self.peak_gpu1.setText(f"{peak_memory.get(1, 0)} MB")
+        
+        avg_memory = stats.get("avg_memory", {})
+        self.avg_gpu0.setText(f"{avg_memory.get(0, 0)} MB")
+        self.avg_gpu1.setText(f"{avg_memory.get(1, 0)} MB")
+        
+        # Update growth rates
+        for leak in leaks:
+            if leak.get("gpu_id") == 0:
+                self.growth_gpu0.setText(f"{leak.get('growth_rate', 0)*100:.2f}%/min")
+            elif leak.get("gpu_id") == 1:
+                self.growth_gpu1.setText(f"{leak.get('growth_rate', 0)*100:.2f}%/min")
+        
+        # Count spikes per GPU
+        spike_count = {0: 0, 1: 0}
+        for spike in spikes:
+            gpu_id = spike.get("gpu_id", 0)
+            spike_count[gpu_id] = spike_count.get(gpu_id, 0) + 1
+        
+        self.spikes_gpu0.setText(str(spike_count.get(0, 0)))
+        self.spikes_gpu1.setText(str(spike_count.get(1, 0)))
+        
+        # Update efficiency bars
+        # Simple efficiency metric: lower is better (less memory per token)
+        if token_count > 0:
+            if peak_memory.get(0, 0) > 0:
+                eff0 = min(100, (token_count / peak_memory.get(0, 1)) * 10)  # Scale for visual effect
+                self.eff_bar0.setValue(int(eff0))
+            
+            if peak_memory.get(1, 0) > 0:
+                eff1 = min(100, (token_count / peak_memory.get(1, 1)) * 10)  # Scale for visual effect
+                self.eff_bar1.setValue(int(eff1))
+    
+    def run_deep_analysis(self):
+        """Run deeper analysis on memory patterns"""
+        if not self.stats:
+            logger.warning("No memory stats available for deep analysis")
+            return
+        
+        try:
+            # Clear previous analysis
+            self.pattern_list.clear()
+            self.patterns = []
+            
+            # Get peak memory values
+            peak_memory = self.stats.get("peak_memory", {})
+            avg_memory = self.stats.get("avg_memory", {})
+            duration = self.stats.get("duration", 0)
+            inference_count = self.stats.get("inference_count", 0)
+            
+            # Analyze memory usage patterns
+            self.pattern_list.insertHtml("<b>Memory Usage Pattern Analysis:</b><br><br>")
+            
+            # Check imbalance between GPUs
+            if 0 in peak_memory and 1 in peak_memory and peak_memory[0] > 0 and peak_memory[1] > 0:
+                ratio = peak_memory[0] / peak_memory[1]
+                if ratio > 2 or ratio < 0.5:
+                    # Significant imbalance
+                    self.patterns.append({
+                        "type": "imbalance",
+                        "description": f"GPU memory usage is imbalanced (ratio: {ratio:.2f})",
+                        "severity": "high" if (ratio > 3 or ratio < 0.33) else "medium",
+                        "recommendation": "Consider redistributing model layers or using tensor parallelism"
+                    })
+                    
+                    color = "#F44336" if ratio > 3 or ratio < 0.33 else "#FF9800"
+                    html = f"<p style='margin-bottom: 10px;'><span style='color: {color};'>Memory Imbalance:</span> " \
+                           f"GPU memory usage ratio is {ratio:.2f}x between GPUs<br>" \
+                           f"<span style='color: #A0A0A0; margin-left: 15px;'>Recommendation: Adjust layer distribution</span></p>"
+                    self.pattern_list.insertHtml(html)
+            
+            # Check for steady growth pattern
+            leaks = self.stats.get("potential_leaks", [])
+            if leaks:
+                for leak in leaks:
+                    gpu_id = leak.get("gpu_id", 0)
+                    growth_rate = leak.get("growth_rate", 0)
+                    severity = leak.get("severity", "medium")
+                    
+                    self.patterns.append({
+                        "type": "growth",
+                        "gpu_id": gpu_id,
+                        "growth_rate": growth_rate,
+                        "severity": severity,
+                        "description": f"Steady memory growth detected on GPU {gpu_id}",
+                        "recommendation": "Look for resource leaks in model implementation"
+                    })
+                    
+                    color = "#F44336" if severity == "high" else "#FF9800"
+                    html = f"<p style='margin-bottom: 10px;'><span style='color: {color};'>Memory Growth:</span> " \
+                           f"GPU {gpu_id} shows sustained growth of {growth_rate*100:.2f}%/min<br>" \
+                           f"<span style='color: #A0A0A0; margin-left: 15px;'>Recommendation: Check for resource leaks</span></p>"
+                    self.pattern_list.insertHtml(html)
+            
+            # Check for inefficient memory usage
+            if inference_count > 0:
+                for gpu_id in [0, 1]:
+                    if gpu_id in peak_memory and peak_memory[gpu_id] > 0:
+                        mb_per_inference = peak_memory[gpu_id] / inference_count
+                        if mb_per_inference > 5000:  # Arbitrary threshold for demonstration
+                            self.patterns.append({
+                                "type": "inefficiency",
+                                "gpu_id": gpu_id,
+                                "mb_per_inference": mb_per_inference,
+                                "severity": "medium",
+                                "description": f"High memory usage per inference on GPU {gpu_id}",
+                                "recommendation": "Consider quantization or efficient attention mechanisms"
+                            })
+                            
+                            html = f"<p style='margin-bottom: 10px;'><span style='color: #FF9800;'>Memory Inefficiency:</span> " \
+                                   f"GPU {gpu_id} uses {mb_per_inference:.1f} MB per inference<br>" \
+                                   f"<span style='color: #A0A0A0; margin-left: 15px;'>Recommendation: Consider quantization</span></p>"
+                            self.pattern_list.insertHtml(html)
+            
+            # Check for memory fragmentation signs
+            spikes = self.stats.get("allocation_spikes", [])
+            if spikes:
+                spike_count = {0: 0, 1: 0}
+                for spike in spikes:
+                    gpu_id = spike.get("gpu_id", 0)
+                    spike_count[gpu_id] = spike_count.get(gpu_id, 0) + 1
+                
+                for gpu_id, count in spike_count.items():
+                    if count >= 3:  # Multiple spikes might indicate fragmentation
+                        self.patterns.append({
+                            "type": "fragmentation",
+                            "gpu_id": gpu_id,
+                            "spike_count": count,
+                            "severity": "medium" if count >= 5 else "low",
+                            "description": f"Possible memory fragmentation on GPU {gpu_id}",
+                            "recommendation": "Consider implementing memory defragmentation"
+                        })
+                        
+                        color = "#FF9800" if count >= 5 else "#FFC107"
+                        html = f"<p style='margin-bottom: 10px;'><span style='color: {color};'>Possible Fragmentation:</span> " \
+                               f"GPU {gpu_id} had {count} memory spikes during session<br>" \
+                               f"<span style='color: #A0A0A0; margin-left: 15px;'>Recommendation: Implement defragmentation</span></p>"
+                        self.pattern_list.insertHtml(html)
+            
+            # If no patterns found
+            if not self.patterns:
+                self.pattern_list.insertHtml(
+                    "<p style='color: #4CAF50; text-align: center;'>No significant memory patterns detected</p>"
+                )
+            
+            # Add summary and recommendations
+            if self.patterns:
+                self.pattern_list.insertHtml("<br><b>Summary Recommendations:</b><br>")
+                
+                # Group recommendations by severity
+                high_severity = [p for p in self.patterns if p.get("severity") == "high"]
+                med_severity = [p for p in self.patterns if p.get("severity") == "medium"]
+                
+                if high_severity:
+                    self.pattern_list.insertHtml("<p style='color: #F44336;'>High Priority:</p><ul>")
+                    for pattern in high_severity:
+                        self.pattern_list.insertHtml(f"<li>{pattern.get('recommendation')}</li>")
+                    self.pattern_list.insertHtml("</ul>")
+                
+                if med_severity:
+                    self.pattern_list.insertHtml("<p style='color: #FF9800;'>Medium Priority:</p><ul>")
+                    for pattern in med_severity:
+                        self.pattern_list.insertHtml(f"<li>{pattern.get('recommendation')}</li>")
+                    self.pattern_list.insertHtml("</ul>")
+            
+            logger.info(f"Completed deep pattern analysis: {len(self.patterns)} patterns found")
+            
+            # Switch to pattern analysis tab
+            self.tab_widget.setCurrentIndex(1)
+            
+        except Exception as e:
+            logger.error(f"Error in memory pattern analysis: {e}")
+            self.pattern_list.clear()
+            self.pattern_list.insertHtml(f"<p style='color: #F44336;'>Error during analysis: {str(e)}</p>")
+    
+    def clear_analysis(self):
+        """Clear pattern analysis results"""
+        self.pattern_list.clear()
+        self.patterns = []
+        logger.info("Cleared memory pattern analysis")
 
 
 class MemoryProfilerPanel(QWidget):

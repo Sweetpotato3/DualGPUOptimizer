@@ -1,61 +1,59 @@
 ---
-description: Defines core telemetry system for monitoring and managing GPU resources, memory usage, and performance alerts
-globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/monitor.py,dualgpuopt/memory/profiler.py
+description: Used to detect and understand GPU memory usage monitoring, telemetry systems, and resource tracking capabilities.
+globs: **/telemetry.py,**/tray.py,**/monitor.py,**/memory/**,**/gpu/**
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry and memory tracking with these key components:
+## Core Telemetry Collection Logic
 
-1. GPU Metrics Collection System:
-- Real-time monitoring of critical GPU performance indicators:
-  * Memory utilization and allocation patterns
-  * Temperature thresholds with color-coded warnings (>70°C orange, >80°C red)
-  * Power consumption relative to GPU limits
-  * Clock speeds (SM and memory)
-  * PCIe bandwidth monitoring
-- Custom metrics correlation for realistic mock data generation
-- Thread-safe metrics collection with RLock implementation
+The telemetry system implements real-time GPU metric collection with the following key components:
 
-2. Memory Session Analysis:
-- Session-based memory tracking for dual GPU inference operations
-- Linear regression-based leak detection using memory windows
-- Two-tier detection system:
+1. GPU Memory State Collection
+- Tracks real-time memory allocations and deallocations per GPU
+- Implements sliding window analysis for memory growth detection 
+- Maintains session-specific memory baselines
+- Calculates memory deltas between inference operations
+- Key file: `dualgpuopt/memory/profiler.py`
+
+2. Custom Alert System
+- Memory leak detection using configurable thresholds:
   * Spike detection for rapid memory growth
-  * Leak detection for sustained growth patterns
-- Cooldown period (30s) between leak alerts to prevent alert storms
-- Small memory change filtering (<5MB) to reduce false positives
+  * Sustained growth monitoring for leak identification
+  * Minimum 5MB change requirement for alerts
+  * 30-second cooldown between leak notifications
+- File: `dualgpuopt/telemetry.py`
 
-3. GPU Memory Timeline:
-- Per-GPU memory event categorization:
-  * ALLOCATION, DEALLOCATION events
-  * GROWTH_SPIKE, LEAK_DETECTED indicators
-  * INFERENCE_START, INFERENCE_END boundaries
-- Session-level reporting with:
-  * GPU-specific memory metrics
-  * Leak detection history
-  * Memory pattern analysis
-  * Performance recommendations
+3. Metric Collection Pipeline
+- Polling-based collection of GPU metrics:
+  * Memory utilization
+  * GPU usage percentage  
+  * Temperature monitoring
+  * Power consumption
+  * Clock speeds
+- Configurable sampling rates with default 1000ms interval
+- File: `dualgpuopt/gpu/monitor.py`
 
-4. Resource Event Processing:
-- Exponential backoff for NVML recovery attempts (2^attempt seconds)
-- Maximum recovery attempt configuration through environment variables
-- Automatic mock mode transition after consecutive failures:
-  * 3 consecutive errors trigger recovery
-  * 5 consecutive errors force mock mode
-- GPU-specific error state tracking
+4. Session Analytics
+- Per-inference memory tracking:
+  * Token count correlation
+  * Memory efficiency metrics
+  * Peak usage analysis
+- Session statistics with min/max/avg values
+- Resource optimization recommendations
+- File: `dualgpuopt/memory/metrics.py`
 
-Importance Scores:
-- GPU Metrics Collection: 95 (Core monitoring functionality)
-- Memory Session Analysis: 90 (Critical leak detection)
-- GPU Memory Timeline: 85 (Key analysis component)
-- Resource Event Processing: 80 (Essential error handling)
+5. Recovery Mechanisms
+- Progressive memory cleanup strategies:
+  * CUDA cache clearance
+  * GPU clock/compute reset
+  * Full system memory reclamation
+- Platform-specific memory recovery commands
+- Success rate tracking for recovery attempts
+- File: `dualgpuopt/memory/recovery.py`
 
-File Paths:
-dualgpuopt/telemetry.py
-dualgpuopt/memory/profiler.py
-dualgpuopt/gpu/monitor.py
+The system provides comprehensive GPU resource monitoring with sophisticated pattern detection, alert generation, and memory optimization capabilities focused on ML model inference workloads.
 
 $END$

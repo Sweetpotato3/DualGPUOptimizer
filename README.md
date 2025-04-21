@@ -11,10 +11,55 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
 - **Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
 - **NEW: Qt-Based Modern UI**: Completely rebuilt interface using Qt for improved stability and visual experience
+- **NEW: Enhanced Memory Profiling**: Interactive memory timeline with zooming, filtering, and event markers
+- **NEW: Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
 
 ## Recent Improvements
 
-### NEW: Qt-Based Interface Migration
+### NEW: Enhanced Memory Profiling System
+
+We've significantly enhanced the memory profiling system with the following features:
+
+- **Interactive Memory Timeline**: Zoom in/out, pan, and filter time periods for detailed analysis
+- **Timeline Markers**: Add custom markers to annotate important events in the memory timeline
+- **Time-Based Filtering**: Filter memory data by time periods (30 seconds, 1 minute, 5 minutes, or all data)
+- **Pattern Analysis**: Sophisticated detection of memory usage patterns with severity indicators
+- **Memory Usage Recommendations**: Actionable recommendations based on detected memory patterns
+- **GPU Memory Comparison**: Visual comparison of memory usage between GPUs with efficiency metrics
+- **Interactive Zooming**: Click and drag on the chart to zoom into specific time periods
+- **Extended Export Capabilities**: Export memory data as CSV or chart images as PNG/PDF
+
+The enhanced Memory Profiler provides a more comprehensive toolset for diagnosing memory issues and optimizing memory usage in large language models.
+
+### NEW: Enhanced Chart Functionality
+
+We've added significant enhancements to all charts throughout the application:
+
+- **Interactive Zoom Controls**: Zoom in/out and reset buttons for all charts
+- **Timeline Markers**: Add custom event markers to correlate events with metric changes
+- **Export Capabilities**: Export chart data as CSV or images as PNG
+- **Auto-Scaling**: Automatic Y-axis scaling based on displayed data
+- **Improved Visibility**: Better labeling and axis formatting for clearer data visualization
+- **Chart Filtering**: Show/hide specific data series on charts
+- **Interactive Selection**: Click and drag to zoom into specific regions of charts
+
+These chart enhancements enable more detailed analysis and easier sharing of performance data.
+
+### NEW: Pattern Analysis for Memory Usage
+
+The Memory Profiler now includes sophisticated pattern analysis capabilities:
+
+- **Memory Imbalance Detection**: Identifies uneven memory distribution between GPUs
+- **Growth Pattern Analysis**: Detects steady memory growth indicating potential leaks
+- **Efficiency Metrics**: Calculates memory efficiency in terms of tokens processed per GB
+- **Fragmentation Detection**: Identifies patterns suggesting memory fragmentation
+- **Severity Classification**: Categorizes issues by severity (high, medium, low)
+- **Actionable Recommendations**: Provides specific recommendations for each detected pattern
+- **Priority-Based Reporting**: Groups recommendations by priority for efficient issue resolution
+
+These new analysis capabilities help users optimize their models for better memory efficiency.
+
+### Qt-Based Interface Migration
 
 We've completed a comprehensive migration to a Qt-based interface with the following benefits:
 

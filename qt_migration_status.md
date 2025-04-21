@@ -17,22 +17,13 @@
 - ✅ Enhanced Dashboard with historical metrics charts
 - ✅ Added Settings Panel with theme selection and application preferences
 - ✅ Implemented System Tray integration with notifications and minimize-to-tray support
+- ✅ Added Memory Profiling Enhancements (interactive timeline with zooming and filtering)
+- ✅ Implemented Pattern Analysis for memory spike detection
+- ✅ Enhanced Chart Functionality (export, timeline markers, zoom controls)
 
 ## Next Steps
 
 ### Short-term
-
-1. **Memory Profiling Enhancements**
-   - Add more sophisticated leak detection algorithms
-   - Implement pattern analysis for memory spike detection
-   - Create interactive timeline with zooming and filtering capabilities
-
-2. **Enhanced Chart Functionality**
-   - Add export capability for chart data
-   - Implement timeline markers for important events
-   - Add zoom and pan controls for detailed analysis
-
-### Medium-term
 
 1. **GPU Split Visualization**
    - Add visual representation of layer distribution
@@ -43,6 +34,18 @@
    - Add CUDA profiling capabilities
    - Implement kernel time analysis
    - Add visual representation of CUDA operations
+
+### Medium-term
+
+1. **Real-time Correlation Analysis**
+   - Add correlation between GPU metrics and application events
+   - Implement heatmap visualization for metric correlations
+   - Create anomaly detection for unusual patterns
+
+2. **Enhanced Memory Pattern Visualization**
+   - Add 3D memory usage visualization over time
+   - Implement predictive memory growth modeling
+   - Add memory usage comparison with baselines
 
 ### Long-term
 

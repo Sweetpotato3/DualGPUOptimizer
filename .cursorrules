@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create high-level business logic overview documentation for GPU optimization software focused on dual GPU configurations and machine learning model deployment
-globs: *.py,*.cpp
+description: Create a high-level overview document for projects focused on GPU optimization, monitoring and machine learning model deployment. Applies when multiple source files contain integrated business logic for managing dual GPU configurations, memory profiling, and model execution.
+globs: *.py,src/*,lib/*
 alwaysApply: false
 ---
 
@@ -154,53 +154,61 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized logic for managing and optimizing large language model inference across dual GPU configurations. The core business functionality is organized into four main domains:
+The DualGPUOptimizer system implements specialized business logic for managing and optimizing dual GPU configurations, with a focus on large language model deployment.
 
-## Memory Management & Profiling (Importance: 95)
-Core component managing GPU memory allocation and optimization:
-- Session-based memory tracking system for dual GPU inference
-- Memory leak detection using linear regression with configurable thresholds
-- Per-GPU metrics tracking for utilization, temperature, power draw
-- Memory timeline analysis with categorized events (allocation, growth spikes, leaks)
+Core Business Domains:
 
-Key files:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/predictor.py
+1. GPU Memory Management
+- Intelligent memory split optimization between GPUs based on model size
+- Dynamic KV cache allocation with model-specific heuristics
+- Memory leak detection with configurable thresholds
+- Real-time memory profiling with timeline analytics
 
-## Model Optimization Engine (Importance: 90)
-Handles model distribution and execution across GPUs:
-- Calculates optimal tensor splits based on GPU memory characteristics
-- Dynamic layer balancing with profiling-based distribution
-- Context size optimization considering model architecture and memory constraints
-- Framework-specific command generation for llama.cpp and vLLM
+2. Model Layer Distribution
+- Layer balancing algorithms for transformer models across GPUs
+- Token and batch size optimization based on available GPU memory
+- Architecture-specific adjustments for MoE and attention variants
+- Predictive memory growth modeling with safety margins
 
-Key files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
+3. GPU Resource Monitoring 
+- Real-time metric collection (temperature, utilization, power, clocks)
+- Multi-GPU synchronized telemetry with correlated data
+- Automatic failure recovery and mock data generation
+- PCIe bandwidth and memory throughput analysis
 
-## GPU Telemetry System (Importance: 85)
-Real-time monitoring and metrics collection:
-- Custom metrics collection pipeline for dual GPU configurations
-- Event-based architecture for metric propagation
-- Automatic fallback to mock data for testing/development
-- Temperature and power threshold monitoring
+4. Model Execution Management
+- Framework-specific command generation (llama.cpp, vLLM)
+- Tensor parallelism optimization for multi-GPU setups
+- Context size calculations with architecture awareness
+- Batch processing with memory-aware scheduling
 
-Key files:
-- dualgpuopt/telemetry.py
-- dualgpuopt/gpu/monitor.py
+Key Integration Points:
 
-## Smart Batching System (Importance: 80)
-Optimizes workload distribution across GPUs:
-- Length-aware batch scheduling for efficient GPU utilization
-- Dynamic batch size adjustment based on memory pressure
-- Token-based workload distribution with quota enforcement
-- Automatic recovery from out-of-memory conditions
+1. Memory Profiling Service
+File: dualgpuopt/memory/profiler.py
+- Manages real-time memory analysis
+- Implements leak detection algorithms
+- Tracks inference session metrics
 
-Key files:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/batch/heuristics.py
+2. Layer Distribution Engine
+File: dualgpuopt/layer_balance.py  
+- Optimizes model layer placement
+- Handles weighted profiling data
+- Implements block merging strategies
 
-The system prioritizes efficient GPU resource utilization while providing comprehensive monitoring and optimization capabilities specifically designed for large language model inference across dual GPU configurations.
+3. Resource Monitor
+File: dualgpuopt/gpu/monitor.py
+- Collects GPU telemetry data
+- Manages metric correlation
+- Handles hardware failure recovery
+
+4. Model Deployment Controller  
+File: dualgpuopt/commands/gpu_commands.py
+- Generates framework commands
+- Manages execution parameters
+- Handles resource allocation
+
+The system implements a comprehensive approach to dual GPU optimization with specialized focus on large language model deployment scenarios, memory management, and hardware resource optimization.
 
 $END$
 END SPECIFICATION
