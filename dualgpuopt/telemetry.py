@@ -295,7 +295,6 @@ class TelemetryService:
 
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
-
         # Create batch collection helper
         def collect_batch_metrics(gpu_ids: List[int], current_time: float) -> Dict[int, GPUMetrics]:
             batch_metrics = {}
@@ -368,9 +367,7 @@ class TelemetryService:
         """
         # Notify all registered callbacks with thread safety
         with self._callback_lock:
-            callbacks = list(
-                self.callbacks
-            )  # Create a copy to avoid issues if the list changes during iteration
+            callbacks = list(self.callbacks)  # Create a copy to avoid issues if the list changes during iteration
 
         for callback in callbacks:
             try:
