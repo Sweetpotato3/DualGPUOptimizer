@@ -360,3 +360,24 @@ python build.py
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Recently Fixed Issues
+
+### Enhanced Dependency Management
+- **Improved Installer Script**: Fixed and enhanced the dependency installer with better error handling
+- **Clear Dependency Organization**: Properly categorized dependencies into core, UI, chat, and ML groups
+- **Automatic Recovery**: Added fallback paths when optional dependencies are missing
+- **Better User Feedback**: Improved console output with color-coded status messages
+
+### Resolved Import Errors
+- **Fixed Circular Imports**: Resolved issues between telemetry and GPU modules
+- **Standardized Class Naming**: Ensured consistent naming of GPUMetrics class across modules
+- **Local Class Declaration**: Used local class declarations to avoid import dependencies
+
+### Improved UI Compatibility Layer
+- **Theme Application Support**: Fixed theme application errors in MainApplication
+- **Status Variable Handling**: Added ensure_status_var function to prevent 'status_var' not found errors
+- **Graceful Fallbacks**: Improved fallback mechanisms when UI enhancement packages are unavailable
+- **Consistent Error Handling**: Better handling of UI initialization failures
+
+These improvements create a more stable foundation, enabling the application to run in a wider range of environments with better error recovery.

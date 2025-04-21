@@ -12,6 +12,7 @@ import os
 import tempfile
 from pathlib import Path
 import queue
+from ..gui.theme.compatibility import ensure_status_var
 
 # Determine log directory - use temp directory or user home
 def get_log_directory():
@@ -164,6 +165,11 @@ class MainApplication(ttk.Frame):
 
         # Store reference to parent for resize binding
         self.parent = parent
+
+        # Initialize status var early to prevent theme errors
+        self.status_var = tk.StringVar(value="Status: Ready")
+        # Ensure status_var is available for theme system
+        ensure_status_var(self)
 
         # Bind to window resize event for responsive adjustments
         self.parent.bind("<Configure>", self._on_window_resize)
