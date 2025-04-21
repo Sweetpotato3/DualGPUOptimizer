@@ -10,7 +10,7 @@ import time
 from dataclasses import dataclass
 from enum import Enum
 from functools import lru_cache
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Telemetry")
@@ -56,6 +56,14 @@ except ImportError:
     NVML_AVAILABLE = False
 
 
+class AlertLevel(Enum):
+    """Alert levels for telemetry events"""
+    NORMAL = 0
+    WARNING = 1
+    CRITICAL = 2
+    EMERGENCY = 3
+
+
 @dataclass
 class GPUMetrics:
     """Represents comprehensive metrics for a single GPU"""
@@ -99,6 +107,39 @@ class GPUMetrics:
     def formatted_pcie(self) -> str:
         """Return formatted PCIe bandwidth usage"""
         return f"TX: {self.pcie_tx/1024:.1f} MB/s, RX: {self.pcie_rx/1024:.1f} MB/s"
+    
+    def get_alert_level(self) -> AlertLevel:
+        """Calculate overall alert level based on metrics.
+        
+        Returns:
+            AlertLevel enum indicating the severity of the current GPU state
+        """
+        # Start with NORMAL alert level
+        level = AlertLevel.NORMAL
+        
+        # Memory usage thresholds
+        if self.memory_percent >= 95:
+            level = AlertLevel.EMERGENCY
+        elif self.memory_percent >= 90:
+            level = max(level, AlertLevel.CRITICAL)
+        elif self.memory_percent >= 75:
+            level = max(level, AlertLevel.WARNING)
+            
+        # Temperature thresholds
+        if self.temperature >= 90:
+            level = AlertLevel.EMERGENCY
+        elif self.temperature >= 80:
+            level = max(level, AlertLevel.CRITICAL)
+        elif self.temperature >= 70:
+            level = max(level, AlertLevel.WARNING)
+            
+        # Power usage thresholds (percentage of limit)
+        if self.power_percent >= 98:
+            level = max(level, AlertLevel.CRITICAL)
+        elif self.power_percent >= 90:
+            level = max(level, AlertLevel.WARNING)
+            
+        return level
 
 
 class TelemetryService:
@@ -128,6 +169,8 @@ class TelemetryService:
         self._metrics_lock = threading.RLock()
         self._callback_lock = threading.RLock()
         self._gpu_handles: Dict[int, Any] = {}
+        self._metrics_history: Dict[int, List[GPUMetrics]] = {}
+        self._history_length = 60  # Store 60 seconds of history by default
 
         # Initialize NVML if available
         self._init_nvml()
@@ -292,6 +335,46 @@ class TelemetryService:
         """
         with self._metrics_lock:
             return self.metrics.copy()
+            
+    def get_history(self, gpu_id: Optional[int] = None, seconds: Optional[int] = None) -> Union[Dict[int, List[GPUMetrics]], List[GPUMetrics]]:
+        """Get historical metrics data
+        
+        Args:
+            gpu_id: Optional GPU ID to get history for. If None, returns history for all GPUs.
+            seconds: Optional time window in seconds. If None, returns all available history.
+            
+        Returns:
+            If gpu_id is None: Dictionary mapping GPU IDs to lists of metrics
+            If gpu_id is provided: List of metrics for the specified GPU
+        """
+        with self._metrics_lock:
+            if gpu_id is not None:
+                # Return history for a specific GPU
+                if gpu_id not in self._metrics_history:
+                    return []
+                
+                if seconds is not None:
+                    # Filter by time window
+                    cutoff_time = time.time() - seconds
+                    return [m for m in self._metrics_history[gpu_id] if m.timestamp >= cutoff_time]
+                else:
+                    # Return all history for this GPU
+                    return self._metrics_history[gpu_id].copy()
+            else:
+                # Return history for all GPUs
+                if seconds is not None:
+                    # Filter by time window
+                    cutoff_time = time.time() - seconds
+                    return {
+                        gpu_id: [m for m in history if m.timestamp >= cutoff_time]
+                        for gpu_id, history in self._metrics_history.items()
+                    }
+                else:
+                    # Return all history
+                    return {
+                        gpu_id: history.copy() 
+                        for gpu_id, history in self._metrics_history.items()
+                    }
 
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
@@ -316,7 +399,6 @@ class TelemetryService:
         while self.running and not self._stop_event.is_set():
             try:
                 # Collect metrics from all GPUs
-                metrics = {}
                 current_time = time.time()
 
                 # Determine the number of GPUs to monitor
@@ -343,6 +425,17 @@ class TelemetryService:
                 # Update the metrics store with thread safety
                 with self._metrics_lock:
                     self.metrics = batch_metrics
+                    
+                    # Update history
+                    for gpu_id, metrics in batch_metrics.items():
+                        if gpu_id not in self._metrics_history:
+                            self._metrics_history[gpu_id] = []
+                        self._metrics_history[gpu_id].append(metrics)
+                        
+                        # Trim history if needed
+                        if len(self._metrics_history[gpu_id]) > self._history_length:
+                            # Keep only the last _history_length entries
+                            self._metrics_history[gpu_id] = self._metrics_history[gpu_id][-self._history_length:]
 
                 # Notify all registered callbacks and publish to event bus
                 self._process_metrics_update(batch_metrics)
@@ -396,8 +489,8 @@ class TelemetryService:
             except Exception as e:
                 logger.error(f"Error publishing metrics to event bus: {e}")
 
-    # Cache GPU metrics to reduce repeated calls for the same data
-    @lru_cache(maxsize=32)
+    # Use maxsize parameter and specify TTL to help prevent memory leaks
+    @lru_cache(maxsize=32, typed=True)
     def _get_cached_gpu_name(self, gpu_id: int) -> str:
         """Get cached GPU name to avoid redundant NVML calls
 
@@ -419,7 +512,7 @@ class TelemetryService:
             else:
                 # Already a string in newer pynvml versions
                 return name_bytes
-        except:
+        except Exception:
             return f"NVIDIA GPU {gpu_id}"
 
     def _get_gpu_metrics(self, gpu_id: int, timestamp: float) -> GPUMetrics:

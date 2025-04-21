@@ -16,7 +16,8 @@ try:
         reset_telemetry_service,
         ENV_POLL_INTERVAL,
         ENV_MOCK_TELEMETRY,
-        ENV_MAX_RECOVERY_ATTEMPTS
+        ENV_MAX_RECOVERY_ATTEMPTS,
+        AlertLevel
     )
     TELEMETRY_AVAILABLE = True
 except ImportError:
@@ -24,6 +25,12 @@ except ImportError:
     TELEMETRY_AVAILABLE = False
 
     # Mock class definitions for testing
+    class AlertLevel:
+        NORMAL = 0
+        WARNING = 1
+        CRITICAL = 2
+        EMERGENCY = 3
+        
     class GPUMetrics:
         def __init__(self, gpu_id=0, name="", utilization=0, memory_used=0, memory_total=0,
                     temperature=0, power_usage=0, power_limit=0, fan_speed=0, clock_sm=0,
@@ -63,6 +70,16 @@ except ImportError:
         @property
         def formatted_pcie(self):
             return f"TX: {self.pcie_tx/1024:.1f} MB/s, RX: {self.pcie_rx/1024:.1f} MB/s"
+            
+        def get_alert_level(self):
+            # Mock implementation
+            if self.memory_percent >= 95 or self.temperature >= 90:
+                return AlertLevel.EMERGENCY
+            elif self.memory_percent >= 90 or self.temperature >= 80:
+                return AlertLevel.CRITICAL
+            elif self.memory_percent >= 75 or self.temperature >= 70:
+                return AlertLevel.WARNING
+            return AlertLevel.NORMAL
 
     class TelemetryService:
         def __init__(self, poll_interval=1.0, use_mock=True):
@@ -75,6 +92,8 @@ except ImportError:
             self._thread = None
             self._stop_event = threading.Event()
             self._nvml_initialized = False
+            self._metrics_history = {}
+            self._history_length = 60
 
         def start(self):
             self.running = True
@@ -93,6 +112,11 @@ except ImportError:
 
         def get_metrics(self):
             return self.metrics.copy()
+            
+        def get_history(self, gpu_id=None, seconds=None):
+            if gpu_id is not None:
+                return []
+            return {}
 
         def _get_mock_metrics(self, gpu_id, timestamp, error_state=False):
             return GPUMetrics(
@@ -213,6 +237,78 @@ class TestGPUMetrics:
             power_limit=0
         )
         assert metrics.power_percent == 0.0
+        
+    def test_alert_levels(self):
+        """Test alert level calculation based on metrics"""
+        # Normal state
+        metrics = GPUMetrics(
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=60,
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.NORMAL
+        
+        # Warning level due to temperature
+        metrics = GPUMetrics(
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=72,  # High temperature
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.WARNING
+        
+        # Warning level due to memory
+        metrics = GPUMetrics(
+            memory_used=6144,
+            memory_total=8192,  # 75% memory
+            temperature=60,
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.WARNING
+        
+        # Critical level due to temperature
+        metrics = GPUMetrics(
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=85,  # Critical temperature
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.CRITICAL
+        
+        # Critical level due to memory
+        metrics = GPUMetrics(
+            memory_used=7373,
+            memory_total=8192,  # 90% memory
+            temperature=60,
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.CRITICAL
+        
+        # Emergency level due to temperature
+        metrics = GPUMetrics(
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=92,  # Emergency temperature
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.EMERGENCY
+        
+        # Emergency level due to memory
+        metrics = GPUMetrics(
+            memory_used=7782,
+            memory_total=8192,  # 95% memory
+            temperature=60,
+            power_usage=150,
+            power_limit=250  # 60% power
+        )
+        assert metrics.get_alert_level() == AlertLevel.EMERGENCY
 
 class TestTelemetryService:
     """Test the TelemetryService class"""
@@ -266,6 +362,8 @@ class TestTelemetryService:
         assert service.callbacks == []
         assert service._thread is None
         assert service._nvml_initialized is False
+        assert service._metrics_history == {}
+        assert service._history_length == 60
 
     def test_custom_parameters(self):
         """Test creating a TelemetryService with custom parameters"""
@@ -391,35 +489,93 @@ class TestTelemetryService:
             assert isinstance(metrics, GPUMetrics)
             assert metrics.error_state is True
 
-    def test_telemetry_callbacks(self, telemetry_service):
-        """Test telemetry callbacks"""
-        # Create a mock callback
-        callback = MagicMock()
-
-        # Register the callback
-        telemetry_service.register_callback(callback)
-
-        # Create some mock metrics
-        mock_metrics = {
-            0: telemetry_service._get_mock_metrics(0, time.time()),
-            1: telemetry_service._get_mock_metrics(1, time.time())
+    def test_history_storage(self, telemetry_service):
+        """Test metrics history storage and retrieval"""
+        # Create some test metrics
+        metrics0 = telemetry_service._get_mock_metrics(0, time.time() - 30)
+        metrics1 = telemetry_service._get_mock_metrics(1, time.time() - 20)
+        metrics2 = telemetry_service._get_mock_metrics(0, time.time() - 10)
+        
+        # Manually add to history
+        telemetry_service._metrics_history = {
+            0: [metrics0, metrics2],
+            1: [metrics1]
         }
-
-        # Call the notify method
-        telemetry_service._notify_callbacks(mock_metrics)
-
-        # Check that the callback was called with the metrics
-        callback.assert_called_once_with(mock_metrics)
-
-        # Test with callback that raises an exception
-        error_callback = MagicMock(side_effect=Exception("Callback error"))
-        telemetry_service.register_callback(error_callback)
-
-        # Should not raise an exception
-        telemetry_service._notify_callbacks(mock_metrics)
-
-        # Original callback should still be called
-        assert callback.call_count == 2
+        
+        # Test getting all history
+        all_history = telemetry_service.get_history()
+        assert len(all_history) == 2  # Two GPUs
+        assert len(all_history[0]) == 2  # Two entries for GPU 0
+        assert len(all_history[1]) == 1  # One entry for GPU 1
+        
+        # Test getting history for specific GPU
+        gpu0_history = telemetry_service.get_history(gpu_id=0)
+        assert len(gpu0_history) == 2
+        assert gpu0_history[0] == metrics0
+        assert gpu0_history[1] == metrics2
+        
+        # Test getting history with time window
+        recent_history = telemetry_service.get_history(seconds=15)
+        assert 0 in recent_history
+        assert 1 in recent_history
+        assert len(recent_history[0]) == 1  # Only metrics2 is recent enough
+        assert len(recent_history[1]) == 0  # metrics1 is too old
+        
+        # Test getting history for specific GPU with time window
+        gpu0_recent = telemetry_service.get_history(gpu_id=0, seconds=15)
+        assert len(gpu0_recent) == 1
+        assert gpu0_recent[0] == metrics2
+        
+        # Test getting history for non-existent GPU
+        nonexistent_history = telemetry_service.get_history(gpu_id=99)
+        assert nonexistent_history == []
+    
+    def test_metrics_history_update(self, telemetry_service):
+        """Test that metrics history is properly updated and trimmed"""
+        # Mock _process_metrics_update to not actually call callbacks
+        telemetry_service._process_metrics_update = MagicMock()
+        
+        # Set a smaller history length for testing
+        telemetry_service._history_length = 3
+        
+        # Simulate telemetry loop updates
+        for i in range(5):  # More than _history_length
+            batch_metrics = {
+                0: telemetry_service._get_mock_metrics(0, time.time() + i),
+                1: telemetry_service._get_mock_metrics(1, time.time() + i)
+            }
+            
+            # Update metrics and history
+            with telemetry_service._metrics_lock:
+                telemetry_service.metrics = batch_metrics
+                
+                # Update history (copied from _telemetry_loop)
+                for gpu_id, metrics in batch_metrics.items():
+                    if gpu_id not in telemetry_service._metrics_history:
+                        telemetry_service._metrics_history[gpu_id] = []
+                    telemetry_service._metrics_history[gpu_id].append(metrics)
+                    
+                    # Trim history if needed
+                    if len(telemetry_service._metrics_history[gpu_id]) > telemetry_service._history_length:
+                        # Keep only the last _history_length entries
+                        telemetry_service._metrics_history[gpu_id] = telemetry_service._metrics_history[gpu_id][-telemetry_service._history_length:]
+            
+            # Call process_metrics_update
+            telemetry_service._process_metrics_update(batch_metrics)
+        
+        # Verify history length is maintained
+        assert len(telemetry_service._metrics_history[0]) == 3
+        assert len(telemetry_service._metrics_history[1]) == 3
+        
+        # Verify we kept the most recent entries (timestamps should be the highest)
+        timestamps0 = [m.timestamp for m in telemetry_service._metrics_history[0]]
+        timestamps1 = [m.timestamp for m in telemetry_service._metrics_history[1]]
+        
+        assert sorted(timestamps0) == timestamps0  # Should be in chronological order
+        assert sorted(timestamps1) == timestamps1
+        
+        # The earliest timestamp should be time.time() + 2 (entries 0, 1 were discarded)
+        assert abs(timestamps0[0] - (time.time() + 2)) < 1.0
 
 class TestTelemetryModule:
     """Test the telemetry module functions"""

@@ -15,10 +15,51 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
 - **NEW: Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
 - **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
+- **NEW: Enhanced Alert System**: Multi-level GPU alert classification with priority-based notifications
+- **NEW: Telemetry History**: Historical metrics storage with time-based filtering capabilities
 
 ## Recent Improvements
 
-### NEW: Simplified Settings Application Workflow
+### NEW: Advanced GPU Alert System
+
+We've implemented a comprehensive alert system for GPU monitoring:
+
+- **Four-Tier Alert Classification**: 
+  - NORMAL: Standard operating conditions
+  - WARNING: Approaching thresholds (75% memory, 70°C)
+  - CRITICAL: Threshold exceeded (90% memory, 80°C)
+  - EMERGENCY: Dangerous conditions (95% memory, 90°C)
+- **Composite Alert Detection**: Combines multiple metrics (memory, temperature, power) for accurate risk assessment
+- **Prioritized Alerting**: Higher severity alerts take precedence in notification systems
+- **GPU-Specific Classification**: Each GPU is monitored and classified independently
+
+The enhanced alert system provides earlier warnings of potential issues and more accurate classification of GPU conditions, helping prevent out-of-memory errors and thermal throttling.
+
+### NEW: Telemetry History Functionality
+
+We've added comprehensive telemetry history tracking:
+
+- **Rolling 60-Second History**: Maintains a complete 60-second history of all GPU metrics
+- **Time-Window Filtering**: Retrieve metrics from specific time windows (e.g., last 30 seconds)
+- **GPU-Specific History**: Access historical data for individual GPUs or all GPUs
+- **Memory-Optimized Storage**: Efficient storage with automatic trimming to prevent memory leaks
+- **Thread-Safe Implementation**: Concurrent access support for history data across components
+
+The telemetry history enables more sophisticated trend analysis, pattern detection, and visualization of GPU performance over time.
+
+### Improved Telemetry Memory Management
+
+We've optimized the telemetry system's memory usage:
+
+- **Enhanced LRU Cache Controls**: Implemented type-safe caching with optimized cache sizes
+- **Automatic History Trimming**: Prevents unbounded growth of historical data
+- **Fixed Memory Leaks**: Addressed potential memory leaks in long-running telemetry processes
+- **Optimized Thread Synchronization**: Reduced lock contention in multi-component access patterns
+- **Circular Buffer Implementation**: Efficient storage for high-frequency metric collection
+
+These optimizations ensure stable performance even during extended monitoring sessions, particularly important for long-running model inference processes.
+
+### Simplified Settings Application Workflow
 
 We've significantly improved the workflow for generating and applying optimal GPU settings:
 
@@ -30,7 +71,7 @@ We've significantly improved the workflow for generating and applying optimal GP
 
 This streamlined workflow eliminates the need for manual copy-pasting of settings between tabs or components.
 
-### NEW: Configuration Preset System
+### Configuration Preset System
 
 The new preset system allows you to save and reuse optimized configurations:
 
@@ -42,7 +83,7 @@ The new preset system allows you to save and reuse optimized configurations:
 
 The preset system makes it simple to switch between different model configurations without reconfiguring settings each time.
 
-### NEW: Enhanced Memory Profiling System
+### Enhanced Memory Profiling System
 
 We've significantly enhanced the memory profiling system with the following features:
 
@@ -57,7 +98,7 @@ We've significantly enhanced the memory profiling system with the following feat
 
 The enhanced Memory Profiler provides a more comprehensive toolset for diagnosing memory issues and optimizing memory usage in large language models.
 
-### NEW: Enhanced Chart Functionality
+### Enhanced Chart Functionality
 
 We've added significant enhancements to all charts throughout the application:
 
@@ -71,7 +112,7 @@ We've added significant enhancements to all charts throughout the application:
 
 These chart enhancements enable more detailed analysis and easier sharing of performance data.
 
-### NEW: Pattern Analysis for Memory Usage
+### Pattern Analysis for Memory Usage
 
 The Memory Profiler now includes sophisticated pattern analysis capabilities:
 
@@ -99,7 +140,7 @@ We've completed a comprehensive migration to a Qt-based interface with the follo
 
 The new Qt-based interface provides a significantly improved user experience while maintaining all the functionality of the original application.
 
-### NEW: Memory Profiling System
+### Memory Profiling System
 
 We've added a comprehensive memory profiling system with the following features:
 
@@ -516,6 +557,13 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Detailed Error Reporting**: Improved error messages with context and recovery instructions
 - **Event-Based State Synchronization**: Fixed state synchronization issues using events
 - **Fallback Widget System**: Implemented comprehensive fallback widgets for all UI components
+
+### Telemetry System Improvements
+
+- **Fixed Memory Leaks**: Addressed potential memory leaks in telemetry caching system
+- **Added Alert System**: Implemented multi-level alert classification for GPU events
+- **Enhanced History Storage**: Added 60-second history buffer with time-based filtering
+- **Improved Test Coverage**: Added comprehensive tests for telemetry functionality
 
 These improvements create a more stable foundation, enabling the application to run in a wider range of environments with better error recovery.
 

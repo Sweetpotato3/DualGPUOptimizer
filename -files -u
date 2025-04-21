@@ -1,0 +1,5 @@
+[33mcommit 1774dc487ea739f4ad7ccf51b4e7060ff9eca14b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mFunctioning-branch[m[33m, [m[1;31morigin/Functioning-branch[m[33m)[m
+Author: Sweetpotato3 <104112495+Sweetpotato3@users.noreply.github.com>
+Date:   Sun Apr 20 22:09:39 2025 -0400
+
+    Enhance README documentation for DualGPUOptimizer to include recent improvements in the telemetry system, emphasizing optimized GPU metrics collection and parallel batch processing for enhanced multi-GPU monitoring. Updated sections to reflect changes in the caching mechanisms and data distribution to UI components. This update aims to provide users with a clearer understanding of the application's performance optimizations and responsiveness in dual GPU configurations for machine learning workloads.
