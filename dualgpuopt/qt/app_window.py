@@ -1,7 +1,7 @@
 import logging
 from PySide6.QtWidgets import QMainWindow, QTabWidget, QMessageBox
-from PySide6.QtCore import QTimer, QSize
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtCore import QTimer, QSize, QEvent
+from PySide6.QtGui import QIcon, QPixmap, QCloseEvent
 import os
 
 logger = logging.getLogger('DualGPUOptimizer')
@@ -29,6 +29,9 @@ class DualGPUOptimizerApp(QMainWindow):
         
         # Initialize UI components
         self._init_ui()
+        
+        # Initialize system tray
+        self._init_system_tray()
         
         # Set up GPU monitoring timer
         self.update_timer = QTimer(self)
@@ -206,6 +209,44 @@ class DualGPUOptimizerApp(QMainWindow):
             QStatusBar::item {
                 border: none;
             }
+            
+            QCheckBox {
+                spacing: 5px;
+            }
+            
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border: 1px solid #3D2A50;
+                border-radius: 3px;
+                background-color: #241934;
+            }
+            
+            QCheckBox::indicator:checked {
+                background-color: #8A54FD;
+                border: 1px solid #8A54FD;
+            }
+            
+            QCheckBox::indicator:hover {
+                border: 1px solid #A883FD;
+            }
+            
+            QSpinBox {
+                background-color: #241934;
+                color: #FFFFFF;
+                border: 1px solid #3D2A50;
+                border-radius: 4px;
+                padding: 4px;
+            }
+            
+            QSpinBox::up-button, QSpinBox::down-button {
+                background-color: #372952;
+                border-radius: 2px;
+            }
+            
+            QSpinBox::up-button:hover, QSpinBox::down-button:hover {
+                background-color: #8A54FD;
+            }
         """)
         
         self.logger.info("Applied dark theme to application")
@@ -259,8 +300,52 @@ class DualGPUOptimizerApp(QMainWindow):
             self._show_error_message("Memory Profiler Tab Error",
                                    f"Failed to initialize Memory Profiler tab: {str(e)}")
         
+        # Add Settings tab
+        try:
+            from dualgpuopt.qt.settings_tab import SettingsTab
+            self.settings_tab = SettingsTab()
+            self.tabs.addTab(self.settings_tab, "Settings")
+            # Connect settings signal
+            self.settings_tab.settings_applied.connect(self._on_settings_applied)
+            self.logger.info("Settings tab initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Settings tab: {e}")
+            self._show_error_message("Settings Tab Error",
+                                  f"Failed to initialize Settings tab: {str(e)}")
+        
         # Set up status bar
         self.statusBar().showMessage("Ready")
+    
+    def _init_system_tray(self):
+        """Initialize system tray integration"""
+        try:
+            from dualgpuopt.qt.system_tray import GPUTrayManager
+            
+            # Get settings
+            settings = {}
+            if hasattr(self, 'settings_tab'):
+                # Get current settings from the settings tab
+                settings = self.settings_tab.settings_manager.get_settings()
+            
+            # Create tray manager
+            self.tray_manager = GPUTrayManager(settings)
+            
+            # Connect signals
+            self.tray_manager.show_app_requested.connect(self.show_and_activate)
+            self.tray_manager.exit_app_requested.connect(self.close_application)
+            
+            # If we have the launcher tab, connect the launch model signal
+            if hasattr(self, 'launcher_tab'):
+                self.tray_manager.launch_model_requested.connect(self.launcher_tab.launch_model)
+                
+                # Update available models in tray
+                models = self.launcher_tab.get_available_models()
+                self.tray_manager.update_available_models(models)
+            
+            self.logger.info("System tray integration initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize system tray: {e}")
+            self.tray_manager = None
     
     def _update_gpu_metrics(self):
         """Update GPU metrics on timer."""
@@ -274,6 +359,10 @@ class DualGPUOptimizerApp(QMainWindow):
             # Update dashboard tab if initialized
             if hasattr(self, 'dashboard_tab'):
                 self.dashboard_tab.update_metrics(metrics)
+            
+            # Update tray metrics if initialized
+            if hasattr(self, 'tray_manager') and self.tray_manager:
+                self.tray_manager.update_metrics(metrics)
             
         except Exception as e:
             self.logger.error(f"Error updating GPU metrics: {e}")
@@ -386,13 +475,71 @@ class DualGPUOptimizerApp(QMainWindow):
         msg_box.setStandardButtons(QMessageBox.Ok)
         return msg_box.exec_()
     
-    def closeEvent(self, event):
+    def closeEvent(self, event: QCloseEvent):
         """Handle window close event."""
+        # Check for minimize to tray setting
+        minimize_to_tray = True  # Default value
+        
+        if hasattr(self, 'settings_tab'):
+            minimize_to_tray = self.settings_tab.settings_manager.get_settings().get("minimize_to_tray", True)
+        
+        if minimize_to_tray and hasattr(self, 'tray_manager') and self.tray_manager:
+            # Minimize to tray instead of closing
+            self.logger.info("Minimizing to tray")
+            self.hide()
+            
+            # Show notification
+            self.tray_manager.show_notification(
+                "DualGPUOptimizer", 
+                "Application minimized to tray. Double-click the tray icon to restore.",
+                show_immediately=True
+            )
+            
+            # Ignore the close event
+            event.ignore()
+        else:
+            # Actually close the application
+            self.close_application()
+            event.accept()
+    
+    def close_application(self):
+        """Close the application completely."""
         self.logger.info("Application closing")
         
         # Stop the update timer
         if hasattr(self, 'update_timer') and self.update_timer.isActive():
             self.update_timer.stop()
+        
+        # Clean up tray if active
+        if hasattr(self, 'tray_manager') and self.tray_manager:
+            self.tray_manager.cleanup()
+    
+    def show_and_activate(self):
+        """Show and activate the window."""
+        # Show the window
+        self.show()
+        
+        # Raise to top
+        self.setWindowState((self.windowState() & ~Qt.WindowMinimized) | Qt.WindowActive)
+        self.activateWindow()
+        
+        self.logger.info("Application window restored")
+    
+    def _on_settings_applied(self, settings):
+        """Handle settings changes."""
+        self.logger.info("Applying new settings")
+        
+        # Update tray settings
+        if hasattr(self, 'tray_manager') and self.tray_manager:
+            self.tray_manager.update_settings(settings)
             
-        # Accept the event
-        event.accept() 
+        # Update poll interval if changed
+        if hasattr(self, 'update_timer'):
+            poll_interval = settings.get("poll_interval", 1000)
+            if self.update_timer.interval() != poll_interval:
+                self.update_timer.setInterval(poll_interval)
+                self.logger.info(f"Updated poll interval to {poll_interval}ms")
+        
+        # Apply theme changes if needed
+        theme_id = settings.get("theme", "dark_purple")
+        # TODO: Implement theme switching when multiple themes are available 

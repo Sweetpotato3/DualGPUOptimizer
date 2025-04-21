@@ -1,11 +1,197 @@
 import logging
 from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
                               QProgressBar, QFrame, QGridLayout, QSizePolicy,
-                              QPushButton, QSpacerItem)
-from PySide6.QtCore import Qt, Signal, Slot, QSize
+                              QPushButton, QSpacerItem, QComboBox)
+from PySide6.QtCore import Qt, Signal, Slot, QSize, QTimer
 from PySide6.QtGui import QFont, QIcon, QColor
+from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
+import datetime
+import collections
 
 logger = logging.getLogger('DualGPUOptimizer')
+
+# Define maximum history length for metrics
+MAX_HISTORY_LENGTH = 60  # 60 data points (1 minute at 1s polling)
+
+class GPUChart(QFrame):
+    """Line chart showing historical GPU metrics."""
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setup_ui()
+        self.metric_histories = {}
+        self.current_metric = "memory"
+        self.series = {}
+        
+    def setup_ui(self):
+        # Set up chart frame styling
+        self.setFrameShape(QFrame.StyledPanel)
+        self.setStyleSheet("""
+            GPUChart {
+                background-color: #241934;
+                border-radius: 8px;
+                padding: 8px;
+            }
+        """)
+        
+        # Main layout
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(16, 16, 16, 16)
+        main_layout.setSpacing(12)
+        
+        # Header with title and metric selector
+        header_layout = QHBoxLayout()
+        
+        # Chart title
+        title_font = QFont()
+        title_font.setBold(True)
+        title_font.setPointSize(12)
+        
+        self.title_label = QLabel("GPU History")
+        self.title_label.setFont(title_font)
+        header_layout.addWidget(self.title_label)
+        
+        # Spacer to push selector to right
+        header_layout.addItem(QSpacerItem(10, 10, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        # Metric selector
+        self.metric_selector = QComboBox()
+        self.metric_selector.addItem("Memory Usage", "memory")
+        self.metric_selector.addItem("GPU Utilization", "utilization")
+        self.metric_selector.addItem("Temperature", "temperature")
+        self.metric_selector.addItem("Power", "power")
+        self.metric_selector.currentIndexChanged.connect(self.change_metric)
+        header_layout.addWidget(self.metric_selector)
+        
+        main_layout.addLayout(header_layout)
+        
+        # Create the chart
+        self.chart = QChart()
+        self.chart.setTitle("")
+        self.chart.setAnimationOptions(QChart.SeriesAnimations)
+        self.chart.legend().setVisible(True)
+        self.chart.legend().setAlignment(Qt.AlignBottom)
+        
+        # Configure chart appearance for dark theme
+        self.chart.setBackgroundBrush(QColor("#241934"))
+        self.chart.setTitleBrush(QColor("#FFFFFF"))
+        self.chart.legend().setLabelBrush(QColor("#CCCCCC"))
+        
+        # Create axis
+        self.axis_x = QValueAxis()
+        self.axis_x.setRange(0, MAX_HISTORY_LENGTH)
+        self.axis_x.setLabelFormat("%d")
+        self.axis_x.setLabelsVisible(False)
+        self.axis_x.setGridLineVisible(True)
+        self.axis_x.setGridLineColor(QColor("#3D2A50"))
+        self.axis_x.setLabelsColor(QColor("#CCCCCC"))
+        
+        self.axis_y = QValueAxis()
+        self.axis_y.setRange(0, 100)
+        self.axis_y.setLabelFormat("%.0f")
+        self.axis_y.setGridLineVisible(True)
+        self.axis_y.setGridLineColor(QColor("#3D2A50"))
+        self.axis_y.setLabelsColor(QColor("#CCCCCC"))
+        
+        self.chart.addAxis(self.axis_x, Qt.AlignBottom)
+        self.chart.addAxis(self.axis_y, Qt.AlignLeft)
+        
+        # Create chart view
+        self.chart_view = QChartView(self.chart)
+        self.chart_view.setRenderHint(self.chart_view.RenderHint.Antialiasing)
+        self.chart_view.setBackgroundBrush(QColor("#241934"))
+        
+        main_layout.addWidget(self.chart_view)
+        
+        # Initialize empty series for each GPU (we'll create series on first update)
+        self.gpu_colors = [QColor("#8A54FD"), QColor("#4CAF50")]
+        
+    def init_series_for_gpus(self, gpu_count):
+        """Initialize line series for each GPU"""
+        # Clear any existing series
+        self.chart.removeAllSeries()
+        self.series = {}
+        
+        for gpu_id in range(gpu_count):
+            # Create a new series for this GPU
+            series = QLineSeries()
+            series.setName(f"GPU {gpu_id}")
+            series.setPen(self.gpu_colors[gpu_id % len(self.gpu_colors)])
+            
+            # Add to chart and connect to axes
+            self.chart.addSeries(series)
+            series.attachAxis(self.axis_x)
+            series.attachAxis(self.axis_y)
+            
+            # Store in our series dict
+            self.series[gpu_id] = series
+            
+            # Initialize history for this GPU if not exists
+            if gpu_id not in self.metric_histories:
+                self.metric_histories[gpu_id] = {
+                    "memory": collections.deque(maxlen=MAX_HISTORY_LENGTH),
+                    "utilization": collections.deque(maxlen=MAX_HISTORY_LENGTH),
+                    "temperature": collections.deque(maxlen=MAX_HISTORY_LENGTH),
+                    "power": collections.deque(maxlen=MAX_HISTORY_LENGTH)
+                }
+    
+    def update_metrics(self, metrics_list):
+        """Update chart with new metrics data"""
+        # Initialize series if this is the first update
+        if not self.series or len(self.series) != len(metrics_list):
+            self.init_series_for_gpus(len(metrics_list))
+        
+        # Update metric histories
+        for i, metrics in enumerate(metrics_list):
+            if i in self.metric_histories:
+                # Extract values based on current metric
+                if self.current_metric == "memory" and "memory_total" in metrics and metrics["memory_total"] > 0:
+                    value = (metrics.get("memory_used", 0) / metrics["memory_total"]) * 100
+                    self.metric_histories[i]["memory"].append(value)
+                elif self.current_metric == "utilization":
+                    value = metrics.get("utilization", 0)
+                    self.metric_histories[i]["utilization"].append(value)
+                elif self.current_metric == "temperature":
+                    value = metrics.get("temperature", 0)
+                    self.metric_histories[i]["temperature"].append(value)
+                elif self.current_metric == "power" and "power_limit" in metrics and metrics["power_limit"] > 0:
+                    value = (metrics.get("power", 0) / metrics["power_limit"]) * 100
+                    self.metric_histories[i]["power"].append(value)
+        
+        # Update chart
+        self.refresh_chart()
+    
+    def refresh_chart(self):
+        """Refresh the chart with current data"""
+        # Get y-axis range based on metric
+        if self.current_metric == "temperature":
+            self.axis_y.setRange(0, 100)
+            self.axis_y.setTitleText("Temperature (°C)")
+        elif self.current_metric in ["memory", "utilization", "power"]:
+            self.axis_y.setRange(0, 100)
+            self.axis_y.setTitleText("Percentage (%)")
+        
+        # Update each series
+        for gpu_id, series in self.series.items():
+            # Skip if no history for this GPU
+            if gpu_id not in self.metric_histories:
+                continue
+                
+            # Get history for current metric
+            history = self.metric_histories[gpu_id][self.current_metric]
+            
+            # Clear the series
+            series.clear()
+            
+            # Add points
+            for i, value in enumerate(history):
+                series.append(i, value)
+    
+    def change_metric(self, index):
+        """Change the displayed metric"""
+        self.current_metric = self.metric_selector.currentData()
+        self.refresh_chart()
+
 
 class GPUCard(QFrame):
     """Individual GPU card widget showing metrics for a single GPU."""
@@ -306,6 +492,10 @@ class DashboardTab(QWidget):
             card.reset_clicked.connect(self.reset_gpu_memory)
             self.cards_layout.addWidget(card)
             self.gpu_cards.append(card)
+            
+        # Add historical metrics chart
+        self.gpu_chart = GPUChart(self)
+        main_layout.addWidget(self.gpu_chart)
         
         # Add spacer at the bottom
         main_layout.addItem(QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Expanding))
@@ -318,6 +508,9 @@ class DashboardTab(QWidget):
         for i, card in enumerate(self.gpu_cards):
             if i < len(metrics_list):
                 card.update_metrics(metrics_list[i])
+        
+        # Update chart with new metrics
+        self.gpu_chart.update_metrics(metrics_list)
     
     @Slot(int)
     def reset_gpu_memory(self, gpu_index):

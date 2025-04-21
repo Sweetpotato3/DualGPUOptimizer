@@ -1,62 +1,61 @@
 ---
-description: Specification for GPU telemetry system implementation including metrics collection, utilization tracking, and alert mechanisms.
-globs: **/telemetry.py,**/tray.py,**/monitor.py,**/metrics.py,**/alerts.py
+description: Defines core telemetry system for monitoring and managing GPU resources, memory usage, and performance alerts
+globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/monitor.py,dualgpuopt/memory/profiler.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry with real-time metrics collection and alerting:
+The resource monitoring system implements specialized GPU telemetry and memory tracking with these key components:
 
-## Telemetry Collection (dualgpuopt/telemetry.py)
-- Real-time GPU monitoring with configurable polling intervals
-- Critical metrics tracking:
-  * Memory allocation/usage
-  * Utilization percentages 
-  * Temperature monitoring
-  * Power consumption
-  * Fan speeds
-  * Clock frequencies
-- Implements exponential backoff for NVML recovery attempts
-- Middleware pipeline for metrics processing and event distribution
+1. GPU Metrics Collection System:
+- Real-time monitoring of critical GPU performance indicators:
+  * Memory utilization and allocation patterns
+  * Temperature thresholds with color-coded warnings (>70°C orange, >80°C red)
+  * Power consumption relative to GPU limits
+  * Clock speeds (SM and memory)
+  * PCIe bandwidth monitoring
+- Custom metrics correlation for realistic mock data generation
+- Thread-safe metrics collection with RLock implementation
 
-## Alert System (dualgpuopt/memory/alerts.py)
-- Four-tier severity classification:
-  * NORMAL: Standard operation
-  * WARNING: Resources nearing thresholds
-  * CRITICAL: Immediate action required
-  * EMERGENCY: System stability at risk
-- Temperature-based alert triggers:
-  * Warning: ≥80°C
-  * Critical: ≥90°C
-- Memory utilization alerts:
-  * Warning: 80% usage
-  * Critical: 90% usage
-  * Emergency: 95% usage
+2. Memory Session Analysis:
+- Session-based memory tracking for dual GPU inference operations
+- Linear regression-based leak detection using memory windows
+- Two-tier detection system:
+  * Spike detection for rapid memory growth
+  * Leak detection for sustained growth patterns
+- Cooldown period (30s) between leak alerts to prevent alert storms
+- Small memory change filtering (<5MB) to reduce false positives
 
-## Memory Tracking (dualgpuopt/memory/metrics.py)
-- Session-based memory profiling
-- Categorized memory event tracking:
-  * Allocation/deallocation events
-  * Growth spikes detection
-  * Memory leak identification
-  * Inference boundary marking
-- Rolling history buffer (60 samples)
-- Per-GPU memory statistics
-- Process-level memory attribution
+3. GPU Memory Timeline:
+- Per-GPU memory event categorization:
+  * ALLOCATION, DEALLOCATION events
+  * GROWTH_SPIKE, LEAK_DETECTED indicators
+  * INFERENCE_START, INFERENCE_END boundaries
+- Session-level reporting with:
+  * GPU-specific memory metrics
+  * Leak detection history
+  * Memory pattern analysis
+  * Performance recommendations
 
-## Performance Monitoring (dualgpuopt/memory/monitor.py)
-- OOM prevention logic with recovery triggers
-- Dynamic batch size optimization based on memory patterns
-- Memory usage projections using historical profiles
-- Automated response to memory pressure:
-  1. Cache clearing
-  2. Batch size reduction
-  3. Memory offloading
-  4. Process termination
+4. Resource Event Processing:
+- Exponential backoff for NVML recovery attempts (2^attempt seconds)
+- Maximum recovery attempt configuration through environment variables
+- Automatic mock mode transition after consecutive failures:
+  * 3 consecutive errors trigger recovery
+  * 5 consecutive errors force mock mode
+- GPU-specific error state tracking
 
-Importance Score: 85
-The resource monitoring system provides critical telemetry and alerting for GPU optimization, though it represents supporting infrastructure rather than core optimization algorithms.
+Importance Scores:
+- GPU Metrics Collection: 95 (Core monitoring functionality)
+- Memory Session Analysis: 90 (Critical leak detection)
+- GPU Memory Timeline: 85 (Key analysis component)
+- Resource Event Processing: 80 (Essential error handling)
+
+File Paths:
+dualgpuopt/telemetry.py
+dualgpuopt/memory/profiler.py
+dualgpuopt/gpu/monitor.py
 
 $END$

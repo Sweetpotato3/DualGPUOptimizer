@@ -14,37 +14,35 @@
 - ✅ Tested successfully in mock mode
 - ✅ Implemented Memory Profiling Tab with timeline visualization and analysis
 - ✅ Implemented Launcher Tab with model execution interface and process monitoring
+- ✅ Enhanced Dashboard with historical metrics charts
+- ✅ Added Settings Panel with theme selection and application preferences
+- ✅ Implemented System Tray integration with notifications and minimize-to-tray support
 
 ## Next Steps
 
 ### Short-term
 
-1. **Enhanced Dashboard**
-   - Add line charts for historical metrics
-   - Implement more detailed GPU information panel
-   - Add GPU temperature throttling warning indicators
-
-2. **Memory Profiling Enhancements**
+1. **Memory Profiling Enhancements**
    - Add more sophisticated leak detection algorithms
    - Implement pattern analysis for memory spike detection
    - Create interactive timeline with zooming and filtering capabilities
 
+2. **Enhanced Chart Functionality**
+   - Add export capability for chart data
+   - Implement timeline markers for important events
+   - Add zoom and pan controls for detailed analysis
+
 ### Medium-term
 
-1. **Settings Panel**
-   - Create application settings dialog
-   - Add theme selection capability
-   - Implement configuration persistence
-
-2. **System Tray Integration**
-   - Add system tray icon and menu
-   - Implement notifications for critical events
-   - Allow hiding to tray
-
-3. **Improved GPU Split Visualization**
+1. **GPU Split Visualization**
    - Add visual representation of layer distribution
    - Create interactive GPU memory allocation diagram
    - Implement drag-and-drop layer assignment
+
+2. **CUDA Profiling Integration**
+   - Add CUDA profiling capabilities
+   - Implement kernel time analysis
+   - Add visual representation of CUDA operations
 
 ### Long-term
 
@@ -70,6 +68,8 @@
 - **Improved Aesthetics**: Modern, professional appearance with a consistent dark theme
 - **Better Error Handling**: Comprehensive error recovery and graceful degradation
 - **Enhanced User Experience**: More intuitive layout with clear visual hierarchy and feedback
+- **Advanced Visualization**: Real-time charts and historical data visualization
+- **System Integration**: System tray support with notifications and background operation
 
 ## Known Issues
 
@@ -83,7 +83,9 @@ The Qt implementation is structured around these core files:
 
 - `dualgpuopt/qt/main.py`: Application entry point
 - `dualgpuopt/qt/app_window.py`: Main window implementation
-- `dualgpuopt/qt/dashboard_tab.py`: GPU metrics visualization
+- `dualgpuopt/qt/dashboard_tab.py`: GPU metrics visualization with real-time charts
 - `dualgpuopt/qt/optimizer_tab.py`: Model optimization calculator
 - `dualgpuopt/qt/memory_tab.py`: Memory profiling and analysis
-- `dualgpuopt/qt/launcher_tab.py`: Model execution and process management 
+- `dualgpuopt/qt/launcher_tab.py`: Model execution and process management
+- `dualgpuopt/qt/settings_tab.py`: Application settings and preferences
+- `dualgpuopt/qt/system_tray.py`: System tray integration with notifications 

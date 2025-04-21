@@ -1,69 +1,52 @@
 ---
-description: Specialized GPU optimization algorithms for dual GPU setups with focus on memory management, tensor parallel splits, and resource allocation
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py,**/commands/*.py
+description: Defines GPU memory allocation strategies, tensor parallel distribution mechanisms, and optimization algorithms for distributed model deployment
+globs: **/gpu_info.py,**/optimizer.py,**/gpu/**,**/memory/**,**/batch/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core GPU Optimization Components:
+Core Memory Distribution Logic:
+- Calculates optimal GPU splits using transformer layer distribution algorithms
+- Memory allocation per token: KV hidden size * layers * 2 * precision factor
+- Tensor parallel fraction determination based on relative GPU memory sizes
+- Dynamic context length optimization with safety margin enforcement
+- Batch scheduling with automatic size reduction after OOM events
 
-1. Memory Distribution Engine (optimizer.py)
-- Calculates optimal memory splits between dual GPUs based on model architecture
-- Tensor parallel fraction determination using available VRAM ratios
-- Memory requirement analysis per token considering:
-  * Model architecture (layers, heads, dimensions) 
-  * KV cache overhead
-  * Quantization impact
-  * Safety margins
-- Generates framework-specific commands with optimized parameters
+Key Memory Management Components:
 
-2. Smart Batching System (batch/smart_batch.py)
-- Length-aware batch scheduling for dual GPU inference
-- Dynamic batch size optimization using OOM recovery:
-  * 25% reduction after OOM events
-  * 10% increase per 5 successful batches
-  * Maximum token sum: 16384 per batch
-- Backpressure implementation with configurable thresholds
+1. Memory Profiling:
+- Token-based memory allocation tracking across inference sessions
+- Two-tier leak detection using linear regression for rapid spikes and sustained growth
+- Memory timeline analysis categorizing ALLOCATION, DEALLOCATION, GROWTH_SPIKE events
+- Memory retention pattern analysis specific to inference operations
 
-3. Layer Distribution Algorithm (layer_balance.py) 
-- Optimizes layer placement across GPUs using:
-  * Weighted sequence length profiling (20/80 ratio)
-  * Performance quotas with reserve ratios
-  * Contiguous block optimization
-- Handles special cases for input embeddings and output components
+2. Batch Processing:
+- Length-aware batch scheduling for GPU inference workloads 
+- Adaptive backpressure system reducing batch size 25% after OOM
+- Gradual batch size recovery after 5 successful processes
+- Maintains scaling factor between 0.25-0.95
+- Prioritizes fastest GPU for compute-intensive layers
 
-4. Memory Predictor (memory/predictor.py)
-- Model-specific memory profiling for common architectures:
-  * Base memory requirements
-  * Per-token growth patterns
-  * Batch size impact calculations
-  * Historical usage analysis
-- Dynamic growth projection for memory allocation
+3. Memory Recovery:
+- Multi-stage memory reclamation:
+  - CACHE_ONLY: Conservative PyTorch cache reset
+  - CLOCK_RESET: GPU clock manipulation 
+  - FULL_RESET: Complete tensor cleanup
+  - SYSTEM_CMD: OS-level resource release
 
-5. Memory Recovery System (memory/recovery.py)
-- Hierarchical recovery strategies:
-  * REDUCE_BATCH: Optimize batch sizes
-  * CLEAR_CACHE: Free unused memory
-  * OFFLOAD: Move to CPU/disk
-  * TERMINATE: Process cleanup
-- Progressive intervention with impact assessment
+Core File Paths:
+- dualgpuopt/optimizer.py
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/memory/recovery.py
+- dualgpuopt/gpu/info.py
 
-6. Memory Leak Detection (memory/profiler.py)
-- Windowed linear regression for leak detection
-- Thresholds:
-  * Spike detection: Configurable MB/s growth
-  * Leak detection: Sustained growth rate
-  * Minimum 5MB change requirement
-- 30-second cooldown between alerts
-
-Importance Scores:
-- Memory Distribution Engine: 95 (Core optimization logic)
-- Smart Batching System: 90 (Critical for performance)
-- Layer Distribution: 85 (Key resource management)
-- Memory Predictor: 80 (Essential for optimization)
-- Memory Recovery: 75 (Important safety system)
-- Leak Detection: 70 (Supporting optimization)
+Business Impact Scores:
+- Memory Distribution Logic: 95
+- Memory Profiling System: 85
+- Batch Processing: 80
+- Recovery Mechanisms: 75
 
 $END$

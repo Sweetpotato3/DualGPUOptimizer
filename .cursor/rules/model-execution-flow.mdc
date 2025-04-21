@@ -1,51 +1,60 @@
 ---
-description: Technical specification for model execution flow patterns and GPU resource management in ML inference systems
-globs: **/gpu/**,**/gpu_info.py,**/optimizer.py,**/runner.py,**/launcher/**
+description: Documents LLM execution flow including command generation, configuration and GPU resource management
+globs: dualgpuopt/**/*.py,dualgpuopt/commands/*.py,dualgpuopt/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow system implements specialized logic for managing large language model inference across dual GPU configurations:
+The model execution flow centers around orchestrating LLM inference across multiple GPUs and frameworks.
 
-1. Framework-Specific Command Generation
-```python
-# Generates optimized commands for different ML frameworks
-llama_command(model_path, ctx, split) # GPU-split layer distribution
-vllm_command(model_path, tp_size) # Tensor parallel optimization
+Core Execution Components:
+
+1. Command Generation System
+- Framework-specific command builders:
+  * llama.cpp: Generates GPU split commands with layer distribution
+  * vLLM: Creates tensor parallel configurations
+- Environment variable configuration for each framework
+- Dynamic parameter generation based on model architecture:
+  * Context length calculation 
+  * Memory split ratios
+  * GPU layer allocation
+
+2. Resource Allocation Engine
+- GPU memory allocation calculation:
+  * Model size estimation
+  * KV cache requirements per token
+  * Safety buffer allocation (20%)
+- Layer distribution optimization across GPUs:
+  * Performance-based distribution
+  * Memory constraint validation
+  * Tensor parallel configuration
+
+3. Model Execution Workflow
+- Pre-execution configuration:
+  * Environment setup with GPU assignments
+  * Memory split validation
+  * Process isolation setup
+- Runtime monitoring:
+  * Memory pressure tracking
+  * OOM detection and recovery
+  * Performance metrics collection
+- Graceful termination handling with staged shutdown
+
+Key File Paths:
+```
+dualgpuopt/commands/gpu_commands.py      # Command generation logic
+dualgpuopt/batch/smart_batch.py          # Batch optimization system  
+dualgpuopt/optimizer.py                  # Core GPU split optimization
+dualgpuopt/memory/profiler.py           # Memory monitoring system
+dualgpuopt/runner.py                    # Process execution management
 ```
 
-2. GPU Memory Management Flow
-- Pre-inference validation of available VRAM
-- Dynamic batch size adjustment based on token counts
-- Automatic OOM recovery with cache clearing
-- Memory monitoring with leak detection
-- Progressive fallback mechanisms:
-  * REDUCE_BATCH: Scale down batch size 
-  * CLEAR_CACHE: Clear GPU caches
-  * OFFLOAD: Move to CPU/disk
-  * TERMINATE: Kill process
-
-3. Model Parameter Resolution
-- Context length calculation based on:
-  * Available GPU memory
-  * Model architecture (layers, heads)
-  * Quantization method
-- Split ratio determination for dual GPUs
-- Layer distribution optimization
-
-4. Execution Control Flow
-- Model initialization with memory validation
-- Background telemetry monitoring
-- Asynchronous token streaming
-- Real-time memory profiling
-- Automatic error recovery
-
-Key Paths:
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/runner.py
-- dualgpuopt/memory/recovery.py
+Importance Scores:
+- Command Generation: 95 (Critical for model execution)
+- Resource Allocation: 90 (Core optimization logic) 
+- Execution Workflow: 85 (Key runtime management)
+- Memory Management: 80 (Supporting optimization)
 
 $END$

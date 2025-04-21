@@ -1,19 +1,35 @@
 """
-Qt implementation of the DualGPUOptimizer application.
+DualGPUOptimizer Qt Interface Module
 
-This module provides a modern, Qt-based user interface for the DualGPUOptimizer,
-replacing the original Tkinter implementation with a more robust and visually
-appealing interface.
-
-Key components:
-- app_window.py: Main application window
-- dashboard_tab.py: GPU monitoring dashboard
-- optimizer_tab.py: GPU optimization calculator
-- main.py: Application entry point
-
-Future components to be implemented:
-- launcher_tab.py: Model launcher interface
-- settings_tab.py: Application settings
+This module provides a Qt-based graphical user interface for the DualGPUOptimizer
+application with real-time GPU monitoring, memory profiling, and model optimization.
 """
 
-__version__ = "0.1.0" 
+__version__ = "1.0.0"
+__author__ = "DualGPUOptimizer Team"
+
+# Export main application components
+from dualgpuopt.qt.main import main
+from dualgpuopt.qt.app_window import DualGPUOptimizerApp
+
+# Export tab components
+from dualgpuopt.qt.dashboard_tab import DashboardTab, GPUCard, GPUChart
+from dualgpuopt.qt.optimizer_tab import OptimizerTab
+from dualgpuopt.qt.memory_tab import MemoryProfilerTab
+from dualgpuopt.qt.launcher_tab import LauncherTab
+from dualgpuopt.qt.settings_tab import SettingsTab, SettingsManager
+
+# Export system tray components
+from dualgpuopt.qt.system_tray import GPUTrayManager
+
+# Version information
+VERSION_INFO = {
+    "major": 1,
+    "minor": 0,
+    "patch": 0,
+    "release": "stable",
+}
+
+def get_version():
+    """Return the current version as a string."""
+    return f"{VERSION_INFO['major']}.{VERSION_INFO['minor']}.{VERSION_INFO['patch']}-{VERSION_INFO['release']}" 

@@ -9,9 +9,24 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Smart Layer Distribution**: Balances model layers across multiple GPUs based on available memory
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
-- **NEW: Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
+- **Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
+- **NEW: Qt-Based Modern UI**: Completely rebuilt interface using Qt for improved stability and visual experience
 
 ## Recent Improvements
+
+### NEW: Qt-Based Interface Migration
+
+We've completed a comprehensive migration to a Qt-based interface with the following benefits:
+
+- **Modern UI Design**: Clean, intuitive interface with consistent styling and improved layout
+- **Enhanced Data Visualization**: Real-time charts for historical GPU metrics and performance tracking
+- **System Tray Integration**: Minimize to system tray with notifications for critical events
+- **Settings Panel**: Configurable application preferences with theme selection
+- **Improved Stability**: More robust UI components with better error handling
+- **Enhanced Multi-Monitor Support**: Better high DPI screen handling and scaling
+- **Streamlined Dependencies**: Simplified dependencies, replacing multiple Tkinter add-ons with PySide6
+
+The new Qt-based interface provides a significantly improved user experience while maintaining all the functionality of the original application.
 
 ### NEW: Memory Profiling System
 
@@ -100,7 +115,7 @@ These optimizations significantly improve performance, particularly when working
 - Ensured all components properly subscribe to relevant events
 - Implemented event priority system for critical updates
 
-## New: Enhanced Dependency Management System
+## Enhanced Dependency Management System
 
 DualGPUOptimizer now features a robust dependency management system that:
 
@@ -112,11 +127,11 @@ DualGPUOptimizer now features a robust dependency management system that:
 
 The dependency system categorizes dependencies into:
 
-- **Required**: Application won't start without these (e.g., tkinter)
+- **Required**: Application won't start without these (e.g., PySide6)
 - **Core**: Application works with fallbacks if missing (e.g., pynvml, numpy)
-- **Optional**: Enhanced functionality when available (e.g., ttkbootstrap, torch)
+- **Optional**: Enhanced functionality when available (e.g., torch)
 
-## New: Enhanced Error Handling & Recovery System
+## Enhanced Error Handling & Recovery System
 
 DualGPUOptimizer now features a comprehensive error handling and recovery system:
 
@@ -136,9 +151,9 @@ The recovery system includes strategies for:
 
 This robust error handling ensures the application remains functional across different environments and hardware configurations, even when facing unpredictable issues.
 
-## New: Event-Driven Architecture
+## Event-Driven Architecture
 
-The direct application now implements a fully event-driven architecture that:
+The application now implements a fully event-driven architecture that:
 
 - **Decouples Components**: Dashboard and optimizer components communicate through events rather than direct method calls
 - **Improves Extensibility**: New features can subscribe to existing events without modifying the original code
@@ -153,20 +168,21 @@ Event types include:
 - `SplitCalculatedEvent`: Contains calculated GPU split configurations
 - `ConfigChangedEvent`: Triggered when configuration values change
 
-This architecture follows the same patterns used in the main application, ensuring consistent behavior and making the direct app more maintainable and scalable.
+This architecture makes the application more maintainable and scalable.
 
-## Complete Functionality in Direct Application
+## Complete Qt-Based Interface
 
-The direct application features a full-featured tabbed interface with:
+The Qt-based interface features a full-featured tabbed layout with:
 
 ### Dashboard Tab
 
-- Enhanced GPU metrics visualization with progress bars
+- Real-time GPU metrics visualization with progress bars
 - Temperature monitoring with color-coded warnings
 - Power usage tracking with limit indicators
 - PCIe bandwidth monitoring
 - GPU clock speed visualization
 - Memory reset capabilities
+- **NEW: Historical metrics charts** with selectable metrics
 
 ### Optimizer Tab
 
@@ -176,18 +192,28 @@ The direct application features a full-featured tabbed interface with:
 - Custom model parameter configuration
 - Command generation for frameworks like llama.cpp and vLLM
 
-Both tabs feature graceful fallbacks when components are unavailable, ensuring the application can run in any environment while providing helpful guidance for enabling full functionality.
+### Memory Profiler Tab
 
-## Graceful Fallbacks for Dependencies
+- Memory timeline visualization
+- Leak detection with pattern analysis
+- Memory session tracking
+- Detailed memory statistics
 
-DualGPUOptimizer features comprehensive compatibility layers that allow the application to run even when certain dependencies are missing:
+### Launcher Tab
 
-- **UI Compatibility**: Falls back to simpler UI components when ttkbootstrap or other UI enhancements aren't available
-- **GPU Monitoring**: Provides mock GPU data when pynvml is not installed
-- **Chat Module**: Shows helpful installation instructions when chat dependencies are missing
-- **Simple UI Mode**: Includes a minimal UI that works with just tkinter when other dependencies are unavailable
+- Model execution interface
+- Process monitoring and management
+- Command-line output display
+- Environment variable configuration
 
-This ensures the application can run in various environments and gracefully handles missing dependencies.
+### Settings Tab
+
+- Theme selection and customization
+- Application behavior configuration
+- Notification preferences
+- Directory and path settings
+
+All tabs feature graceful fallbacks when components are unavailable, ensuring the application can run in any environment while providing helpful guidance for enabling full functionality.
 
 ## Environment Variable Configuration
 
@@ -258,45 +284,33 @@ The application has both core and optional dependencies:
 ### Core Dependencies
 
 - `pynvml`: For NVIDIA GPU monitoring
-- `tk`: For the base UI framework
 - `psutil`: For system resource monitoring
 - `numpy`: For optimization algorithms
+- `PySide6`: For the Qt-based UI framework (new requirement)
 
 ### Optional Dependencies
 
-- `ttkbootstrap`: For enhanced UI appearance
-- `ttkthemes`: For additional UI themes
-- `ttkwidgets`: For additional UI widgets
-- `requests` and `sseclient-py`: For chat functionality
 - `torch`, `torchvision`, and `torchaudio`: For advanced GPU features
 
 The application will function with graceful fallbacks when optional dependencies are missing.
 
 ## Usage
 
-### Recommended: Run the Direct Application
+### Running the Qt Application
 
-For the most stable experience with the simplest setup, use the direct application:
+To run the new Qt-based interface:
 
 ```
-python run_direct_app.py
+python run_qt_app.py
 ```
-
-This provides the most reliable startup with complete functionality in a streamlined interface:
-
-- **Automatic dependency detection** - uses what's available and provides fallbacks
-- **Simplified architecture** - avoids complex module imports that might cause issues
-- **Full-featured interface** - includes both dashboard and optimizer in a tabbed UI
-- **Robust error handling** - better recovery from dependency or hardware issues
-- **Event-driven design** - more responsive interface with real-time updates
 
 To run in mock mode (no GPU required):
 
 ```
-python run_direct_app.py --mock
+python run_qt_app.py --mock
 ```
 
-### Alternative: Module-Based Approach
+### Module-Based Approach
 
 If you prefer the module-based approach:
 
@@ -322,53 +336,6 @@ python -m dualgpuopt --mock
 - `--check-deps`: Check dependencies and exit
 - `--install-deps`: Install missing dependencies
 
-## Key Features
-
-### GPU Dashboard
-
-The Dashboard tab provides real-time monitoring of GPU metrics, including:
-
-- Memory usage
-- GPU utilization
-- Temperature
-- Power consumption
-- Clock speeds
-
-### Optimizer
-
-The Optimizer tab helps calculate optimal GPU configurations for ML models:
-
-- Calculates memory requirements based on model parameters
-- Determines optimal tensor parallelism settings
-- Generates split ratios for uneven GPU memory sizes
-- Predicts maximum batch sizes and context lengths
-
-### Launcher
-
-The Launcher tab provides:
-
-- Integration with popular ML frameworks
-- Command generation for optimal GPU performance
-- Environment variable configuration
-- Process monitoring and management
-
-### Chat Interface
-
-The Chat tab offers:
-
-- Basic interface for testing language models
-- Streaming response visualization
-- Token throughput metrics
-
-### Error Recovery System
-
-The error recovery system provides:
-
-- Automatic recovery from GPU driver issues
-- Memory pressure detection and mitigation
-- Intelligent fallbacks when components fail
-- Detailed error reporting with context
-
 ## Troubleshooting
 
 ### Missing Dependencies
@@ -392,11 +359,8 @@ For manual installation of specific package groups:
 # For core functionality
 pip install pynvml psutil numpy
 
-# For enhanced UI
-pip install ttkbootstrap ttkthemes ttkwidgets
-
-# For chat functionality
-pip install requests sseclient-py
+# For Qt UI
+pip install PySide6==6.5.2
 
 # For advanced GPU features
 pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
@@ -406,10 +370,9 @@ pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1
 
 If the application fails to start:
 
-1. Try the direct application first: `python run_direct_app.py`
+1. Try running with verbose logging: `python run_qt_app.py --verbose`
 2. Check the logs in the `logs` directory for specific errors
-3. Run with verbose logging: `python -m dualgpuopt --verbose`
-4. Verify dependencies are installed: `python install_deps.py --check`
+3. Verify dependencies are installed: `python install_deps.py --check`
 
 ### GPU Detection Issues
 
@@ -426,7 +389,7 @@ If you need to override default behavior:
 
 1. Set environment variables before running the application
 2. For permanent changes, add them to your system environment
-3. For testing, use mock mode: `DUALGPUOPT_MOCK_GPU=1 python run_direct_app.py`
+3. For testing, use mock mode: `DUALGPUOPT_MOCK_GPU=1 python run_qt_app.py`
 
 ## Development
 
@@ -434,7 +397,8 @@ If you need to override default behavior:
 
 - `dualgpuopt/`: Main package directory
   - `gpu/`: GPU monitoring and information modules
-  - `gui/`: GUI components and widgets
+  - `qt/`: Qt UI components for the new interface
+  - `gui/`: Legacy GUI components and widgets
   - `ui/`: UI compatibility layers
   - `services/`: Background services for configuration, events, etc.
   - `batch/`: Batch processing logic
