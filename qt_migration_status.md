@@ -12,25 +12,26 @@
 - ✅ Updated README with Qt information
 - ✅ Created launcher script (`run_qt_app.py`)
 - ✅ Tested successfully in mock mode
+- ✅ Implemented Memory Profiling Tab with timeline visualization and analysis
 
 ## Next Steps
 
 ### Short-term
 
-1. **Memory Profiling Tab**
-   - Implement visualization of GPU memory usage over time
-   - Add memory leak detection
-   - Create timeline chart with interactive markers
-
-2. **Enhanced Dashboard**
+1. **Enhanced Dashboard**
    - Add line charts for historical metrics
    - Implement more detailed GPU information panel
    - Add GPU temperature throttling warning indicators
 
-3. **Launcher Tab**
+2. **Launcher Tab**
    - Create interface for launching models
    - Implement process management and monitoring
    - Add log viewer for model output
+
+3. **Memory Profiling Enhancements**
+   - Add more sophisticated leak detection algorithms
+   - Implement pattern analysis for memory spike detection
+   - Create interactive timeline with zooming and filtering capabilities
 
 ### Medium-term
 
@@ -88,5 +89,6 @@ The Qt implementation is structured around these core files:
 - `dualgpuopt/qt/app_window.py`: Main window implementation
 - `dualgpuopt/qt/dashboard_tab.py`: GPU metrics visualization
 - `dualgpuopt/qt/optimizer_tab.py`: Model optimization calculator
+- `dualgpuopt/qt/memory_tab.py`: Memory profiling and analysis
 
 This structure allows for easy maintenance and extension while keeping a clear separation of concerns. 

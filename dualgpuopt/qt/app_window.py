@@ -234,7 +234,19 @@ class DualGPUOptimizerApp(QMainWindow):
             self.logger.info("Optimizer tab initialized")
         except Exception as e:
             self.logger.error(f"Failed to initialize Optimizer tab: {e}")
-            # Don't show error message yet since this tab will be implemented later
+            self._show_error_message("Optimizer Tab Error",
+                                    f"Failed to initialize Optimizer tab: {str(e)}")
+        
+        # Add Memory Profiler tab
+        try:
+            from dualgpuopt.qt.memory_tab import MemoryProfilerTab
+            self.memory_tab = MemoryProfilerTab(self.mock_mode)
+            self.tabs.addTab(self.memory_tab, "Memory Profiler")
+            self.logger.info("Memory Profiler tab initialized")
+        except Exception as e:
+            self.logger.error(f"Failed to initialize Memory Profiler tab: {e}")
+            self._show_error_message("Memory Profiler Tab Error",
+                                   f"Failed to initialize Memory Profiler tab: {str(e)}")
         
         # Set up status bar
         self.statusBar().showMessage("Ready")

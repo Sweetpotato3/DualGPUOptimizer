@@ -1,46 +1,62 @@
 ---
-description: Monitors and manages GPU resources including telemetry, metrics collection, usage tracking, and alert mechanisms
-globs: **/telemetry.py,**/tray.py,**/metrics/*.py,**/monitor/*.py
+description: Specification for GPU telemetry system implementation including metrics collection, utilization tracking, and alert mechanisms.
+globs: **/telemetry.py,**/tray.py,**/monitor.py,**/metrics.py,**/alerts.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements specialized GPU telemetry and metrics collection with the following key components:
+The resource monitoring system implements specialized GPU telemetry with real-time metrics collection and alerting:
 
-Primary Telemetry Collection (dualgpuopt/telemetry.py):
-- Real-time GPU metrics monitoring including utilization, memory usage, temperature, power consumption
-- Custom fallback system that gracefully degrades to mock data when hardware access fails
-- Configurable update intervals with throttling (100ms minimum) to prevent overwhelming the system
-- Maintains per-GPU error states to allow partial system functionality
+## Telemetry Collection (dualgpuopt/telemetry.py)
+- Real-time GPU monitoring with configurable polling intervals
+- Critical metrics tracking:
+  * Memory allocation/usage
+  * Utilization percentages 
+  * Temperature monitoring
+  * Power consumption
+  * Fan speeds
+  * Clock frequencies
+- Implements exponential backoff for NVML recovery attempts
+- Middleware pipeline for metrics processing and event distribution
 
-Alert Management System (dualgpuopt/memory/alerts.py):
-- Multi-tiered warning system with thresholds:
-  * WARNING: 80% resource utilization
-  * CRITICAL: 90% resource utilization  
-  * EMERGENCY: 95% resource utilization
-- Implements 30-second cooldown between alerts to prevent notification spam
-- Correlates alerts across multiple GPUs to identify system-wide issues
+## Alert System (dualgpuopt/memory/alerts.py)
+- Four-tier severity classification:
+  * NORMAL: Standard operation
+  * WARNING: Resources nearing thresholds
+  * CRITICAL: Immediate action required
+  * EMERGENCY: System stability at risk
+- Temperature-based alert triggers:
+  * Warning: ≥80°C
+  * Critical: ≥90°C
+- Memory utilization alerts:
+  * Warning: 80% usage
+  * Critical: 90% usage
+  * Emergency: 95% usage
 
-Metrics Processing Pipeline (dualgpuopt/metrics.py):
-- Specialized metrics collection and normalization for dual GPU setups
-- Handles unit conversions specific to GPU monitoring (mW to W, bytes to MiB)
-- Implements extensive error tracking with graduated response:
-  * Retries with exponential backoff for transient errors
-  * NVML reinitialization after 3 consecutive failures
-  * Mock data fallback after 5 consecutive failures
+## Memory Tracking (dualgpuopt/memory/metrics.py)
+- Session-based memory profiling
+- Categorized memory event tracking:
+  * Allocation/deallocation events
+  * Growth spikes detection
+  * Memory leak identification
+  * Inference boundary marking
+- Rolling history buffer (60 samples)
+- Per-GPU memory statistics
+- Process-level memory attribution
 
-Tray Integration (dualgpuopt/tray.py):
-- System tray monitoring with color-coded status indicators
-- Quick-access GPU metrics and status overview
-- Critical alert propagation via tray notifications
+## Performance Monitoring (dualgpuopt/memory/monitor.py)
+- OOM prevention logic with recovery triggers
+- Dynamic batch size optimization based on memory patterns
+- Memory usage projections using historical profiles
+- Automated response to memory pressure:
+  1. Cache clearing
+  2. Batch size reduction
+  3. Memory offloading
+  4. Process termination
 
-The system demonstrates specialized handling of GPU resource monitoring with emphasis on fault tolerance and graceful degradation pathways. Importance scores for key components:
-
-- Telemetry Collection: 95 (Core monitoring functionality)
-- Alert Management: 85 (Critical for system health)
-- Metrics Processing: 80 (Essential data handling)
-- Tray Integration: 65 (Important but supporting role)
+Importance Score: 85
+The resource monitoring system provides critical telemetry and alerting for GPU optimization, though it represents supporting infrastructure rather than core optimization algorithms.
 
 $END$

@@ -548,6 +548,7 @@ DualGPUOptimizer now features a brand new Qt-based user interface that provides:
 - **Responsive Layouts**: Automatically adjusts to window size changes
 - **Enhanced GPU Monitoring**: More detailed and visually appealing GPU metrics display
 - **Improved Optimizer**: More intuitive interface for calculating GPU configurations
+- **Memory Profiling**: Visualize GPU memory usage over time with leak detection and analysis
 
 ### Running the Qt Interface
 
@@ -570,3 +571,19 @@ python run_qt_app.py --mock
 ```
 
 The Qt interface runs in parallel with the existing Tkinter interface and doesn't replace it, allowing you to choose whichever version works best for your environment.
+
+### Qt Interface Features
+
+The Qt interface includes several key tabs:
+
+1. **Dashboard Tab**: Real-time monitoring of GPU metrics with visual indicators for temperature, memory usage, and power consumption
+
+2. **Optimizer Tab**: Calculate optimal GPU memory splits for large language models with customizable parameters and command generation
+
+3. **Memory Profiler Tab**: Analyze GPU memory usage patterns with:
+   - Real-time memory usage timeline visualization
+   - Memory leak detection with severity indicators
+   - Interactive memory event log with color-coded events
+   - Session statistics and analysis reports
+   - CSV export functionality for external analysis
+   - Inference tracking with token count recording

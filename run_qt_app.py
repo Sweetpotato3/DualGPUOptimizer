@@ -1,62 +1,99 @@
 #!/usr/bin/env python3
 """
-Main entry point for the Qt version of DualGPUOptimizer.
+DualGPUOptimizer Qt Launcher
+
+This script launches the Qt version of DualGPUOptimizer with proper
+environment setup and command-line argument handling.
 """
 
 import sys
 import os
+import argparse
 import logging
 from datetime import datetime
 
-def setup_qt_directories():
-    """Ensure dualgpuopt and its qt submodule are in the Python path."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    if current_dir not in sys.path:
-        sys.path.insert(0, current_dir)
-    
-    # Create required directories
+def setup_logging(verbose=False):
+    """Configure logging for the application."""
+    # Create logs directory if it doesn't exist
     os.makedirs('logs', exist_ok=True)
+    
+    # Set up file handler
+    log_file = os.path.join('logs', f'dualgpuopt_qt_{datetime.now().strftime("%Y%m%d_%H%M%S")}.log')
+    
+    # Configure logging
+    log_level = logging.DEBUG if verbose else logging.INFO
+    logging.basicConfig(
+        level=log_level,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler(log_file),
+            logging.StreamHandler()
+        ]
+    )
+    
+    logger = logging.getLogger('DualGPUOptimizer')
+    logger.info(f"Log file created at: {log_file}")
+    return logger
 
-def check_dependencies():
-    """Check if required dependencies are installed."""
-    missing_deps = []
-    
-    try:
-        import PySide6
-        print("✓ PySide6 is installed")
-    except ImportError:
-        missing_deps.append("PySide6")
-        print("✗ PySide6 is not installed")
-    
-    if missing_deps:
-        print("\nMissing dependencies:")
-        print("  " + "\n  ".join(missing_deps))
-        print("\nPlease install the missing dependencies:")
-        print("  pip install " + " ".join(missing_deps))
-        return False
-    
-    return True
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='DualGPUOptimizer Qt Edition')
+    parser.add_argument('--mock', action='store_true', help='Use mock GPU data')
+    parser.add_argument('--verbose', '-v', action='store_true', help='Enable verbose logging')
+    return parser.parse_args()
 
 def main():
-    """Main entry point."""
-    # Set up directories
-    setup_qt_directories()
+    """Main entry point for the application."""
+    # Parse command line arguments
+    args = parse_args()
     
-    # Check dependencies
-    if not check_dependencies():
-        sys.exit(1)
+    # Set up logging
+    logger = setup_logging(args.verbose)
+    logger.info("Starting DualGPUOptimizer Qt Edition")
     
-    # Run the Qt application
+    # Configure environment variables
+    if args.mock:
+        logger.info("Mock GPU mode enabled")
+        os.environ['DUALGPUOPT_MOCK_GPU'] = '1'
+    
     try:
-        from dualgpuopt.qt.main import main
-        sys.exit(main())
-    except ImportError as e:
-        print(f"Error importing Qt application modules: {e}")
-        print("Make sure the directory structure is correct.")
-        sys.exit(1)
+        # Import Qt modules
+        try:
+            from PySide6.QtWidgets import QApplication
+            from PySide6.QtCore import Qt, QCoreApplication
+        except ImportError:
+            logger.error("PySide6 is not installed. Please install it with: pip install PySide6==6.5.2")
+            print("Error: PySide6 is not installed. Please install it with: pip install PySide6==6.5.2")
+            return 1
+        
+        # Set application attributes for high DPI screens
+        QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
+        QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
+        
+        # Start Qt application
+        app = QApplication(sys.argv)
+        app.setApplicationName("DualGPUOptimizer")
+        app.setStyle("Fusion")  # Provides a consistent look across platforms
+        
+        # Import here to avoid circular imports
+        try:
+            from dualgpuopt.qt.app_window import DualGPUOptimizerApp
+            window = DualGPUOptimizerApp(mock_mode=args.mock)
+            window.show()
+            
+            logger.info("Application window initialized")
+            
+            # Start the event loop
+            return app.exec()
+        except ImportError as e:
+            logger.error(f"Failed to import required modules: {e}")
+            print(f"Error: Failed to import required modules: {e}")
+            return 1
+    
     except Exception as e:
-        print(f"Error starting application: {e}")
-        sys.exit(1)
+        logger.exception(f"Unhandled exception: {e}")
+        print(f"Error: {e}")
+        return 1
 
 if __name__ == "__main__":
-    main() 
+    sys.exit(main()) 

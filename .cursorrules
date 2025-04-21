@@ -137,7 +137,7 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Generate high-level technical documentation overviews for GPU optimization and monitoring systems, focusing on dual-GPU configurations and machine learning model deployment patterns.
+description: Apply this overview when documenting the core architecture and business logic of a dual GPU optimization system designed for LLM model deployment and inference. Focus on GPU memory management, resource allocation, and workload distribution logic.
 globs: *.py,*/dualgpuopt/**/*.py
 alwaysApply: false
 ---
@@ -154,55 +154,52 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer provides a system for optimizing large language model inference across dual GPU configurations with memory analysis and monitoring capabilities.
+The DualGPUOptimizer implements a specialized system for managing and optimizing large language model deployments across dual GPU configurations.
 
-Core Business Architecture:
+Core Business Components:
 
-1. GPU Memory Profiling (dualgpuopt/memory/profiler.py)
-- Real-time memory tracking and analysis for dual-GPU setups
-- Session-based profiling with inference tracking
-- Memory leak detection using linear regression
-- Pattern analysis with sliding window metrics
+1. Memory Management System (dualgpuopt/memory/profiler.py)
+- Memory profiling with event categorization (allocations, spikes, leaks)
+- Token-aware inference boundary tracking
+- Leak detection using windowed linear regression
+- Session-based memory baseline analysis
+Importance: 95
 
-2. Optimization Engine (dualgpuopt/optimizer.py)
-- GPU memory split optimization
-- Tensor parallel size calculation
-- Dynamic context length adjustment
-- Framework-specific command generation for deployment
+2. GPU Resource Allocation (dualgpuopt/optimizer.py)
+- Split ratio calculations for model distribution
+- Tensor parallel configuration optimization
+- Model-specific memory requirement analysis
+- Framework-specific command generation (llama.cpp, vLLM)
+Importance: 90
 
-3. Layer Balancing System (dualgpuopt/layer_balance.py)
-- Adaptive layer distribution across GPUs
-- Weighted sequence profiling (64/1024 tokens)
-- Memory quota-based assignment
-- Block optimization for contiguous layers
+3. Smart Batching System (dualgpuopt/batch/smart_batch.py)
+- Length-aware sequence grouping
+- Dynamic batch size optimization
+- Automatic OOM recovery with 25% reduction
+- Gradual batch size recovery (10% per success)
+Importance: 85
 
-4. Memory Predictor (dualgpuopt/memory/predictor.py)
-- Model-specific memory profiling
-- Growth projection algorithms
-- Batch size optimization
-- Memory safety mechanisms
+4. Layer Distribution Engine (dualgpuopt/layer_balance.py)
+- Weighted sequence length profiling
+- Performance-based layer assignment
+- Contiguous block optimization
+- Expert activation handling for MoE models
+Importance: 80
 
-5. GPU Telemetry (dualgpuopt/telemetry.py)
-- Real-time metric collection
-- Multi-GPU synchronization
-- Fault tolerance with mock data generation
-- Middleware pipeline architecture
+5. Memory Recovery Framework (dualgpuopt/memory/recovery.py)
+- Progressive recovery strategy selection
+- GPU-specific context tracking
+- Hierarchical intervention approaches
+- Resource preservation prioritization
+Importance: 75
 
 Key Integration Points:
+- Memory profiler feeds metrics to optimization engine
+- Layer balancer coordinates with memory management
+- Smart batching integrates with recovery system
+- Resource allocator drives command generation
 
-1. Framework Support
-- llama.cpp optimization paths
-- vLLM configuration management
-- Tensor parallel deployment
-- Mixed precision execution
-
-2. Model Architecture Support
-- LLaMA variants (7B, 13B, 70B)
-- Mistral architecture
-- Mixtral with MoE handling
-- Context length optimization
-
-The system prioritizes memory safety while maximizing GPU utilization through intelligent workload distribution and real-time monitoring, with particular emphasis on large language model deployment optimization.
+The system is organized around core GPU optimization services that coordinate through an event-driven architecture, with specialized handling for different model architectures and frameworks.
 
 $END$
 END SPECIFICATION

@@ -1,91 +1,69 @@
 ---
-description: Handles GPU memory optimization algorithms, tensor splitting, and resource allocation for GPU acceleration
-globs: **/gpu/*.py,**/optimizer.py,**/gpu_info.py,**/memory/*.py
+description: Specialized GPU optimization algorithms for dual GPU setups with focus on memory management, tensor parallel splits, and resource allocation
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py,**/commands/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Optimization Components
+Core GPU Optimization Components:
 
-### Memory Management System
-Path: dualgpuopt/memory/profiler.py
+1. Memory Distribution Engine (optimizer.py)
+- Calculates optimal memory splits between dual GPUs based on model architecture
+- Tensor parallel fraction determination using available VRAM ratios
+- Memory requirement analysis per token considering:
+  * Model architecture (layers, heads, dimensions) 
+  * KV cache overhead
+  * Quantization impact
+  * Safety margins
+- Generates framework-specific commands with optimized parameters
 
-Implements real-time memory tracking and leak detection for dual GPU setups:
-- Session-based profiling with inference tracking windows
-- Linear regression analysis for memory leak patterns
-- Growth spike detection with configurable thresholds
-- Inference memory delta tracking with 10MB leak threshold
+2. Smart Batching System (batch/smart_batch.py)
+- Length-aware batch scheduling for dual GPU inference
+- Dynamic batch size optimization using OOM recovery:
+  * 25% reduction after OOM events
+  * 10% increase per 5 successful batches
+  * Maximum token sum: 16384 per batch
+- Backpressure implementation with configurable thresholds
 
-Importance Score: 95 
+3. Layer Distribution Algorithm (layer_balance.py) 
+- Optimizes layer placement across GPUs using:
+  * Weighted sequence length profiling (20/80 ratio)
+  * Performance quotas with reserve ratios
+  * Contiguous block optimization
+- Handles special cases for input embeddings and output components
 
-### GPU Split Calculator
-Path: dualgpuopt/optimizer.py
+4. Memory Predictor (memory/predictor.py)
+- Model-specific memory profiling for common architectures:
+  * Base memory requirements
+  * Per-token growth patterns
+  * Batch size impact calculations
+  * Historical usage analysis
+- Dynamic growth projection for memory allocation
 
-Calculates optimal tensor splits for multi-GPU model deployment:
-- Memory fraction determination based on GPU capacities
-- KV cache requirement calculations
-- Automated context length optimization
-- Layer distribution across available devices
+5. Memory Recovery System (memory/recovery.py)
+- Hierarchical recovery strategies:
+  * REDUCE_BATCH: Optimize batch sizes
+  * CLEAR_CACHE: Free unused memory
+  * OFFLOAD: Move to CPU/disk
+  * TERMINATE: Process cleanup
+- Progressive intervention with impact assessment
 
-Importance Score: 90
+6. Memory Leak Detection (memory/profiler.py)
+- Windowed linear regression for leak detection
+- Thresholds:
+  * Spike detection: Configurable MB/s growth
+  * Leak detection: Sustained growth rate
+  * Minimum 5MB change requirement
+- 30-second cooldown between alerts
 
-### Memory Recovery Engine  
-Path: dualgpuopt/memory/recovery.py
-
-Implements tiered recovery strategies for GPU memory management:
-- Cache clearing with immediate memory reclamation
-- Dynamic batch size reduction
-- Memory offloading to CPU
-- Process termination based on priority
-
-Importance Score: 85
-
-### Batch Optimization System
-Path: dualgpuopt/batch/smart_batch.py
-
-Length-aware batching for inference workloads:
-- Token-based batch size calculations
-- Memory pressure monitoring
-- Automatic retry logic for OOM conditions
-- Bucket-based request grouping
-
-Importance Score: 80
-
-### Layer Balance Handler
-Path: dualgpuopt/layer_balance.py
-
-Optimizes model layer distribution across GPUs:
-- Performance profiling with dual sequence lengths
-- Weighted scoring system (20% short/80% long sequences)
-- Memory quota enforcement with 90% reserve ratio
-- Contiguous block optimization
-
-Importance Score: 85
-
-## Integration Points
-
-### Memory Event System
-Path: dualgpuopt/memory/alerts.py
-
-Domain-specific memory event classification:
-- Growth spike detection (rapid memory increases)
-- Steady leak identification
-- Inference boundary tracking
-- Session lifecycle monitoring
-
-Importance Score: 75
-
-### GPU Command Generator
-Path: dualgpuopt/commands/gpu_commands.py
-
-Framework-specific deployment command generation:
-- llama.cpp GPU split parameters
-- vLLM tensor parallel configurations 
-- Model context size validation
-- Memory mapping policies
-
-Importance Score: 70
+Importance Scores:
+- Memory Distribution Engine: 95 (Core optimization logic)
+- Smart Batching System: 90 (Critical for performance)
+- Layer Distribution: 85 (Key resource management)
+- Memory Predictor: 80 (Essential for optimization)
+- Memory Recovery: 75 (Important safety system)
+- Leak Detection: 70 (Supporting optimization)
 
 $END$

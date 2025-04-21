@@ -1,83 +1,51 @@
 ---
-description: Specifies the LLM model execution workflow, command generation, memory management and GPU allocation patterns
-globs: **/dualgpuopt/**/*.py,**/integrated_app/**/*.py,**/hooks/**/*.py
+description: Technical specification for model execution flow patterns and GPU resource management in ML inference systems
+globs: **/gpu/**,**/gpu_info.py,**/optimizer.py,**/runner.py,**/launcher/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized handling of LLM inference across dual GPU configurations:
+The model execution flow system implements specialized logic for managing large language model inference across dual GPU configurations:
 
-## Command Generation
-Located in `dualgpuopt/commands/gpu_commands.py`:
+1. Framework-Specific Command Generation
+```python
+# Generates optimized commands for different ML frameworks
+llama_command(model_path, ctx, split) # GPU-split layer distribution
+vllm_command(model_path, tp_size) # Tensor parallel optimization
+```
 
-1. Framework-Specific Command Generation:
-- Generates optimized execution commands for:
-  - llama.cpp: GPU split ratios, context sizes, thread counts
-  - vLLM: Tensor parallel sizes, memory allocations
-- Handles environment variable configurations for each framework
-- Importance Score: 95
+2. GPU Memory Management Flow
+- Pre-inference validation of available VRAM
+- Dynamic batch size adjustment based on token counts
+- Automatic OOM recovery with cache clearing
+- Memory monitoring with leak detection
+- Progressive fallback mechanisms:
+  * REDUCE_BATCH: Scale down batch size 
+  * CLEAR_CACHE: Clear GPU caches
+  * OFFLOAD: Move to CPU/disk
+  * TERMINATE: Kill process
 
-2. Memory Split Calculator:
-- Calculates optimal memory distribution across GPUs based on:
-  - Model architecture requirements (layers, attention heads)
-  - Available GPU memory ratios
-  - KV cache requirements per token
-- Importance Score: 90
+3. Model Parameter Resolution
+- Context length calculation based on:
+  * Available GPU memory
+  * Model architecture (layers, heads)
+  * Quantization method
+- Split ratio determination for dual GPUs
+- Layer distribution optimization
 
-## Runtime Execution Management
-Located in `dualgpuopt/runner.py`:
+4. Execution Control Flow
+- Model initialization with memory validation
+- Background telemetry monitoring
+- Asynchronous token streaming
+- Real-time memory profiling
+- Automatic error recovery
 
-1. Model Server Lifecycle:
-- Non-blocking process management for AI model servers
-- Real-time output streaming with process isolation
-- Graceful termination with two-phase shutdown
-- Importance Score: 85
-
-2. Memory Recovery System:
-- Hierarchical recovery strategies:
-  - Batch size reduction
-  - Cache clearing
-  - Memory offloading
-  - Process termination
-- GPU-specific recovery targeting
-- Importance Score: 80
-
-## Resource Optimization
-Located in `dualgpuopt/batch/smart_batch.py`:
-
-1. Length-Aware Batching:
-- Dynamic batch size calculation based on:
-  - Sequence lengths
-  - GPU memory constraints
-  - Model architecture
-- Token-based optimization with configurable limits
-- Importance Score: 85
-
-2. Memory Pressure Management:
-- OOM prevention through:
-  - Proactive batch size adjustment
-  - Cache purging
-  - Memory reclamation
-- Memory usage projection for preventive action
-- Importance Score: 75
-
-## GPU Resource Management
-Located in `dualgpuopt/gpu_info.py`:
-
-1. Resource Monitoring:
-- Real-time tracking of:
-  - GPU utilization
-  - Memory allocation
-  - Temperature thresholds
-  - Power consumption
-- Importance Score: 70
-
-2. Load Distribution:
-- Layer distribution optimization across GPUs
-- Tensor parallel configuration management
-- Memory quota enforcement per GPU
-- Importance Score: 85
+Key Paths:
+- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/runner.py
+- dualgpuopt/memory/recovery.py
 
 $END$
