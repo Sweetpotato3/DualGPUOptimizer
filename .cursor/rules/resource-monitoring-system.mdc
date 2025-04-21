@@ -1,61 +1,61 @@
 ---
-description: Specification for the GPU resource monitoring and telemetry system components, including metrics collection, alerting, and visualization
-globs: **/telemetry.py,**/monitor.py,**/dashboard.py,**/metrics.py
+description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and alerts in a dual GPU optimization system
+globs: **/telemetry.py,**/tray.py,**/gpu_info.py,**/monitor.py,**/metrics.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## Core Telemetry System (telemetry.py)
+Core telemetry system for monitoring GPU resources and metrics:
 
-GPU Metrics Collection:
-- Implements real-time monitoring of critical GPU metrics:
-  - Memory utilization with thresholds (95%/90%/75%) 
-  - Temperature tracking (90°C/80°C/70°C)
-  - Power usage monitoring (98%/90%)
-  - Fan speed and clock rates
-- Exponential backoff recovery for NVML failures
-- Mock GPU simulation with realistic metrics correlation
+1. GPU Metrics Collection (telemetry.py):
+- Collects critical GPU metrics with thresholds:
+  - Memory utilization: 75%, 90%, 95%
+  - Temperature thresholds: 70°C, 80°C, 90°C  
+  - Power consumption: 90%, 98% of limit
+- Alert severity levels: NORMAL -> WARNING -> CRITICAL -> EMERGENCY
+- Exponential backoff for NVML recovery (max 3 attempts)
+- Maintains 60-second history window per GPU
 
-Historical Data Management:
-- 60-second rolling metrics history
-- Thread-safe metrics collection
-- Filtered data access by time window and GPU ID
+2. Mock GPU Simulation (telemetry.py):
+- Realistic GPU device simulation:
+  - RTX 5070 Ti: 24GB memory, 350W power limit
+  - RTX 4060: 12GB memory, 200W power limit
+- Correlates simulated metrics:
+  - Power usage: 20-90% of limit based on utilization
+  - Fan speed follows temperature curve
+  - Memory usage scales with utilization
+  - PCIe traffic aligns with GPU activity
 
-## Dashboard Visualization 
+3. Memory Monitoring System (monitor.py):
+- Dynamic memory tracking across dual GPUs:
+  - Per-device memory usage statistics
+  - Utilization percentage calculation 
+  - Usage pattern analysis with thresholds
+- Emergency memory response system:
+  - Critical threshold detection (>95% usage)
+  - Automatic cache clearing triggers
+  - OOM prevention through monitoring
 
-Real-time Metrics Display:
-- GPU-specific color coding for multiple devices
-- Dynamic gauge updates with configurable thresholds
-- Alert indicators for temperature/memory/power warnings
-- PCIe bandwidth monitoring with TX/RX rates
+4. Telemetry Event Processing:
+- Dual event publication system:
+  - Enhanced format with aggregated GPU metrics
+  - Legacy format for backward compatibility
+- Temperature monitoring callbacks
+- Memory pressure alerts
+- Utilization tracking and notification
 
-Monitoring Components:
-- Resource utilization graphs with 100ms update interval
-- Memory pressure visualization with warning levels
-- Temperature tracking with color-coded status
-- Power consumption relative to TDP limits
-
-## Event Publishing System
-
-Alert Management:
-- Multi-level alerting based on configurable thresholds
-- Deduplication of alerts with 3-second cooldown
-- Priority-based alert queue for critical notifications
-- GPU-specific alert contexts with detailed metrics
-
-Status Monitoring:
-- Real-time health status tracking
-- GPU capability detection
-- Driver version compatibility checks
-- Resource allocation monitoring
+5. GPU State Recovery:
+- NVML initialization retry logic:
+  - Exponential backoff between attempts
+  - Auto-fallback to mock data after failures
+  - State preservation during recovery
+  - Error tracking and history maintenance
 
 File Paths:
 - dualgpuopt/telemetry.py
-- dualgpuopt/gui/dashboard.py 
 - dualgpuopt/memory/monitor.py
-
-The system provides comprehensive GPU resource monitoring with real-time visualization and alerting capabilities focused on multi-GPU environments.
+- dualgpuopt/memory/metrics.py
 
 $END$

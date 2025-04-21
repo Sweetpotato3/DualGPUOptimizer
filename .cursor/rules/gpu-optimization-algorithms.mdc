@@ -1,82 +1,63 @@
 ---
-description: GPU memory distribution algorithms, parallel splits calculation, and memory allocation strategies used by optimizer and monitoring components
-globs: *.py,dualgpuopt/memory/*.py,dualgpuopt/gpu/*.py,dualgpuopt/optimizer.py
+description: Documentation of GPU memory management, tensor parallelism, and memory allocation algorithms for dual-GPU optimization
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithm (optimizer.py)
-Importance: 95
+## Memory Distribution Algorithm
 
-Implements GPU memory splitting and tensor parallel allocation:
-- Calculates optimal memory splits based on model architecture and GPU VRAM ratios 
-- Determines per-token memory requirements from model parameters (layers, heads, hidden size)
-- Applies tensor parallelism overhead factors based on split configs
-- Maintains memory safety margins and reserves
-- Handles KV cache sizing based on attention head configurations
+Key components in dualgpuopt/optimizer.py:
 
-## Layer Balancing (layer_balance.py) 
-Importance: 90
+1. Tensor Split Calculation:
+- Calculates optimal memory splits between GPUs based on relative VRAM capacity
+- Applies fairness ratio to balance workload proportionally to memory size
+- Implements safety margin calculations (default 10%) to prevent OOM conditions
+- Generates split ratios for frameworks like llama.cpp and vLLM
 
-Layer distribution algorithm for transformer models across GPUs:
-- Uses performance profiling with short (64 tokens) and long (1024 tokens) sequences
-- Weights sequence performance (20% short, 80% long) for real-world optimization
-- Maintains contiguous block grouping where possible
-- Ensures critical components remain on designated GPUs:
-  - Input embeddings on first GPU
-  - Output components on last GPU
-- Applies dynamic programming for block merging optimization
+2. Layer Distribution Strategy:
+- Assigns model layers across GPUs based on memory capacity and layer characteristics
+- Uses weighted profiling with dual sequence lengths (64 and 1024 tokens)
+- Optimizes placement of compute-intensive layers on faster GPU
+- Maintains minimum block size of 3 layers to prevent fragmentation
 
-## Memory Monitoring (memory/profiler.py)
-Importance: 85
+3. Memory Management (dualgpuopt/memory/profiler.py):
+- Real-time leak detection using sliding window analysis
+- Memory growth pattern detection with regression-based analysis
+- Session-based profiling with baseline tracking
+- Alert thresholds for spikes (>threshold MB/s) and leaks (sustained growth)
 
-Memory leak detection and profiling system:
-- Session-based memory tracking with inference counters
-- Two-tier leak detection:
-  - Spike detection for rapid memory growth
-  - Pattern analysis for steady memory leaks
-- Calculates growth rates using sliding window analysis
-- Filters false positives with minimum thresholds (5MB) and cooldown periods (30s)
-
-## GPU Split Optimization (batch/smart_batch.py)
-Importance: 85 
-
-Length-aware batch scheduling for GPU inference:
-- Dynamic batch size optimization based on:
+4. Smart Batching (dualgpuopt/batch/smart_batch.py):
+- Length-aware batch scheduling optimized for GPU inference 
+- Dynamic batch size calculation based on:
   - Available GPU memory
-  - Token memory requirements 
   - Model architecture parameters
-  - Sequence length patterns
-- Backpressure system for OOM prevention:
-  - Reduces batch sizes after OOM events
-  - Uses scale factor (0.25-0.95) for adjustment
-  - Gradually recovers sizes when stable
+  - Token memory requirements
+  - Safety margins
+- OOM recovery with 25% batch size reduction
+- Automatic recovery after 5 successful batches
 
-## Memory Recovery (memory/recovery.py)
-Importance: 80
+## Memory Recovery System
 
-Implements tiered memory recovery strategies:
-- Progressive actions based on severity:
-  1. Cache clearing
-  - Tensor cache cleanup
-  - CUDA memory flushing 
-  2. Batch size reduction
-  - Scale factor: 0.75
-  - Minimum threshold enforcement
-  3. Emergency deallocation
-  - Forces tensor deallocation
-  - Triggers garbage collection
-- Maintains recovery history to prevent thrashing
+Located in dualgpuopt/memory/recovery.py:
 
-File paths containing core algorithms:
-```
-dualgpuopt/optimizer.py
-dualgpuopt/layer_balance.py
-dualgpuopt/memory/profiler.py
-dualgpuopt/batch/smart_batch.py
-dualgpuopt/memory/recovery.py
-```
+1. Recovery Strategy:
+- Implements multi-tier memory reclamation:
+  - Cache clearing (CUDA/PyTorch)
+  - Clock reset via NVML
+  - Full memory reset
+  - System-level commands
+- Cross-platform support (Windows/Linux)
+- Success verification through before/after comparisons
+
+2. Memory Monitoring:
+- Continuous monitoring of memory usage patterns
+- Early warning system with configurable thresholds:
+  - Warning: 80% usage
+  - Critical: 90% usage
+  - Emergency: 95% usage
+- Real-time projection system for OOM prevention
 
 $END$

@@ -1,68 +1,81 @@
 ---
-description: Defines business logic for executing AI models across multiple GPUs, including memory management, batching, and command generation.
-globs: **/model_execution.py,**/launcher/**,**/commands/**,**/memory/**,**/batch/**
+description: Guidelines and specifications for managing model execution flows, GPU resource allocation, and runtime optimizations for LLM inference.
+globs: **/dualgpuopt/memory/*,**/dualgpuopt/gui/launcher/*,**/dualgpuopt/batch/*,**/dualgpuopt/commands/*
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Command Generation
-The system implements specialized command generation for different ML frameworks:
+## Model Execution Pipeline
 
-1. llama.cpp Commands:
-- Generates commands with GPU layer distribution parameters
-- Handles tensor parallel split ratios across GPUs
-- Sets context length and batch size based on available memory
-- Configures thread count and model quantization
+The system implements a sophisticated model execution pipeline optimized for dual GPU setups:
 
-2. vLLM Commands: 
-- Manages tensor parallel size configuration
-- Sets maximum model lengths and batch sizes
-- Configures swap space and tensor parallel degree
-- Handles model loading parameters with quantization
+1. Smart Batch Processing (dualgpuopt/batch/smart_batch.py):
+- Length-aware batch scheduling for GPU inference
+- Dynamic batch size calculation based on available memory
+- Implements back-pressure mechanism with configurable queue depths
+- Automatic batch size reduction (25%) after OOM events
+- Recovery mechanism after 5 successful batches
+- Maximum token limit of 16384 per batch
 
-## Memory Management
-Memory optimization implements:
+2. Framework-Specific Command Generation (dualgpuopt/commands/gpu_commands.py):
+- Specialized command construction for llama.cpp:
+  - GPU split parameters
+  - Layer distribution optimization
+  - Thread count configuration
+- vLLM command generation:
+  - Tensor parallel configurations
+  - Memory utilization settings
+  - Quantization parameters
 
-1. Profile Management:
-- Default profiles for common models (Llama-2, Mistral, Mixtral)
-- Per-model metrics for base usage, per-batch usage, growth rate
-- Token-based memory estimation with caching
-- Maximum batch/sequence length calculations
+3. Memory Management System (dualgpuopt/memory/profiler.py):
+- Real-time memory leak detection during inference
+- Linear regression analysis for memory growth patterns:
+  - Spike detection threshold
+  - Sustained growth detection
+- Session-based memory profiling:
+  - Baseline tracking
+  - Post-inference delta analysis
+  - Token count correlation
 
-2. Recovery Strategies:
-- Tiered recovery for OOM conditions:
-  1. Cache clearing
+4. Launch Control System (dualgpuopt/gui/launcher/process_monitor.py):
+- Process monitoring for ML model execution
+- Resource cleanup on process termination
+- Framework-specific parameter validation:
+  - llama.cpp: GPU splits, context size
+  - vLLM: Tensor parallel constraints
+- Model preset configurations:
+  - Llama-2 family (7B, 13B, 70B)
+  - Mistral-7B specialized parameters
+  - Mixtral with expert layer handling
+
+## Model Execution Configuration
+
+1. GPU Split Optimization:
+- Memory allocation ratios based on model architecture:
+  - 70B models: 70/30 split (layers 0-39 on GPU0, 40-79 on GPU1)
+  - Mixtral: 60/40 split (layers 0-15 on GPU0, 16-31 on GPU1)
+  - 13B models: 50/50 split with balanced layer distribution
+  - Default: 40/60 split with all layers on primary GPU
+
+2. Context Length Management:
+- Model-specific context limits:
+  - 70B models: 4096 tokens
+  - Mixtral: 8192 tokens
+  - 13B models: 12288 tokens
+  - Other architectures: 16384 tokens
+
+3. Environment Configuration:
+- CUDA_DEVICE_MAX_CONNECTIONS: Optimized for tensor parallel performance
+- NCCL_P2P_DISABLE: Conditional based on tensor parallelism
+- CUDA_VISIBLE_DEVICES: Multi-GPU visibility settings
+
+4. Recovery Strategies (dualgpuopt/memory/recovery.py):
+- Hierarchical recovery approach:
+  1. Cache clearing (CUDA memory)
   2. Batch size reduction
-  3. Memory reset
-  4. Process termination
-- CUDA cache management with cleaning intervals
-- Memory retention monitoring between inference runs
-
-## Batch Processing
-Smart batching system provides:
-
-1. Length-aware Scheduling:
-- Groups sequences by length thresholds
-- Dynamic batch size optimization
-- Memory quota management (80% max utilization)
-- Sequence padding minimization
-
-2. Backpressure Control:
-- Queue depth monitoring
-- Automatic batch size reduction on OOM
-- Recovery cooldown periods
-- Gradual batch size restoration
-
-File Paths:
-```
-dualgpuopt/commands/gpu_commands.py - Command generation
-dualgpuopt/memory/predictor.py - Memory profiling
-dualgpuopt/batch/smart_batch.py - Batch scheduling
-dualgpuopt/memory/recovery.py - OOM recovery
-```
-
-The system optimizes model execution across multiple GPUs through coordinated command generation, memory management, and batch processing optimizations.
+  3. Layer redistribution
+  4. Process restart with modified parameters
 
 $END$
