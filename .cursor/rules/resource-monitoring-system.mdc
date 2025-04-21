@@ -1,50 +1,58 @@
 ---
-description: Manages and monitors GPU resources, metrics, and telemetry for multi-GPU ML inference systems
-globs: dualgpuopt/telemetry.py,dualgpuopt/gpu/**,dualgpuopt/memory/**,dualgpuopt/services/**,dualgpuopt/gui/dashboard.py
+description: Implements GPU resource monitoring, telemetry collection, and alert systems for multi-GPU environments
+globs: **/telemetry.py,**/tray.py,**/gpu/monitor.py,**/gpu/info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-GPU Telemetry Collection:
-- Implements real-time GPU metrics monitoring service tracking critical hardware parameters:
-  * Memory utilization
-  * Temperature thresholds (90°C emergency, 80°C critical)
-  * Power consumption (98% critical)
-  * Core utilization
-  * PCIe bandwidth
-  * Fan speeds
+## Core Telemetry System (telemetry.py)
 
-Alert Management:
-- Three-tier alert system with specific thresholds:
-  * Emergency: Memory ≥95%, Temperature ≥90°C 
-  * Critical: Memory ≥90%, Temperature ≥80°C, Power ≥98%
-  * Warning: Memory ≥75%, Temperature ≥70°C, Power ≥90%
+GPU Metrics Collection:
+- Monitors domain-specific GPU metrics including memory pressure, temperature thresholds, power usage
+- Tracks PCIe bandwidth utilization for multi-GPU communication
 
-Fault Recovery:
-- Exponential backoff system for NVML failures
-- Automatic mock data generation after 3 consecutive failures
-- 60-second rolling metrics history per GPU
-- Self-healing through NVML reinitialization
+Alert Classification:
+```python
+AlertLevel thresholds:
+- EMERGENCY: Memory ≥ 95% or Temperature ≥ 90°C 
+- CRITICAL: Memory ≥ 90% or Temperature ≥ 80°C or Power ≥ 98%
+- WARNING: Memory ≥ 75% or Temperature ≥ 70°C or Power ≥ 90%
+```
 
-Mock Data Generation:
-- Simulates realistic GPU behavior patterns:
-  * Power usage correlates with utilization (20-90% range)
-  * Temperature scaling from 40°C baseline plus utilization/3
-  * Memory usage follows utilization trends
-  * Different characteristics for high vs mid-range GPUs
+Recovery System:
+- Progressive error recovery with exponential backoff for hardware failures
+- Auto-switches to mock data after multiple failures
+- Maintains error state history for intelligent fallback decisions
 
-Dashboard Integration:
-- Real-time visualization system for GPU metrics
-- Rolling 60-sample history buffer
-- Color-coded metrics for quick status assessment
-- Synchronized multi-GPU performance graphs
+Mock GPU Profiles:
+- RTX 5070 Ti: 24GB memory, 350W power limit, 2100MHz base clock
+- RTX 4060: 12GB memory, 200W power limit, 1800MHz base clock
+- Models correlations between utilization, temperature, power and PCIe bandwidth
+
+## Metrics Management System
+
+Rolling Window Analytics:
+- Maintains 60-second history of GPU metrics
+- Implements selective metric retention based on importance
+- Correlates metrics across time periods for trend analysis
+
+Domain-Specific Tracking:
+- Memory pressure based on model size and token count
+- Temperature trends with fan speed correlation
+- Power draw patterns during inference operations
+
+Monitoring Thread Management: 
+- Dedicated telemetry thread with configurable sampling rates
+- Automatic thread cleanup on application exit
+- Resource-aware suspension during idle periods
 
 File Paths:
 - dualgpuopt/telemetry.py
-- dualgpuopt/gui/dashboard.py
-- dualgpuopt/memory/monitor.py
 - dualgpuopt/gpu/monitor.py
+- dualgpuopt/gpu/info.py
+
+Importance Score: 95 - Core monitoring functionality essential for GPU optimization
 
 $END$

@@ -1,73 +1,75 @@
 ---
-description: Defines comprehensive LLM execution workflows for GPU optimized inference including command generation and resource allocation.
-globs: **/*.py,**/run*.py,**/launch*.py,**/model*.py,**/gpu/**
+description: Specification for managing execution flows of LLM models across dual GPU configurations, including command generation and resource allocation
+globs: **/memory/**,**/gpu/**,**/commands/**,**/launcher/**,**/optimizer/**,**/runner.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core LLM Execution Workflows:
+Core components for managing LLM model execution across dual GPU configurations:
 
-1. Framework-Specific Command Generation
-- Implements specialized command builders for different LLM frameworks:
-  * llama.cpp: GPU split configurations and layer distribution
-  * vLLM: Tensor parallel sizing and memory utilization
-- Handles dynamic parameter generation based on:
-  * Available GPU memory 
-  * Model architecture requirements
-  * Layer balancing configurations
+1. Execution Pipeline Controller (dualgpuopt/memory/profiler.py):
+```python
+Memory Management Flow:
+- Pre-inference memory baseline capture
+- Token-based memory tracking during inference
+- Post-inference memory cleanup
+- Leak detection using dual thresholds:
+  - Spike threshold for rapid growth
+  - Leak threshold for sustained growth
+```
 
-2. Model Launch Pipeline 
-- Pre-launch validation and resource allocation
-- Dynamic batch size configuration based on:
-  * Token length distribution
-  * Available GPU memory
-  * Model architecture parameters
-- Smart batching system with:
-  * Length-aware grouping
-  * Memory pressure monitoring
-  * Automatic batch size adjustment
+2. Command Generation System (dualgpuopt/commands/gpu_commands.py):
+```python
+Framework-specific command generation:
+- llama.cpp: GPU layer distribution and split ratios
+- vLLM: Tensor parallel size and memory settings
+- Environment variables for CUDA optimizations
+```
 
-3. Memory Management 
-- VRAM allocation strategy with dual GPU optimization:
-  * Base model allocation
-  * KV cache memory estimates
-  * Per-token memory tracking
-  * Dynamic memory reclamation
-- Smart memory prediction system for:
-  * MoE model scaling
-  * Attention mechanism overhead
-  * Model-specific heuristics
+3. Smart Batch Processing (dualgpuopt/batch/smart_batch.py):
+- Length-aware sequence grouping 
+- Dynamic batch size optimization based on:
+  - Available GPU memory
+  - Model memory requirements
+  - Token sequence lengths
+- Backpressure system for OOM prevention
 
-4. Resource Optimization
-- Layer balancing across GPUs using:
-  * Short sequence profiling (64 tokens)
-  * Long sequence profiling (1024 tokens)
-  * 20/80 weighted performance metrics
-- Automatic tensor parallel configuration:
-  * GPU memory ratio calculations
-  * Layer distribution optimization
-  * Block size constraints (min 3 layers)
+4. Memory Recovery (dualgpuopt/memory/recovery.py):
+- Tiered recovery strategies:
+  1. CACHE_ONLY: PyTorch cache clearing
+  2. CLOCK_RESET: GPU clock management
+  3. FULL_RESET: Complete memory reclamation
+  4. SYSTEM_CMD: OS-level GPU reset
 
-5. Execution Monitoring
-- Real-time metrics tracking:
-  * Tokens per second 
-  * Memory utilization
-  * Temperature thresholds
-  * Power consumption patterns
-- Automatic recovery strategies:
-  * Cache clearing
-  * Batch size reduction
-  * Process termination
+5. Layer Balance Optimization (dualgpuopt/layer_balance.py):
+- Two-phase profiling approach:
+  - Short sequences (64 tokens): 20% weight
+  - Long sequences (1024 tokens): 80% weight
+- Dynamic quota system for VRAM allocation
+- Layer assignment prioritization by computation intensity
 
-Key File Paths:
-- dualgpuopt/optimizer.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/memory/predictor.py
+6. Process Management (dualgpuopt/runner.py):
+- Non-blocking subprocess execution for model inference
+- Real-time output streaming through queue system
+- Graceful termination handling
+- Resource cleanup on process completion
+
+Flow Control Rules:
+1. Memory thresholds trigger recovery actions
+2. Batch sizes adjust dynamically based on OOM events
+3. Layer distribution optimizes for longest sequences
+4. Process termination follows staged approach:
+   - Soft termination attempt (2.5s timeout)
+   - Force kill if soft termination fails
+
+File Paths:
+- dualgpuopt/memory/profiler.py
 - dualgpuopt/commands/gpu_commands.py
-
-The model execution flow implements specialized handling of LLM deployment across dual GPU configurations with emphasis on memory efficiency, performance optimization and automatic resource management.
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/memory/recovery.py
+- dualgpuopt/layer_balance.py
+- dualgpuopt/runner.py
 
 $END$

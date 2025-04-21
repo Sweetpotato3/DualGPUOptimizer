@@ -1,65 +1,52 @@
 ---
-description: Data flow documentation for GPU optimization, inference, and monitoring metrics across components
-globs: *.py,dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py
+description: Data flow specification for dual GPU optimization system managing GPU resources, model parameters, and performance metrics
+globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Primary Data Flow Structures:
+## Core Data Flow Components
 
-1. GPU Telemetry Pipeline
-- Memory Profiler (`dualgpuopt/memory/profiler.py`) collects and analyzes GPU memory patterns
-- Real-time metrics flow through EventBus to Dashboard (`dualgpuopt/gui/dashboard.py`)
-- Memory leak detection alerts propagate via event system
-- Telemetry Service (`dualgpuopt/telemetry.py`) publishes GPU health metrics:
-  * Temperature
-  * Memory usage
-  * Power consumption 
-  * Fan speeds
-  * Clock speeds
+### 1. GPU Resource Telemetry Pipeline
+- GPU metrics collection from NVML/mock sources via telemetry.py
+- Real-time metrics including memory usage, utilization, temperature propagated through event bus
+- Metrics processed by dashboard for visualization and optimizer for resource allocation
+- Early warning detection system for memory pressure and temperature thresholds
 
-2. Optimization Data Flow
-- Layer Balancing System (`dualgpuopt/layer_balance.py`) provides tensor distribution data
-- Model Parameter Calculator generates memory requirements and context sizes
-- Split ratios flow to Command Generator for framework-specific execution
-- Results propagate back through event system for UI updates
+### 2. Model Parameter Flow
+- Model configuration parameters flow from optimizer to launch controller
+- Tensor parallel size and GPU split ratios calculated based on available resources
+- Framework-specific command generation for llama.cpp and vLLM deployments
+- Dynamic adjustment of batch sizes and context lengths based on memory monitoring
 
-3. Memory Management Flow
-- Memory Predictor (`dualgpuopt/memory/predictor.py`) estimates requirements 
-- Smart Batch system (`dualgpuopt/batch/smart_batch.py`) manages token distribution
-- Recovery system handles OOM events with tiered strategies
-- Memory metrics flow through EventBus to monitoring components
+### 3. Memory Management Pipeline
+- Memory profiler tracks allocation patterns across multiple GPUs
+- Leak detection using sliding window analysis and linear regression
+- Memory events classified into allocation/deallocation/growth spikes
+- Recovery actions triggered based on memory pressure thresholds
 
-4. Configuration Data Flow
-- State Service (`dualgpuopt/services/state_service.py`) maintains centralized state
-- Config changes propagate via event system to dependent components
-- Theme settings flow through dedicated theme observer pattern
-- Settings persistence handled by Config Service with event notifications
+### 4. Performance Metrics Flow
+- Token processing speed (TPS) metrics from model inference
+- GPU utilization correlation with memory consumption patterns
+- Temperature/power metrics flow to UI components for visualization
+- PCIe bandwidth monitoring for inter-GPU communication
 
-5. Model Execution Pipeline
-- Model configurations flow from UI to Launcher system
-- Command Generator produces optimized execution parameters
-- Runner manages subprocess execution and log streaming
-- Output flows back through event system to UI components
+### 5. Event Distribution System
+- Event bus manages distribution of GPU metrics, configuration changes
+- State service maintains application configuration and GPU settings
+- Config service handles persistent storage of optimization parameters
+- Smart batch processing coordinates workload distribution
 
-Critical Data Flow Paths:
-
-1. GPU Metrics Collection → Event Bus → Dashboard Display
-2. Memory Alerts → Event Bus → UI Notifications
-3. Model Parameters → Split Calculator → Command Generator
-4. Configuration Changes → State Service → Component Updates
-5. Memory Usage → Predictor → Batch Size Optimization
-
-File Paths:
-- `dualgpuopt/memory/profiler.py`
-- `dualgpuopt/telemetry.py` 
-- `dualgpuopt/layer_balance.py`
-- `dualgpuopt/memory/predictor.py`
-- `dualgpuopt/batch/smart_batch.py`
-- `dualgpuopt/services/state_service.py`
-- `dualgpuopt/services/event_bus.py`
-- `dualgpuopt/gui/dashboard.py`
+Key File Paths:
+```
+dualgpuopt/
+  memory/profiler.py - Memory tracking and leak detection
+  telemetry.py - GPU metrics collection and processing
+  services/event_bus.py - Event distribution system
+  batch/smart_batch.py - Batch processing optimization
+  optimizer.py - GPU resource allocation logic
+```
 
 $END$

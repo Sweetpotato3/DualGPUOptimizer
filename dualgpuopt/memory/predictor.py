@@ -6,14 +6,15 @@ model profiles and historical data.
 """
 
 import logging
-import time
-from typing import Dict, List, Optional, Tuple, Any, Set
 import os
+import time
 from functools import lru_cache
+from typing import List, Optional, Set, Tuple
 
 # Try to import numpy for optimized calculations
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False
@@ -28,13 +29,15 @@ ENV_PROFILE_CACHE_SIZE = int(os.environ.get("DUALGPUOPT_PROFILE_CACHE", "64"))  
 class MemoryProfile:
     """Memory usage profile for a specific model or workload"""
 
-    def __init__(self,
-                name: str,
-                base_usage: int,                  # Base memory usage in bytes
-                per_batch_usage: int,             # Additional memory per batch item in bytes
-                per_token_usage: int,             # Memory per token in bytes
-                growth_rate: float = 1.05,        # Memory growth rate factor
-                recovery_buffer: float = 0.85):   # Target usage after OOM recovery
+    def __init__(
+        self,
+        name: str,
+        base_usage: int,  # Base memory usage in bytes
+        per_batch_usage: int,  # Additional memory per batch item in bytes
+        per_token_usage: int,  # Memory per token in bytes
+        growth_rate: float = 1.05,  # Memory growth rate factor
+        recovery_buffer: float = 0.85,
+    ):  # Target usage after OOM recovery
         """
         Initialize memory profile
 
@@ -68,14 +71,16 @@ class MemoryProfile:
         self._max_seq_cache.clear()
 
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
-    def _estimate_usage_cached(self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0) -> int:
+    def _estimate_usage_cached(
+        self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
+    ) -> int:
         """Cached version of memory estimation
-        
+
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
-            
+
         Returns:
             Estimated memory usage in bytes
         """
@@ -83,14 +88,16 @@ class MemoryProfile:
         token_memory = self.per_token_usage * token_count * kv_cache_factor
         return self.base_usage + (self.per_batch_usage * batch_size) + token_memory
 
-    def estimate_usage(self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0) -> int:
+    def estimate_usage(
+        self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
+    ) -> int:
         """Estimate memory usage for given batch size and token count
-        
+
         Args:
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
-            
+
         Returns:
             Estimated memory usage in bytes
         """
@@ -105,11 +112,11 @@ class MemoryProfile:
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
         """Calculate maximum batch size given available memory and token count
-        
+
         Args:
             available_memory: Available memory in bytes
             token_count: Number of tokens per sequence
-            
+
         Returns:
             Maximum batch size
         """
@@ -134,11 +141,11 @@ class MemoryProfile:
     @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
     def max_sequence_length(self, available_memory: int, batch_size: int) -> int:
         """Calculate maximum sequence length given available memory and batch size
-        
+
         Args:
             available_memory: Available memory in bytes
             batch_size: Batch size
-            
+
         Returns:
             Maximum sequence length
         """
@@ -162,7 +169,7 @@ class MemoryProfile:
 
     def update_history(self, memory_usage: int, max_history: int = 100) -> None:
         """Update usage history with current memory usage
-        
+
         Args:
             memory_usage: Current memory usage in bytes
             max_history: Maximum history points to keep
@@ -176,10 +183,10 @@ class MemoryProfile:
 
     def project_growth(self, time_horizon: float = 60.0) -> Optional[int]:
         """Project memory growth over time horizon in seconds
-        
+
         Args:
             time_horizon: Time horizon for projection in seconds
-            
+
         Returns:
             Projected memory usage in bytes, or None if projection not possible
         """
@@ -232,7 +239,9 @@ class MemoryProfile:
             time_diffs = [current_time - t for t in times]
 
             # Filter to recent history (last 5 minutes)
-            recent_data = [(t, u) for (t, u), diff in zip(self.usage_history, time_diffs) if diff < 300]
+            recent_data = [
+                (t, u) for (t, u), diff in zip(self.usage_history, time_diffs) if diff < 300
+            ]
             if len(recent_data) < 3:
                 return None  # Not enough recent data
 
@@ -253,8 +262,8 @@ class MemoryProfile:
                 n = len(recent_times_norm)
                 sum_x = sum(recent_times_norm)
                 sum_y = sum(recent_usages)
-                sum_xx = sum(x*x for x in recent_times_norm)
-                sum_xy = sum(x*y for x, y in zip(recent_times_norm, recent_usages))
+                sum_xx = sum(x * x for x in recent_times_norm)
+                sum_xy = sum(x * y for x, y in zip(recent_times_norm, recent_usages))
 
                 # Calculate slope and intercept
                 slope = (n * sum_xy - sum_x * sum_y) / (n * sum_xx - sum_x * sum_x)
@@ -268,13 +277,15 @@ class MemoryProfile:
             except:
                 return None  # Error in projection
 
-    def batch_estimate_usage(self, batch_configs: List[Tuple[int, int]], kv_cache_factor: float = 1.0) -> List[int]:
+    def batch_estimate_usage(
+        self, batch_configs: List[Tuple[int, int]], kv_cache_factor: float = 1.0
+    ) -> List[int]:
         """Estimate memory usage for multiple batch configurations at once
-        
+
         Args:
             batch_configs: List of (batch_size, token_count) tuples
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
-            
+
         Returns:
             List of estimated memory usage in bytes
         """
@@ -299,40 +310,40 @@ DEFAULT_PROFILES = {
     "llama2-7b": MemoryProfile(
         name="llama2-7b",
         base_usage=7 * 1024 * 1024 * 1024,  # 7 GB base
-        per_batch_usage=50 * 1024 * 1024,   # 50 MB per batch
-        per_token_usage=3 * 1024,          # 3 KB per token
+        per_batch_usage=50 * 1024 * 1024,  # 50 MB per batch
+        per_token_usage=3 * 1024,  # 3 KB per token
     ),
     "llama2-13b": MemoryProfile(
         name="llama2-13b",
         base_usage=13 * 1024 * 1024 * 1024,  # 13 GB base
-        per_batch_usage=100 * 1024 * 1024,   # 100 MB per batch
-        per_token_usage=5 * 1024,           # 5 KB per token
+        per_batch_usage=100 * 1024 * 1024,  # 100 MB per batch
+        per_token_usage=5 * 1024,  # 5 KB per token
     ),
     "llama2-70b": MemoryProfile(
         name="llama2-70b",
         base_usage=35 * 1024 * 1024 * 1024,  # 35 GB base (split across GPUs)
-        per_batch_usage=350 * 1024 * 1024,   # 350 MB per batch
-        per_token_usage=18 * 1024,          # 18 KB per token
+        per_batch_usage=350 * 1024 * 1024,  # 350 MB per batch
+        per_token_usage=18 * 1024,  # 18 KB per token
     ),
     "mistral-7b": MemoryProfile(
         name="mistral-7b",
-        base_usage=8 * 1024 * 1024 * 1024,   # 8 GB base
-        per_batch_usage=55 * 1024 * 1024,    # 55 MB per batch
-        per_token_usage=3 * 1024,           # 3 KB per token
+        base_usage=8 * 1024 * 1024 * 1024,  # 8 GB base
+        per_batch_usage=55 * 1024 * 1024,  # 55 MB per batch
+        per_token_usage=3 * 1024,  # 3 KB per token
     ),
     "mixtral-8x7b": MemoryProfile(
         name="mixtral-8x7b",
         base_usage=25 * 1024 * 1024 * 1024,  # 25 GB base (shared across GPUs)
-        per_batch_usage=200 * 1024 * 1024,   # 200 MB per batch
-        per_token_usage=12 * 1024,          # 12 KB per token
-    )
+        per_batch_usage=200 * 1024 * 1024,  # 200 MB per batch
+        per_token_usage=12 * 1024,  # 12 KB per token
+    ),
 }
 
 
 @lru_cache(maxsize=1)
 def get_available_profiles() -> Set[str]:
     """Get the set of available profile names
-    
+
     Returns:
         Set of profile names
     """
@@ -342,10 +353,10 @@ def get_available_profiles() -> Set[str]:
 @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
 def get_profile(name: str) -> Optional[MemoryProfile]:
     """Get a memory profile by name
-    
+
     Args:
         name: Profile name
-        
+
     Returns:
         MemoryProfile or None if not found
     """
@@ -377,18 +388,20 @@ def initialize_memory_profiles():
     logger.info(f"Initialized {len(DEFAULT_PROFILES)} default memory profiles")
 
 
-def find_optimal_batch(available_memory: int,
-                      profile: MemoryProfile,
-                      token_lengths: List[int],
-                      memory_buffer: float = 0.9) -> Tuple[int, int]:
+def find_optimal_batch(
+    available_memory: int,
+    profile: MemoryProfile,
+    token_lengths: List[int],
+    memory_buffer: float = 0.9,
+) -> Tuple[int, int]:
     """Find optimal batch size and sequence length given available memory
-    
+
     Args:
         available_memory: Available memory in bytes
         profile: Memory profile to use
         token_lengths: List of possible token lengths to consider
         memory_buffer: Safety buffer factor (1.0 = use all memory)
-        
+
     Returns:
         Tuple of (batch_size, sequence_length)
     """
@@ -402,7 +415,9 @@ def find_optimal_batch(available_memory: int,
     if NUMPY_AVAILABLE:
         # Vectorized approach
         seq_lengths = np.array(token_lengths)
-        batch_sizes = np.array([profile.max_batch_size(effective_memory, seq_len) for seq_len in seq_lengths])
+        batch_sizes = np.array(
+            [profile.max_batch_size(effective_memory, seq_len) for seq_len in seq_lengths]
+        )
 
         # Calculate throughput (batch_size * sequence_length)
         throughputs = batch_sizes * seq_lengths

@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Create overview documentation for complex applications with multiple interrelated business components, focusing on how the business logic flows between components and their relationships. Apply when documenting high-level system architecture and core business workflows.
-globs: *.py,*.md,*.txt,*.ini,*.cfg
+description: This rule generates an overview for GPU optimization systems focused on machine learning workloads. It should be applied when documenting systems that manage dual GPU configurations, memory profiling, and model deployment optimizations.
+globs: *.py,*.config,*.json,*.yml
 alwaysApply: false
 ---
 
@@ -154,65 +154,55 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-# DualGPUOptimizer Core Architecture
+DualGPUOptimizer implements specialized GPU resource management and optimization for machine learning model deployment across dual GPU configurations.
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model inference across multiple GPUs.
+Core Business Components:
 
-## Core Business Components
+1. GPU Memory Profiling & Optimization
+- Real-time memory tracking across multiple GPUs
+- Sliding window analysis for memory anomalies
+- Memory leak detection with dual thresholds
+- Memory event classification system
+- Session-based profiling with inference tracking
+File: dualgpuopt/memory/profiler.py
 
-### GPU Memory Management
-- Memory profiling with leak detection thresholds 
-- Growth pattern analysis using sliding windows
-- Memory timeline tracking with inference correlation
-- Session-based memory checkpointing
-- Token-based memory efficiency metrics
+2. GPU Telemetry System
+- Domain-specific GPU metrics monitoring including memory pressure, temperature thresholds
+- Alert level classification (EMERGENCY/CRITICAL/WARNING/NORMAL)
+- Intelligent recovery system with exponential backoff
+- GPU behavioral models for different hardware profiles
+File: dualgpuopt/telemetry.py
 
-### GPU Resource Optimization 
-- Layer distribution calculation for transformer models
-- Tensor parallel fraction computation
+3. Model Deployment Optimization  
+- Context size calculation based on model architecture
+- Layer balancing across GPUs using weighted profiling
 - Framework-specific command generation (llama.cpp, vLLM)
-- Dynamic batch sizing based on sequence lengths
-- Adaptive context length calculation
+- Dynamic tensor parallel size configuration
+Files:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py
 
-### Model Deployment Logic
-- Model-specific memory requirement profiling
-- Mixture of Experts (MoE) handling
-- GPU split ratio optimization
-- KV cache calculations for transformers
-- Architecture-specific parameter tuning
+4. Smart Batch Processing
+- Length-aware sequence batching
+- Dynamic batch size optimization based on memory constraints
+- Adaptive backpressure system for OOM prevention
+- Model-specific memory profiling
+File: dualgpuopt/batch/smart_batch.py
 
-### Telemetry System
-- Real-time GPU metric collection
-- Emergency thresholds (95% memory, 90°C temp)
-- Performance counters for token processing
-- PCIe bandwidth monitoring
-- Power usage optimization
+5. GPU Overclocking Management
+- Hardware-specific parameter management (core/memory clocks, power limits)
+- Safety constraints enforcement
+- Command pattern for overclock operations
+- Undo/redo capability
+File: dualgpuopt/gui/settings/overclocking.py
 
-## Critical File Paths
+Integration Points:
+- Memory profiler feeds metrics to optimization system
+- Telemetry system triggers recovery actions
+- Batch processor coordinates with memory management
+- Layer balancing integrates with deployment optimization
 
-Core GPU Logic:
-```
-dualgpuopt/optimizer.py
-dualgpuopt/memory/profiler.py  
-dualgpuopt/gpu/monitor.py
-dualgpuopt/batch/smart_batch.py
-```
-
-Memory Management:
-```
-dualgpuopt/memory/predictor.py
-dualgpuopt/memory/recovery.py
-dualgpuopt/memory/alerts.py
-```
-
-Model Optimization:
-```
-dualgpuopt/layer_balance.py
-dualgpuopt/ctx_size.py
-dualgpuopt/commands/gpu_commands.py
-```
-
-The system focuses on optimizing large language model deployment across multiple GPUs through intelligent resource allocation, memory management, and performance monitoring.
+The system prioritizes stable model deployment while maximizing GPU resource utilization through coordinated profiling, monitoring, and optimization components.
 
 $END$
 END SPECIFICATION

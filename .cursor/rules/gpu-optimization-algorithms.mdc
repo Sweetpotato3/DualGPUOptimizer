@@ -1,67 +1,82 @@
 ---
-description: GPU optimization algorithms and memory management techniques for efficiently distributing AI model layers across multiple GPUs
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/gpu/*.py
+description: Specification for GPU optimization algorithms focusing on memory allocation strategies, tensor parallel splitting, and load distribution across multiple GPUs.
+globs: **/gpu_info.py,**/optimizer.py,**/gpu/*.py,**/memory/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Key algorithms and memory management strategies for optimizing dual GPU systems:
+## Memory Distribution System
+**Importance Score: 95**
 
-1. Memory Distribution Algorithm (optimizer.py):
-- Implements adaptive memory allocation across GPUs:
-  * Per-token KV cache requirements calculation 
-  * Tensor parallelism overhead (20% default)
-  * System overhead buffer (2GB default)
-  * Safety margin (10% default)
-- Context length optimization considering:
-  * Available GPU memory
-  * Model architecture (layers, heads, dimensions)
-  * Tensor parallel size
-  * KV cache scaling factor (2.0x)
-- Round context lengths to 128-token increments
+Core algorithm for distributing model layers and memory across multiple GPUs:
 
-2. Layer Balancing (layer_balance.py):
-- Latency-aware layer distribution algorithm:
-  * Weighted profiling using 64 and 1024 token sequences
-  * 20/80 weight ratio favoring long sequence performance
-  * Dynamic quota-based layer assignment respecting VRAM limits
-  * Minimum block size constraints (3 layers)
-- Post-processes layer assignments to create contiguous blocks
+1. Dynamic Split Calculation:
+- Calculates optimal tensor fractions based on relative GPU memory capacities
+- Implements safety margins to prevent OOM conditions
+- Includes 20% overhead factor for activation memory
+- Handles asymmetric GPU configurations with minimum 20% allocation per GPU
 
-3. Memory Leak Detection (profiler.py):
-- Real-time anomaly detection:
-  * Growth spikes above configured MB/s threshold
-  * Sustained leaks above baseline with 5MB+ change
-  * 30s cooldown between alerts
-  * Inference session correlation
-- Token-based efficiency tracking
-- Session lifecycle memory checkpoints
+2. Model-Specific Memory Estimation:
+- Per-token memory calculation based on:
+  - Number of layers and attention heads
+  - Hidden size dimensions
+  - KV cache requirements
+  - MoE overhead for expert models
+- Supports specialized architectures:
+  - Mixtral models: 1.05x memory factor for gating
+  - LLaMA 2: Dynamic KV head scaling
+  - Mistral: Fixed 32 layer configuration
 
-4. Smart Batching (smart_batch.py):
-- Length-aware batch scheduling:
-  * Similarity-based sequence grouping
-  * Dynamic batch size with backpressure
-  * Scale factor (0.25-0.95) for OOM recovery
-  * 20-batch rolling window for adjustments
-  * Token thresholds (max 16384 per batch)
-  * 256 token grouping threshold
+## Batch Processing Optimization
+**Importance Score: 90**
 
-5. Memory Usage Prediction (predictor.py):
-- Model-specific memory estimation:
-  * Base model memory requirements 
-  * KV cache scaling with context/batch size
-  * Activation buffer overhead
-  * Per-framework adjustments
-  * Token-based growth projections
-- Predefined profiles for common architectures
+Smart batching system with length-aware scheduling:
+- Groups sequences by length similarity
+- Implements dynamic batch sizing based on:
+  - Available GPU memory
+  - Model size requirements
+  - 5% per-sequence memory allocation
+  - Maximum 64 sequences per batch
+- Backpressure system reduces batch sizes after OOM events
 
-Relevant files:
-- dualgpuopt/optimizer.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/predictor.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/layer_balance.py
+File paths:
+```
+dualgpuopt/optimizer.py
+dualgpuopt/memory/profiler.py
+dualgpuopt/batch/smart_batch.py
+dualgpuopt/gpu_info.py
+```
+
+## Layer Balance Optimization
+**Importance Score: 85**
+
+Adaptive layer distribution algorithm:
+- Two-phase profiling approach:
+  - Short sequence (64 tokens): 20% weight
+  - Long sequence (1024 tokens): 80% weight
+- Dynamic quota system for VRAM allocation
+- Minimum block size of 3 layers to prevent fragmentation
+- Strategic merging of neighboring blocks based on performance metrics
+
+Memory recovery system:
+- Progressive memory reclamation:
+  1. Cache clearing (CUDA cache)
+  2. Batch size reduction (25% steps)
+  3. Layer rebalancing
+  4. Process termination as last resort
+
+## Memory Growth Prediction
+**Importance Score: 80**
+
+Memory usage projection system:
+- Linear regression on recent memory patterns
+- Token-based growth rate calculation
+- Model-specific overhead factors:
+  - Base model memory (1GB per billion parameters)
+  - KV cache scaling (2 bytes per token per billion parameters)
+  - 20% activation buffer
+- Adaptive threshold adjustment based on model architecture
 
 $END$

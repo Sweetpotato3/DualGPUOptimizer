@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import dataclasses
 import enum
-import inspect
 import logging
 import threading
 import time
