@@ -438,3 +438,51 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - **Fallback Widget System**: Implemented comprehensive fallback widgets for all UI components
 
 These improvements create a more stable foundation, enabling the application to run in a wider range of environments with better error recovery.
+
+## New: Comprehensive Testing Framework
+
+DualGPUOptimizer now includes a comprehensive testing framework to ensure code quality and prevent regressions:
+
+### Testing Architecture
+
+The testing framework is organized into three main levels:
+
+- **Unit Tests**: Testing individual components in isolation
+- **Integration Tests**: Testing interactions between components
+- **Functional Tests**: End-to-end testing of complete features
+
+### Key Test Features
+
+- **Mock GPU Support**: Tests run without requiring actual GPU hardware
+- **Event System Testing**: Comprehensive tests for the event-driven architecture
+- **Memory Prediction Tests**: Validation of memory allocation calculations
+- **Telemetry Verification**: Tests for real-time monitoring accuracy
+- **Error Recovery Verification**: Tests that error recovery works correctly
+
+### Running Tests
+
+```bash
+# Run only unit tests (fastest)
+make test-unit
+
+# Run integration tests
+make test-integration
+
+# Run all tests with coverage report
+make test-coverage
+
+# Run all tests
+make test-all
+```
+
+### Test Coverage Goals
+
+The project aims for high test coverage in critical areas:
+
+- Core GPU optimization logic: >90% coverage
+- Memory management system: >85% coverage
+- Command generation: >80% coverage
+- Event system: >85% coverage
+- Error handling: >90% coverage
+
+The comprehensive test suite ensures the application remains stable and reliable, even as new features are added or components are refactored.

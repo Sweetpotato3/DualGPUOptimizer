@@ -1,50 +1,49 @@
 ---
-description: Documents LLM model execution strategies, command generation and GPU resource management for optimized inference
-globs: **/gpu_commands.py,**/launch_controller.py,**/optimizer.py,**/runner.py
+description: Defines model execution workflows, command generation and GPU resource allocation for LLM inference
+globs: **/runner.py,**/launcher/*.py,**/commands/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The system implements specialized execution flows for running large language models across multiple GPUs:
+The model execution system handles two primary LLM frameworks (llama.cpp and vLLM) with specialized workflow management:
 
-1. Command Generation Pipeline (dualgpuopt/commands/gpu_commands.py)
-- Framework-specific command construction for llama.cpp and vLLM backends
-- Tensor parallel configuration based on available GPU count
-- GPU memory split ratio calculations for model distribution
-- Environment variable setup for each framework's requirements
+1. Command Generation System
+- Generates optimized framework-specific commands:
+```python
+# llama.cpp format
+./main -m {model_path} --gpu-split {split} --n-gpu-layers {layers} --ctx-size {ctx}
 
-2. Launch Controller Logic (dualgpuopt/gui/launcher/launch_controller.py)
-- Model deployment orchestration with configurable parameters
-- GPU memory reservation and validation before model loading
-- OOM recovery logic with cache clearing and retry mechanisms
-- Dynamic batch size adjustment based on available resources
-
-3. Model Resource Calculator (dualgpuopt/optimizer.py)
-- Context window size calculation based on model architecture
-- KV cache estimation for attention mechanisms
-- Memory requirement projections for different model sizes
-- Load balancing logic for dual GPU configurations
-
-Key Command Generation Templates:
-
-llama.cpp:
-```
-./main -m {model} --gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}
+# vLLM format  
+python -m vllm.entrypoints.api_server --model {model_path} --tensor-parallel-size {gpus}
 ```
 
-vLLM:
-```
---model {model} --dtype float16 --tensor-parallel-size {tp} --gpu-memory-utilization 0.9
-```
+- Dynamically calculates GPU split ratios based on available VRAM
+- Handles tensor parallel configuration for multi-GPU deployments
+- Manages context size limits based on available memory
 
-Notable Domain-Specific Elements:
-- Model-aware resource estimation
-- Framework-specific parameter optimization
-- Multi-GPU workload distribution
-- Memory pressure monitoring and recovery
+2. Batch Processing Pipeline
+- Implements length-aware sequence batching
+- Uses token-based batch sizing with configurable limits
+- Handles OOM recovery through cache clearing and batch size reduction
+- Maintains token throughput tracking per batch
 
-The implementation focuses on optimizing model execution across multiple GPUs while maintaining stability through intelligent resource management and error recovery.
+3. Resource Allocation Flow
+- Pre-execution GPU memory validation
+- Dynamic layer distribution across GPUs
+- Custom error handling for memory allocation failures
+- Environmental variable generation for GPU configurations
+
+Core Execution Rules:
+- Memory validation before model loading
+- Progressive batch size reduction on OOM (25% reduction)
+- Minimum 5 successful batches before size increase
+- Tensor parallel size must match available GPU count
+
+Relevant Files:
+- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/runner.py
 
 $END$

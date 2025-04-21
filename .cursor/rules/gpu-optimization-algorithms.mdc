@@ -1,55 +1,67 @@
 ---
-description: Documents GPU optimization logic for machine learning model deployment across multiple GPUs, focusing on memory management and model partitioning
-globs: **/gpu/**,**/optimizer/**,**/memory/**,**/batch/**
+description: Documents GPU optimization algorithms including memory distribution, tensor parallel splits, and allocation strategies.
+globs: ./**/optimizer.py,./**/gpu_info.py,./**/batch/*.py,./**/commands/*.py,./**/memory/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Distribution Logic
-Key algorithms for partitioning models across multiple GPUs, located in optimizer.py:
+The GPU optimization system implements specialized algorithms for memory management and workload distribution across multiple GPUs:
 
-```python
-def calculate_tensor_splits(gpus, model_size):
-    memory_ratios = [gpu.available_memory/total_memory for gpu in gpus]
-    return adjust_splits_for_overhead(memory_ratios, model_size) 
-```
+## Memory Distribution Algorithm
+File: dualgpuopt/optimizer.py
 
-Determines optimal tensor parallel splits based on:
-- Available GPU memory ratios
-- Model architecture requirements  
-- Memory overhead estimations
-- Layer-wise distribution patterns
+- Calculate optimal GPU memory splits based on model architecture:
+  - KV cache requirements for transformer layers  
+  - Hidden state memory allocation
+  - Attention mechanism memory patterns
+  - Special handling for MoE architectures (Mixtral)
+- Memory distribution scaled by:
+  - Available VRAM per GPU
+  - Model parameter count
+  - Sequence context length 
+  - Data precision format
 
-## Memory Management
-Memory allocation and tracking in gpu_info.py:
-- Implements dynamic memory quota calculation per GPU
-- Tracks memory pressure through watchdog system
-- Handles OOM recovery with progressive fallback strategy:
+## Tensor Parallel Splits
+File: dualgpuopt/batch/smart_batch.py
+
+- Dynamic batch size calculation:
+  - Length-aware sequence grouping
+  - Token count thresholds per GPU
+  - Backpressure on OOM events (-25% batch size)
+  - Gradual recovery after successful batches
+- Layer distribution algorithm:
+  - Balance layers across GPUs based on profiled speeds
+  - Contiguous block optimization
+  - Minimize cross-GPU communications
+
+## Memory Allocation Strategy 
+File: dualgpuopt/memory/predictor.py
+
+- Model-specific memory profiles:
+  - Base memory requirements
+  - Per-token memory scaling 
+  - Growth rate projection
+  - Recovery buffer settings
+- Memory recovery tiers:
   1. Cache clearing
-  2. Batch size reduction  
-  3. Layer redistribution
-  4. Process restart
+  2. Batch reduction
+  3. Model offloading
+  4. Process termination
 
-## Model Layer Distribution
-Layer balancing algorithms in layer_balance.py:
-- Multi-sequence profiling (64/1024 token ratios)
-- Weighted workload distribution considering:
-  - Layer computational intensity
-  - Memory transfer costs
-  - GPU memory constraints
-- Block optimization to minimize cross-GPU transfers
+## Framework Command Generation
+File: dualgpuopt/commands/gpu_commands.py
 
-## Smart Batch Processing
-Batch optimization system in batch/smart_batch.py:
-- Token-aware batch assembly
-- Dynamic sizing based on:
-  - Available GPU memory
-  - Model architecture
-  - Sequence length distribution
-- Backpressure mechanisms to prevent OOM
+- llama.cpp optimization:
+  - GPU layer distribution
+  - Split ratio calculation 
+  - Thread allocation
+- vLLM deployment:
+  - Tensor parallel sizing
+  - Memory allocation strategy
+  - Environment configuration
 
-The architecture specifically optimizes for language model inference across multiple GPUs, with core focus on memory management and workload distribution.
+The algorithms focus on optimizing model deployment across multiple GPUs while managing memory constraints and performance characteristics.
 
 $END$
