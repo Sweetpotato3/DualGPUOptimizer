@@ -8,7 +8,7 @@ import math
 import random
 import threading
 import sys
-from typing import Dict, List, Tuple
+from typing import Dict
 
 try:
     import matplotlib.pyplot as plt
@@ -98,7 +98,7 @@ class TelemetryVisualizer:
     
     def run(self):
         """Run the visualization."""
-        ani = animation.FuncAnimation(
+        animation.FuncAnimation(
             self.fig, self.update_plot, interval=100, blit=True
         )
         plt.tight_layout()

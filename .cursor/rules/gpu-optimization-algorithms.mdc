@@ -1,58 +1,78 @@
 ---
-description: Technical documentation for GPU optimization algorithms used in dual GPU setups for deep learning model inference
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py
+description: GPU memory distribution algorithms and tensor parallel splits calculation for optimizing dual-GPU model inference
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/telemetry.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-GPU Memory Split Calculation (optimizer.py):
-- Calculates optimal memory distribution across dual GPUs based on model parameters
-- Determines tensor parallel fractions considering available GPU memory and model size
-- Implements safety margin calculations (10% default) to prevent OOM conditions
-- Handles KV cache overhead with configurable scaling factor (2.0x default)
-- Support for MoE models with expert cache considerations
+## Core Memory Distribution Logic
 
-Layer Balance Optimization (layer_balance.py):
-- Distributes model layers across GPUs using weighted sequence length sampling
-- Uses 20/80 split between short (64) and long (1024) sequences for profiling
-- Implements block merging logic to maintain contiguous layer groups (min 3 layers)
-- Considers relative GPU speeds and memory quotas for distribution decisions
+1. GPU Memory Split Algorithms:
+- Calculates optimal memory distribution across dual GPUs based on:
+  * Available VRAM capacity per GPU 
+  * Model architecture requirements
+  * KV cache memory needs
+  * Tensor parallel overhead
+- Implements safety margins and reserved memory buffers
+- Enforces minimum allocation of 20% model per GPU
+- Dynamic overhead adjustment based on quantization
+File: dualgpuopt/optimizer.py
 
-Batch Processing System (batch/smart_batch.py):
-- Length-aware batch scheduling with dynamic size adjustment
-- Implements backpressure mechanism for OOM prevention
-- Provides token-aware batching considering sequence lengths
-- Uses model-specific memory profiles for batch size optimization
+2. Model-Specific Memory Calculation:
+- Per-token memory requirements based on:
+  * Number of layers and heads
+  * Hidden dimension size
+  * MoE architecture factors
+  * Attention mechanism type (MQA/GQA)
+- Base memory calculation formula:
+  bytes_per_token = kv_hidden_size * num_layers * 2
+File: dualgpuopt/memory/profiler.py
 
-Memory Management (memory/profiler.py):
-- Real-time memory usage tracking with pattern analysis
-- Linear regression-based leak detection using configurable thresholds
-- Differentiates between temporary spikes and sustained leaks
-- Associates memory patterns with token processing counts
+3. Layer Distribution Strategy:
+- Profile-based layer distribution between GPUs
+- Performance weighted scoring (20% short sequences, 80% long)
+- Minimum block size enforcement (3 layers)
+- Special handling for embeddings and output layers
+File: dualgpuopt/layer_balance.py
 
-Memory Recovery System (memory/recovery.py):
-- Four-tier recovery strategy:
-  - REDUCE_BATCH: Dynamic batch size reduction
-  - CLEAR_CACHE: GPU cache management
-  - OFFLOAD: CPU/disk offloading
-  - TERMINATE: Process termination
-- Prioritized execution from least to most disruptive
-- Device-specific threshold management
+4. Memory Recovery System:
+- Multi-tiered recovery approach:
+  * Cache clearing (PyTorch/CUDA)
+  * Clock/compute mode reset
+  * Full tensor cleanup
+  * OS-level resource management
+- Platform-specific optimizations for Windows/Linux
+- Reclaimed memory tracking across GPUs
+File: dualgpuopt/vram_reset.py
 
-Core Paths:
-/dualgpuopt/optimizer.py
-/dualgpuopt/layer_balance.py
-/dualgpuopt/memory/profiler.py
-/dualgpuopt/memory/recovery.py
-/dualgpuopt/batch/smart_batch.py
+5. GPU Telemetry Integration:
+- Real-time monitoring of:
+  * Memory utilization
+  * Temperature thresholds  
+  * Power consumption
+  * PCIe bandwidth
+- 60-second rolling metric history
+- Automatic failover to mock data
+File: dualgpuopt/telemetry.py
 
-Importance Scores:
-- GPU Memory Split: 95 (Core optimization algorithm)
-- Layer Balance: 90 (Critical for model performance)
-- Batch Processing: 85 (Key workload management)
-- Memory Management: 80 (Essential resource control)
-- Recovery System: 75 (Important stability feature)
+## Critical Memory Parameters
+
+Memory Alert Thresholds:
+- EMERGENCY: ≥95% memory usage or ≥90°C
+- CRITICAL: ≥90% memory or ≥80°C 
+- WARNING: ≥75% memory or ≥70°C
+
+Context Size Rules:
+- Minimum: 128 tokens
+- Maximum: Based on available GPU memory
+- Rounding: Nearest 128 tokens
+- Safety margin: 20% reserved memory
+
+Tensor Parallel Default Split:
+- Primary/Secondary: 60%/40%
+- Minimum per GPU: 20%
+- Maximum per GPU: 80%
 
 $END$

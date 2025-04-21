@@ -5,7 +5,6 @@ This uses mock GPU data to test the integration.
 """
 import time
 import sys
-import threading
 from typing import Dict
 
 try:

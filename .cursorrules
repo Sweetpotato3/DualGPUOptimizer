@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Use this rule when documenting high-level architecture and business logic organization for dual GPU optimization systems focused on ML model inference and resource management.
-globs: dualgpuopt/*.py,dualgpuopt/**/*.py
+description: Create a project overview for code bases containing multiple source files that implement dual GPU optimization, machine learning model deployment, memory profiling and real-time monitoring capabilities. Focus on the high-level architecture and interconnections between core business components.
+globs: src/*,lib/*,dualgpuopt/*,dual_gpu_optimizer/*
 alwaysApply: false
 ---
 
@@ -154,47 +154,65 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized GPU resource management and optimization for large language model inference across multiple GPUs.
+The DualGPUOptimizer system provides specialized optimization and monitoring for dual GPU machine learning deployments through several core subsystems:
 
-Core Business Components:
+## GPU Telemetry & Resource Management
+- Real-time GPU metrics collection and monitoring pipeline
+- Multi-level alert system for GPU health (EMERGENCY/CRITICAL/WARNING/NORMAL)
+- Adaptive error recovery with exponential backoff
+- Custom middleware for metrics processing and event distribution
 
-1. Memory Management System (Importance: 95)
-- Memory profiling and leak detection in dualgpuopt/memory/profiler.py
-- Real-time memory timeline analysis with inference boundary tracking
-- Multi-tier alert system with predictive OOM prevention
-- Model-specific memory scaling based on architecture (Llama, Mistral, Mixtral)
+Key paths:
+- `dualgpuopt/telemetry.py`
+- `dualgpuopt/telemetry_history.py`
+- `dualgpuopt/gpu/monitor.py`
 
-2. GPU Telemetry (Importance: 90)
-- Comprehensive GPU metrics collection in dualgpuopt/telemetry.py  
-- Multi-level alert classification based on resource thresholds
-- Fault tolerance with exponential backoff recovery
-- Rolling 60-second metric history with automatic pruning
+## Memory Management & Profiling
+- Memory event classification (allocation, deallocation, spikes, leaks)
+- Session-based inference memory tracking
+- Leak detection using sliding window analysis
+- Predictor system for memory growth modeling
+- Recovery strategies for OOM conditions
 
-3. Optimizer Engine (Importance: 95)
-- GPU split calculation optimized for different model architectures
-- Dynamic tensor parallel configuration
-- Context length optimization based on available memory
-- Framework-specific command generation for llama.cpp and vLLM
+Key paths:
+- `dualgpuopt/memory/profiler.py`
+- `dualgpuopt/memory/predictor.py`
+- `dualgpuopt/memory/recovery.py`
 
-4. Batch Processing System (Importance: 85)
-- Length-aware batch scheduling in dualgpuopt/batch/smart_batch.py
-- Dynamic backpressure system preventing OOM conditions
-- Token-aware batching with model-specific memory profiles
-- Gradual recovery mechanism after performance issues
+## Model Distribution & Optimization
+- Dynamic layer balancing across multiple GPUs
+- Architecture-aware memory split calculations
+- Framework-specific command generation (llama.cpp, vLLM)
+- Context length optimization based on model parameters
 
-5. Layer Distribution System (Importance: 90)
-- Adaptive layer distribution across GPUs
-- Performance profiling with weighted sequence sampling
-- Block-based optimization for contiguous layer groups
-- Memory quota enforcement per GPU
+Key paths:
+- `dualgpuopt/optimizer.py`
+- `dualgpuopt/layer_balance.py`
+- `dualgpuopt/commands/gpu_commands.py`
 
-Key Integration Points:
-- Memory monitoring feeds into batch size optimization
-- Telemetry system drives alert generation and recovery
-- Layer distribution coordinates with memory management
-- Batch processing integrates with memory prediction
+## Event & State Management
+- Priority-based event bus for GPU operations
+- Centralized state management with persistence
+- Custom error handling hierarchy for GPU operations
+- Event-driven metrics distribution pipeline
 
-The system architecture emphasizes tight coordination between memory management, resource monitoring, and workload optimization components to maximize GPU utilization while preventing out-of-memory conditions.
+Key paths:
+- `dualgpuopt/services/event_bus.py`
+- `dualgpuopt/services/state_service.py`
+- `dualgpuopt/error_handler/handler.py`
+
+## Real-Time Monitoring Interface
+- GPU-specific metrics visualization
+- Dynamic batch size and memory allocation tracking
+- Model deployment status monitoring
+- Custom theme system for GPU metrics display
+
+Key paths:
+- `dualgpuopt/gui/dashboard.py`
+- `dualgpuopt/gui/optimizer_tab.py`
+- `dualgpuopt/gui/memory_profile_tab.py`
+
+The system integrates these components to provide comprehensive GPU resource management, optimization and monitoring capabilities specifically designed for large language model deployment across multiple GPUs.
 
 $END$
 END SPECIFICATION

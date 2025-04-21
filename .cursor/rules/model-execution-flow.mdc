@@ -1,60 +1,63 @@
 ---
-description: Specification for LLM model execution workflows, command generation, and GPU resource management
-globs: **/commands/*.py,**/model/*.py,**/execution/*.py,**/launcher/*.py
+description: Defines GPU model execution flow including command generation for llama.cpp and vLLM, configuration parameters, and resource allocation logic.
+globs: **/dualgpuopt/**/*.py,**/gpu/**/*.py,**/runner.py,**/optimizer.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Model execution and resource management system implementing specialized GPU allocation strategies for LLM inferencing.
+## Command Generation and GPU Split Logic
+- Generates framework-specific commands with tensor parallelism considerations
+- llama.cpp commands include: GPU split ratios, context size, layers per GPU
+- vLLM commands configure: tensor parallel degree, max length, memory utilization
+- Supports flexible GPU distribution through split ratios (e.g. 70/30, 60/40)
 
-Core Command Generation (dualgpuopt/commands/gpu_commands.py):
-- Dynamic command-line parameter generation for llama.cpp and vLLM frameworks
-- Context length optimization with model-specific calculation engines
-- GPU split ratio formulas based on model architecture and memory constraints 
-- Layer distribution algorithms for tensor parallelism
+File: `dualgpuopt/commands/gpu_commands.py`
 
-Framework-Specific Launch Logic:
-1. llama.cpp:
-- GPU layer splitting config generator
-- Memory-per-layer calculations
-- Context window size optimization
-- Split ratio enforcement (must sum to ~1.0)
+## Model Resource Allocation
+- Calculates memory requirements based on model architecture:
+  - Base model size
+  - KV cache per token
+  - Attention mechanism overhead
+  - MoE overhead for expert models
+- Implements custom per-token memory estimation:
+  `bytes_per_token = kv_hidden_size * num_layers * 2`
+- Considers BF16 and AWQ quantization impacts
 
-2. vLLM:
-- Tensor parallel size configuration 
-- Memory allocation ratios between GPUs
-- Peer-to-peer communication setup
-- Device visibility management
+File: `dualgpuopt/optimizer.py`
 
-Memory Management (dualgpuopt/memory/predictor.py):
-- Model-specific base memory requirements:
-  - Llama2-7B: 7GB base, 50MB/batch, 3KB/token
-  - Llama2-13B: 13GB base, 100MB/batch, 5KB/token
-  - Llama2-70B: 35GB base, 350MB/batch, 18KB/token
-  - Mistral-7B: 8GB base, 55MB/batch, 3KB/token
-  - Mixtral-8x7B: 25GB base, 200MB/batch, 12KB/token
+## GPU Resource Management
+- Dynamic GPU split optimization based on:
+  - Available VRAM per GPU
+  - Model architecture requirements
+  - Minimum 20% allocation per GPU policy
+  - MoE expert distribution constraints
+- Layer distribution strategies:
+  - Single GPU fallback mode
+  - Dual GPU balanced distribution
+  - Multi-GPU load balancing
 
-Resource Allocation Rules:
-- Target 80% memory utilization across GPUs
-- Batch size limits: 1-64 sequences 
-- 20% overhead allocation for system operations
-- 5% per-sequence model size estimation
-- Automatic recovery triggers at 95% utilization
+File: `dualgpuopt/gpu_info.py`
 
-Critical Processes:
-1. Memory allocation and model split calculations
-2. Framework-specific command generation
-3. Resource optimization and monitoring
-4. Batch size and context window optimization
-5. GPU layer distribution logic
+## Execution Flow Control
+- Non-blocking subprocess execution with log streaming
+- Real-time output processing for model status
+- Framework-specific environment variable configuration:
+  - CUDA device connections
+  - NCCL P2P settings
+  - Visible devices configuration
 
-Business Importance Scores:
-- Command Generation Engine: 95
-- Memory Management System: 90
-- Resource Allocation Rules: 85
-- Framework Integration Logic: 80
-- Process Management: 75
+File: `dualgpuopt/runner.py`
+
+## Process Recovery and Monitoring
+- Implements adaptive error handling:
+  - Memory pressure detection
+  - Batch size reduction by 25% on OOM
+  - Automatic cache clearing
+  - Process restart on critical failures
+- GPU state monitoring during execution
+
+File: `dualgpuopt/memory/recovery.py`
 
 $END$

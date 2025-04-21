@@ -1,5 +1,3 @@
-import time
-import threading
 import unittest
 import concurrent.futures
 from dualgpuopt.memory.predictor import LRUCache

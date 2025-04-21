@@ -4,7 +4,6 @@ Example of using telemetry history with a UI chart component
 import sys
 import time
 from PySide6 import QtCore, QtWidgets, QtCharts
-from typing import List, Tuple
 
 # Import telemetry components
 from dualgpuopt.telemetry_history import HistoryBuffer

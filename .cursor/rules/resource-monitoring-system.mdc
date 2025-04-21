@@ -1,56 +1,62 @@
 ---
-description: Implements telemetry and resource monitoring system focused on GPU metrics, utilization tracking, and alert mechanisms.
-globs: dualgpuopt/telemetry.py,dualgpuopt/tray.py
+description: Specification for GPU telemetry and resource monitoring system in DualGPUOptimizer, including metrics collection, alert management and memory profiling.
+globs: **/telemetry.py,**/telemetry_history.py,**/metrics.py,**/memory_profiler.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The GPU resource monitoring system implements specialized telemetry collection and alert management for dual GPU configurations.
+## Core Telemetry System
 
-Core Components:
+### Metrics Collection Logic
+- Implements real-time GPU metrics gathering:
+  - Utilization percentages
+  - Memory usage tracking 
+  - Temperature monitoring
+  - Power consumption
+  - PCIe bandwidth usage
+  - Clock speeds
+  - Fan speeds
+- Maintains 60-second rolling history using custom HistoryBuffer
+- Implements exponential backoff for failed NVML operations
 
-1. GPU Metrics Collection (telemetry.py)
-- Comprehensive GPU monitoring with key metrics:
-  * Memory utilization and pressure
-  * Temperature thresholds
-  * Power usage and limits
-  * PCIe bandwidth consumption
-  * Clock speeds (Graphics/Memory)
+### Alert Classification System
+Defines business rules for GPU health states:
+- EMERGENCY: Memory ≥95% or temperature ≥90°C
+- CRITICAL: Memory ≥90% or temperature ≥80°C or power ≥98%
+- WARNING: Memory ≥75% or temperature ≥70°C or power ≥90%
+- NORMAL: All metrics below warning thresholds
 
-2. Alert Level Classification (telemetry.py)
-- Multi-tier alert system with severity thresholds:
-  * EMERGENCY: Memory usage ≥95%, Temperature ≥90°C
-  * CRITICAL: Memory usage ≥90%, Temperature ≥80°C, Power usage ≥98%
-  * WARNING: Memory usage ≥75%, Temperature ≥70°C, Power usage ≥90%
-  * NORMAL: Below warning thresholds
+### Memory Profiling System
+- Tracks specialized memory events:
+  - Allocation/deallocation patterns
+  - Memory spikes detection
+  - Leak identification
+  - Sustained growth analysis
+- Inference session monitoring:
+  - Pre/post inference baselines
+  - Memory deltas tracking
+  - Token-based analysis
+  - Leak detection during inference
 
-3. Fault Tolerance Design
-- Progressive recovery mechanism for NVML failures:
-  * Exponential backoff between recovery attempts
-  * Maximum recovery attempts configurable 
-  * Automatic fallback to mock data after failures
-  * Service continuity through hardware/driver issues
+### Pattern Analysis
+- Linear regression on memory windows
+- Dual threshold approach:
+  - Spike threshold: Rapid growth
+  - Leak threshold: Sustained growth
+- Alert suppression within 30-second windows
+- 5MB minimum change for leak alerts
 
-4. Historical Metrics Management
-- Rolling 60-second history buffer for GPU metrics
-- Time-window based metric queries
-- Memory-efficient storage with automatic pruning
-- Correlation tracking between related metrics
+### Recovery System 
+- Graduated error handling with failback to mock data
+- Maximum recovery attempts via environment variable
+- Maintains service continuity during hardware issues
+- Automatic failover on consecutive failures
 
-5. Mock Data Generation
-- Realistic GPU behavior simulation:
-  * RTX 5070 Ti profile (24GB memory, 350W power limit)
-  * RTX 4060 profile (12GB memory, 200W power limit)
-  * Dynamic metric correlation (utilization affects temperature)
-  * Variance generation based on timestamps
-
-Importance Scores:
-- GPU Metrics Collection: 95 (Core telemetry functionality)
-- Alert Classification: 90 (Critical monitoring logic)
-- Fault Tolerance: 85 (Key reliability feature)
-- Historical Management: 75 (Important analysis capability)
-- Mock Generation: 60 (Supporting development feature)
+File Paths:
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/telemetry_history.py
 
 $END$
