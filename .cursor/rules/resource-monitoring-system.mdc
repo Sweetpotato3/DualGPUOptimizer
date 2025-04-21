@@ -1,52 +1,46 @@
 ---
-description: Resource monitoring system specification focused on GPU metrics collection, telemetry, and real-time monitoring with alerting capabilities
-globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/tray.py,**/alerts.py
+description: Monitors and manages GPU resources including telemetry, metrics collection, usage tracking, and alert mechanisms
+globs: **/telemetry.py,**/tray.py,**/metrics/*.py,**/monitor/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements comprehensive GPU telemetry collection and alert management:
+The resource monitoring system implements specialized GPU telemetry and metrics collection with the following key components:
 
-## Core Telemetry Collection
-Location: dualgpuopt/telemetry.py
+Primary Telemetry Collection (dualgpuopt/telemetry.py):
+- Real-time GPU metrics monitoring including utilization, memory usage, temperature, power consumption
+- Custom fallback system that gracefully degrades to mock data when hardware access fails
+- Configurable update intervals with throttling (100ms minimum) to prevent overwhelming the system
+- Maintains per-GPU error states to allow partial system functionality
 
-Collects GPU-specific metrics:
-- Memory utilization tracking with used/total memory ratios
-- Power consumption monitoring against per-GPU power limits 
-- Temperature tracking with configurable alert thresholds
-- PCIe bandwidth monitoring (RX/TX rates)
-- Fan speed correlation with thermal load
-- Clock speed tracking for core/memory
+Alert Management System (dualgpuopt/memory/alerts.py):
+- Multi-tiered warning system with thresholds:
+  * WARNING: 80% resource utilization
+  * CRITICAL: 90% resource utilization  
+  * EMERGENCY: 95% resource utilization
+- Implements 30-second cooldown between alerts to prevent notification spam
+- Correlates alerts across multiple GPUs to identify system-wide issues
 
-## Alert Management
-Location: dualgpuopt/memory/alerts.py
+Metrics Processing Pipeline (dualgpuopt/metrics.py):
+- Specialized metrics collection and normalization for dual GPU setups
+- Handles unit conversions specific to GPU monitoring (mW to W, bytes to MiB)
+- Implements extensive error tracking with graduated response:
+  * Retries with exponential backoff for transient errors
+  * NVML reinitialization after 3 consecutive failures
+  * Mock data fallback after 5 consecutive failures
 
-Multi-tier alert system:
-- Memory pressure alerts at 80%, 90%, 95% thresholds
-- Temperature warnings at 70°C, critical at 80°C
-- Power limit approaching warnings at 90% of max TDP
-- Fan speed correlation alerts for thermal issues
+Tray Integration (dualgpuopt/tray.py):
+- System tray monitoring with color-coded status indicators
+- Quick-access GPU metrics and status overview
+- Critical alert propagation via tray notifications
 
-## Monitoring Pipeline
-Location: dualgpuopt/telemetry.py
+The system demonstrates specialized handling of GPU resource monitoring with emphasis on fault tolerance and graceful degradation pathways. Importance scores for key components:
 
-Event-based metrics distribution:
-- Middleware pipeline for metrics processing
-- Real-time event broadcasting via event bus
-- Error recovery with exponential backoff
-- Mock data generation for testing/fallback
-
-## Resource Tracking
-Location: dualgpuopt/memory/monitor.py
-
-Memory management:
-- Per-GPU memory utilization history
-- Predictive memory pressure monitoring
-- Token consumption tracking for LLM workloads
-- Automatic memory pressure mitigation
-
-The system provides comprehensive GPU resource monitoring with intelligent alerting and predictive capabilities, specifically designed for dual-GPU LLM inference optimization scenarios.
+- Telemetry Collection: 95 (Core monitoring functionality)
+- Alert Management: 85 (Critical for system health)
+- Metrics Processing: 80 (Essential data handling)
+- Tray Integration: 65 (Important but supporting role)
 
 $END$

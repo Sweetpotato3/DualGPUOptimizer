@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Creates a high-level overview focused on unique business logic and domain-specific implementations for dual GPU optimization systems, particularly those handling ML model deployment and monitoring
-globs: *.py,*.md
+description: Generate high-level technical documentation overviews for GPU optimization and monitoring systems, focusing on dual-GPU configurations and machine learning model deployment patterns.
+globs: *.py,*/dualgpuopt/**/*.py
 alwaysApply: false
 ---
 
@@ -154,69 +154,55 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements a comprehensive system for managing and optimizing dual GPU configurations, particularly focused on large language model deployment.
+DualGPUOptimizer provides a system for optimizing large language model inference across dual GPU configurations with memory analysis and monitoring capabilities.
 
-Core Business Domains:
+Core Business Architecture:
 
-1. GPU Memory Management System
-Location: dualgpuopt/memory/
-- Predictive memory allocation for ML models
-- Tiered recovery strategies for memory pressure
-- Model-specific memory profiling and optimization
-- Dynamic batch size calculation based on memory availability
+1. GPU Memory Profiling (dualgpuopt/memory/profiler.py)
+- Real-time memory tracking and analysis for dual-GPU setups
+- Session-based profiling with inference tracking
+- Memory leak detection using linear regression
+- Pattern analysis with sliding window metrics
 
-2. GPU Monitoring & Telemetry
-Location: dualgpuopt/telemetry.py
-- Real-time GPU metric collection (utilization, temperature, power)
-- Event-based telemetry distribution system
-- Custom middleware pipeline for metric processing
-- Mock data generation for testing environments
+2. Optimization Engine (dualgpuopt/optimizer.py)
+- GPU memory split optimization
+- Tensor parallel size calculation
+- Dynamic context length adjustment
+- Framework-specific command generation for deployment
 
-3. Model Deployment Optimization
-Location: dualgpuopt/optimizer.py
-- Framework-specific deployment configuration (llama.cpp, vLLM)
-- Layer distribution algorithms for multi-GPU setups
-- Context size optimization based on available memory
-- GPU split ratio calculations for balanced workloads
+3. Layer Balancing System (dualgpuopt/layer_balance.py)
+- Adaptive layer distribution across GPUs
+- Weighted sequence profiling (64/1024 tokens)
+- Memory quota-based assignment
+- Block optimization for contiguous layers
 
-4. Resource Recovery System 
-Location: dualgpuopt/error_handler/recovery.py
-- Hierarchical error recovery with exponential backoff
-- GPU-specific error categorization and handling
-- Memory pressure detection and mitigation
-- Automatic failover to mock mode
+4. Memory Predictor (dualgpuopt/memory/predictor.py)
+- Model-specific memory profiling
+- Growth projection algorithms
+- Batch size optimization
+- Memory safety mechanisms
 
-5. Batch Processing System
-Location: dualgpuopt/batch/smart_batch.py
-- Length-aware sequence batching
-- Dynamic batch size adjustments
-- Token-based memory allocation
-- Automatic OOM recovery with cache clearing
+5. GPU Telemetry (dualgpuopt/telemetry.py)
+- Real-time metric collection
+- Multi-GPU synchronization
+- Fault tolerance with mock data generation
+- Middleware pipeline architecture
 
 Key Integration Points:
 
-1. GPU Command Generation
-Location: dualgpuopt/commands/gpu_commands.py
-- Framework-specific command optimization
-- Environment variable configuration
-- GPU split parameter generation
-- Model deployment command assembly
+1. Framework Support
+- llama.cpp optimization paths
+- vLLM configuration management
+- Tensor parallel deployment
+- Mixed precision execution
 
-2. State Management
-Location: dualgpuopt/services/state_service.py
-- GPU configuration persistence
-- Idle detection parameters
-- Model context settings
-- Configuration change propagation
+2. Model Architecture Support
+- LLaMA variants (7B, 13B, 70B)
+- Mistral architecture
+- Mixtral with MoE handling
+- Context length optimization
 
-3. Event System
-Location: dualgpuopt/services/event_bus.py
-- GPU-specific event hierarchy
-- Priority-based event dispatching
-- Metric distribution system
-- Real-time state synchronization
-
-The system focuses on optimizing large language model deployment across multiple GPUs while providing comprehensive monitoring and recovery capabilities. The architecture emphasizes safe GPU resource management and efficient workload distribution.
+The system prioritizes memory safety while maximizing GPU utilization through intelligent workload distribution and real-time monitoring, with particular emphasis on large language model deployment optimization.
 
 $END$
 END SPECIFICATION

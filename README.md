@@ -9,8 +9,22 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Smart Layer Distribution**: Balances model layers across multiple GPUs based on available memory
 - **Execution Management**: Controls and monitors model execution on multiple GPUs
 - **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
+- **NEW: Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
 
 ## Recent Improvements
+
+### NEW: Memory Profiling System
+
+We've added a comprehensive memory profiling system with the following features:
+
+- **Memory Timeline Visualization**: Real-time visualization of GPU memory usage during inference
+- **Memory Leak Detection**: Identifies potential memory leaks during and after model inference
+- **Pattern Analysis**: Detects unusual memory growth patterns and allocation spikes
+- **Inference Session Tracking**: Records memory usage specific to inference sessions
+- **Actionable Reports**: Provides recommendations based on memory usage analysis
+- **CSV Export**: Exports memory timeline data for external analysis
+
+The Memory Profiler is accessible through a dedicated tab in the Dashboard and helps optimize memory usage for large language models by identifying inefficient memory patterns.
 
 ### Performance Optimizations
 

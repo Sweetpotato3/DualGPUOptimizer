@@ -1,52 +1,60 @@
 ---
-description: For analyzing and documenting data flow architectures in dual GPU optimization systems
-globs: **/*.py,**/*.ipynb
+description: Documents data flow patterns between components in a dual-GPU optimization system for ML model inference
+globs: *.py,dualgpuopt/**/*.py,integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The dual GPU optimizer implements a multi-layered data flow architecture for managing GPU resource optimization and model execution:
+The system implements a multi-layered data flow architecture for optimizing dual GPU machine learning workloads:
 
 Core Data Flow Components:
 
-1. GPU Telemetry Pipeline
-- Data Source: NVML GPU metrics collection
-- Flow: Raw GPU metrics -> Telemetry Service -> Event Bus -> Dashboard
-- Metrics: Utilization, memory, temperature, power, clocks, PCIe bandwidth
-- File: dualgpuopt/telemetry.py
+1. GPU Metrics Pipeline (dualgpuopt/telemetry.py)
+- Manages real-time GPU performance data collection and distribution
+- Routes critical metrics through event bus:
+  * Memory utilization
+  * Temperature data 
+  * Power consumption
+  * Clock speeds
+- Pushes metrics to visualization subsystems with 100ms throttling
 
-2. Model Optimization Flow 
-- Input: Model configuration parameters
-- Processing: Memory calculator -> Split optimizer -> Command generator
-- Output: Framework-specific launch configurations
-- Files: dualgpuopt/optimizer.py, dualgpuopt/commands/gpu_commands.py
+2. Model Layer Distribution (dualgpuopt/layer_balance.py)
+- Calculates optimal layer placement across GPUs using profiling data
+- Distributes transformer layers based on:
+  * GPU memory availability
+  * Layer execution latency
+  * Inter-GPU bandwidth constraints
+- Provides layer distribution feedback to launcher subsystem
 
-3. Memory Management Pipeline
-- Sources: GPU memory monitors, model profilers
-- Data Processing: Usage prediction -> Recovery planning -> Execution
-- Key Metrics: Memory pressure, usage patterns, growth projections
-- Files: dualgpuopt/memory/predictor.py, dualgpuopt/memory/recovery.py
+3. Memory Management Pipeline (dualgpuopt/memory/profiler.py)
+- Tracks memory allocation patterns with sliding window analysis
+- Detects memory growth anomalies:
+  * Rapid spikes (>spike_threshold MB/s)
+  * Sustained leaks (>leak_threshold MB/s)
+- Routes memory alerts through event bus with 30s cooldown
 
-4. Event Distribution System
-- Core Events: GPUMetricsEvent, ModelEvent, ConfigEvent
-- Priority-based routing with domain-specific handlers
-- Bidirectional flows between UI and GPU services
-- File: dualgpuopt/services/event_bus.py
+4. Optimization Parameter Flow (dualgpuopt/gui/main_app.py)
+- Manages bidirectional flow of optimization parameters
+- Distributes configuration changes through event system:
+  * Model split ratios
+  * Context length adjustments
+  * Batch size optimizations
+- Provides real-time feedback on parameter impacts
 
-5. Configuration Flow
-- Settings -> Config Service -> Component Updates
-- GPU-specific parameter validation and distribution
-- Real-time configuration synchronization
-- File: dualgpuopt/services/config_service.py
+5. Resource Monitoring Flow (dualgpuopt/gpu/monitor.py)
+- Captures GPU resource metrics at configurable intervals
+- Routes utilization data through monitoring pipeline
+- Triggers alerts on resource constraint violations
+- Provides feedback for dynamic resource allocation
 
-Integration Points:
-- GPU Metrics -> Dashboard visualization
-- Memory Predictions -> Batch size optimization
-- Model Parameters -> Launch configuration generation
-- Settings -> GPU overclocking management
+Key Data Channels:
+- GPU Metrics Bus: High-frequency telemetry data
+- Config Channel: Optimization parameter updates
+- Alert Channel: Resource warnings and violations
+- Profiling Channel: Performance metrics and analysis
 
-The architecture emphasizes real-time data flow for GPU monitoring and optimization, with specialized pipelines for different aspects of GPU resource management and model execution.
+The architecture emphasizes real-time data flow for GPU resource optimization while maintaining system stability through throttled update frequencies and cooldown periods.
 
 $END$

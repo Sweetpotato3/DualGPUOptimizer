@@ -11,6 +11,7 @@ from dualgpuopt.memory.alerts import MemoryAlert, MemoryAlertLevel
 from dualgpuopt.memory.metrics import GPUMemoryStats, MemoryUnit
 from dualgpuopt.memory.predictor import MemoryProfile
 from dualgpuopt.memory.recovery import MemoryRecoveryStrategy
+from dualgpuopt.memory.profiler import MemoryProfiler, get_memory_profiler, MemoryEventType
 
 # Re-export default profiles
 from dualgpuopt.memory.predictor import DEFAULT_PROFILES, initialize_memory_profiles
@@ -19,4 +20,4 @@ from dualgpuopt.memory.predictor import DEFAULT_PROFILES, initialize_memory_prof
 from dualgpuopt.memory.compat import *
 
 # Module version
-__version__ = "1.0.0"
+__version__ = "1.1.0"

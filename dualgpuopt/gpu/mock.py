@@ -25,6 +25,44 @@ def get_mock_mode() -> bool:
     from dualgpuopt.gpu.common import MOCK_MODE
     return MOCK_MODE
 
+# Store the last generated mock GPUs for memory updates
+_last_mock_gpus: List[Dict[str, Any]] = []
+
+def update_mock_memory_usage(gpu_id: int, delta: int) -> bool:
+    """
+    Update memory usage for a mock GPU
+    
+    Args:
+        gpu_id: GPU ID to update
+        delta: Change in memory (positive for allocation, negative for deallocation)
+        
+    Returns:
+        True if the update was successful, False otherwise
+    """
+    global _last_mock_gpus
+    
+    # If we don't have any mock GPUs stored, generate them
+    if not _last_mock_gpus:
+        _last_mock_gpus = generate_mock_gpus()
+    
+    # Check if the GPU ID is valid
+    if gpu_id < 0 or gpu_id >= len(_last_mock_gpus):
+        logger.warning(f"Invalid GPU ID for mock memory update: {gpu_id}")
+        return False
+    
+    # Update the memory usage
+    current_used = _last_mock_gpus[gpu_id]["mem_used"]
+    total_memory = _last_mock_gpus[gpu_id]["mem_total"]
+    
+    # Calculate new usage, ensuring it stays within bounds
+    new_used = max(0, min(total_memory, current_used + delta))
+    
+    # Update the value
+    _last_mock_gpus[gpu_id]["mem_used"] = new_used
+    
+    logger.debug(f"Updated mock GPU {gpu_id} memory: {current_used} -> {new_used} (delta: {delta})")
+    return True
+    
 def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
     """Generate mock GPU data for testing
 
@@ -34,6 +72,8 @@ def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
     Returns:
         List of dictionaries with mock GPU data
     """
+    global _last_mock_gpus
+    
     # Check if the random seed is 42 (test mode)
     test_mode = random.getstate()[1][0] == 42
 
@@ -129,5 +169,8 @@ def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
     # Reset the random seed if not in test mode
     if not test_mode:
         random.seed(None)
+    
+    # Store the generated GPUs for later updates
+    _last_mock_gpus = mock_gpus.copy()
 
     return mock_gpus

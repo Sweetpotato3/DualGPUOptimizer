@@ -17,6 +17,13 @@ try:
 except ImportError:
     VRAM_RESET_AVAILABLE = False
 
+# Try to import memory profiler tab
+try:
+    from .memory_profile_tab import MemoryProfileTab
+    MEMORY_PROFILER_AVAILABLE = True
+except ImportError:
+    MEMORY_PROFILER_AVAILABLE = False
+
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Dashboard")
 
@@ -136,11 +143,11 @@ class GPUMonitorFrame(ttk.Frame):
         )
 
 
-class DashboardView(ttk.Frame):
-    """GPU monitoring dashboard widget"""
+class MetricsView(ttk.Frame):
+    """GPU metrics dashboard frame"""
 
     def __init__(self, parent):
-        """Initialize the dashboard widget
+        """Initialize the metrics view widget
 
         Args:
             parent: Parent widget
@@ -153,7 +160,7 @@ class DashboardView(ttk.Frame):
 
         ttk.Label(
             header_frame,
-            text="GPU Monitoring Dashboard",
+            text="GPU Metrics Monitor",
             font=("Arial", 16, "bold")
         ).pack(side=tk.LEFT)
 
@@ -255,11 +262,51 @@ class DashboardView(ttk.Frame):
             logger.error(f"VRAM reset error: {e}")
             self.status_label.config(text="Status: VRAM reset error", foreground="red")
 
+
+class DashboardView(ttk.Frame):
+    """GPU monitoring dashboard widget with tabbed interface"""
+
+    def __init__(self, parent):
+        """Initialize the dashboard widget
+
+        Args:
+            parent: Parent widget
+        """
+        super().__init__(parent, padding=10)
+        
+        # Header section
+        header_frame = ttk.Frame(self)
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+
+        ttk.Label(
+            header_frame,
+            text="GPU Monitoring Dashboard",
+            font=("Arial", 16, "bold")
+        ).pack(side=tk.LEFT)
+        
+        # Create notebook for tabs
+        self.notebook = ttk.Notebook(self)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
+        
+        # Create metrics tab
+        self.metrics_tab = MetricsView(self.notebook)
+        self.notebook.add(self.metrics_tab, text="GPU Metrics")
+        
+        # Create memory profiler tab if available
+        if MEMORY_PROFILER_AVAILABLE:
+            try:
+                self.memory_profile_tab = MemoryProfileTab(self.notebook)
+                self.notebook.add(self.memory_profile_tab, text="Memory Profiler")
+                logger.info("Memory profiler tab added to dashboard")
+            except Exception as e:
+                logger.error(f"Failed to create memory profiler tab: {e}")
+                MEMORY_PROFILER_AVAILABLE = False
+
     def destroy(self) -> None:
         """Clean up resources when widget is destroyed"""
         # Stop the telemetry service if we started it
-        if self.telemetry.running:
-            self.telemetry.stop()
+        if self.metrics_tab.telemetry.running:
+            self.metrics_tab.telemetry.stop()
 
         super().destroy()
 
@@ -269,7 +316,7 @@ def run_dashboard():
     """Run the dashboard as a standalone application"""
     root = tk.Tk()
     root.title("GPU Monitoring Dashboard")
-    root.geometry("800x600")
+    root.geometry("800x700")
 
     # Set up the main frame
     main_frame = ttk.Frame(root, padding="10")

@@ -1,67 +1,91 @@
 ---
-description: Documents GPU optimization algorithms including memory distribution, tensor parallel splits, and allocation strategies.
-globs: ./**/optimizer.py,./**/gpu_info.py,./**/batch/*.py,./**/commands/*.py,./**/memory/*.py
+description: Handles GPU memory optimization algorithms, tensor splitting, and resource allocation for GPU acceleration
+globs: **/gpu/*.py,**/optimizer.py,**/gpu_info.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-The GPU optimization system implements specialized algorithms for memory management and workload distribution across multiple GPUs:
+## Core Optimization Components
 
-## Memory Distribution Algorithm
-File: dualgpuopt/optimizer.py
+### Memory Management System
+Path: dualgpuopt/memory/profiler.py
 
-- Calculate optimal GPU memory splits based on model architecture:
-  - KV cache requirements for transformer layers  
-  - Hidden state memory allocation
-  - Attention mechanism memory patterns
-  - Special handling for MoE architectures (Mixtral)
-- Memory distribution scaled by:
-  - Available VRAM per GPU
-  - Model parameter count
-  - Sequence context length 
-  - Data precision format
+Implements real-time memory tracking and leak detection for dual GPU setups:
+- Session-based profiling with inference tracking windows
+- Linear regression analysis for memory leak patterns
+- Growth spike detection with configurable thresholds
+- Inference memory delta tracking with 10MB leak threshold
 
-## Tensor Parallel Splits
-File: dualgpuopt/batch/smart_batch.py
+Importance Score: 95 
 
-- Dynamic batch size calculation:
-  - Length-aware sequence grouping
-  - Token count thresholds per GPU
-  - Backpressure on OOM events (-25% batch size)
-  - Gradual recovery after successful batches
-- Layer distribution algorithm:
-  - Balance layers across GPUs based on profiled speeds
-  - Contiguous block optimization
-  - Minimize cross-GPU communications
+### GPU Split Calculator
+Path: dualgpuopt/optimizer.py
 
-## Memory Allocation Strategy 
-File: dualgpuopt/memory/predictor.py
+Calculates optimal tensor splits for multi-GPU model deployment:
+- Memory fraction determination based on GPU capacities
+- KV cache requirement calculations
+- Automated context length optimization
+- Layer distribution across available devices
 
-- Model-specific memory profiles:
-  - Base memory requirements
-  - Per-token memory scaling 
-  - Growth rate projection
-  - Recovery buffer settings
-- Memory recovery tiers:
-  1. Cache clearing
-  2. Batch reduction
-  3. Model offloading
-  4. Process termination
+Importance Score: 90
 
-## Framework Command Generation
-File: dualgpuopt/commands/gpu_commands.py
+### Memory Recovery Engine  
+Path: dualgpuopt/memory/recovery.py
 
-- llama.cpp optimization:
-  - GPU layer distribution
-  - Split ratio calculation 
-  - Thread allocation
-- vLLM deployment:
-  - Tensor parallel sizing
-  - Memory allocation strategy
-  - Environment configuration
+Implements tiered recovery strategies for GPU memory management:
+- Cache clearing with immediate memory reclamation
+- Dynamic batch size reduction
+- Memory offloading to CPU
+- Process termination based on priority
 
-The algorithms focus on optimizing model deployment across multiple GPUs while managing memory constraints and performance characteristics.
+Importance Score: 85
+
+### Batch Optimization System
+Path: dualgpuopt/batch/smart_batch.py
+
+Length-aware batching for inference workloads:
+- Token-based batch size calculations
+- Memory pressure monitoring
+- Automatic retry logic for OOM conditions
+- Bucket-based request grouping
+
+Importance Score: 80
+
+### Layer Balance Handler
+Path: dualgpuopt/layer_balance.py
+
+Optimizes model layer distribution across GPUs:
+- Performance profiling with dual sequence lengths
+- Weighted scoring system (20% short/80% long sequences)
+- Memory quota enforcement with 90% reserve ratio
+- Contiguous block optimization
+
+Importance Score: 85
+
+## Integration Points
+
+### Memory Event System
+Path: dualgpuopt/memory/alerts.py
+
+Domain-specific memory event classification:
+- Growth spike detection (rapid memory increases)
+- Steady leak identification
+- Inference boundary tracking
+- Session lifecycle monitoring
+
+Importance Score: 75
+
+### GPU Command Generator
+Path: dualgpuopt/commands/gpu_commands.py
+
+Framework-specific deployment command generation:
+- llama.cpp GPU split parameters
+- vLLM tensor parallel configurations 
+- Model context size validation
+- Memory mapping policies
+
+Importance Score: 70
 
 $END$
