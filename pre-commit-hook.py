@@ -13,8 +13,9 @@ def check_dependencies():
     missing_deps = []
 
     try:
-        import autoflake
-    except ImportError:
+        subprocess.run([sys.executable, '-m', 'pip', 'show', 'autoflake'],
+                      capture_output=True, check=False)
+    except subprocess.SubprocessError:
         missing_deps.append("autoflake")
 
     if missing_deps:
@@ -47,7 +48,7 @@ def check_trailing_whitespace(file_path):
         if not os.path.exists(file_path):
             print(f"Warning: File not found: {file_path}")
             return True
-            
+
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
@@ -65,7 +66,7 @@ def check_unused_imports(file_path):
         if not os.path.exists(file_path):
             print(f"Warning: File not found: {file_path}")
             return True
-            
+
         result = subprocess.run([
             sys.executable, '-m', 'autoflake',
             '--check-only',
@@ -100,7 +101,7 @@ def main():
         return 0
 
     print(f"Checking {len(staged_files)} staged Python files")
-    
+
     whitespace_errors = []
     import_errors = []
 
