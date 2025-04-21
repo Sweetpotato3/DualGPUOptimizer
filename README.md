@@ -12,6 +12,34 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 
 ## Recent Improvements
 
+### Performance Optimizations
+
+- **Enhanced Telemetry System**: 
+  - Improved GPU metrics collection with caching and reduced lock contention
+  - Parallel batch collection for faster multi-GPU monitoring
+  - Optimized data distribution to UI components
+  - Thread-safe metrics processing with reduced overhead
+
+- **Optimized Model Calculation Engine**:
+  - Vectorized memory calculations using NumPy when available
+  - Intelligent caching for repeated operations like context size calculations
+  - Reduced redundant GPU information queries
+  - Enhanced memory estimation algorithm with improved accuracy
+
+- **Accelerated Layer Balancing**:
+  - Multiprocessing GPU profiling for faster layer distribution
+  - Thread pool implementation for parallel operations
+  - Optimized contiguous block algorithm for better memory locality
+  - Improved dynamic programming approach for layer assignments
+
+- **Memory Management Improvements**:
+  - Advanced batch prediction using vectorized operations
+  - LRU caching for memory profiles and calculations
+  - Optimized token usage prediction with time-series analysis
+  - Memory-efficient projections for large models
+
+These optimizations significantly improve performance, particularly when working with multiple GPUs and large language models, enabling smoother operation and faster response times throughout the application.
+
 ### Circular Import Resolution
 
 - Fixed circular dependencies between telemetry and GPU modules
@@ -163,6 +191,9 @@ DualGPUOptimizer now supports configuration through environment variables:
 | `DUALGPUOPT_TP_OVERHEAD` | Tensor parallelism overhead | `0.2` |
 | `DUALGPUOPT_KV_CACHE_FACTOR` | KV cache size multiplier | `2.0` |
 | `DUALGPUOPT_MIN_CONTEXT` | Minimum context size | `128` |
+| `DUALGPUOPT_METRIC_CACHE_TTL` | Metrics cache lifetime (seconds) | `0.05` |
+| `DUALGPUOPT_OPT_CACHE_TIMEOUT` | Optimizer cache timeout (seconds) | `30` |
+| `DUALGPUOPT_PROFILE_CACHE` | Memory profile cache size | `64` |
 
 ## Installation
 

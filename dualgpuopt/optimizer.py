@@ -6,6 +6,8 @@ from typing import Dict, List, Optional, Tuple, Set, Any
 import math
 import logging
 import os
+import functools
+import time
 from dataclasses import dataclass
 from enum import Enum
 
@@ -23,6 +25,15 @@ ENV_SAFETY_MARGIN = float(os.environ.get("DUALGPUOPT_SAFETY_MARGIN", "0.1"))  # 
 ENV_TP_OVERHEAD = float(os.environ.get("DUALGPUOPT_TP_OVERHEAD", "0.2"))  # 20% default
 ENV_KV_CACHE_FACTOR = float(os.environ.get("DUALGPUOPT_KV_CACHE_FACTOR", "2.0"))  # 2.0x default
 ENV_MIN_CONTEXT = int(os.environ.get("DUALGPUOPT_MIN_CONTEXT", "128"))  # 128 tokens minimum
+ENV_OPT_CACHE_TIMEOUT = int(os.environ.get("DUALGPUOPT_OPT_CACHE_TIMEOUT", "30"))  # 30 seconds cache timeout
+
+# Try to import numpy for vectorized operations
+try:
+    import numpy as np
+    NUMPY_AVAILABLE = True
+except ImportError:
+    NUMPY_AVAILABLE = False
+    logger.info("NumPy not available, using standard Python for calculations")
 
 # Import error handling if available
 try:
@@ -63,6 +74,14 @@ class ModelParameters:
     def kv_hidden_size(self) -> int:
         """Calculate the effective hidden size for KV attention heads"""
         return self.kv_head_count * self.head_size * 2  # Both K and V
+        
+    def __hash__(self):
+        """Make ModelParameters hashable for caching"""
+        return hash((
+            self.name, self.context_length, self.hidden_size,
+            self.num_layers, self.num_heads, 
+            self.kv_heads if self.kv_heads is not None else -1
+        ))
 
 
 @dataclass
@@ -87,6 +106,10 @@ class GPUMemoryInfo:
         if self.available_memory > 1024:
             return f"{self.available_memory / 1024:.1f} GB"
         return f"{self.available_memory} MB"
+        
+    def __hash__(self):
+        """Make GPUMemoryInfo hashable for caching"""
+        return hash((self.gpu_id, self.name, self.total_memory, self.available_memory, self.is_primary))
 
 
 @dataclass
@@ -142,6 +165,14 @@ class Optimizer:
                 is_primary=False
             )
         ]
+        
+        # Cache for optimization results
+        self._memory_cache = {}
+        self._context_cache = {}
+        self._split_cache = {}
+        self._last_gpu_info_time = 0
+        self._cached_gpu_info = None
+        self._cache_timeout = ENV_OPT_CACHE_TIMEOUT
 
     def get_gpu_info(self) -> List[GPUMemoryInfo]:
         """Get current GPU memory information
@@ -149,6 +180,12 @@ class Optimizer:
         Returns:
             List of GPUMemoryInfo objects for available GPUs
         """
+        # Check if we have a recent cache
+        current_time = time.time()
+        if self._cached_gpu_info and (current_time - self._last_gpu_info_time < self._cache_timeout):
+            logger.debug("Using cached GPU info")
+            return self._cached_gpu_info
+            
         try:
             gpu_data = gpu_info.query()
 
@@ -182,6 +219,10 @@ class Optimizer:
             if not gpu_info_list:
                 logger.warning("No valid GPUs found, using fallback values")
                 return self.fallback_gpus
+                
+            # Update cache
+            self._cached_gpu_info = gpu_info_list
+            self._last_gpu_info_time = current_time
 
             return gpu_info_list
         except Exception as e:
@@ -198,6 +239,11 @@ class Optimizer:
         Returns:
             Memory required per token in MB
         """
+        # Check cache first
+        cache_key = hash(model)
+        if cache_key in self._memory_cache:
+            return self._memory_cache[cache_key]
+            
         try:
             # Calculate bytes needed for one token's key and value states across all layers
             bytes_per_token = (
@@ -214,6 +260,9 @@ class Optimizer:
 
             # Safety bounds - ensure reasonable values
             mb_per_token = max(0.01, min(10.0, mb_per_token))
+            
+            # Store in cache
+            self._memory_cache[cache_key] = mb_per_token
 
             return mb_per_token
         except Exception as e:
@@ -235,6 +284,11 @@ class Optimizer:
         Returns:
             Tuple of (max_context_length, recommended_context_length)
         """
+        # Check cache first
+        cache_key = (hash(model), available_memory, tensor_parallel_size)
+        if cache_key in self._context_cache:
+            return self._context_cache[cache_key]
+            
         try:
             # Account for tensor parallelism
             effective_memory = available_memory
@@ -265,6 +319,9 @@ class Optimizer:
 
             # Final sanity check - ensure max_context is valid
             max_context = max(recommended_context, max_context)
+            
+            # Store in cache
+            self._context_cache[cache_key] = (max_context, recommended_context)
 
             return max_context, recommended_context
         except Exception as e:
@@ -287,6 +344,12 @@ class Optimizer:
         try:
             if gpus is None:
                 gpus = self.get_gpu_info()
+                
+            # Check cache if we have a valid configuration
+            gpu_tuple = tuple(hash(gpu) for gpu in gpus)
+            cache_key = (hash(model), gpu_tuple)
+            if cache_key in self._split_cache:
+                return self._split_cache[cache_key]
 
             # Ensure we have at least one GPU
             if not gpus:
@@ -306,13 +369,16 @@ class Optimizer:
                     model, gpus[0].available_memory
                 )
 
-                return SplitConfiguration(
+                config = SplitConfiguration(
                     tensor_parallel_size=1,
                     gpu_split=[1.0],
                     memory_per_gpu=[gpus[0].available_memory],
                     max_context_length=max_context,
                     recommended_context_length=recommended_context
                 )
+                
+                self._split_cache[cache_key] = config
+                return config
 
             # For dual GPU, calculate optimal split based on available memory
             # Ensure memory values are reasonable
@@ -321,26 +387,45 @@ class Optimizer:
                 logger.warning("No GPUs with available memory, using fallback values")
                 valid_gpus = self.fallback_gpus
 
-            total_memory = sum(gpu.available_memory for gpu in valid_gpus)
-
-            # Calculate split ratios proportional to available memory
-            split_ratios = [gpu.available_memory / total_memory for gpu in valid_gpus]
-
-            # Calculate memory allocation per GPU
-            memory_per_gpu = [int(ratio * total_memory) for ratio in split_ratios]
+            # Use vectorized calculations if NumPy is available
+            if NUMPY_AVAILABLE and len(valid_gpus) > 1:
+                # Convert to arrays for faster calculation
+                available_memory = np.array([gpu.available_memory for gpu in valid_gpus])
+                total_memory = np.sum(available_memory)
+                
+                # Calculate split ratios proportional to available memory
+                split_ratios = available_memory / total_memory
+                
+                # Calculate memory allocation per GPU
+                memory_per_gpu = (split_ratios * total_memory).astype(int).tolist()
+                split_ratios = split_ratios.tolist()
+            else:
+                # Standard calculation without NumPy
+                total_memory = sum(gpu.available_memory for gpu in valid_gpus)
+                
+                # Calculate split ratios proportional to available memory
+                split_ratios = [gpu.available_memory / total_memory for gpu in valid_gpus]
+                
+                # Calculate memory allocation per GPU
+                memory_per_gpu = [int(ratio * total_memory) for ratio in split_ratios]
 
             # Calculate context length based on combined memory
             max_context, recommended_context = self.calculate_max_context(
                 model, total_memory, tensor_parallel_size=len(valid_gpus)
             )
 
-            return SplitConfiguration(
+            config = SplitConfiguration(
                 tensor_parallel_size=len(valid_gpus),
                 gpu_split=split_ratios,
                 memory_per_gpu=memory_per_gpu,
                 max_context_length=max_context,
                 recommended_context_length=recommended_context
             )
+            
+            # Store in cache
+            self._split_cache[cache_key] = config
+            
+            return config
         except Exception as e:
             logger.error(f"Error optimizing GPU split: {e}")
             # Return a safe default configuration
@@ -351,6 +436,14 @@ class Optimizer:
                 max_context_length=model.context_length,
                 recommended_context_length=min(2048, model.context_length)
             )
+            
+    def clear_caches(self) -> None:
+        """Clear all optimization caches"""
+        self._memory_cache.clear()
+        self._context_cache.clear()
+        self._split_cache.clear()
+        self._cached_gpu_info = None
+        logger.debug("Cleared optimizer caches")
 
     def generate_llama_cpp_args(self, config: SplitConfiguration, model_path: str = "") -> str:
         """Generate llama.cpp command line arguments for the split configuration
@@ -433,6 +526,12 @@ def get_optimizer() -> Optimizer:
     if _optimizer is None:
         _optimizer = Optimizer()
     return _optimizer
+
+
+def clear_optimizer_caches() -> None:
+    """Clear all optimizer caches"""
+    optimizer = get_optimizer()
+    optimizer.clear_caches()
 
 
 # Compatibility functions for refactored code
