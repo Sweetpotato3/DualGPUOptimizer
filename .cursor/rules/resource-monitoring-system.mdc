@@ -1,58 +1,65 @@
 ---
-description: Specification for implementing real-time GPU resource monitoring and telemetry systems with alerts
-globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py
+description: Resource monitoring specification for dual GPU optimization system with telemetry, alerts and memory tracking
+globs: **/telemetry.py,**/tray.py,**/monitor.py,**/metrics.py,**/gpu_info.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core Telemetry System Components:
+Core Telemetry Components:
 
 1. GPU Metrics Collection (telemetry.py)
-- Real-time monitoring of critical GPU metrics:
-  * Memory utilization with percentage thresholds (75%, 90%)
-  * Temperature monitoring with warning levels (70°C, 80°C) 
-  * Power consumption relative to GPU power limits
-  * Clock speeds for SM and Memory
-  * PCIe bandwidth (TX/RX rates)
+- Real-time monitoring of dual GPU configurations
+- Core metrics tracked:
+  * GPU utilization percentage
+  * Memory usage/allocation
+  * Temperature with thresholds (70°C warning, 80°C critical)
+  * Power consumption vs limits
+  * Clock speeds (graphics/memory)
+  * PCIe bandwidth utilization
 
-2. Alert System (telemetry.py)
-- Four-tier alert classification:
-  * NORMAL: Standard operating conditions
-  * WARNING: Approaching thresholds (75% memory, 70°C)
-  * CRITICAL: Threshold exceeded (90% memory, 80°C)
-  * EMERGENCY: Dangerous conditions (95% memory, 90°C)
-- Intelligent throttling of alerts:
-  * 3-second cooldown between notifications
-  * Alert priority queueing system
-  * Context-aware recommendations based on alert severity
+2. Alert System Integration
+- Three-tier alert system:
+  * WARNING: 75% memory usage or 70°C temperature
+  * CRITICAL: 90% memory usage or 80°C temperature 
+  * EMERGENCY: 95% memory usage or 85°C temperature
+- Custom notification queuing with 3-second intervals
+- Framework-specific alerts for llama.cpp and vLLM
 
-3. History Management
-- Rolling 60-second history buffer for metrics tracking
-- Timeline markers for significant events:
-  * Out of memory conditions
-  * Temperature spikes
-  * Power limit throttling
-- Custom event classification system for tracking GPU state changes
+3. Memory Pattern Analysis
+- Tracking memory growth patterns via linear regression
+- Leak detection using sliding window analysis
+- Two-threshold detection system:
+  * Spike detection for rapid growth
+  * Sustained growth monitoring
+- Custom memory event classification:
+  * ALLOCATION/DEALLOCATION events
+  * GROWTH_SPIKE markers
+  * LEAK_DETECTED warnings
+  * INFERENCE_START/END boundaries
 
-4. Mock Data Generation
-- Simulated metrics for testing and development:
-  * Correlated power usage with GPU utilization (20-90%)
-  * Temperature scaling based on utilization
-  * Memory usage patterns following workload profiles
-  * Fan speed correlation with temperature readings
+4. Performance Monitoring
+- Tokens-per-second (TPS) tracking
+- GPU utilization correlation
+- Memory efficiency metrics
+- Temperature-based throttling detection
+- Power limit monitoring
 
-Relevant Files:
-- dualgpuopt/telemetry.py: Core telemetry implementation
-- dualgpuopt/gpu/monitor.py: GPU state monitoring
-- dualgpuopt/memory/metrics.py: Memory-specific metrics
-- dualgpuopt/memory/alerts.py: Alert system implementation
+5. Resource Recovery
+- Automated cache clearing triggers
+- Progressive memory reclamation:
+  * Cache purge
+  * Batch size reduction
+  * Process termination
+- Resource state validation after recovery
 
-Business Impact Scores:
-- Telemetry System: 95 (Critical for GPU monitoring)
-- Alert System: 85 (Key for system stability)
-- History Management: 75 (Important for trend analysis)
-- Mock System: 45 (Supporting development functionality)
+File Paths:
+- dualgpuopt/telemetry.py
+- dualgpuopt/gpu/monitor.py
+- dualgpuopt/memory/monitor.py 
+- dualgpuopt/services/resource_manager.py
+
+Business Value: Provides comprehensive monitoring and optimization for dual GPU language model inference with automated resource management and early warning system for potential issues.
 
 $END$

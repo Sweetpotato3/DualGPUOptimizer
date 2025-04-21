@@ -26,6 +26,14 @@ We successfully implemented significant enhancements to the Memory Profiling and
 4. **Auto-Scaling**: Implemented automatic Y-axis scaling based on visible data
 5. **Improved UI**: Enhanced chart labeling and axis formatting
 
+### NEW: CPU-Based Resource Management System:
+1. **Resource Separation**: Implemented clear separation between CPU and GPU resources
+2. **VRAM Preservation**: Moved non-inference tasks to CPU threads to preserve VRAM
+3. **CPU-Based Analysis**: Created CPU-based memory pattern analysis implementation
+4. **Thread Management**: Added ThreadPoolExecutor for efficient CPU thread handling
+5. **CPU Event Bus**: Implemented an event system that runs exclusively on CPU
+6. **Telemetry Optimization**: Modified telemetry to run on CPU threads
+
 ## Technical Details
 
 ### Implementation Approach
@@ -45,6 +53,12 @@ We successfully implemented significant enhancements to the Memory Profiling and
    - Implemented pattern detection algorithms for common memory issues
    - Designed a priority-based recommendation system
 
+4. **Resource Management System**:
+   - Created a centralized ResourceManager for controlling where operations run
+   - Implemented CPU-based telemetry processing to minimize VRAM usage
+   - Developed CPU-based event processing to avoid GPU resource consumption
+   - Added memory pattern analysis that runs exclusively on CPU threads
+
 ### Challenges and Solutions
 
 1. **Qt-Matplotlib Integration**:
@@ -63,6 +77,14 @@ We successfully implemented significant enhancements to the Memory Profiling and
    - Challenge: Maintaining proper scale when zooming charts
    - Solution: Implemented proportional zoom with center-point preservation
 
+5. **CPU-GPU Resource Separation**:
+   - Challenge: Ensuring clean separation between CPU and GPU code
+   - Solution: Implemented ResourceManager with explicit resource allocation control
+
+6. **Thread Safety**:
+   - Challenge: Ensuring thread-safe operation for CPU-based processing
+   - Solution: Added proper locks and thread-safe data structures
+
 ## Future Work
 
 Based on our implementation, several directions for future work have been identified:
@@ -72,9 +94,12 @@ Based on our implementation, several directions for future work have been identi
 3. **Real-time Correlation**: Add correlation between GPU metrics and application events
 4. **GPU Split Visualization**: Create visual representation of layer distribution
 5. **CUDA Profiling Integration**: Add CUDA kernel-level profiling capabilities
+6. **Advanced CPU-GPU Coordination**: Further enhance the resource separation with more intelligent allocation
 
 ## Conclusion
 
 The enhancements to Memory Profiling and Chart functionality significantly improve the ability of users to analyze and optimize GPU memory usage. By providing interactive tools and actionable recommendations, these features enable more effective diagnosis of memory-related issues in machine learning workloads.
+
+The new CPU-based resource management system ensures that VRAM is preserved for critical model inference tasks, with support systems running on CPU threads. This clear separation improves memory efficiency, application stability, and enables more accurate monitoring of GPU resources.
 
 These improvements align perfectly with the core mission of DualGPUOptimizer to provide comprehensive tools for managing and optimizing dual GPU setups, particularly for large language model deployment scenarios. 

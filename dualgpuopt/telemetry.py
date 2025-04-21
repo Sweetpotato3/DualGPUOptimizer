@@ -45,6 +45,17 @@ except ImportError:
     event_bus_available = False
     logger.warning("Event bus not available, falling back to callback-based telemetry")
 
+# Import resource manager if available
+try:
+    from dualgpuopt.services.resource_manager import get_resource_manager, ResourceType
+
+    resource_manager_available = True
+    resource_manager = get_resource_manager()
+    logger.debug("ResourceManager available for CPU-based telemetry processing")
+except ImportError:
+    resource_manager_available = False
+    logger.warning("ResourceManager not available, telemetry will use default thread handling")
+
 # Always try to import pynvml
 try:
     import pynvml
@@ -293,70 +304,110 @@ class TelemetryService:
         with self._metrics_lock:
             return self.metrics.copy()
 
+    def _collect_gpu_metrics(self) -> Dict[int, GPUMetrics]:
+        """Collect the latest GPU metrics
+
+        Uses CPU-based processing to minimize VRAM impact when ResourceManager is available.
+
+        Returns:
+            Dictionary of GPU metrics indexed by GPU ID
+        """
+        if resource_manager_available:
+            # Run the actual collection on CPU to avoid impacting VRAM
+            return resource_manager.run_on_cpu(self._collect_gpu_metrics_impl)
+        else:
+            # Fallback to direct implementation if resource manager not available
+            return self._collect_gpu_metrics_impl()
+        
+    def _collect_gpu_metrics_impl(self) -> Dict[int, GPUMetrics]:
+        """Implementation of GPU metrics collection
+
+        Returns:
+            Dictionary of GPU metrics indexed by GPU ID
+        """
+        # Collect metrics from all GPUs
+        metrics = {}
+        current_time = time.time()
+
+        # Determine the number of GPUs to monitor
+        gpu_count = self.gpu_count
+        gpu_ids = list(range(gpu_count))
+
+        # Batch collection for better performance
+        batch_metrics = self._collect_batch_metrics(gpu_ids, current_time)
+
+        # Try to recover NVML if we have consecutive errors
+        if self._consecutive_errors >= 3 and not self.use_mock:
+            if self._try_reinit_nvml():
+                logger.info("NVML recovered after consecutive errors")
+                self._consecutive_errors = 0
+            else:
+                # If recovery failed, switch to mock mode
+                self.use_mock = True
+                logger.warning("Switching to mock GPU data after consecutive NVML errors")
+
+        # If we successfully collected metrics, reset error counter
+        if not self.use_mock and self._consecutive_errors == 0:
+            self._recovery_attempts = 0
+
+        # Update the metrics store with thread safety
+        with self._metrics_lock:
+            self.metrics = batch_metrics
+
+        return batch_metrics
+
+    def _collect_batch_metrics(self, gpu_ids: List[int], current_time: float) -> Dict[int, GPUMetrics]:
+        """Collect metrics for a batch of GPUs
+
+        Args:
+            gpu_ids: List of GPU IDs to collect metrics for
+            current_time: Current timestamp
+
+        Returns:
+            Dictionary of GPU ID to metrics
+        """
+        batch_metrics = {}
+        for gpu_id in gpu_ids:
+            try:
+                if self.use_mock:
+                    batch_metrics[gpu_id] = self._get_mock_metrics(gpu_id, current_time)
+                else:
+                    batch_metrics[gpu_id] = self._get_gpu_metrics(gpu_id, current_time)
+            except Exception as e:
+                logger.error(f"Error collecting metrics for GPU {gpu_id}: {e}")
+                # Fallback to mock data for this GPU
+                batch_metrics[gpu_id] = self._get_mock_metrics(
+                    gpu_id, current_time, error_state=True
+                )
+                self._consecutive_errors += 1
+        return batch_metrics
+
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
-
-        # Create batch collection helper
-        def collect_batch_metrics(gpu_ids: List[int], current_time: float) -> Dict[int, GPUMetrics]:
-            batch_metrics = {}
-            for gpu_id in gpu_ids:
-                try:
-                    if self.use_mock:
-                        batch_metrics[gpu_id] = self._get_mock_metrics(gpu_id, current_time)
-                    else:
-                        batch_metrics[gpu_id] = self._get_gpu_metrics(gpu_id, current_time)
-                except Exception as e:
-                    logger.error(f"Error collecting metrics for GPU {gpu_id}: {e}")
-                    # Fallback to mock data for this GPU
-                    batch_metrics[gpu_id] = self._get_mock_metrics(
-                        gpu_id, current_time, error_state=True
-                    )
-                    self._consecutive_errors += 1
-            return batch_metrics
-
-        while self.running and not self._stop_event.is_set():
+        logger.info("Starting telemetry collection loop")
+        
+        while not self._stop_event.is_set():
             try:
-                # Collect metrics from all GPUs
-                metrics = {}
-                current_time = time.time()
-
-                # Determine the number of GPUs to monitor
-                gpu_count = self.gpu_count
-                gpu_ids = list(range(gpu_count))
-
-                # Batch collection for better performance
-                batch_metrics = collect_batch_metrics(gpu_ids, current_time)
-
-                # Try to recover NVML if we have consecutive errors
-                if self._consecutive_errors >= 3 and not self.use_mock:
-                    if self._try_reinit_nvml():
-                        logger.info("NVML recovered after consecutive errors")
-                        self._consecutive_errors = 0
-                    else:
-                        # If recovery failed, switch to mock mode
-                        self.use_mock = True
-                        logger.warning("Switching to mock GPU data after consecutive NVML errors")
-
-                # If we successfully collected metrics, reset error counter
-                if not self.use_mock and self._consecutive_errors == 0:
-                    self._recovery_attempts = 0
-
-                # Update the metrics store with thread safety
+                # Collect metrics
+                metrics = self._collect_gpu_metrics()
+                
+                # Update stored metrics with thread safety
                 with self._metrics_lock:
-                    self.metrics = batch_metrics
-
-                # Notify all registered callbacks and publish to event bus
-                self._process_metrics_update(batch_metrics)
-
+                    self.metrics = metrics
+                
+                # Process the metrics update (notifies callbacks and publishes to event bus)
+                if resource_manager_available:
+                    # Process metrics on CPU thread to avoid VRAM impact
+                    resource_manager.run_on_cpu(self._process_metrics_update, metrics)
+                else:
+                    # Fallback to direct processing
+                    self._process_metrics_update(metrics)
+                
+                # Reset error counters on successful update
+                self._consecutive_errors = 0
             except Exception as e:
-                logger.error(f"Error in telemetry loop: {e}")
-                self._consecutive_errors += 1
-
-                # In case of serious errors, switch to mock mode
-                if self._consecutive_errors >= 5:
-                    self.use_mock = True
-                    logger.warning("Switched to mock GPU data after multiple telemetry loop errors")
-
+                self._handle_telemetry_error(e)
+            
             # Sleep until next collection (with cancellation support)
             self._stop_event.wait(self.poll_interval)
 
@@ -368,9 +419,7 @@ class TelemetryService:
         """
         # Notify all registered callbacks with thread safety
         with self._callback_lock:
-            callbacks = list(
-                self.callbacks
-            )  # Create a copy to avoid issues if the list changes during iteration
+            callbacks = list(self.callbacks)  # Create a copy to avoid issues if the list changes during iteration
 
         for callback in callbacks:
             try:
@@ -392,10 +441,18 @@ class TelemetryService:
                         power_draw=gpu_metrics.power_usage,
                         fan_speed=gpu_metrics.fan_speed,
                     )
-                    event_bus.publish_typed(metrics_event)
+                    
+                    # Use CPU processing for event handling when available
+                    if resource_manager_available:
+                        resource_manager.run_on_cpu(event_bus.publish_typed, metrics_event)
+                    else:
+                        event_bus.publish_typed(metrics_event)
 
                 # Also publish a comprehensive update event with string type
-                event_bus.publish("gpu_metrics_updated", metrics)
+                if resource_manager_available:
+                    resource_manager.run_on_cpu(event_bus.publish, "gpu_metrics_updated", metrics)
+                else:
+                    event_bus.publish("gpu_metrics_updated", metrics)
             except Exception as e:
                 logger.error(f"Error publishing metrics to event bus: {e}")
 
@@ -649,6 +706,20 @@ class TelemetryService:
             self.start()
 
         return success
+
+    def _handle_telemetry_error(self, e: Exception) -> None:
+        """Handle telemetry collection errors
+
+        Args:
+            e: The exception that occurred
+        """
+        logger.error(f"Error in telemetry collection: {e}")
+        self._consecutive_errors += 1
+
+        # In case of serious errors, switch to mock mode
+        if self._consecutive_errors >= 5:
+            self.use_mock = True
+            logger.warning("Switched to mock GPU data after multiple telemetry collection errors")
 
 
 # Singleton instance for global access

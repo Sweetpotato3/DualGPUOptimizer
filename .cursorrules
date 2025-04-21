@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Documents high-level business logic organization for dual GPU optimization systems, focusing on memory management, model execution, and hardware monitoring components
-globs: *.py,*.code-workspace
+description: Rule for documenting dual GPU optimization system with focus on memory management and performance monitoring for large language models. Applies to systems handling GPU resource allocation, memory profiling, and model deployment optimization.
+globs: *.py,*.ini,*.cfg
 alwaysApply: false
 ---
 
@@ -154,41 +154,53 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer system implements specialized logic for managing and optimizing dual GPU configurations for large language model inference. The core business logic is organized into several key domains:
+The DualGPUOptimizer system orchestrates memory management and performance optimization for large language models across dual GPU configurations.
 
-1. GPU Memory Management (Importance: 95)
-- Custom memory profiling system for tracking GPU allocations and leaks
-- Model-specific memory requirement calculations with KV cache estimation
-- Memory optimization strategies with context length management
-- Progressive recovery system for OOM conditions
-Key files: dualgpuopt/memory/profiler.py, dualgpuopt/memory/predictor.py
+Core Architecture:
 
-2. Model Execution Optimization (Importance: 90)
-- Framework-specific launch parameter generation (llama.cpp, vLLM)
-- Dynamic layer distribution across GPUs based on performance profiling
-- Tensor parallelism configuration for different model architectures
-Key files: dualgpuopt/layer_balance.py, dualgpuopt/optimizer.py
+1. GPU Memory Management
+- Memory profiling system tracks allocation patterns and leaks
+- Sliding window analysis for leak detection using linear regression
+- OOM prevention through progressive memory recovery strategies
+- Custom memory event classification for alerts and optimization
 
-3. GPU Resource Monitoring (Importance: 85)
-- Real-time telemetry collection for GPU metrics
-- Temperature and power threshold management
-- Memory utilization tracking with spike detection
-- PCIe bandwidth monitoring
-Key file: dualgpuopt/gpu/monitor.py
+Key Files:
+- `dualgpuopt/memory/profiler.py`: Memory profiling and leak detection
+- `dualgpuopt/memory/monitor.py`: Real-time memory monitoring and recovery
+- `dualgpuopt/memory/predictor.py`: Memory usage prediction and optimization
 
-4. Model-Specific Optimizations (Importance: 80)
-- Specialized handling for different model architectures (Llama, Mistral, Mixtral)
-- MoE-aware memory calculations for expert models
-- Batch size optimization based on sequence lengths
-Key files: dualgpuopt/batch/smart_batch.py
+2. Model Optimization Engine
+- Layer distribution algorithms for optimal GPU utilization
+- Context size calculation based on model architecture and memory constraints
+- Tensor parallel configuration for different model frameworks
+- Dynamic batch sizing with length-aware sequence grouping
 
-5. Error Recovery System (Importance: 75)
-- Progressive memory recovery strategies
-- GPU-specific error categorization
-- Fault tolerance with mock GPU fallback
-Key files: dualgpuopt/error_handler/recovery.py
+Key Files:
+- `dualgpuopt/optimizer.py`: GPU split optimization and model configuration
+- `dualgpuopt/batch/smart_batch.py`: Length-aware batch optimization
+- `dualgpuopt/layer_balance.py`: GPU layer distribution algorithms
 
-The system emphasizes safe operation and optimal resource utilization across dual GPU configurations while providing specialized handling for different model architectures and frameworks. The business logic focuses on maximizing inference performance through intelligent resource allocation and monitoring.
+3. Resource Monitoring
+- Real-time GPU metrics collection and analysis
+- Temperature and power consumption monitoring with thresholds
+- Memory utilization tracking with alert levels
+- PCIe bandwidth and clock speed monitoring
+
+Key Files:
+- `dualgpuopt/telemetry.py`: GPU metrics collection and processing
+- `dualgpuopt/gpu/monitor.py`: Hardware-level GPU monitoring
+
+4. Error Recovery System
+- Progressive memory recovery with multiple strategies
+- GPU error detection and categorization
+- Automatic fallback to mock mode for testing
+- Framework-specific error handling for model deployment
+
+Key Files:
+- `dualgpuopt/memory/recovery.py`: Memory recovery strategies
+- `dualgpuopt/error_handler/recovery.py`: GPU error recovery system
+
+The system focuses on optimizing large language model deployment across dual GPU configurations through intelligent memory management and workload distribution.
 
 $END$
 END SPECIFICATION

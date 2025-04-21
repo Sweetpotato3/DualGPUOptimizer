@@ -1,72 +1,79 @@
 ---
-description: GPU optimization algorithms and memory management for ML model inference across multiple GPUs
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py,**/layer_balance.py
+description: Specialized rules and documentation for GPU memory optimization algorithms and tensor parallel distribution logic
+globs: **/optimizer.py,**/gpu/*.py,**/memory/*.py,**/batch/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Management System (score: 95)
+Core GPU Memory Optimization Components:
 
-Primary algorithms for GPU memory optimization across multiple devices:
+1. Memory Split Calculator (optimizer.py)
+- Calculates optimal memory distribution across multiple GPUs based on:
+  * Model parameters (layers, heads, dimensions)
+  * Available VRAM per GPU 
+  * KV cache requirements per token
+  * Safety margins (10% default)
+  * Tensor parallelism overhead (20% default)
 
-1. Per-Token Memory Calculation:
+2. Layer Distribution System (layer_balance.py)
+- Distributes model layers across GPUs based on:
+  * Layer profiling data for short sequences (64 tokens, 20% weight)
+  * Layer profiling data for long sequences (1024 tokens, 80% weight)
+  * Available GPU memory quotas
+  * Memory reservation ratios
+
+3. Smart Batch Optimization (batch/smart_batch.py)
+- Groups similar-length sequences to optimize throughput
+- Dynamic batch size adjustment based on:
+  * Memory pressure thresholds
+  * OOM event detection
+  * Backpressure monitoring
+  * Total token limits (16,384 default)
+
+4. Memory Recovery System (memory/recovery.py)
+- Graduated recovery strategies:
+  * CLEAR_CACHE: Basic cache clearing
+  * REDUCE_BATCH: Batch size reduction
+  * OFFLOAD: CPU/disk offloading
+  * TERMINATE: Process termination
+- Implements cascading recovery attempt logic
+
+5. Memory Prediction Engine (memory/predictor.py) 
+- Projects memory requirements based on:
+  * Base model footprint
+  * Per-token scaling factors
+  * Batch size impact
+  * Non-linear growth patterns
+
+Core Business Rules:
+- Minimum 20% model allocation per GPU
+- MoE models get 20% extra memory allocation
+- OOM triggers 25% batch size reduction
+- Maximum token count per batch: 16,384
+- KV cache overhead factor: 2.0x
+- Memory safety margin: 10%
+- Temperature emergency threshold: 80°C
+- Utilization warning threshold: 90%
+
+File Paths:
 ```
-memory_per_token = (model_dim * 2) + (kv_dim * num_layers) + overhead_factor
-gpu_split_ratios = calculate_based_on_relative_memory()
+dualgpuopt/
+  optimizer.py
+  layer_balance.py
+  batch/
+    smart_batch.py
+  memory/
+    predictor.py
+    recovery.py
 ```
 
-2. Context Length Optimization:
-- Maximum safe context calculation using model architecture parameters
-- Adjusts for tensor parallelism overhead (20% default)
-- Applies 10% safety margin for OOM prevention
-- Enforces minimum 128 token context size
-
-3. Layer Distribution Algorithm:
-- Profiles layer execution times at different sequence lengths (64/1024)
-- Uses 20/80 weighted profiling for short/long sequences
-- Distributes layers based on memory quotas and execution latency
-- Prioritizes placing slower layers on faster GPU within constraints
-
-## Memory Pattern Analysis (score: 85)
-
-1. Memory Usage Profiling:
-- Maintains GPU-specific sliding windows for pattern recognition
-- Calculates growth rates using normalized time series
-- Implements leak detection via linear regression
-- Correlates spikes with tensor allocation events
-
-2. Anomaly Detection:
-- Two-tier spike detection:
-  * Rapid growth (>threshold MB/s)
-  * Sustained growth during inference
-- Memory retention analysis post-inference
-- 5MB minimum change threshold for leak reporting
-- 30-second cooldown between alerts
-
-## Batch Processing Optimization (score: 80)
-
-1. Smart Batching System:
-- Length-aware sequence batching for GPU inference
-- Dynamic batch sizing based on available memory
-- Implements backpressure with configurable queue depths
-- Progressive recovery after OOM events:
-  * 25% batch reduction
-  * Cache clearing attempts
-  * Gradual scale factor recovery (0.95 cap)
-
-2. Memory Reclamation:
-- Tiered reclamation strategy:
-  * CACHE_ONLY: Basic PyTorch cache clearing
-  * CLOCK_RESET: GPU clock manipulation
-  * FULL_RESET: Comprehensive tensor cleanup
-  * SYSTEM_CMD: OS-specific memory commands
-
-File paths containing core algorithms:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/batch/smart_batch.py
+Importance Scores:
+- Memory Split Calculator: 95 (core optimization logic)
+- Layer Distribution: 90 (critical for multi-GPU performance)
+- Smart Batching: 85 (key throughput optimization)
+- Memory Recovery: 80 (stability maintenance)
+- Memory Prediction: 75 (proactive optimization)
 
 $END$

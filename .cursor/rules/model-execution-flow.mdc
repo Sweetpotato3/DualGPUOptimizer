@@ -1,60 +1,59 @@
 ---
-description: Defines how LLM models are loaded and executed, including command generation, batching, and GPU resource handling
-globs: **/services/*.py,**/batch/*.py,**/commands/*.py,**/launcher/*.py
+description: Documents the model execution workflow and GPU optimization for large language model inference across multiple GPUs.
+globs: **/*.py,**/dualgpuopt/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components (Importance: 95):
+The system implements a comprehensive model execution pipeline optimized for multi-GPU language model inference:
 
-1. Framework-Specific Launch Orchestration
-- Specialized command generation for LLM frameworks:
-  * llama.cpp: GPU split optimization with memory fraction calculations
-  * vLLM: Tensor parallel size configuration and memory allocation
-- Model-specific parameter optimization:
-  * Context length based on model architecture
-  * Layer distribution for multi-GPU deployments
-  * Memory per token allocation tracking
+1. Model Parameter Distribution System (optimizer.py, 90)
+- Dynamically splits model layers across GPUs based on memory availability
+- Calculates optimal tensor parallel sizes for different model architectures
+- Generates environment-specific launch configurations for multiple frameworks (llama.cpp, vLLM)
+- Handles specialized architectures like MoE (Mixture of Experts) models
 
-File paths:
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/gui/launcher/launch_controller.py
+2. Layer Balancing System (layer_balance.py, 85)
+- Profiles layer performance using dual-pass strategy:
+  * Short sequences (64 tokens) weighted at 20%
+  * Long sequences (1024 tokens) weighted at 80%
+- Distributes layers across GPUs based on performance characteristics and memory constraints
+- Applies optimized block assignments with minimum block size constraints
 
-2. Smart Batching System (Importance: 90):
-- Length-aware sequence batching for optimized throughput
-- Dynamic batch size calculation considering:
-  * Available GPU memory per device
-  * Model architecture requirements
-  * Token sequence lengths
-  * Safety margins for OOM prevention
-- Backpressure mechanism with configurable queue depths
+3. Command Generation Engine (commands/gpu_commands.py, 80)
+- Creates framework-specific execution commands
+- Configures tensor parallel parameters for multi-GPU deployments
+- Manages GPU split ratios and memory allocations
+- Handles specialized quantization parameters
 
-File paths:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/batch/heuristics.py
+4. Memory Management Pipeline (memory/profiler.py, 85)
+- Tracks memory patterns across GPU devices
+- Implements leak detection using sliding window analysis
+- Maintains token count and memory efficiency metrics
+- Provides real-time memory alerts and optimization recommendations
 
-3. Model Loading Pipeline (Importance: 85):
-- Progressive loading states with validation
-- Memory prediction for model requirements
-- Resource allocation verification across GPUs
-- Layer distribution optimization for multi-GPU setups
+5. Process Execution Controller (launcher/launch_controller.py, 75)
+- Manages model process lifecycle across GPUs
+- Handles OOM detection and recovery
+- Implements graceful termination with configurable timeouts
+- Coordinates between framework-specific launch configurations
 
-File paths:
-- dualgpuopt/services/event_service.py
-- dualgpuopt/gui/launcher/parameter_resolver.py
+6. Context Size Optimizer (ctx_size.py, 80)
+- Calculates maximum safe context length based on:
+  * Available GPU memory
+  * Model architecture parameters
+  * KV cache requirements
+  * Overhead factors
+- Implements model-specific memory estimation
 
-4. Execution Monitoring (Importance: 80):
-- Real-time token processing rate tracking
-- GPU memory utilization monitoring
-- Framework-specific error handling
-- OOM detection and recovery strategies
-
-File paths:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/monitor.py
-
-The system implements a comprehensive model execution pipeline optimized for dual-GPU configurations, with specialized handling for different ML frameworks and dynamic resource management based on model architectures and GPU capabilities.
+7. Recovery System (memory/recovery.py, 70)
+- Provides tiered recovery strategies:
+  * Cache clearing
+  * Batch size reduction
+  * Memory offloading
+  * Process termination
+- Implements cascading recovery attempts with escalating impact
 
 $END$
