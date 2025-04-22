@@ -58,7 +58,6 @@ class ErrorService:
         else:
             self.general_handler = handler
             self.logger.debug("Registered general error handler")
-        """
 
     def handle_error(self,
                      error: Exception,
@@ -107,8 +106,6 @@ class ErrorService:
         }
         event_bus.publish("error_occurred", event_data)
 
-<<<<<<< HEAD
-        # Check for custom handler for this error type
         # Check for custom handler for this error type
         if error_type in self.error_handlers:
             try:
@@ -117,14 +114,6 @@ class ErrorService:
             except Exception as handler_error:
                 self.logger.error(f"Error in custom handler: {handler_error}")
 
-<<<<<<< HEAD
-        # Try general handler if available
-        if self.general_handler:
-            try:
-                self.general_handler(error, context)
-                return
-            except Exception as handler_error:
-                self.logger.error(f"Error in general handler: {handler_error}")
         # Try general handler if available
         if self.general_handler:
             try:
@@ -150,6 +139,7 @@ class ErrorService:
     def handle_gpu_error(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
         """
         Special handler for GPU-related errors.
+
         Args:
             error: The GPU-related exception
             context: Additional contextual information
