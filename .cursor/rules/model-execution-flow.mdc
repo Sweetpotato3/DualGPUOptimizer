@@ -1,63 +1,60 @@
 ---
-description: Defines GPU model execution flow including command generation for llama.cpp and vLLM, configuration parameters, and resource allocation logic.
-globs: **/dualgpuopt/**/*.py,**/gpu/**/*.py,**/runner.py,**/optimizer.py
+description: Defines LLM execution workflows, command generation, configuration and GPU allocation for dual-GPU optimization
+globs: **/telemetry.py,**/memory/profiler.py,**/optimizer.py,**/gpu_info.py,**/batch/**,**/commands/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Command Generation and GPU Split Logic
-- Generates framework-specific commands with tensor parallelism considerations
-- llama.cpp commands include: GPU split ratios, context size, layers per GPU
-- vLLM commands configure: tensor parallel degree, max length, memory utilization
-- Supports flexible GPU distribution through split ratios (e.g. 70/30, 60/40)
+Core model execution flow logic centers around orchestrating LLM inference across dual GPUs through several key components:
 
-File: `dualgpuopt/commands/gpu_commands.py`
+1. Smart Batching System (dualgpuopt/batch/smart_batch.py):
+- Specialized length-aware inference scheduler optimized for dual GPU setups
+- Implements dynamic batch size calculation based on sequence lengths and available memory
+- Employs backpressure mechanism that auto-adjusts batch sizes based on OOM events
+- Uses bucket policy to group similar-length sequences for optimal throughput
+- Progressive recovery with 25% batch size reduction after OOM
 
-## Model Resource Allocation
-- Calculates memory requirements based on model architecture:
-  - Base model size
-  - KV cache per token
-  - Attention mechanism overhead
-  - MoE overhead for expert models
-- Implements custom per-token memory estimation:
-  `bytes_per_token = kv_hidden_size * num_layers * 2`
-- Considers BF16 and AWQ quantization impacts
+2. Memory Profiling System (dualgpuopt/memory/profiler.py):
+- Tracks memory patterns during inference sessions with configurable sampling
+- Leak detection using linear regression analysis with 0.05 growth threshold
+- Validates against minimum 5MB change to filter noise
+- Memory spike detection using 20-sample sliding window
+- Correlates spikes with inference activities and token processing
 
-File: `dualgpuopt/optimizer.py`
+3. Layer Distribution Logic (dualgpuopt/optimizer.py):  
+- Context size calculation considering model architecture and GPU memory 
+- Dynamic split ratio determination based on available GPU memory
+- Framework-specific command generation for llama.cpp and vLLM
+- Memory allocation strategies with configurable safety margins
+- Tensor parallelism calculation with overhead factor compensation
 
-## GPU Resource Management
-- Dynamic GPU split optimization based on:
-  - Available VRAM per GPU
-  - Model architecture requirements
-  - Minimum 20% allocation per GPU policy
-  - MoE expert distribution constraints
-- Layer distribution strategies:
-  - Single GPU fallback mode
-  - Dual GPU balanced distribution
-  - Multi-GPU load balancing
+4. Execution Flow Manager (dualgpuopt/telemetry.py):
+- Real-time GPU metrics collection during model execution 
+- Multi-tier alerting based on memory/temperature/power thresholds
+- Rolling 60-second metrics history for performance analysis
+- Smart error recovery with exponential backoff
+- Automatic failover to mock data after consecutive failures
 
-File: `dualgpuopt/gpu_info.py`
+Key execution workflows:
+1. Pre-execution:
+- Model memory requirement estimation
+- GPU split ratio calculation 
+- Command generation with optimized parameters
 
-## Execution Flow Control
-- Non-blocking subprocess execution with log streaming
-- Real-time output processing for model status
-- Framework-specific environment variable configuration:
-  - CUDA device connections
-  - NCCL P2P settings
-  - Visible devices configuration
+2. During execution:
+- Real-time memory/performance monitoring
+- Dynamic batch size adjustment
+- Leak/spike detection
+- Automatic recovery from OOM events
 
-File: `dualgpuopt/runner.py`
+3. Post-execution:
+- Session metric analysis
+- Memory pattern evaluation
+- Inference efficiency calculation
+- Pattern-based recommendations
 
-## Process Recovery and Monitoring
-- Implements adaptive error handling:
-  - Memory pressure detection
-  - Batch size reduction by 25% on OOM
-  - Automatic cache clearing
-  - Process restart on critical failures
-- GPU state monitoring during execution
-
-File: `dualgpuopt/memory/recovery.py`
+The system manages end-to-end model execution with focus on optimal resource utilization across dual GPUs while maintaining stability through comprehensive monitoring and recovery mechanisms.
 
 $END$

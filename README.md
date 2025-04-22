@@ -4,13 +4,15 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 
 ## Features
 
-- **GPU Monitoring**: Real-time monitoring of GPU metrics including memory usage, utilization, temperature, and power consumption
+- **GPU Monitoring**: Real-time monitoring of GPU metrics including memory usage, utilization, temperature, and power consumption via efficient, signal-based updates.
+- **Simplified Alert System**: Clear **WARNING** and **CRITICAL** alerts integrated with system tray notifications and a status bar badge.
+- **Unified Model Engine**: Automatically detects model format (`gguf`, `awq`, HF Transformers) and uses the appropriate backend (llama.cpp, vLLM, Transformers) via a single `Engine` interface.
+- **Unified Preset System**: Manage model configurations, prompt templates, and personas through a single JSON-based preset system accessible via a dedicated dock widget.
+- **Execution Management**: Controls and monitors model execution using the unified engine.
+- **Advanced Tools Dock**: Optional, hideable dock containing advanced diagnostic tools like the Memory Timeline, keeping the main interface clean.
+- **GPU Telemetry**: Collects detailed GPU performance metrics without UI polling.
 - **Model Optimization**: Calculates optimal GPU split ratios for large language models
 - **Smart Layer Distribution**: Balances model layers across multiple GPUs based on available memory
-- **Execution Management**: Controls and monitors model execution on multiple GPUs
-- **GPU Telemetry**: Collects and visualizes detailed GPU performance metrics
-- **Memory Profiling**: Analyzes GPU memory usage patterns, detects leaks, and visualizes memory allocation timelines
-- **Qt-Based Modern UI**: Completely rebuilt interface using Qt for improved stability and visual experience
 - **Enhanced Memory Profiling**: Interactive memory timeline with zooming, filtering, and event markers
 - **Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
 - **NEW: Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
@@ -21,6 +23,15 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **NEW: Thread-Safe Caching System**: High-performance caching for memory-intensive operations with comprehensive monitoring
 
 ## Recent Improvements
+
+### NEW: Streamlined Architecture (Refactor 2024-XX)
+
+- **Unified Backend Engine (`engine/backend.py`)**: Replaced separate command generation logic with a single `Engine` class that auto-detects model types (GGUF, AWQ, HF) and manages the appropriate backend (llama.cpp, vLLM, Transformers). Simplifies model loading and execution.
+- **Signal-Based Telemetry (`services/telemetry.py`)**: Migrated core GPU metric updates (util, VRAM, temp, power) from polling to a `QObject`-based worker emitting Qt Signals. Reduces CPU usage and improves UI responsiveness.
+- **Simplified Alert System (`services/alerts.py`)**: Reduced alert complexity from four tiers to two essential levels: `WARNING` and `CRITICAL`. Integrated directly with a status bar badge and system tray notifications.
+- **Unified Preset Management (`services/presets.py`, `PresetDock`)**: Merged previous systems for model configurations, personas, and templates into a single JSON-based preset format managed via a dedicated dock widget (`~/.dualgpuopt/presets/`).
+- **Advanced Tools Dock (`ui/advanced.py`)**: Moved diagnostic tools like the Memory Timeline into a separate, hideable dock widget accessible via the "View" menu, decluttering the main interface for core chat/monitoring tasks.
+- **Removed Redundant Calculations**: Efficiency metrics (tok/GB) removed from real-time calculation to reduce overhead; planned for post-session analysis.
 
 ### NEW: Thread-Safe Caching System
 
@@ -75,14 +86,10 @@ The enhanced event system provides a more robust foundation for component commun
 
 We've implemented a comprehensive alert system for GPU monitoring:
 
-- **Four-Tier Alert Classification**:
-  - NORMAL: Standard operating conditions
-  - WARNING: Approaching thresholds (75% memory, 70°C)
-  - CRITICAL: Threshold exceeded (90% memory, 80°C)
-  - EMERGENCY: Dangerous conditions (95% memory, 90°C)
-- **Composite Alert Detection**: Combines multiple metrics (memory, temperature, power) for accurate risk assessment
-- **Prioritized Alerting**: Higher severity alerts take precedence in notification systems
-- **GPU-Specific Classification**: Each GPU is monitored and classified independently
+- **Two-Tier Alert Classification**:
+  - WARNING: Approaching thresholds (e.g., 75% memory, 70°C)
+  - CRITICAL: Threshold exceeded (e.g., 90% memory, 80°C)
+- **Composite Alert Detection**: Combines multiple metrics (memory, temperature, power) for accurate risk assessment.
 
 The enhanced alert system provides earlier warnings of potential issues and more accurate classification of GPU conditions, helping prevent out-of-memory errors and thermal throttling.
 
@@ -114,9 +121,9 @@ These optimizations ensure stable performance even during extended monitoring se
 
 We've significantly improved the workflow for generating and applying optimal GPU settings:
 
-- **Direct Settings Transfer**: Apply optimizer-generated settings directly to the launcher with a single click
-- **Automatic Tab Switching**: Automatically switch to the launcher tab after applying settings
-- **Configuration Presets**: Save and load optimized configurations for quick reuse
+- **Direct Settings Transfer**: Apply optimizer-generated settings directly to the launcher with a single click -> **Replaced by loading presets.**
+- **Automatic Tab Switching**: Automatically switch to the launcher tab after applying settings -> **N/A with preset system.**
+- **Configuration Presets**: Save and load optimized configurations for quick reuse -> **Now the primary method via PresetDock.**
 - **Parameter Validation**: Smart validation ensures applied settings are compatible with the current environment
 - **Comprehensive Parameters**: Automatically transfers all relevant settings including context sizes, GPU splits, and precision settings
 
@@ -124,13 +131,13 @@ This streamlined workflow eliminates the need for manual copy-pasting of setting
 
 ### Configuration Preset System
 
-The new preset system allows you to save and reuse optimized configurations:
+The **new unified preset system** allows you to save and reuse optimized configurations:
 
-- **Named Presets**: Save configurations with custom names for easy identification
-- **One-Click Loading**: Load entire configurations with a single click
-- **Persistent Storage**: Presets are saved between application sessions
-- **Framework-Specific Parameters**: Presets capture all framework-specific parameters
-- **Quick Access**: Preset controls are easily accessible in the launcher interface
+- **Named Presets**: Save configurations with custom names (.json files in `~/.dualgpuopt/presets/`)
+- **One-Click Loading**: Load entire configurations via the Preset Dock (double-click)
+- **Persistent Storage**: Presets are saved between application sessions.
+- **Combined Parameters**: Presets now store model path, prompt template, persona, and GPU settings together.
+- **Easy Management**: Create, delete, and refresh presets directly from the dock toolbar.
 
 The preset system makes it simple to switch between different model configurations without reconfiguring settings each time.
 
@@ -317,24 +324,13 @@ The recovery system includes strategies for:
 
 This robust error handling ensures the application remains functional across different environments and hardware configurations, even when facing unpredictable issues.
 
-## Event-Driven Architecture
+## Event-Driven Architecture (Revised)
 
-The application now implements a fully event-driven architecture that:
+The application utilizes a hybrid communication approach:
+- **Core Telemetry (GPU Metrics):** Uses direct Qt Signals (`util_updated`, `vram_updated`, etc.) emitted by `services/telemetry.py:TelemetryWorker` for optimal performance and responsiveness. UI elements connect directly to these signals.
+- **Other Communication:** Continues to use the existing Event Bus (`services/event_bus.py`) for less frequent or broader messages like configuration changes, preset loading requests, or complex state updates.
 
-- **Decouples Components**: Dashboard and optimizer components communicate through events rather than direct method calls
-- **Improves Extensibility**: New features can subscribe to existing events without modifying the original code
-- **Enhances Responsiveness**: Real-time updates flow through the system via events
-- **Centralizes Communication**: The event bus serves as a central message broker between components
-- **Provides Status Updates**: A status bar shows real-time event information
-
-Event types include:
-
-- `GPUMetricsEvent`: Real-time GPU metrics updates
-- `ModelSelectedEvent`: Fired when a model is selected in the optimizer
-- `SplitCalculatedEvent`: Contains calculated GPU split configurations
-- `ConfigChangedEvent`: Triggered when configuration values change
-
-This architecture makes the application more maintainable and scalable.
+This architecture balances performance for high-frequency data (telemetry) with the flexibility of an event bus for other system communication.
 
 ## Complete Qt-Based Interface
 
@@ -352,18 +348,19 @@ The Qt-based interface features a full-featured tabbed layout with:
 
 ### Optimizer Tab
 
-- Model selection for popular LLMs (Llama, Mistral, Mixtral)
+- Model selection for popular LLMs (Llama, Mistral, Mixtral) -> **Selection often driven by loading Presets.**
 - Automatic GPU memory split ratio calculation
 - Context length optimization
-- Custom model parameter configuration
-- Command generation for frameworks like llama.cpp and vLLM
+- Custom model parameter configuration -> **Managed within Presets.**
+- Command generation for frameworks like llama.cpp and vLLM -> **Handled internally by the unified `Engine`.**
 
-### Memory Profiler Tab
+### Memory Profiler Tab -> **Advanced Tools Dock**
 
 - Memory timeline visualization
 - Leak detection with pattern analysis
 - Memory session tracking
 - Detailed memory statistics
+**Note: This is now located in the "Advanced Tools" dock, hidden by default.**
 
 ### Launcher Tab
 

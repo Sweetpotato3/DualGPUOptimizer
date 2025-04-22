@@ -1,54 +1,64 @@
 ---
-description: Specifies the data flow patterns and architectures for GPU resource monitoring, optimization parameters, and model deployment metrics.
-globs: **/telemetry.py,**/metrics.py,**/optimizer.py,**/services/*.py,**/events.py
+description: Analyzes data flow between components including GPU metrics, optimization settings, and monitoring data across the system.
+globs: **/dualgpuopt/**,**/*service*.py,**/*telemetry*.py,**/*monitor*.py,**/*metrics*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-## Telemetry Data Flow
-The system implements a multi-layer telemetry data flow architecture:
+Core Data Flow Components:
 
-1. GPU Metrics Collection Layer
-- Raw metrics gathered from NVML with 60-second rolling history
-- Metrics include: utilization, memory, temperature, power, PCIe bandwidth
-- Built-in error recovery with exponential backoff
-- Automatic failover to mock data after consecutive failures
+1. GPU Telemetry Pipeline
+- Source: `dualgpuopt/telemetry.py`
+- Collects real-time GPU metrics through NVML interface
+- Maintains 60-second rolling window of metrics history 
+- Passes data through middleware chain for processing:
+  * Log recording
+  * Metric normalization 
+  * Event bus publication
+- Emits GPUMetricsEvents with utilization, memory, temperature data
 
-2. Event Processing Pipeline
-- Metrics processed through specialized event bus system
-- Priority-based event handling (CRITICAL > HIGH > NORMAL > LOW)
-- GPU-specific event hierarchy for metrics distribution
-- Event propagation patterns for model selection and configuration changes
+2. Memory Profiling Data Flow
+- Source: `dualgpuopt/memory/profiler.py`
+- Tracks memory allocations/deallocations during inference
+- Correlates memory events with token processing
+- Streams event data to specialized visualizers
+- Maintains timed event buffers for:
+  * Growth spikes 
+  * Leak detection
+  * Session boundaries
 
-3. Memory Profile Data Flow  
-- Session-based memory timeline tracking
-- Per-GPU memory events (allocation, deallocation, spikes, leaks)
-- Memory pattern analysis using sliding windows
-- Token-based memory analysis for LLM inference
+3. Event Bus Distribution
+- Source: `dualgpuopt/services/event_bus.py` 
+- Routes telemetry, commands and configuration changes
+- Priority-based event dispatch (LOW, NORMAL, HIGH, CRITICAL)
+- Services and UI components subscribe to relevant event types
+- Handles both sync and async event delivery
 
-4. Optimization Parameter Flow
-- Model split parameters calculated and distributed to GPU controllers
-- Layer distribution algorithms pass data through event system
-- Dynamic batch size adjustments propagated through optimization events
-- Resource allocation parameters synchronized across GPUs
+4. Optimizer Data Flow
+- Source: `dualgpuopt/optimizer.py`
+- Calculates optimal memory splits between GPUs
+- Generates framework-specific configuration commands
+- Outputs tensor parallel arrangements for models
+- Exchanges data with UI for visualization
 
-5. Monitoring Metrics Distribution
-- Real-time GPU metrics published to subscribers through event bus
-- Aggregate cross-GPU metrics calculated and distributed
-- Alert level classification data propagated to UI components
-- Historical metrics maintained in rolling buffers
+5. GUI Component Communication 
+- Dashboard subscribes to GPU metric events
+- Optimizer tab receives model configuration updates
+- Settings tab broadcasts configuration changes
+- Launcher exchanges process state with monitor
 
-Key File Paths:
-```
-dualgpuopt/telemetry.py
-dualgpuopt/metrics.py 
-dualgpuopt/services/event_bus.py
-dualgpuopt/services/event_service.py
-dualgpuopt/memory/profiler.py
-```
+Key Data Structures:
+- TelemetrySample: GPU metrics with timestamp
+- GPUMetricsEvent: Normalized GPU telemetry
+- ModelSelectedEvent: Model configuration parameters  
+- SplitCalculatedEvent: GPU workload distribution
 
-The architecture emphasizes real-time monitoring data flow while maintaining service continuity through hardware/driver failures. The event-driven design enables flexible metrics distribution and optimization parameter propagation across the system.
+Data Flow Patterns:
+- Real-time metrics from GPUs -> Middleware -> Event Bus -> UI Components
+- UI Config Changes -> Event Bus -> Services -> Persistent Storage
+- Optimizer Calculations -> Launch Commands -> Process Monitor
+- Memory Events -> Profiler -> Timeline Analysis -> Alerts
 
 $END$
