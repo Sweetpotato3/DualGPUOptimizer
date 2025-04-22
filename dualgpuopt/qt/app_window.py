@@ -219,6 +219,12 @@ class DualGPUOptimizerApp(QMainWindow):
 
             self.tab_widget.addTab(self.launcher_tab, "Launcher")
 
+            # Models Tab
+            from dualgpuopt.qt.model_manager import ModelManager
+            
+            self.models_tab = ModelManager()
+            self.tab_widget.addTab(self.models_tab, "Models")
+
             # Settings Tab
             from dualgpuopt.qt.settings_tab import SettingsTab
 

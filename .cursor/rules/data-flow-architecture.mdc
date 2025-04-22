@@ -1,66 +1,90 @@
 ---
-description: Specification for documenting data flow between system components for GPU optimization and telemetry monitoring
-globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
+description: For analyzing data flow patterns, data transformations, and communication between components in GPU optimization systems
+globs: *.py,dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
+The dual GPU optimizer implements a multi-layered data flow architecture for GPU resource management and optimization:
+
 ## Core Data Flows
 
-### 1. GPU Telemetry Collection Pipeline
-- GPU metrics flow from NVML through middleware pipeline
-- Telemetry samples collected at configurable intervals (default 0.8s)
-- Alert middleware processes samples for threshold violations:
-  * Memory usage > 90%
-  * Temperature > 80°C
-  * Power usage > 95%
-- Event bus distributes processed metrics to visualization components
+### GPU Telemetry Pipeline
+- GPU metrics collection via NVML interface
+- Real-time processing through middleware pipeline
+- Distribution to visualization and monitoring components
+- Storage in 60-second rolling history buffer
+- Alert generation based on threshold violations
 
-File: dualgpuopt/telemetry.py
+Key data points:
+- GPU utilization percentage
+- Memory usage and pressure
+- Temperature readings
+- Power consumption levels
+- Clock speeds (SM/Memory)
+- PCIe bandwidth metrics
+- Fan speed settings
 
-### 2. Model Execution Data Flow
-- Engine pool manages model instance lifecycle and data routing
-- Command generation produces framework-specific configurations
-- Process monitoring streams output through message queues
-- Model process output flows through logging middleware
+### Memory Profiling Flow
+- Per-inference memory tracking
+- Session-based monitoring with baselines
+- Token count correlation analysis
+- Growth pattern detection using sliding windows
+- Event classification and alerting
 
-Files: 
-- dualgpuopt/engine/pool/core.py
-- dualgpuopt/commands/gpu_commands.py
+### Optimization Pipeline
+- Model parameter analysis
+- GPU split ratio calculation
+- Layer distribution optimization
+- Command generation for deployment
+- Configuration validation and persistence
 
-### 3. Memory Management Pipeline
-- GPU memory metrics flow through profiling system
-- Memory pattern analysis detects:
-  * Growth spikes above spike_threshold
-  * Sustained leaks above leak_threshold
-  * Per-inference memory deltas
-- Alert events published through event bus for visualization
-- Recovery commands flow through command system to GPU
+### Event Distribution System
+- Priority-based event bus (LOW, NORMAL, HIGH, CRITICAL)
+- Typed event inheritance for GPU operations
+- Synchronous and asynchronous event processing
+- Event correlation and aggregation
 
-Files:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/recovery.py
+## Data Transformations
 
-### 4. Configuration Data Flow
-- Settings flow from UI through config service
-- Preset configurations distributed to relevant components
-- GPU-specific settings routed through command system
-- State changes published through event bus
+### Memory Timeline Analysis
+- 20-point sliding window (10s at 0.5s intervals)
+- Growth trend calculation per GPU
+- Cross-reference with inference events
+- 30-minute history retention (3600 samples)
 
-Files:
-- dualgpuopt/services/config_service.py
-- dualgpuopt/services/state_service.py
+### Alert Level Processing
+- Emergency: Memory ≥95% or Temperature ≥90°C 
+- Critical: Memory ≥90% or Temperature ≥80°C or Power ≥98%
+- Warning: Memory ≥75% or Temperature ≥70°C or Power ≥90%
+- Normal: Below all thresholds
 
-### 5. Metrics Visualization Pipeline
-- GPU metrics flow from telemetry through event bus
-- UI components subscribe to metric updates
-- Chart components maintain 60-point historical buffers
-- Alert badges subscribe to threshold violations
+### Model Profile Transformations
+- Layer distribution calculations
+- Memory requirement estimations
+- Context size optimizations
+- Split ratio computations
 
-Files:
-- dualgpuopt/gui/dashboard.py
-- dualgpuopt/qtgui/widgets.py
+## Integration Points
+
+### Telemetry Integration
+- Real-time metric updates to UI
+- Event bus publication
+- Alert system notifications
+- Status badge updates
+
+### GPU Command Generation
+- Framework-specific transformations
+- Environment variable generation
+- Parameter validation and optimization
+- Command string formatting
+
+### Memory Management
+- Cache state tracking
+- Allocation/deallocation events
+- Growth spike detection
+- Leak identification
 
 $END$

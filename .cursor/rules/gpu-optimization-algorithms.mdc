@@ -1,66 +1,68 @@
 ---
-description: Specifies GPU memory optimization and tensor parallel distribution algorithms for maximizing dual-GPU utilization
-globs: **/optimizer.py,**/gpu_info.py,**/gpu/*.py,**/memory/*.py,**/telemetry/*.py
+description: Specification for GPU memory optimization algorithms, tensor parallel processing, and resource management for ML model inference
+globs: **/gpu/**,**/optimizer/**,**/memory/**,**/telemetry/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Core Components
+## Core GPU Memory Management
 
-1. **GPU Split Optimization**
-- Located in `dualgpuopt/optimizer.py`
-- Calculates optimal memory distribution across multiple GPUs based on:
-  * Per-token memory requirements for KV cache 
-  * Tensor parallelism overhead (20%)
-  * System memory overhead (2GB default)
-  * Safety margin (10% default)
-  * KV cache factor adjustments (2.0x default)
+The system implements specialized algorithms for managing and optimizing GPU memory allocation across dual GPU setups:
 
-2. **Memory Pattern Analysis**
-- Located in `dualgpuopt/memory/profiler.py` 
-- Real-time detection of memory usage patterns during LLM inference
-- Identifies memory spikes, leaks and retention
-- Tracks per-inference memory metrics:
-  * Token counts
-  * Memory deltas
-  * GPU-specific allocation patterns
-  * Growth rates and recovery patterns
+1. Memory Split Calculator:
+- Calculates optimal tensor parallel splits based on VRAM availability and model size
+- Allocation strategy considers:
+  * Base model memory requirements 
+  * KV cache scaling factor (2.0x)
+  * System overhead buffer (2GB default)
+  * Safety margin (10% buffer)
 
-3. **Tensor Split Calculation**
-- Located in `dualgpuopt/optimizer.py`
-- Determines optimal tensor parallel splits based on:
-  * Available GPU memory ratios
-  * Model layer counts
-  * Attention head configuration
-  * MoE model factors (if applicable)
-  * Framework-specific constraints
+2. Layer Distribution Optimizer:
+- Adaptive latency-aware layer distribution algorithm
+- Uses weighted profiling combining:
+  * 20% weight for short sequences (64 tokens)
+  * 80% weight for long sequences (1024 tokens) 
+- Enforces minimum block size of 3 layers for stability
 
-4. **Memory Telemetry**
-- Located in `dualgpuopt/telemetry.py`
-- Implements specialized metrics collection for dual GPU systems
-- Maintains 60-second rolling window of historical metrics
-- Classifies alerts based on thresholds:
-  * EMERGENCY: Memory ≥95%, Temperature ≥90°C
-  * CRITICAL: Memory ≥90%, Temperature ≥80°C, Power ≥98%
-  * WARNING: Memory ≥75%, Temperature ≥70°C, Power ≥90%
+## Memory Telemetry System
 
-5. **VRAM Recovery System**
-- Located in `dualgpuopt/vram_reset.py`
-- Multi-strategy GPU memory reclamation:
-  * CACHE_ONLY: PyTorch cache clearing
-  * CLOCK_RESET: GPU clock management
-  * FULL_RESET: Comprehensive memory cleanup
-  * SYSTEM_CMD: OS-specific commands
-- Implements platform-specific memory reclamation for Windows/Linux
+1. Real-time Memory Analysis:
+- Memory pressure classification:
+  * EMERGENCY: Usage ≥95% or Temperature ≥90°C
+  * CRITICAL: Usage ≥90% or Temperature ≥80°C or Power ≥98%
+  * WARNING: Usage ≥75% or Temperature ≥70°C or Power ≥90%
+  * NORMAL: Below all thresholds
 
-## Importance Scores
+2. Differential Metrics:
+- Per-GPU tracking:
+  * VRAM usage percentages
+  * Temperature patterns
+  * Power consumption trends
+- Cross-GPU correlation analysis
 
-- GPU Split Optimization: 95 (Core memory distribution logic)
-- Memory Pattern Analysis: 90 (Critical for leak detection)
-- Tensor Split Calculation: 85 (Key for model parallelization)
-- Memory Telemetry: 80 (Essential monitoring system)
-- VRAM Recovery: 75 (Important but supplementary)
+## Recovery Strategies
+
+1. Memory Pressure Handler:
+- Cascading recovery system:
+  * Level 1: Cache clearing (CUDA/PyTorch)
+  * Level 2: Batch size reduction (25% reduction)
+  * Level 3: Force VRAM reset
+  * Level 4: Process termination
+
+2. Auto-scaling:
+- Dynamic batch size adjustment
+- Context length optimization
+- Tensor parallel fraction updates
+
+File Paths:
+```
+dualgpuopt/optimizer.py
+dualgpuopt/memory/profiler.py 
+dualgpuopt/memory/recovery.py
+dualgpuopt/telemetry.py
+dualgpuopt/layer_balance.py
+```
 
 $END$

@@ -1,67 +1,63 @@
 ---
-description: Technical specification for GPU-accelerated model execution flows, optimization strategies, and resource management in multi-GPU systems.
-globs: dualgpuopt/**/*.py,hooks/**/*.py,examples/**/*.py
+description: Documents core logic for LLM model execution, GPU resource allocation, backend selection, and command generation across llama.cpp and vLLM.
+globs: **/optimizer.py,**/engine/**,**/launcher/**,**/gpu/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow centers around dual GPU optimization and workload distribution through several core components:
+The system implements a dual-GPU optimization pipeline for LLM model execution with the following core components:
 
-## Command Generation System
-File: dualgpuopt/commands/gpu_commands.py
+## Model Execution Flow
 
-- Model Launch Generation:
-  - llama.cpp: Generates GPU split strings and layer allocations based on calculated ratios
-  - vLLM: Produces tensor parallelism configurations for multi-GPU setups
-  - Context lengths dynamically calculated from GPU memory availability
-  - Automatic thread allocation based on GPU core counts
+1. Backend Selection and Initialization:
+- `engine/backend.py` determines optimal backend (llama.cpp, vLLM) based on:
+  * File format (.gguf -> llama.cpp)  
+  * Model quantization (AWQ -> vLLM)
+  * Architecture requirements (MoE -> vLLM)
 
-## Model Runner
-File: dualgpuopt/runner.py
+2. GPU Resource Allocation:
+- `optimizer.py` calculates optimal GPU splits:
+  * Memory ratios based on VRAM capacity
+  * Layer distribution for tensor parallelism
+  * Safety margins for context expansion
+  * Adjustments for model architecture (MoE requires 5% extra)
 
-- Launch Protocol:
-  1. Pre-launch GPU memory reset and validation 
-  2. Framework-specific environment setup (CUDA_VISIBLE_DEVICES, etc)
-  3. Command execution with supervised process management
-  4. Real-time output monitoring and alert system
+3. Command Generation:
+- Generates framework-specific launch commands:
+```python
+# llama.cpp format
+--main-gpu <gpu0_memory> --gpu-split <split_ratio>
+# vLLM format  
+--tensor-parallel-size <num_gpus> --gpu-memory-utilization <ratios>
+```
 
-## Resource Manager 
-File: dualgpuopt/gpu_info.py
+4. Context Size Optimization:
+- Dynamic context length calculation based on:
+  * Available GPU memory
+  * Model architecture 
+  * KV cache requirements
+  * Tensor parallelism overhead
 
-- VRAM Distribution:
-  - Calculates memory splits based on total/free ratios
-  - Reserves system memory overhead (2GB default)
-  - Implements safety margins for OOM prevention
-  - Manages tensor allocation across GPUs
+5. Execution Monitoring:
+- Real-time metrics tracking:
+  * Tokens/second throughput
+  * Memory pressure per GPU
+  * Temperature thresholds
+  * Error states and recovery
 
-## Model Profiles
-File: dualgpuopt/model_profiles.py
+File structure:
+```
+dualgpuopt/
+  engine/
+    backend.py    # Backend selection logic
+    pool.py       # Model instance management 
+  optimizer.py    # GPU split calculations
+  gpu/
+    monitor.py    # Resource monitoring
+```
 
-Core execution profiles for different model architectures:
-- Llama-2: Default 5-65% split across GPUs
-- Mistral: 40-60% balanced configuration  
-- Mixtral: MoE-aware splits with 8-expert distribution
-
-## Layer Balancing
-File: dualgpuopt/layer_balance.py
-
-- Progressive Layer Distribution:
-  1. Profile GPU performance characteristics
-  2. Calculate optimal splits using 20/80 weighted ratios
-  3. Apply minimum block size (3 layers)
-  4. Generate layer maps for framework consumption
-
-## Execution Monitoring
-File: dualgpuopt/memory/monitor.py
-
-- Real-time telemetry:
-  - Memory pressure tracking
-  - Temperature monitoring 
-  - Utilization metrics
-  - Auto-recovery on OOM conditions
-
-The execution flow orchestrates these components to achieve optimal model deployment across dual GPU configurations while maintaining stability and performance monitoring.
+Key components integrate through an event bus system that coordinates model loading, execution state changes, and resource monitoring events.
 
 $END$
