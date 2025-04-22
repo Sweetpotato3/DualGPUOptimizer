@@ -4,7 +4,6 @@ Simple test script to verify the telemetry history implementation.
 """
 import time
 import sys
-from pprint import pprint
 
 try:
     from dualgpuopt.telemetry_history import HistoryBuffer

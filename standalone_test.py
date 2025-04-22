@@ -211,7 +211,7 @@ def test_simulated_telemetry():
     
     print(f"Simulating {len(metrics)} metrics for {duration} seconds...")
     
-    for i in range(iterations):
+    for _i in range(iterations):
         # Calculate simulated values based on time
         elapsed = time.monotonic() - start_time
         for metric in metrics:

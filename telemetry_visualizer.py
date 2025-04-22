@@ -20,7 +20,7 @@ except ImportError:
     sys.exit(1)
 
 # Import the stand-alone history buffer implementation
-from standalone_test import HistoryBuffer, TelemetrySample
+from standalone_test import HistoryBuffer
 
 
 class TelemetryVisualizer:
