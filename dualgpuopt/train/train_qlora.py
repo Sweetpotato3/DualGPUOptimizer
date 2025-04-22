@@ -5,7 +5,6 @@ import os
 import yaml
 import json
 import logging
-from pathlib import Path
 from typing import Dict, Any, Optional
 
 import torch
@@ -17,7 +16,7 @@ from transformers import (
     DataCollatorForLanguageModeling,
     Trainer
 )
-from peft import LoraConfig, get_peft_model, PeftModel
+from peft import LoraConfig, get_peft_model
 
 # Import DualGPUOptimizer components
 try:
@@ -84,7 +83,8 @@ def train(config: Dict[str, Any], output_dir: Optional[str] = None):
     # Apply GPU memory planning if available
     device_map = "auto"
     if HAVE_DUALGPU:
-        plan = fit_plan(config['model_bytes'], config.get('gpus', None))
+        gpu_cfg = None if config.get("gpus") in (None, "auto") else config["gpus"]
+        plan = fit_plan(config["model_bytes"], gpu_cfg)
         logger.info(f"GPU Memory Plan: {plan}")
         
         # Save the plan for reference
@@ -93,11 +93,14 @@ def train(config: Dict[str, Any], output_dir: Optional[str] = None):
     
     # Load base model with 8-bit quantization for efficiency
     logger.info(f"Loading base model: {config['base_model']}")
+    load_kwargs = dict(device_map=device_map)
+    if config.get("quantization") == "int8":
+        load_kwargs["load_in_8bit"] = True
+    else:
+        load_kwargs["torch_dtype"] = torch.bfloat16 if config.get("bf16") else torch.float16
     base_model = AutoModelForCausalLM.from_pretrained(
         config['base_model'],
-        load_in_8bit=True,  # Use 8-bit quantization for memory efficiency
-        device_map=device_map,
-        torch_dtype=torch.float16
+        **load_kwargs
     )
     
     # Load tokenizer
@@ -155,11 +158,19 @@ def train(config: Dict[str, Any], output_dir: Optional[str] = None):
         save_strategy="steps",
         save_steps=2000,
         save_total_limit=3,
-        fp16=True,
+        fp16=not config.get("quantization") == "int8" and not config.get("bf16", False),
         bf16=config.get('bf16', False),
         seed=42,
         report_to=["tensorboard"],
     )
+    
+    # Safety check: adjust batch size if too large for available GPUs
+    device_count = torch.cuda.device_count() if torch.cuda.is_available() else 1
+    total_batch_size = training_args.per_device_train_batch_size * device_count
+    if total_batch_size > 16:
+        logger.warning(f"Total batch size ({total_batch_size}) is too large, increasing gradient accumulation")
+        training_args.gradient_accumulation_steps *= 2
+        logger.info(f"Adjusted gradient accumulation steps to {training_args.gradient_accumulation_steps}")
     
     # Create trainer (use AdaptiveTrainer if available)
     if HAVE_DUALGPU and hasattr(batch_adaptor, 'AdaptiveTrainer'):
@@ -193,7 +204,7 @@ def train(config: Dict[str, Any], output_dir: Optional[str] = None):
     
     # Save model card with training information
     with open(os.path.join(merged_output_dir, 'README.md'), 'w') as f:
-        f.write(f"# Québec-French Legal LLM\n\n")
+        f.write("# Québec-French Legal LLM\n\n")
         f.write(f"This model was fine-tuned from {config['base_model']} on {config['dataset']} ")
         f.write(f"using QLoRA for {config.get('epochs', 3)} epochs.\n\n")
         f.write("## Training Configuration\n\n")

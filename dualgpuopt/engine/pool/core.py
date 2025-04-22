@@ -7,9 +7,8 @@ import threading
 import logging
 import json
 import atexit
-from typing import Dict, Any, List, Optional, Generator, TypeVar, Callable
+from typing import Dict, Any, List, Generator, TypeVar, Callable
 from collections import OrderedDict
-import weakref
 
 # Configure logging
 logging.basicConfig(
@@ -397,7 +396,7 @@ class EnginePool:
         
         # Shut down all engines
         with cls._lock:
-            for cache_key, engine in list(cls._engines.items()):
+            for _cache_key, engine in list(cls._engines.items()):
                 try:
                     logger.info(f"Shutting down engine for {engine.model_path}")
                     engine.shutdown()

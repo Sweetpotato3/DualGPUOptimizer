@@ -6,7 +6,10 @@ Displays statistics, loaded models, and provides controls for managing the cache
 from __future__ import annotations
 
 import logging
+import subprocess
+import threading
 from typing import List
+
 try:
     from PySide6.QtCore import QTimer, Signal, Slot
     from PySide6.QtWidgets import (
@@ -14,6 +17,7 @@ try:
         QHBoxLayout,
         QHeaderView,
         QLabel,
+        QMessageBox,
         QProgressBar,
         QPushButton,
         QSpinBox,
@@ -148,10 +152,14 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         models_layout = QVBoxLayout(models_group)
 
         # Models table
-        self.models_table = QTableWidget(0, 2)
-        self.models_table.setHorizontalHeaderLabels(["Model", "Actions"])
+        self.models_table = QTableWidget(0, 4)
+        self.models_table.setHorizontalHeaderLabels(
+            ["Model", "VRAM (MiB)", "GPU Util (%)", "Actions"]
+        )
         self.models_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.models_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.models_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
+        self.models_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
         self.models_table.setAlternatingRowColors(True)
         models_layout.addWidget(self.models_table)
 
@@ -160,6 +168,11 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         # Actions group
         actions_group = QGroupBox("Actions")
         actions_layout = QHBoxLayout(actions_group)
+
+        # Quantise selected model
+        self.quant_btn = QPushButton("Quantise")
+        self.quant_btn.clicked.connect(self._quantise_selected)
+        actions_layout.addWidget(self.quant_btn)
 
         # Clear cache button
         self.clear_btn = QPushButton("Clear Cache")
@@ -221,6 +234,21 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
             name_item = QTableWidgetItem(model)
             self.models_table.setItem(i, 0, name_item)
 
+            # Get performance metrics if available
+            try:
+                perf = EnginePool.get_model_performance(model)
+                vram = f"{perf['memory_used']:.0f}" if perf and "memory_used" in perf else "-"
+                util = (
+                    f"{perf['gpu_utilization']:.0f}" if perf and "gpu_utilization" in perf else "-"
+                )
+            except Exception as exc:
+                vram = "-"
+                util = "-"
+                log.debug("Failed to get model performance: %s", exc)
+
+            self.models_table.setItem(i, 1, QTableWidgetItem(vram))
+            self.models_table.setItem(i, 2, QTableWidgetItem(util))
+
             # Create actions widget
             actions_widget = QWidget()
             actions_layout = QHBoxLayout(actions_widget)
@@ -232,7 +260,7 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
             evict_btn.clicked.connect(lambda checked, m=model: self._on_evict_model(m))
             actions_layout.addWidget(evict_btn)
 
-            self.models_table.setCellWidget(i, 1, actions_widget)
+            self.models_table.setCellWidget(i, 3, actions_widget)
 
     @Slot(int)
     def _on_max_size_changed(self, value: int):
@@ -264,3 +292,34 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         self._update_stats()
         if self.model_evicted is not None:
             self.model_evicted.emit(model_path)
+
+    @Slot()
+    def _quantise_selected(self):
+        """Handle quantise button click for selected model."""
+        if not UI_AVAILABLE:
+            return
+
+        idx = self.models_table.currentRow()
+        if idx < 0:
+            QMessageBox.warning(self, "No model selected", "Select a model to quantise.")
+            return
+
+        model_path = self.models_table.item(idx, 0).text()
+        # Fire-and-forget thread to keep UI responsive
+        threading.Thread(target=self._run_awq, args=(model_path,), daemon=True).start()
+
+    def _run_awq(self, model_path: str):
+        """Run AutoAWQ quantization in a background thread."""
+        self.logger.info(f"Quantising {model_path}...")
+
+        # Use environment variable to prevent path traversal
+        env = {"HF_HUB_DISABLE_SYMLINKS": "1"}
+
+        cmd = ["python", "-m", "autoawq", "quantize", model_path]
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+
+        if proc.returncode != 0:
+            self.logger.error(f"Quantization failed: {proc.stderr}")
+            return
+
+        self.logger.info("Quantization finished")

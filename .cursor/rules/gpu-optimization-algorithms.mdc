@@ -1,48 +1,73 @@
 ---
-description: GPU optimization algorithms and memory distribution logic for large language models across multiple GPUs
-globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/gpu/*,dualgpuopt/memory/*,dualgpuopt/engine/*,dualgpuopt/services/*,dualgpuopt/telemetry/*
+description: Technical specification for GPU optimization algorithms and memory allocation strategies in dual-GPU setups.
+globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/engine/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Distribution Logic
+## Core Memory Allocation Logic
 
-The GPU optimization system implements specialized algorithms for distributing large language models across multiple GPUs:
+1. Dynamic Layer Distribution Algorithm
+- Calculates optimal split ratios for model layers across dual GPUs based on:
+  * Available VRAM per GPU 
+  * Layer execution latencies
+  * KV cache requirements
+  * Attention mechanism overhead
+- Enforces minimum memory thresholds per GPU (20% of model size)
+- Implements weighted profiling using 64 and 1024 token sequences
+- Score: 95
 
-1. Memory Split Calculation
-- Dynamic tensor fraction calculation based on available VRAM ratios
-- Safety margin enforcement (default 10%) for stable operation
-- Overhead compensation for tensor parallelism (default 20%) 
-- KV cache scaling based on context length and model architecture
+2. Tensor Parallel Split Calculation
+- Generates tensor parallel fractions normalized to largest GPU memory
+- Handles asymmetric GPU configurations with dynamic ratio adjustments
+- Calculates memory reservation buffer based on model architecture
+- Score: 90
 
-2. Layer Distribution Optimization
-- Adaptive layer distribution using profiling at two sequence lengths (64/1024 tokens)
-- Real-time latency profiling for balanced workload distribution
-- Block-based optimization to minimize cross-device transfers
-- Cost-based model for layer placement decisions
+3. Memory Optimization Pipeline
+- Smart batching system with auto-scaling based on:
+  * Peak memory utilization 
+  * Token length distributions
+  * Model architecture requirements
+- OOM detection with progressive recovery strategy:
+  * Cache clearing
+  * Batch size reduction
+  * Memory defragmentation
+- Score: 85
 
-3. VRAM Management
-- Token-based memory calculation using model parameters:
-```python
-bytes_per_token = model.kv_hidden_size * model.num_layers * 2
-mb_per_token = (bytes_per_token / (1024 * 1024)) * kv_cache_factor
+## Memory Management System
+
+1. Dynamic Cache Management
+- LRU-based engine caching with size-aware eviction
+- Health monitoring with automatic recovery
+- Prometheus metrics integration for cache performance
+- Score: 80
+
+2. Memory Profile Analysis
+- Real-time profiling of:
+  * Growth spikes
+  * Memory leaks
+  * Post-inference retention
+- Memory timeline analysis with 60-second retention
+- Score: 75
+
+3. Memory Recovery System
+- Multi-strategy VRAM reclamation:
+  * CACHE_ONLY: PyTorch cache clearing
+  * CLOCK_RESET: GPU clock resets
+  * FULL_RESET: Comprehensive reclamation
+  * SYSTEM_CMD: OS-specific commands
+- Pre/post reset memory state validation
+- Score: 85
+
+Relevant File Paths:
 ```
-- Dynamic context length optimization based on available memory
-- Automatic tensor split ratio calculation for heterogeneous GPU configurations
-
-4. Framework-Specific Optimizations
-- llama.cpp: GPU split string generation with memory quota enforcement
-- vLLM: Tensor parallelism configuration with memory utilization controls
-- Custom layer reordering for optimal parallel execution
-
-Relevant file paths:
-- dualgpuopt/optimizer.py: Core optimization algorithms
-- dualgpuopt/gpu_info.py: GPU capability detection
-- dualgpuopt/memory/profiler.py: Memory usage profiling
-- dualgpuopt/engine/pool/core.py: Engine instance management
-
-The system focuses on optimal resource utilization while maintaining model performance through intelligent workload distribution and memory management strategies.
+dualgpuopt/optimizer.py
+dualgpuopt/memory/profiler.py  
+dualgpuopt/memory/recovery.py
+dualgpuopt/engine/pool/core.py
+dualgpuopt/layer_balance.py
+```
 
 $END$

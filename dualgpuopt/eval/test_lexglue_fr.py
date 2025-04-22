@@ -5,12 +5,9 @@ import unittest
 import os
 import json
 import tempfile
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import pytest
 from datasets import Dataset
-import transformers
 
 # Import the module to test
 from dualgpuopt.eval.lexglue_fr import evaluate_lexglue_fr

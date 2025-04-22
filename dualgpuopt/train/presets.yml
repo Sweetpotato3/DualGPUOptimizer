@@ -8,9 +8,9 @@ a100_bf16_large:
   out: checkpoints/qc_legal
   epochs: 3
   bs: 4
-  model_bytes: 14500000000      # fp16 checkpoint size (estimated)
+  model_bytes: 14500000000 # fp16 checkpoint size (estimated)
   gpus:
-    - memory_total: 40960       # A100 40 GB
+    - memory_total: 40960 # A100 40 GB
 
 # Configuration for dual GPU (8GB + 8GB) setup
 dual_gpu_small:
@@ -22,9 +22,9 @@ dual_gpu_small:
   bs: 1
   model_bytes: 14500000000
   gpus:
-    - memory_total: 8192        # First 8GB GPU
-    - memory_total: 8192        # Second 8GB GPU
-  
+    - memory_total: 8192 # First 8GB GPU
+    - memory_total: 8192 # Second 8GB GPU
+
 # Configuration for single consumer GPU + CPU offload
 rtx_cpu_offload:
   base_model: mistralai/Mistral-7B-Instruct-v0.2
@@ -35,10 +35,10 @@ rtx_cpu_offload:
   bs: 1
   model_bytes: 14500000000
   gpus:
-    - memory_total: 8192        # RTX 3070 8GB
+    - memory_total: 8192 # RTX 3070 8GB
   cpu_offload: true
   disk_offload: true
-  
+
 # Smaller model configuration
 small_model:
   base_model: mistralai/Mistral-7B-Instruct-v0.2
@@ -47,7 +47,18 @@ small_model:
   out: checkpoints/qc_legal_small
   epochs: 3
   bs: 2
-  model_bytes: 6500000000       # Using quantized model
-  quantization: int8            # Apply int8 quantization
+  model_bytes: 6500000000 # Using quantized model
+  quantization: int8 # Apply int8 quantization
   gpus:
-    - memory_total: 8192        # 8GB consumer GPU 
+    - memory_total: 8192 # 8GB consumer GPU
+
+# Auto-detecting heterogeneous GPU setup
+auto_hetero:
+  base_model: mistralai/Mistral-7B-Instruct-v0.2
+  tokenizer: tokenizer_frqc
+  dataset: datasets/qc_legal_clean.jsonl
+  out: checkpoints/qc_legal_auto
+  epochs: 2
+  bs: 1 # will be **auto-scaled** by adaptive trainer
+  model_bytes: 14500000000
+  gpus: auto # ← magic word triggers detection

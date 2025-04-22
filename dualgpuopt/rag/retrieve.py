@@ -4,10 +4,8 @@ RAG retrieval module for Quebec-French Legal LLM.
 import faiss
 import json
 import os
-import re
 import logging
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
+from typing import List, Dict, Any
 import numpy as np
 
 # Import sentence-transformers for embedding generation
@@ -79,14 +77,15 @@ class LegalRetriever:
         # Encode query to embedding
         query_embedding = self.model.encode(query)
         # Normalize for cosine similarity
-        faiss.normalize_L2(np.array([query_embedding], dtype=np.float32))
+        query = np.expand_dims(query_embedding.astype('float32'), 0)
+        faiss.normalize_L2(query)
         
         # Search the index
-        distances, indices = self.index.search(np.array([query_embedding], dtype=np.float32), k=k)
+        distances, indices = self.index.search(query, k=k)
         
         # Process results
         results = []
-        for i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
+        for _i, (dist, idx) in enumerate(zip(distances[0], indices[0])):
             # Skip if below threshold or index is invalid
             if dist < threshold or idx >= len(self.metadata) or idx < 0:
                 continue

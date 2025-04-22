@@ -15,11 +15,12 @@ def train_tokenizer(corpus_path, model_prefix, vocab_size=48000):
     # Extract text from JSONL and write to a temporary file
     texts = pathlib.Path('tmp_corpus.txt')
     with texts.open('w', encoding='utf-8') as fh:
-        for line in pathlib.Path(corpus_path).read_text(encoding='utf-8').splitlines():
-            try:
-                fh.write(json.loads(line)['text'] + '\n')
-            except (json.JSONDecodeError, KeyError) as e:
-                print(f"Error processing line: {e}")
+        with pathlib.Path(corpus_path).open('r', encoding='utf-8') as corp:
+            for line in corp:
+                try:
+                    fh.write(json.loads(line)['text'] + '\n')
+                except (json.JSONDecodeError, KeyError) as e:
+                    print(f"Error processing line: {e}")
     
     # Train the tokenizer
     spm.SentencePieceTrainer.train(

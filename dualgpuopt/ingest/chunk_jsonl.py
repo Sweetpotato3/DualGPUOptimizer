@@ -1,5 +1,7 @@
 from pathlib import Path
-import json, sys, argparse
+import json
+import sys
+import argparse
 from typing import List, Dict, Any
 
 def chunk_document(text: str, max_length: int = 512, overlap: int = 64) -> List[Dict[str, Any]]:

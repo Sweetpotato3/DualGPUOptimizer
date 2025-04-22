@@ -429,3 +429,84 @@ The system provides comprehensive dual-GPU optimization through:
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION
+---
+
+description: Apply this overview documentation when analyzing the main architectural structure and core business logic of a dual GPU optimization system. Use when documenting high-level project organization and key business components.
+globs: *.py,src/*.py,dualgpuopt/**/*.py
+alwaysApply: false
+---
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+The DualGPUOptimizer implements specialized logic for managing and optimizing machine learning model deployment across multiple GPUs.
+
+Core Business Components:
+
+1. GPU Telemetry System (dualgpuopt/telemetry.py):
+
+- Comprehensive GPU health monitoring with metrics collection
+- Four-tier alert classification system (EMERGENCY, CRITICAL, WARNING, NORMAL)  
+- Progressive recovery strategy for monitoring failures
+- 60-second rolling metrics history with aggregate statistics
+
+2. Memory Optimization (dualgpuopt/memory/):
+
+- Memory event detection system for anomalies and leaks
+- Inference session memory tracking and analysis
+- Timeline-based memory pattern analysis
+- Custom pattern recognition for common memory issues
+- Dedicated memory profiling for dual GPU setups
+
+3. Model Distribution System (dualgpuopt/optimizer.py):
+
+- Dynamic GPU split calculation based on model architecture
+- Memory-aware model layer distribution
+- Framework-specific command generation
+- Model size and parameter estimation
+- Tensor parallel optimization for multi-GPU deployment
+
+4. Launch Management (dualgpuopt/gui/launcher/):
+
+- Model launch configuration generation
+- Process monitoring and health checks
+- OOM error detection and recovery
+- Automatic model reloading on failures
+- Framework-specific parameter optimization
+
+Key Integration Points:
+
+1. Telemetry Integration:
+
+- Real-time GPU metrics collection
+- Memory utilization tracking
+- Temperature and power monitoring
+- Performance data aggregation
+
+2. Memory Management:
+
+- Memory profiling and leak detection
+- Inference optimization
+- Pattern analysis and alerting
+- Timeline tracking per GPU
+
+3. Model Deployment:
+
+- GPU split optimization
+- Layer distribution
+- Command generation
+- Process management
+
+The system focuses on efficient distribution and monitoring of machine learning models across dual GPU setups, with emphasis on memory optimization, telemetry collection, and automated recovery from failures.
+
+$END$
+END SPECIFICATION

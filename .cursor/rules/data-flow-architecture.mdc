@@ -1,56 +1,72 @@
 ---
-description: Data flow analysis specification for GPU optimization and resource management systems, focusing on metrics, configuration, and optimization parameters.
-globs: 
+description: Data flow architecture documentation for dual-GPU optimization system with telemetry, memory monitoring, and model execution coordination.
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py,**/integrated_app/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Key Data Flow Components:
+## Telemetry Data Flow
+- GPU metrics collection (`dualgpuopt/telemetry.py`) publishes utilization, memory, temperature and power metrics through event bus
+- Metrics aggregation and windowing system maintains 60-second historical buffer
+- Real-time metric streaming flows to dashboard visualizations and monitoring components
+- Failure recovery with exponential backoff and mock data fallback
 
-1. GPU Telemetry Flow
-```
-GPU Hardware -> NVML Interface -> Telemetry Service -> Event Bus -> UI Components
-```
-- Telemetry service collects metrics (utilization, memory, temperature, power) from GPUs
-- Metrics flow through event bus to visualization components
-- Alert thresholds trigger notifications for critical conditions
-- Historical data maintained in 60-second rolling buffer
+## Memory Management Flow 
+- Memory profiler (`dualgpuopt/memory/profiler.py`) tracks inference memory patterns
+- Memory anomaly detection (leaks, spikes) triggers alerts through event bus
+- Historical memory patterns flow to memory timeline visualization
+- Leak detection results feed into optimization recommendations
 
-2. Model Configuration Flow
-```
-Model Selection -> Parameter Resolution -> GPU Split Calculation -> Command Generation
-```
-- Model parameters determine memory requirements and context sizes
-- GPU split ratios calculated based on available resources
-- Framework-specific commands generated (llama.cpp/vLLM)
-- Configuration applied through launcher service
+## Model Launch Workflow
+- Framework-specific command generation based on model/GPU configuration
+- GPU memory split calculation distributes model across available GPUs
+- Dynamic tensor parallelism optimization based on available VRAM
+- Process monitoring with stdout/stderr streaming to UI
 
-3. Memory Management Pipeline
-```
-Memory Monitor -> Recovery Service -> Event Bus -> UI Alerts
-```
-- Continuous monitoring of GPU memory usage
-- Triggers recovery actions when thresholds exceeded
-- Recovery strategies executed in priority order
-- Results published to event bus for UI updates
+## Core Data Flow Components
 
-4. Optimization Parameter Flow
-```
-Optimizer -> Layer Balance -> Command Generator -> Launch Service
-```
-- Optimizer determines optimal split ratios
-- Layer balancer distributes model across GPUs
-- Command generator creates framework-specific launch parameters
-- Launch service executes optimized configuration
+### Event Bus System
+- Centralized event bus (`dualgpuopt/services/event_bus.py`) coordinates data flow between components
+- Type-safe event subscription model
+- Priority-based event handling
+- Event replay capability for late subscribers
 
-File Paths:
-- Telemetry: `dualgpuopt/telemetry.py`
-- Memory: `dualgpuopt/memory/profiler.py`
-- Optimization: `dualgpuopt/optimizer.py`
-- Launch: `dualgpuopt/gui/launcher.py`
+### Metrics Storage
+- Rolling time-series buffer with 60s retention
+- Thread-safe sample collection
+- Automatic pruning of expired metrics
+- Snapshot capability for point-in-time analysis
 
-The system implements a robust data flow architecture centered around GPU resource optimization, with emphasis on real-time metric collection, memory management, and dynamic parameter optimization for model deployment.
+### Alert Flow
+- Multi-level alert system (Emergency, Critical, Warning) 
+- Temperature and memory thresholds trigger alerts
+- Alert aggregation prevents notification flooding
+- Alert history maintained for analysis
+
+## Data Flow Paths
+
+1. GPU Telemetry Path:
+```
+NVML Collection -> Event Bus -> Dashboard/Charts
+                            -> Alert System  
+                            -> Metrics Storage
+```
+
+2. Memory Monitoring Path:
+```
+Memory Profiler -> Event Bus -> Timeline View
+                            -> Alert System
+                            -> Optimization Engine
+```
+
+3. Model Execution Path: 
+```
+Launch Config -> Command Gen -> Process Monitor -> Log Stream
+                                              -> Status Updates
+```
+
+All data flows are coordinated through the central event bus, enabling loose coupling between components while maintaining a consistent flow of telemetry, alerts and status updates throughout the system.
 
 $END$

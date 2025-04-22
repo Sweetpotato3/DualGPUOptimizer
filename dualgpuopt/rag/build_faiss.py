@@ -8,7 +8,6 @@ import os
 import logging
 import argparse
 from pathlib import Path
-from typing import List, Dict, Any
 from tqdm import tqdm
 
 # Import sentence-transformers for embedding generation
@@ -24,6 +23,39 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def stream_jsonl(path):
+    """
+    Stream JSONL file line by line to avoid loading entire file into RAM.
+    
+    Args:
+        path: Path to the JSONL file
+        
+    Yields:
+        Parsed JSON objects
+    """
+    with open(path, 'r', encoding='utf-8') as fh:
+        for line in fh:
+            try:
+                yield json.loads(line)
+            except json.JSONDecodeError:
+                continue
+
+def count_lines(file_path):
+    """
+    Count lines in a file without loading it into memory.
+    
+    Args:
+        file_path: Path to the file
+        
+    Returns:
+        Number of lines
+    """
+    count = 0
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for _ in f:
+            count += 1
+    return count
 
 def build_faiss_index(
     corpus_path: str,
@@ -58,59 +90,70 @@ def build_faiss_index(
         logger.error(f"Corpus file not found: {corpus_path}")
         sys.exit(1)
     
-    # Load all lines from the JSONL file
-    with open(corpus_file, 'r', encoding='utf-8') as f:
-        lines = f.readlines()
-    
-    # Limit number of texts if specified
-    if max_texts:
-        lines = lines[:max_texts]
-    
-    total_texts = len(lines)
+    # Count total number of texts for progress reporting
+    logger.info("Counting total texts (this may take a moment)")
+    total_texts = count_lines(corpus_path)
+    if max_texts and max_texts < total_texts:
+        total_texts = max_texts
     logger.info(f"Processing {total_texts} texts")
     
     # Process texts in chunks
-    texts = []
+    texts_processed = 0
     text_metadata = []
     
-    for i in tqdm(range(0, total_texts, chunk_size)):
-        chunk_lines = lines[i:min(i+chunk_size, total_texts)]
-        chunk_texts = []
-        chunk_metadata = []
-        
-        # Parse JSON and extract text
-        for line in chunk_lines:
-            try:
-                obj = json.loads(line)
-                # Truncate text if too long
-                text = obj['text'][:512]  # Limit to 512 chars for embedding
-                chunk_texts.append(text)
+    # Create iterator with progress tracking
+    corpus_iterator = stream_jsonl(corpus_path)
+    if max_texts:
+        # Limit the number of items to process
+        corpus_iterator = (next(corpus_iterator) for _ in range(max_texts))
+    
+    batch_texts = []
+    batch_metadata = []
+    
+    # Process in batches to limit memory usage
+    for obj in tqdm(corpus_iterator, total=total_texts):
+        try:
+            # Truncate text if too long
+            text = obj['text'][:512]  # Limit to 512 chars for embedding
+            batch_texts.append(text)
+            
+            # Extract metadata to keep with the text
+            metadata = {'text': text}
+            for key, value in obj.items():
+                if key != 'text':
+                    metadata[key] = value
+            batch_metadata.append(metadata)
+            
+            texts_processed += 1
+            
+            # Process batch when it reaches chunk_size
+            if len(batch_texts) >= chunk_size:
+                # Compute embeddings for the batch
+                logger.info(f"Computing embeddings for batch {texts_processed//chunk_size}")
+                embeddings = model.encode(batch_texts, show_progress_bar=False)
                 
-                # Extract metadata to keep with the text
-                metadata = {'text': text}
-                for key, value in obj.items():
-                    if key != 'text':
-                        metadata[key] = value
-                chunk_metadata.append(metadata)
+                # Add embeddings to the index
+                faiss.normalize_L2(embeddings)  # Normalize for cosine similarity
+                index.add(embeddings)
                 
-            except json.JSONDecodeError:
-                logger.warning(f"Skipping invalid JSON line: {line[:50]}...")
-                continue
-            except KeyError:
-                logger.warning(f"Skipping line without 'text' field")
-                continue
-        
-        # Compute embeddings for the chunk
-        logger.info(f"Computing embeddings for chunk {i//chunk_size + 1}/{(total_texts-1)//chunk_size + 1}")
-        embeddings = model.encode(chunk_texts, show_progress_bar=False)
-        
-        # Add embeddings to the index
-        faiss.normalize_L2(embeddings)  # Normalize for cosine similarity
+                # Store metadata
+                text_metadata.extend(batch_metadata)
+                
+                # Clear batch
+                batch_texts = []
+                batch_metadata = []
+                
+        except KeyError:
+            logger.warning("Skipping line without 'text' field")
+            continue
+    
+    # Process any remaining texts in the last batch
+    if batch_texts:
+        logger.info("Computing embeddings for final batch")
+        embeddings = model.encode(batch_texts, show_progress_bar=False)
+        faiss.normalize_L2(embeddings)
         index.add(embeddings)
-        
-        # Store text and metadata
-        texts.extend(chunk_texts)
-        text_metadata.extend(chunk_metadata)
+        text_metadata.extend(batch_metadata)
     
     # Save the index
     logger.info(f"Saving index to {output_path}")
@@ -123,7 +166,7 @@ def build_faiss_index(
     with open(metadata_path, 'w', encoding='utf-8') as f:
         json.dump(text_metadata, f, ensure_ascii=False, indent=2)
     
-    logger.info(f"Successfully built index with {len(texts)} texts")
+    logger.info(f"Successfully built index with {len(text_metadata)} texts")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build FAISS index from legal corpus")

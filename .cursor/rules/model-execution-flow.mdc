@@ -1,62 +1,53 @@
 ---
-description: Defines how machine learning models are executed across dual GPUs, including layer distribution, memory management, and command generation.
-globs: 
+description: Defines model execution workflows and command generation for large language models across multiple GPUs.
+globs: **/engine/**,**/launcher/**,**/executor/**,**/model_flow/**,**/execution/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized workflows for running large language models across dual GPU configurations:
+Core execution flow components:
 
-1. Core Execution Pipeline
+1. Model Launch Orchestration
+- Implements specialized launch configuration for multi-GPU deployments with customizable parameters
+- Generates framework-specific commands for llama.cpp and vLLM backends
+- Handles tensor parallel configurations based on available GPU memory
+- Auto-detects model type (GGUF, AWQ, Hugging Face) to select appropriate launch parameters
 
-- Tensor Split Optimization:
-  ```python
-  # Calculates optimal memory ratios between GPUs
-  bytes_per_token = model.kv_hidden_size * model.num_layers * 2
-  mb_per_token = (bytes_per_token / (1024 * 1024)) * kv_cache_factor
-  ```
+2. Engine Pool Management
+- Maintains LRU cache of loaded model engines with health monitoring 
+- Implements automatic recovery system for failed engines with configurable retry attempts
+- Tracks metrics for cache hits/misses and model load times
+- Graceful degradation to mock engines when hardware access fails
 
-- Layer Distribution Logic:
-  - Places input embeddings on first GPU by default
-  - Assigns output components (norm layer, language model head) to last GPU
-  - Implements dynamic programming for optimal layer block allocation
-  - Uses weighted profiling (20% short sequences, 80% long sequences)
+3. Memory Split Calculator
+- Dynamically computes GPU memory splits based on:
+  - Available VRAM per GPU 
+  - Model architecture (layers, KV heads, hidden size)
+  - Context length requirements
+  - Framework-specific overheads
+- Generates split configurations for both llama.cpp and vLLM
 
-2. GPU Memory Management
+4. Process Monitoring
+- Implements OOM detection and recovery through CUDA cache clearing
+- Provides graceful termination with fallback force kill after timeout
+- Tracks process health metrics and alerts on failures
+- Handles framework-specific exit codes and error states
 
-- Memory Prediction System:
-  - Estimates usage based on model architecture and batch size
-  - Projects memory growth over execution timeline
-  - Triggers alerts at 75% (WARNING), 90% (CRITICAL), 95% (EMERGENCY)
+5. Smart Batch Processing 
+- Length-aware inference scheduling with back-pressure mechanisms
+- Bucket policies for efficient request batching
+- Auto-retry on OOM with exponential backoff
+- Token stream aggregation and result ordering
 
-- Recovery Mechanisms:
-  - Cache clearing with PyTorch CUDA cache reset
-  - Progressive batch size reduction (25% steps)
-  - Automatic model offloading when thresholds exceeded
+Key File Paths:
+- `dualgpuopt/engine/pool/core.py`: Engine caching and health monitoring
+- `dualgpuopt/gui/launcher/process_monitor.py`: Process lifecycle management
+- `dualgpuopt/batch/smart_batch.py`: Length-aware batch processing
+- `dualgpuopt/optimizer.py`: Memory split optimization
+- `dualgpuopt/commands/gpu_commands.py`: Command generation
 
-3. Command Generation
-
-- Framework-Specific Parameters:
-  - llama.cpp: GPU split ratios, layer distribution, thread count
-  - vLLM: Tensor parallel size, memory utilization limits
-  - Generates environment variables for each framework
-
-4. Health Monitoring
-
-- Engine Pool Management:
-  - Tracks engine health with periodic checks
-  - Implements auto-restart for failing engines
-  - Maintains cache of loaded models with LRU eviction
-  - Records performance metrics per model
-
-Key file paths:
-- dualgpuopt/engine/pool.py: Engine lifecycle and health monitoring
-- dualgpuopt/memory/predictor.py: Memory usage prediction and alerts
-- dualgpuopt/model/vram_fit.py: VRAM allocation optimization
-- dualgpuopt/commands/gpu_commands.py: Framework-specific command generation
-
-The system prioritizes stable model execution across dual GPUs while preventing out-of-memory conditions through predictive monitoring and automated recovery mechanisms.
+The system focuses on optimizing model execution across dual GPU setups while providing robust monitoring, recovery, and resource management capabilities.
 
 $END$

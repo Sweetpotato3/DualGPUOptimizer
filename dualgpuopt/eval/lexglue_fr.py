@@ -2,14 +2,11 @@
 Evaluation script for French legal LLM using LexGLUE-FR.
 """
 from datasets import load_dataset
-from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
+from transformers import pipeline
 import argparse
-import numpy as np
 import json
 import logging
-import os
-from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict
 
 logging.basicConfig(
     level=logging.INFO,

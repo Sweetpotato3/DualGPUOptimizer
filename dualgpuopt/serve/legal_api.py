@@ -1,15 +1,14 @@
 """
 FastAPI server for Quebec-French Legal LLM with authentication and streaming.
 """
-from fastapi import FastAPI, HTTPException, Header, Depends, Request
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import logging
 import os
-import json
 import time
-from typing import List, Dict, Any, Optional, Generator, Union
+from typing import List, Dict, Any, Optional, Generator
 import asyncio
 import secrets
 from functools import lru_cache
@@ -243,12 +242,22 @@ async def chat(
         context = []
         if request.use_rag and ENABLE_RAG and retrieve:
             logger.info("Using RAG for retrieval")
+            
+            # Get RAG parameters from request if provided
+            k = request.model_params.get("rag_k", 3) if request.model_params else 3
+            threshold = request.model_params.get("rag_threshold", 0.6) if request.model_params else 0.6
+            
             context = retrieve.top_k(
-                request.prompt, 
-                k=3, 
+                request.prompt,
+                k=k,
+                threshold=threshold,
                 index_path=INDEX_PATH
             )
             logger.info(f"Retrieved {len(context)} documents")
+        elif request.use_rag and not ENABLE_RAG:
+            # Graceful degradation when RAG is requested but disabled
+            logger.warning("RAG requested but disabled on server")
+            context = ["Note: La recherche contextuelle (RAG) a été demandée mais est désactivée sur le serveur."]
         
         # Format the prompt with context
         formatted_prompt = format_prompt(request.prompt, context)
