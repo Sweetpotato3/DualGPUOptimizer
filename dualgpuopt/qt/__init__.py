@@ -11,6 +11,8 @@ __author__ = "DualGPUOptimizer Team"
 import logging
 import sys
 from pathlib import Path
+import traceback
+from PySide6 import QtWidgets as QtW
 
 logger = logging.getLogger("DualGPUOpt.Qt")
 
@@ -83,3 +85,9 @@ VERSION_INFO = {
 def get_version():
     """Return the current version as a string."""
     return f"{VERSION_INFO['major']}.{VERSION_INFO['minor']}.{VERSION_INFO['patch']}-{VERSION_INFO['release']}"
+
+def _excepthook(tp, val, tb):
+    txt = "".join(traceback.format_exception(tp, val, tb))
+    QtW.QMessageBox.critical(None, "Unhandled exception", txt)
+    sys.__excepthook__(tp, val, tb)
+sys.excepthook = _excepthook

@@ -217,3 +217,62 @@ The system focuses on optimizing large language model deployment across dual GPU
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION:
+---
+description: Generate a high-level business logic overview for dual GPU optimization applications focused on ML model deployment and monitoring. Apply when documenting the core system architecture and domain-specific implementations.
+globs: *.py,*.md
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+The DualGPUOptimizer implements specialized GPU optimization and monitoring for machine learning model deployment across two GPUs. The core business logic is organized into several key domains:
+
+1. GPU Telemetry & Performance Monitoring
+- Real-time monitoring of dual GPU setups with domain-specific alert thresholds:
+  * Emergency: Memory ≥95%, Temperature ≥90°C
+  * Critical: Memory ≥90%, Temperature ≥80°C
+  * Warning: Memory ≥75%, Temperature ≥70°C 
+- Maintains 60-second rolling metrics history with specialized aggregation
+Path: dualgpuopt/telemetry.py
+
+2. Memory Analysis & Optimization 
+- Leak detection through sustained growth rate analysis
+- Memory spike identification using linear regression
+- Inference session memory retention tracking
+- Adaptive memory timeline with 3600 sample limit
+Path: dualgpuopt/memory/profiler.py
+
+3. GPU Resource Distribution
+- Model layer balancing across GPUs based on profiling
+- GPU memory split calculation for optimal distribution
+- Framework-specific command generation for llama.cpp and vLLM
+Path: dualgpuopt/optimizer.py
+
+4. Model Execution Management
+- Intelligent model caching with LRU eviction
+- Health monitoring with auto-restart capability  
+- Process isolation for model execution
+Path: dualgpuopt/engine/pool/core.py
+
+5. Recovery System
+- Progressive recovery with exponential backoff
+- Mock data fallback after 3 consecutive failures
+- Configurable recovery attempts via environment
+Path: dualgpuopt/error_handler/recovery.py
+
+The system provides comprehensive dual GPU optimization focusing on memory management, performance monitoring, and automated recovery mechanisms. The implementation emphasizes reliable model deployment while maintaining optimal resource utilization across both GPUs.
+
+$END$
+END SPECIFICATION

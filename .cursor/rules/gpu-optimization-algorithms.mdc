@@ -1,49 +1,56 @@
 ---
-description: GPU memory allocation algorithms and optimization strategies for deep learning model inference on dual GPU setups
-globs: **/optimizer.py,**/gpu_info.py,**/gpu/memory/*.py,**/gpu/telemetry/*.py
+description: Guidelines for implementing GPU optimization algorithms and memory management strategies across dual GPU setups
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory/profiler.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Management
+Core algorithms for optimizing GPU resource allocation and memory distribution:
 
-The memory distribution system implements specialized algorithms for allocating model layers and tensors across dual GPU configurations:
+1. GPU Layer Distribution Algorithm (layer_balance.py):
+- Progressive layer assignment based on relative GPU performance
+- Weighted workload distribution using 20%/80% split for short/long sequences 
+- Block merging logic to maintain contiguous chunks with min size of 3 layers
+- Dynamic rebalancing based on runtime profiling data
+- Quota-based assignment system with configurable reserve ratio (90% default)
 
-### Memory Split Calculation
-- Uses relative VRAM sizes of GPUs to determine optimal tensor splits
-- Implements safety margins (2GB system, 2x KV cache, 20% tensor parallel)
-- Dynamically adjusts splits based on model architecture and quantization level
-- Minimum 20% allocation per GPU to maintain stable tensor parallelism
+2. Memory Profiling and Leak Detection (memory/profiler.py):
+- Rolling window analysis (60s) for memory growth pattern detection
+- Leak classification using linear regression on memory deltas
+- Spike detection via threshold-based growth rate analysis (>0.1)
+- Token-count correlation tracking for memory retention
+- Per-GPU memory timeline maintenance with 30s alert cooldown
 
-### Layer Distribution Algorithm
-- Balances transformer layers across GPUs based on memory and latency profiles
-- Weights layer performance by sequence length (80% long sequences, 20% short)
-- Block-aware distribution to minimize cross-GPU communication
-- Respects position-dependent performance variations (±20%)
+3. Context Size Optimization (optimizer.py):
+- KV cache scaling calculation using model architecture
+- Dynamic tensor parallel fraction calculation
+- MoE expert count adjustment for mixture models
+- Heuristic safety margins (10% default) for memory buffers
+- Minimum context enforcement (128 tokens)
 
-### Memory Usage Calculation 
-- Model-specific base memory estimation
-- KV cache scaling with context length and batch size  
-- Dynamic overhead factoring for different attention mechanisms:
-  - MQA: 0.25x overhead factor
-  - GQA: 0.5x overhead factor 
-  - Standard: 1.0x overhead factor
-- Mixture of Experts (MoE) models: Expert count scaling
+4. GPU Split Calculation (optimizer.py):
+- Memory ratio-based distribution between GPUs
+- Tensor parallelism overhead factoring (20%)
+- Framework-specific command generation for llama.cpp/vLLM
+- Model architecture parameter validation 
+- Memory fragmentation prevention with 512MB splits
 
-### Context Length Optimization
-- Maximum safe context calculation based on:
-  - Available GPU memory
-  - Model architecture (layers, heads, dimensions) 
-  - Precision level (FP16/INT8/INT4)
-  - MoE scaling factors
-- Power-of-2 rounding for large contexts (≥4096)
-- 128-token multiples for smaller contexts
+5. Memory Recovery System (memory/recovery.py):
+- Multi-stage VRAM reclamation:
+  * Cache-only clear
+  * Clock reset
+  * Full tensor release
+  * System-level cleanup
+- Before/after memory tracking
+- Platform-specific implementations (Windows/Linux)
 
-## File Paths
-- `dualgpuopt/optimizer.py`: Core memory split algorithms
-- `dualgpuopt/layer_balance.py`: Layer distribution logic
-- `dualgpuopt/ctx_size.py`: Context length calculation
+File Paths:
+- dualgpuopt/optimizer.py
+- dualgpuopt/gpu_info.py 
+- dualgpuopt/layer_balance.py
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/memory/recovery.py
 
 $END$

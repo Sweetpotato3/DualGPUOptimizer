@@ -24,6 +24,60 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 
 ## Recent Improvements
 
+### Hot-Swapping Engine Pool (2025)
+
+- **LRU Model Cache**: Keeps up to two models in memory for instant switching between frequently used models
+- **Automatic Health Monitoring**: Periodically checks model health and automatically restarts crashed backends
+- **Alert Integration**: Publishes CRITICAL alerts through the event system when backends need to be restarted
+- **Zero-Latency Model Switching**: Switching between cached models happens instantly, eliminating wait times
+- **Thread-Safe Implementation**: All operations are thread-safe with proper synchronization and lock-free health checks
+- **Backend-Specific Health Probes**: Custom health checks for each backend type (vLLM, llama.cpp, HuggingFace)
+- **Background Loading**: Model loading operations run in a separate thread pool to avoid blocking the UI
+- **Graceful Shutdown**: Proper cleanup of resources during application exit via atexit handlers
+- **Seamless Integration**: Simply replace `Engine()` with `EnginePool.get(model_path, **kwargs)`
+- **Cache Monitoring**: UI dock widget for real-time monitoring and management of cached models
+- **Global Exception Handling**: System-wide exception catching with user-friendly error dialogs
+- **Performance Metrics**: Optional Prometheus integration for tracking cache hits, load times, and health status
+- **Benchmark Database**: Thread-safe SQLite database with WAL journaling for performance tracking
+
+The Engine Pool makes it possible to instantly switch between different models and personas without waiting for models to load, significantly improving the user experience. It also automatically recovers from model crashes, enhancing system stability.
+
+### Engine Pool Enhancements (2025 Update)
+
+The Engine Pool system has been enhanced with several critical improvements:
+
+#### Enhanced Thread Safety
+- **Lock-Free Health Checks**: Health verification occurs outside critical sections to prevent blocking
+- **Careful Lock Hierarchy**: Avoids deadlocks when checking model health during eviction
+- **Thread-Local Metrics Updates**: Lock isolation for statistical updates from health checks
+- **Atomic Operations**: Where appropriate, atomic counters replace lock-guarded integers
+
+#### Improved Cache Management
+- **Real-Time Cache Monitor**: New Qt dock widget visualizes current model caching status
+- **Manual Eviction Controls**: Directly evict specific models from the UI when needed
+- **Auto-Refreshing View**: Automatically updates every 2.5 seconds with current cache state
+- **Leak Prevention**: Proper widget cleanup to prevent memory leaks during refreshes
+
+#### Robust Error Handling
+- **Global Exception Dialog**: System-wide exception handler catches and displays errors in dialogs
+- **Health-Based Recovery**: Automatic unloading and reloading of unhealthy models
+- **Progressive Fault Tolerance**: Models are only restarted after multiple consecutive failures
+- **Graceful Application Exit**: Proper cleanup of all resources during shutdown
+
+#### Performance Tracking
+- **WAL-Mode Database**: Thread-safe SQLite database using Write-Ahead Logging
+- **Connection Pooling**: Single global connection with proper locking
+- **Benchmark History**: Tracks model performance metrics across sessions
+- **Safe Label Handling**: Prometheus metrics use sanitized model names as labels
+
+#### Production-Grade Metrics
+- **Conditional Prometheus Server**: Only starts when explicitly enabled via environment variable
+- **Clean Label Handling**: Sanitizes and truncates model paths for metric labels
+- **Delta-Based Updates**: Efficient counter updates tracking only changes
+- **Resource Usage Monitoring**: Tracks cache size, hit rates, and memory usage
+
+These enhancements make the Engine Pool robust enough for extended production use, with proper resource management, error recovery, and performance monitoring.
+
 ### Streamlined Architecture (Refactor 2024)
 
 - **Signal-Based Telemetry System**: Migrated from event-based telemetry to a Qt Signal-based architecture for GPU metric updates (util, VRAM, temp, power). This reduces CPU usage, improves UI responsiveness, and provides real-time updates without polling.
@@ -404,6 +458,7 @@ DualGPUOptimizer now supports configuration through environment variables:
 | `DUALGPUOPT_METRIC_CACHE_TTL`  | Metrics cache lifetime (seconds)     | `0.05`      |
 | `DUALGPUOPT_OPT_CACHE_TIMEOUT` | Optimizer cache timeout (seconds)    | `30`        |
 | `DUALGPUOPT_PROFILE_CACHE`     | Memory profile cache size            | `64`        |
+| `DUALGPUOPT_METRICS_PORT`      | Prometheus metrics server port       | `0` (off)   |
 
 ## New: Test System Enhancements
 
@@ -683,9 +738,22 @@ python run.py --mock
    - The **Optimizer** tab calculates memory splits for models
    - The **Launcher** tab controls model execution
    - The **View > Advanced Tools** menu reveals the memory timeline and advanced diagnostics
+   - The **View > Engine Pool** option shows the model cache monitor for managing loaded models
 
 For developers, you can also run directly with:
 
 ```bash
 python run_qt_app.py --mock --verbose
+```
+
+For Prometheus metrics, set the environment variable before running:
+
+```bash
+# Linux/macOS
+export DUALGPUOPT_METRICS_PORT=9090
+python run.py
+
+# Windows
+set DUALGPUOPT_METRICS_PORT=9090
+python run.py
 ```

@@ -1626,7 +1626,7 @@ class DualGpuApp(ttk.Frame):
                     "Clock Offset Limitation",
                     "Setting clock offsets requires nvidia-settings or MSI Afterburner.\n\n"
                     "NVML API doesn't support direct overclocking through Python.\n\n"
-                    "Use the values shown as guidance for external overclocking tools.",
+                    "Use the values shown as guidance for external overclocking tools."
                 )
 
             nv.nvmlShutdown()

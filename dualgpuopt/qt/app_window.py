@@ -16,11 +16,15 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
     QWidget,
+    QToolBar,
+    QMessageBox,
 )
 
 # Import refactored components
 from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.alerts import AlertService
+from dualgpuopt.engine.pool import EnginePool
+from dualgpuopt.gui.cache_monitor import CacheMonitorWidget
 
 # Local imports
 from dualgpuopt.services.config_service import get_config_service
@@ -79,7 +83,7 @@ class DualGPUOptimizerApp(QMainWindow):
         """Initialize core services"""
         # Initialize the unified Engine
         try:
-            self.engine = Engine()
+            self.engine = EnginePool.get("No model loaded", mock=True)
             logger.info("Unified Engine initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Engine: {e}")
@@ -223,6 +227,10 @@ class DualGPUOptimizerApp(QMainWindow):
             self.settings_tab = SettingsTab()
             self.tab_widget.addTab(self.settings_tab, "Settings")
 
+            # Cache Monitor Tab
+            self.cache_tab = CacheMonitorWidget(self)
+            self.tab_widget.addTab(self.cache_tab, "Engine Pool")
+
             # Connect tab signals
             self._connect_tab_signals()
 
@@ -337,16 +345,13 @@ class DualGPUOptimizerApp(QMainWindow):
     def _show_about(self):
         """Show about dialog"""
         try:
-            from PySide6.QtWidgets import QMessageBox
-
-            about_text = (
+            QMessageBox.about(
+                self,
+                "About DualGPUOptimizer",
                 "DualGPUOptimizer\n\n"
-                "A tool for optimizing and managing dual GPU setups\n"
-                "for machine learning workloads.\n\n"
-                "Copyright © 2023-2025"
+                "A tool for optimizing dual GPU setups for AI workloads.\n\n"
+                "© 2024-2025"
             )
-
-            QMessageBox.about(self, "About DualGPUOptimizer", about_text)
         except Exception as e:
             logger.error(f"Failed to show about dialog: {e}")
 
