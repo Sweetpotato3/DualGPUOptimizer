@@ -1,53 +1,57 @@
 ---
-description: Defines model execution workflows and command generation for large language models across multiple GPUs.
-globs: **/engine/**,**/launcher/**,**/executor/**,**/model_flow/**,**/execution/**
+description: Defines LLM model execution workflows, command generation, GPU split configuration, and backend selection logic.
+globs: */*/model/*,*/*/engine/*,*/*/batch/*,*/*/commands/*,*/*/services/*
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core execution flow components:
+## Command Generation and Model Execution
+The system implements framework-specific command generation for both llama.cpp and vLLM backends:
 
-1. Model Launch Orchestration
-- Implements specialized launch configuration for multi-GPU deployments with customizable parameters
-- Generates framework-specific commands for llama.cpp and vLLM backends
-- Handles tensor parallel configurations based on available GPU memory
-- Auto-detects model type (GGUF, AWQ, Hugging Face) to select appropriate launch parameters
+```python
+# Framework-specific command generation 
+llama_cmd = f"--model {model_path} --ctx-size {ctx_size} --gpu-split {split}"
+vllm_cmd = f"--model {model_path} --tensor-parallel-size {gpu_count}"
+```
 
-2. Engine Pool Management
-- Maintains LRU cache of loaded model engines with health monitoring 
-- Implements automatic recovery system for failed engines with configurable retry attempts
-- Tracks metrics for cache hits/misses and model load times
-- Graceful degradation to mock engines when hardware access fails
+## Model Distribution Strategy
+- Calculates optimal GPU split ratios based on available VRAM and model size
+- Adjusts tensor parallelism based on number of available GPUs
+- Handles memory calculations with safety margins:
+  - System overhead: 2GB reserved
+  - Tensor parallel overhead: 20%
+  - KV cache scaling: 2x multiplier
 
-3. Memory Split Calculator
-- Dynamically computes GPU memory splits based on:
-  - Available VRAM per GPU 
-  - Model architecture (layers, KV heads, hidden size)
-  - Context length requirements
-  - Framework-specific overheads
-- Generates split configurations for both llama.cpp and vLLM
+## Backend Selection Logic
+1. Selection based on model format:
+   - GGUF files -> llama.cpp backend
+   - AWQ files -> vLLM backend
+   - HF models -> HFBackend
+   
+2. Process management:
+   - Non-blocking process execution for inference
+   - Output streaming with token processing
+   - Resource cleanup on process termination
 
-4. Process Monitoring
-- Implements OOM detection and recovery through CUDA cache clearing
-- Provides graceful termination with fallback force kill after timeout
-- Tracks process health metrics and alerts on failures
-- Handles framework-specific exit codes and error states
+## Batch Processing
+Smart batching implementation with:
+- Length-aware sequence batching
+- Token-based backpressure 
+- Memory quota enforcement
+- OOM recovery and retry
 
-5. Smart Batch Processing 
-- Length-aware inference scheduling with back-pressure mechanisms
-- Bucket policies for efficient request batching
-- Auto-retry on OOM with exponential backoff
-- Token stream aggregation and result ordering
+## Engine Pool Management
+- LRU caching of loaded models
+- Health monitoring with auto-recovery
+- Backend-specific validation
+- Resource cleanup
 
-Key File Paths:
-- `dualgpuopt/engine/pool/core.py`: Engine caching and health monitoring
-- `dualgpuopt/gui/launcher/process_monitor.py`: Process lifecycle management
-- `dualgpuopt/batch/smart_batch.py`: Length-aware batch processing
-- `dualgpuopt/optimizer.py`: Memory split optimization
-- `dualgpuopt/commands/gpu_commands.py`: Command generation
-
-The system focuses on optimizing model execution across dual GPU setups while providing robust monitoring, recovery, and resource management capabilities.
+Key file paths:
+- dualgpuopt/engine/backend.py
+- dualgpuopt/engine/pool.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/commands/gpu_commands.py
 
 $END$

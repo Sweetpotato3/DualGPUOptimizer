@@ -1,65 +1,63 @@
 ---
-description: Provides technical details for monitoring GPU resources, collecting telemetry data, and managing system alerts based on real-time performance metrics
-globs: **/telemetry.py,**/monitoring/*.py,**/alerts/*.py,**/metrics/*.py,**/gpu/info.py
+description: Technical specification for GPU resource monitoring, telemetry collection, and alert management system.
+globs: **/telemetry.py,**/tray.py,**/metrics.py,**/monitor.py,**/alerts.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements real-time GPU telemetry collection and alert management with these key components:
+## Telemetry Collection System (telemetry.py)
 
-## GPU Telemetry Collection
-- Collects comprehensive metrics including:
-  - GPU utilization percentage
-  - Memory usage and allocation
-  - Temperature readings
+GPU Metrics Model:
+- Comprehensive metric tracking for:
+  - Resource utilization
+  - Memory usage/pressure 
+  - Temperature thresholds
   - Power consumption
-  - Clock speeds (SM and memory)
-  - PCIe bandwidth (TX/RX)
-  - Fan speeds
+  - Clock speeds
+  - PCIe bandwidth
 
-- Historical metrics maintained in 60-second rolling window tracking:
-  - Per-GPU performance data
-  - Aggregate statistics
-  - Temperature trends 
-  - Power usage patterns
+Alert Level System:
+- NORMAL: Default operating state
+- WARNING: Memory ≥75% or Temperature ≥70°C 
+- CRITICAL: Memory ≥90% or Temperature ≥80°C or Power ≥98%
+- EMERGENCY: Memory ≥95% or Temperature ≥90°C
 
-## Alert System
-Alert levels defined with specific thresholds:
-- Memory Usage:
-  - EMERGENCY: ≥95%
-  - CRITICAL: ≥90% 
-  - WARNING: ≥75%
+Performance History:
+- 60-second rolling window of metrics per GPU
+- Aggregate metrics across all GPUs
+- Memory pressure calculation 
+- Power utilization relative to max TDP
+- Average utilization tracking
 
-- Temperature:
-  - EMERGENCY: ≥90°C
-  - CRITICAL: ≥80°C
-  - WARNING: ≥70°C
+Recovery Logic:
+- Exponential backoff for NVML failures
+- Mock data generation on consecutive failures
+- Recovery attempts capped by ENV_MAX_RECOVERY_ATTEMPTS
+- Per-GPU error state tracking
 
-- Power:
-  - CRITICAL: ≥98%
-  - WARNING: ≥90%
+## Memory Monitoring (monitor.py)
 
-## Recovery System
-- Progressive recovery strategy for GPU monitoring:
-  - Exponential backoff between attempts
-  - Configurable maximum recovery attempts 
-  - Automatic fallback to mock data
-  - Service continuity maintenance
+Memory Usage Tracking:
+- Real-time memory allocation monitoring
+- Per-GPU memory pressure calculation
+- Memory leak detection via sliding window analysis
+- Growth rate tracking using linear regression
+- 30-second deduplication window for leak alerts
 
-## Mock Data Generation
-- Realistic GPU behavior simulation:
-  - High-end vs mid-range GPU characteristics
-  - Correlated metrics (utilization affects temperature/power/fan)
-  - Realistic measurement variance
-  - Emergency state simulation
+Session Management:
+- Pre/post inference memory baselines
+- Memory retention tracking above 10MB threshold
+- Token count and memory statistics per session
+- Memory pattern categorization:
+  - ALLOCATION: Positive deltas
+  - DEALLOCATION: Negative deltas 
+  - GROWTH_SPIKE: Rapid increases
+  - LEAK_DETECTED: Sustained growth
 
-## File Paths
-- `dualgpuopt/telemetry.py`
-- `dualgpuopt/memory/profiler.py` 
-- `dualgpuopt/gui/main_app.py`
-
-Importance Score: 95 - Core system component providing critical resource monitoring and alerting capabilities essential for GPU optimization.
+Relevant File Paths:
+- dualgpuopt/telemetry.py
+- dualgpuopt/monitor.py
 
 $END$

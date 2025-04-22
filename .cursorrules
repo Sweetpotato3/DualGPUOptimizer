@@ -510,3 +510,80 @@ The system focuses on efficient distribution and monitoring of machine learning 
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION:
+---
+description: Create high-level overview documentation for software systems focused on GPU optimization, hardware monitoring, memory management, and machine learning model execution. This rule applies when documenting systems that handle GPU resource allocation, hardware telemetry, and model deployment across multiple GPUs.
+globs: *.py,*.md
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+The DualGPUOptimizer application implements specialized GPU monitoring, memory management, and model optimization across multiple GPUs.
+
+## Core Architecture
+
+### GPU Telemetry System (Score: 95)
+File: dualgpuopt/telemetry.py
+- Comprehensive GPU metrics monitoring with 4 severity levels (NORMAL, WARNING, CRITICAL, EMERGENCY)
+- Rolling 60-second metrics history per GPU device
+- Implements exponential backoff for NVML failures with mock data fallback
+- Custom alert thresholds for memory, temperature, and power usage
+
+### Memory Management (Score: 92)
+File: dualgpuopt/memory/profiler.py
+- Real-time memory leak detection using sliding window analysis
+- Session-based memory tracking during model inference
+- Delta analysis between inference starts/ends
+- Memory pattern classification (ALLOCATION, DEALLOCATION, GROWTH_SPIKE, LEAK_DETECTED)
+
+### Model Optimization Engine (Score: 90)
+File: dualgpuopt/optimizer.py
+- Custom algorithm for calculating optimal memory distribution across dual GPUs
+- Model-specific parameter mapping and memory profiling
+- Framework-specific command generation for llama.cpp and vLLM
+- Tensor parallelism optimization for multi-GPU setups
+
+### Layer Distribution System (Score: 88)
+File: dualgpuopt/layer_balance.py
+- Adaptive latency-aware layer distribution across GPUs
+- Two-phase profiling approach with weighted sequence lengths
+- Memory quota-aware distribution with performance optimization
+- Dynamic block merging for contiguous layer arrangements
+
+### Engine Pool Management (Score: 85)
+File: dualgpuopt/engine/pool.py
+- LRU caching for model instances with health monitoring
+- Automatic model recovery and reloading on health check failures
+- Backend-specific health check implementations
+- Dynamic metrics recording and performance tracking
+
+### Legal Document Processing (Score: 82)
+File: dualgpuopt/serve/legal_api.py
+- Quebec-French legal prompt formatting with context injection
+- RAG integration for legal document retrieval
+- Legal context template management
+- Domain-specific response streaming for legal content
+
+### Smart Batching System (Score: 80)
+File: dualgpuopt/batch/smart_batch.py
+- Length-aware sequence batching for legal text processing
+- Token-based backpressure system
+- Model-specific memory optimization
+- OOM recovery for long legal documents
+
+This architecture provides comprehensive GPU resource management and optimization for machine learning model deployment, with specialized components for legal document processing and memory management.
+
+$END$
+END SPECIFICATION

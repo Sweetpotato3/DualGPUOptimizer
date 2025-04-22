@@ -1,5 +1,5 @@
 """
-FastAPI server for Quebec-French Legal LLM with authentication and streaming.
+FastAPI server for legal LLM model with RAG integration.
 """
 from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse
@@ -70,8 +70,8 @@ class TokenResponse(BaseModel):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Québec-French Legal LLM API",
-    description="API for the Québec-French Legal LLM with RAG capabilities",
+    title="Legal API",
+    description="Legal LLM API with RAG capabilities",
     version="1.0.0"
 )
 
@@ -302,7 +302,7 @@ if os.getenv('ENVIRONMENT', 'development') == 'development':
 @app.on_event("startup")
 async def startup_event():
     """Startup event handler."""
-    logger.info("Starting Québec-French Legal LLM API")
+    logger.info("Starting Legal LLM API")
     
     # Add default API key to token store if provided
     if API_KEY != 'dev_key':
@@ -318,7 +318,7 @@ async def startup_event():
 @app.on_event("shutdown")
 async def shutdown_event():
     """Shutdown event handler."""
-    logger.info("Shutting down Québec-French Legal LLM API")
+    logger.info("Shutting down Legal LLM API")
     # No cleanup needed for engine as it's managed by the EnginePool
 
 # -----------------------------------------------------------------------------

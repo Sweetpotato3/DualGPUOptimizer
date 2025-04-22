@@ -1,73 +1,82 @@
 ---
-description: Technical specification for GPU optimization algorithms and memory allocation strategies in dual-GPU setups.
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/engine/*.py
+description: Specification for GPU memory distribution algorithms, split ratios, tensor parallel optimizations, and resource allocation
+globs: **/optimizer.py,**/gpu_info.py,**/gpu/*.py,**/memory/*.py,**/vram_*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Allocation Logic
+## Core GPU Memory Distribution System
 
-1. Dynamic Layer Distribution Algorithm
-- Calculates optimal split ratios for model layers across dual GPUs based on:
-  * Available VRAM per GPU 
-  * Layer execution latencies
-  * KV cache requirements
-  * Attention mechanism overhead
-- Enforces minimum memory thresholds per GPU (20% of model size)
-- Implements weighted profiling using 64 and 1024 token sequences
-- Score: 95
-
-2. Tensor Parallel Split Calculation
-- Generates tensor parallel fractions normalized to largest GPU memory
-- Handles asymmetric GPU configurations with dynamic ratio adjustments
-- Calculates memory reservation buffer based on model architecture
-- Score: 90
-
-3. Memory Optimization Pipeline
-- Smart batching system with auto-scaling based on:
-  * Peak memory utilization 
-  * Token length distributions
-  * Model architecture requirements
-- OOM detection with progressive recovery strategy:
-  * Cache clearing
-  * Batch size reduction
-  * Memory defragmentation
-- Score: 85
-
-## Memory Management System
-
-1. Dynamic Cache Management
-- LRU-based engine caching with size-aware eviction
-- Health monitoring with automatic recovery
-- Prometheus metrics integration for cache performance
-- Score: 80
-
-2. Memory Profile Analysis
-- Real-time profiling of:
-  * Growth spikes
-  * Memory leaks
-  * Post-inference retention
-- Memory timeline analysis with 60-second retention
-- Score: 75
-
-3. Memory Recovery System
-- Multi-strategy VRAM reclamation:
-  * CACHE_ONLY: PyTorch cache clearing
-  * CLOCK_RESET: GPU clock resets
-  * FULL_RESET: Comprehensive reclamation
-  * SYSTEM_CMD: OS-specific commands
-- Pre/post reset memory state validation
-- Score: 85
-
-Relevant File Paths:
+1. GPU Split Ratio Calculation:
+```python
+def calculate_split(gpu1_mem, gpu2_mem):
+    total = gpu1_mem + gpu2_mem
+    gpu1_ratio = gpu1_mem / total
+    gpu2_ratio = gpu2_mem / total
+    return gpu1_ratio, gpu2_ratio
 ```
-dualgpuopt/optimizer.py
-dualgpuopt/memory/profiler.py  
-dualgpuopt/memory/recovery.py
-dualgpuopt/engine/pool/core.py
-dualgpuopt/layer_balance.py
+
+2. Tensor Parallel Distribution:
+- Calculates optimal layer distribution across multiple GPUs
+- Considers memory capacity, PCIe bandwidth, and GPU compute capability
+- Custom algorithm for uneven GPU memory configurations
+- Located in: `dualgpuopt/optimizer.py`
+
+3. Memory Allocation Strategy:
+- Dynamic reserved memory calculation based on model size
+- Safety margins implemented for OOM prevention:
+  - 2GB base system reservation
+  - 10% safety margin for tensor operations
+  - 20% tensor parallel overhead allowance
+- Located in: `dualgpuopt/memory/profiler.py`
+
+## Memory Pattern Analysis
+
+1. Token Memory Requirements:
+```python
+bytes_per_token = model.kv_hidden_size * model.num_layers * 2
 ```
+
+2. Context Length Optimization:
+- Maximum context calculation based on:
+  - Available GPU memory
+  - Model architecture parameters
+  - KV cache requirements
+- Located in: `dualgpuopt/memory/vram_fit.py`
+
+## Memory Leak Prevention
+
+1. Growth Pattern Detection:
+- Sliding window analysis for memory usage trends
+- Linear regression on usage patterns
+- Leak threshold configured at 10MB retained memory
+- Located in: `dualgpuopt/memory/profiler.py`
+
+2. Recovery Actions:
+- Cache clearing with exponential backoff
+- Automatic tensor cleanup
+- Dynamic batch size reduction
+- Located in: `dualgpuopt/memory/recovery.py`
+
+## GPU Resource Monitoring
+
+1. Telemetry System:
+- Real-time memory pressure tracking
+- PCIe bandwidth monitoring
+- Temperature and power thresholds
+- Located in: `dualgpuopt/telemetry.py`
+
+2. Alert Levels:
+- WARNING: Memory ≥75% or Temperature ≥70°C
+- CRITICAL: Memory ≥90% or Temperature ≥80°C
+- EMERGENCY: Memory ≥95% or Temperature ≥90°C
+
+Importance Scores:
+- GPU Split Algorithm: 95 (Core optimization logic)
+- Memory Pattern Analysis: 90 (Critical for performance)
+- Leak Prevention: 85 (Essential for stability)
+- Resource Monitoring: 80 (Supporting optimization)
 
 $END$
