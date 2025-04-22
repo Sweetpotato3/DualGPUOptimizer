@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Applies to high-level documentation of dual GPU optimization systems focused on machine learning model deployment, specifically targeting systems managing GPU memory allocation, performance monitoring, and model parameter optimization
-globs: *.py,*.cpp,*.h,*.hpp
+description: Use this rule when documenting high-level technical architecture and business logic organization for GPU optimization and monitoring systems, particularly those focused on dual-GPU setups and machine learning model execution.
+globs: *.py,*.md,*.rst
 alwaysApply: false
 ---
 
@@ -154,44 +154,49 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model deployment.
+The DualGPUOptimizer implements a comprehensive GPU monitoring and optimization system focused on managing dual GPU configurations for machine learning workloads.
 
-Core System Components:
+Core Business Logic Components:
 
-1. GPU Telemetry System (dualgpuopt/telemetry.py)
-- Real-time monitoring of GPU metrics with 60-second history retention
-- Alert thresholds: Emergency (Memory ≥95%, Temp ≥90°C), Critical (Memory ≥90%, Temp ≥80°C)
-- Auto-switches to mock data mode after multiple monitoring failures
+1. GPU Telemetry System:
+- Implements real-time monitoring of GPU metrics including utilization, memory, temperature, power usage
+- Features alerts based on business thresholds:
+  - EMERGENCY: Memory ≥95%, Temperature ≥90°C 
+  - CRITICAL: Memory ≥90%, Temperature ≥80°C, Power ≥98%
+  - WARNING: Memory ≥75%, Temperature ≥70°C, Power ≥90%
+- Maintains 60-second rolling metrics history with automatic pruning
 
-2. Memory Management (dualgpuopt/memory/profiler.py)
-- Session-based GPU memory tracking with lifecycle states
-- Dual-threshold anomaly detection for memory spikes and leaks
-- Memory timeline analysis with configurable history size
-- Event classification system for memory operations
+2. Memory Management:
+- Advanced memory leak detection system analyzing sliding windows of memory usage
+- Token-correlated memory analysis for ML model inference
+- Multi-stage GPU memory reclamation:
+  1. Cache clearing
+  2. Clock reset  
+  3. Tensor deletion
+  4. System-level commands
 
-3. Model Optimization (dualgpuopt/optimizer.py)
-- Calculates optimal memory splits between GPUs for model deployment
-- KV cache optimization with MoE architecture support
-- Layer balancing algorithms for tensor parallel configurations
-- Framework-specific command generation (llama.cpp, vLLM)
+3. Model Optimization:
+- Context size calculation based on model architecture and available GPU memory
+- Layer distribution algorithms for dual GPU deployments
+- Memory pattern analysis:
+  - Inference-aware memory tracking
+  - Leak detection thresholds
+  - Growth spike detection
+  - Memory boundaries between inferences
 
-4. Launch Management (dualgpuopt/gui/launcher.py)
-- Framework-specific parameter optimization for model deployment
-- GPU-aware process management with memory monitoring
-- Automatic recovery from OOM conditions with configurable strategies
+4. GUI Dashboard System:
+- Real-time GPU metric visualization
+- Dual GPU comparison views
+- Alert notifications for threshold violations
+- Performance history tracking
 
-5. Resource Recovery (dualgpuopt/vram_reset.py)
-- Tiered GPU memory reclamation with four methods
-- Progressive error recovery with exponential backoff
-- Platform-specific memory cleanup implementations
+Key File Paths:
+- dualgpuopt/telemetry.py - Core telemetry collection
+- dualgpuopt/memory/profiler.py - Memory analysis engine
+- dualgpuopt/optimizer.py - Model optimization logic
+- dualgpuopt/gui/dashboard.py - Main monitoring interface
 
-The system focuses on optimizing GPU resource allocation for large language models through:
-- Real-time performance monitoring
-- Memory usage optimization
-- Model parameter tuning
-- Automated recovery mechanisms
-
-Integration points between components use an event bus system with priority-based message handling, ensuring critical GPU state changes receive immediate attention while maintaining system stability through component isolation.
+The system focuses on optimizing large language model deployment across dual GPU setups through intelligent memory management, workload distribution, and comprehensive monitoring capabilities.
 
 $END$
 END SPECIFICATION

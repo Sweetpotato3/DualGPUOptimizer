@@ -1,59 +1,62 @@
 ---
-description: Documents technical implementation of GPU resource monitoring and telemetry collection system with alerting capabilities
-globs: **/telemetry.py,**/tray.py,**/gpu_info.py,**/metrics.py,**/monitor.py
+description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and performance alerts.
+globs: **/telemetry.py,**/gpu/monitor.py,**/metrics/*.py,**/telemetry/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system implements real-time GPU metrics collection and alerting with the following key components:
+The telemetry system implements a comprehensive GPU resource monitoring framework with the following key components:
 
-## GPU Telemetry Collection (Importance: 85)
-- Maintains 60-second rolling history buffer for each GPU metric
-- Collects critical hardware metrics:
-  - Memory utilization and total available memory
-  - GPU core utilization percentage
-  - Temperature readings
-  - Power consumption values
-  - Fan speeds
-  - PCIe bandwidth usage
-  - Clock speeds (core and memory)
+## Telemetry Collection Engine
+- Implements fault-tolerant GPU metrics collection with exponential backoff recovery 
+- Maintains 60-second rolling metrics history using HistoryBuffer
+- Smart caching system for GPU names with TTL to prevent memory leaks
+- Auto-fallback to mock data after consecutive failures
 
-## Resource Alerting System (Importance: 90)
-Alert thresholds defined for key metrics:
-- Emergency level:
-  - Memory usage ≥95%
-  - Temperature ≥90°C 
-- Critical level:
-  - Memory usage ≥90%
-  - Temperature ≥80°C
-  - Power usage ≥98%
-- Warning level:
-  - Memory usage ≥75%
-  - Temperature ≥70°C 
-  - Power usage ≥90%
+## Metrics & Alerting
+Implements weighted alert thresholds based on business rules:
+```
+EMERGENCY: 
+- Memory ≥95% 
+- Temperature ≥90°C
 
-## Auto-Recovery Logic (Importance: 80)
-- Progressive error handling with exponential backoff
-- Auto-switches to mock data generation after repeated failures
-- Maintains separate error states per GPU for partial functionality
-- Recovery attempts triggered by threshold violations
+CRITICAL:
+- Memory ≥90%
+- Temperature ≥80°C
+- Power ≥98%
 
-## Mock Data Generation (Importance: 75)
-Simulates realistic GPU behavior patterns with:
-- High-end GPU characteristics:
-  - 24GB VRAM capacity
-  - 350W power limit
-  - 2100MHz base clock
-- Mid-range GPU characteristics:
-  - 12GB VRAM capacity  
-  - 200W power limit
-  - 1800MHz base clock
+WARNING:
+- Memory ≥75%  
+- Temperature ≥70°C
+- Power ≥90%
+```
 
-File Paths:
+## Multi-GPU Analytics
+- Calculates aggregate performance metrics across GPU cluster:
+  - Average utilization
+  - Total memory pressure  
+  - System-wide temperature trends
+- Maintains separate profiles for high/mid-range GPUs with different baselines for:
+  - Power limits
+  - Memory capacity
+  - Clock speed ranges
+
+## Telemetry Distribution
+Implements hierarchical event distribution:
+- Real-time per-GPU metrics
+- System-wide aggregate metrics 
+- Historical trend data
+
+Supports dual event format:
+- Enhanced format with comprehensive metrics
+- Legacy format for existing integrations
+
+## File Paths
 - dualgpuopt/telemetry.py
 - dualgpuopt/gpu/monitor.py
-- dualgpuopt/memory/monitor.py
+- dualgpuopt/metrics/
+- dualgpuopt/telemetry/
 
 $END$

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QLineEdit,
     QMessageBox,
@@ -25,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from dualgpuopt.engine.backend import Engine
+from dualgpuopt.services.presets import PresetManager
 
 logger = logging.getLogger("DualGPUOptimizer.Launcher")
 
@@ -279,10 +281,20 @@ class LauncherTab(QWidget):
 
         config_layout.addRow("GPU Split:", split_layout)
 
+        # Button layout
+        button_layout = QHBoxLayout()
+
         # Launch button
         self.launch_btn = QPushButton("Launch Model")
         self.launch_btn.clicked.connect(self._launch_model)
-        config_layout.addRow("", self.launch_btn)
+        button_layout.addWidget(self.launch_btn)
+
+        # Save preset button
+        self.save_preset_btn = QPushButton("Save as Preset")
+        self.save_preset_btn.clicked.connect(self.save_preset)
+        button_layout.addWidget(self.save_preset_btn)
+
+        config_layout.addRow("", button_layout)
 
         main_layout.addWidget(config_group)
 
@@ -519,3 +531,44 @@ class LauncherTab(QWidget):
         except Exception as e:
             logger.error(f"Error applying preset: {e}")
             self.status_label.setText(f"Error applying preset: {e}")
+
+    def save_preset(self):
+        """Save current launcher configuration as a preset"""
+        try:
+            name, ok = QInputDialog.getText(self, "Save Preset", "Enter preset name:")
+
+            if ok and name:
+                # Get GPU splits as percentages
+                gpu0_split = self.gpu0_split.text().strip()
+                gpu1_split = self.gpu1_split.text().strip()
+
+                if gpu0_split and not gpu0_split.endswith("%"):
+                    gpu0_split += "%"
+                if gpu1_split and not gpu1_split.endswith("%"):
+                    gpu1_split += "%"
+
+                # Create preset data
+                preset_data = {
+                    "name": name,
+                    "type": "launcher",
+                    "model_path": self.model_path.text(),
+                    "model_format": self.format_combo.currentText(),
+                    "framework": self.framework_combo.currentText(),
+                    "context_size": self.context_size.text(),
+                    "gpu_settings": {
+                        "gpu0_allocation": gpu0_split,
+                        "gpu1_allocation": gpu1_split,
+                        "max_context": self.context_size.text(),
+                    },
+                    "prompt_template": "",  # For chat components
+                    "persona": "",  # For chat components
+                }
+
+                # Save preset
+                manager = PresetManager()
+                manager.save_preset(name, preset_data)
+
+                self.status_label.setText(f"Preset '{name}' saved successfully")
+        except Exception as e:
+            logger.error(f"Error saving preset: {e}")
+            self.status_label.setText(f"Error saving preset: {e}")

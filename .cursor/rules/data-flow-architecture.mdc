@@ -1,6 +1,6 @@
 ---
-description: Documents data flows between components in dual GPU optimization system focusing on resource, parameter and metric propagation
-globs: dualgpuopt/**/*.py,integrated_app/**/*.py,dual_gpu_optimizer/**/*.py
+description: Specification for analyzing and documenting data flow patterns across system components in GPU optimization applications.
+globs: **/dualgpuopt/**/*.py,**/gui/**/*.py,**/services/**/*.py,**/memory/**/*.py
 alwaysApply: false
 ---
 
@@ -10,63 +10,53 @@ alwaysApply: false
 Key Data Flow Components:
 
 1. GPU Telemetry Pipeline
-- Real-time metrics collection system propagates data through middleware layers:
-  * Raw GPU metrics from NVML/mock sources
-  * Processing through EventBusMiddleware for event distribution
-  * LoggingMiddleware for debug data capture
-- 60-second rolling history buffer maintains temporal metric data
-- Metrics include: utilization, memory, temperature, power usage
+- Collects GPU metrics through NVML interface
+- Routes telemetry data through configurable middleware pipeline
+- Event-driven metrics distribution to UI components
+- Historical data retention in 60-second rolling buffer
+- Thread-safe telemetry collection
 
-2. Memory Profiling Data Flow
-- Hierarchical memory event processing:
-  * Allocation/deallocation tracking per GPU
-  * Session-based inference cycle boundaries
-  * Token processing metrics collection
-- Memory timeline analysis with configurable history windows
-- Anomaly detection system processes memory patterns:
-  * Spike detection using dual thresholds
-  * Leak detection through sustained growth analysis
-  * Linear regression for growth rate calculation
+2. Memory Analysis Flow 
+- Real-time memory leak detection using sliding window analysis
+- Linear regression for memory growth rate calculation
+- Session-based memory statistics aggregation
+- Token-correlated memory pattern tracking
+- Per-GPU memory delta measurements
 
-3. Optimization Parameter Flow
-- Model configuration parameters propagate through:
-  * Layer distribution calculations
-  * Tensor parallel size determinations
-  * Split ratio optimization
-- Framework-specific command generation:
-  * llama.cpp GPU split parameters
-  * vLLM tensor parallel configurations
+3. Event Distribution System
+- Hierarchical event routing for GPU metrics
+- Priority-based event propagation (LOW to CRITICAL)
+- GPU metrics event caching with TTL
+- Dashboard event consumers for visualization
+- Alert event generation based on thresholds
 
-4. Resource Monitoring Pipeline
-- Multi-tier alert propagation system:
-  * Hardware telemetry triggers (temp, memory, power)
-  * Resource usage thresholds
-  * System health indicators
-- Real-time GPU state updates flow through:
-  * Dashboard visualization system
-  * System tray notifications
-  * Alert management service
+4. Alert Pipeline
+- Multi-level alert system (WARNING/CRITICAL/EMERGENCY)
+- GPU-specific alert thresholds for memory/temperature
+- Alert aggregation and throttling logic 
+- Status badge integration for visualization
+- Progressive alert escalation based on duration
 
-5. Event Bus Architecture
-- Centralized event distribution for:
-  * GPU metrics updates (HIGH priority)
-  * Configuration changes (NORMAL priority)
-  * Error conditions (CRITICAL priority)
-- Thread-safe event propagation ensures data consistency
+5. Optimization Data Flow
+- Model parameter validation and distribution
+- Layer balancing calculation pipeline
+- Memory split optimization for dual GPUs
+- Framework-specific command generation
+- Configuration preset management
 
-Primary Data Flow Paths:
-```
-Telemetry Collection -> Event Bus -> Visualization Components
-Memory Profiling -> Analysis Engine -> Optimization Parameters
-Resource Monitoring -> Alert System -> User Interface
-```
+6. Memory Profiling Flow
+- Memory event collection and categorization
+- Inference session boundary detection
+- Pattern analysis for memory anomalies
+- Real-time leak detection pipeline
+- Memory recommendation generation
 
-Key Files:
-- dualgpuopt/telemetry.py: Metric collection pipeline
-- dualgpuopt/memory/profiler.py: Memory analysis flow
-- dualgpuopt/services/event_bus.py: Event distribution system
-- dualgpuopt/gui/dashboard.py: Visualization data handling
-
-The data flow architecture emphasizes real-time metric propagation and analysis for dual GPU optimization, with specialized handling of memory patterns and resource utilization data.
+File Paths:
+- dualgpuopt/telemetry.py (Telemetry pipeline)
+- dualgpuopt/memory/profiler.py (Memory analysis)
+- dualgpuopt/services/event_bus.py (Event system)
+- dualgpuopt/services/alerts.py (Alert pipeline)
+- dualgpuopt/optimizer.py (Optimization flow)
+- dualgpuopt/memory/predictor.py (Memory profiling)
 
 $END$

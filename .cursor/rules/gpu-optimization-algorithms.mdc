@@ -1,49 +1,77 @@
 ---
-description: Specification for GPU memory optimization, tensor splitting algorithms, and distribution calculations for multi-GPU LLM inference
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py
+description: Analyzes GPU memory optimization algorithms, tensor parallel splits, and memory management strategies for dual GPU setups
+globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py,**/memory/*.py,**/gpu/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Key Memory Optimization Components:
+The GPU optimization system implements memory distribution and tensor parallelism algorithms for dual GPU configurations.
 
-1. Layer Distribution Algorithm (layer_balance.py)
-- Dynamic layer balancing across GPUs based on weighted performance ratios
-- Profiling using sequence lengths of 64 and 1024 tokens (20%/80% weights)
-- Block optimization with 3-layer minimum for preventing fragmentation
-- Specialized handling for input embeddings and output components
+## Memory Split Optimization
+File: dualgpuopt/optimizer.py
 
-2. Memory Split Calculator (optimizer.py)
-- Tensor parallel fraction calculation based on relative GPU memory sizes
-- Memory requirement estimation incorporating:
-  * Base model weights
-  * KV cache overhead (2.0x factor)
-  * Tensor parallelism overhead (20%)
-  * Minimum context size enforcement (128 tokens)
-  * Safety margin (10% default)
+- Calculates optimal memory splits between GPUs based on:
+  - Model architecture parameters (hidden size, layers, heads)
+  - Available GPU memory on each device
+  - KV cache memory requirements
+  - Safety margin allocations
+- Implements tensor parallel split calculation:
+  - Determines optimal layer distribution
+  - Calculates split ratios (e.g. 60/40, 70/30)
+  - Handles model-specific requirements
 
-3. Model-Specific Optimizations
-- Context size constraints per architecture:
-  * 70B models: 4096 max tokens
-  * Mixtral: 8192 max tokens  
-  * 13B models: 12288 max tokens
-  * Standard models: 16384 max tokens
+## GPU Memory Management
+File: dualgpuopt/memory/profiler.py
 
-4. Memory Management Rules
-- Progressive memory reclamation:
-  * CACHE_ONLY: Basic PyTorch cache clearing
-  * CLOCK_RESET: GPU clock manipulation
-  * FULL_RESET: Comprehensive memory reset
-  * SYSTEM_CMD: OS-specific commands
+- Memory leak detection through sliding window analysis
+- Linear regression for memory growth rate calculation
+- Session-based memory tracking:
+  - Pre/post inference baselines 
+  - Per-inference memory deltas
+  - Token count correlation
+  - Usage pattern analysis
+- Categories memory events:
+  - Allocations/Deallocations
+  - Growth spikes
+  - Leaks
+  - Inference boundaries
 
-Implementation Score: 95
-Rationale: Core optimization algorithms for multi-GPU distribution and memory management
+## Memory Reclamation
+File: dualgpuopt/vram_reset.py
 
-File Paths:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/gpu_info.py
+- Multi-stage GPU memory reclamation:
+  1. Cache clearing
+  2. Clock reset
+  3. Tensor deletion
+  4. System-level commands
+- Hardware-specific policies for different GPU states
+- Cross-platform memory reclamation
+- Memory tracking and verification
+
+## Memory Distribution System
+File: dualgpuopt/memory/monitor.py
+
+Memory monitoring system with domain-specific thresholds:
+- Warning alert: Memory usage ≥75% 
+- Critical alert: Memory usage ≥90%
+- Emergency alert: Memory usage ≥95%
+
+Implements memory distribution optimization:
+- Per-GPU quota allocation
+- Dynamic reallocation based on workload
+- Cache pressure monitoring
+- Automatic cleanup triggers
+
+## Layer Performance Profiling
+File: dualgpuopt/layer_balance.py
+
+- Weighted profiling with two sequence lengths:
+  - Short sequences (64) weighted at 20%
+  - Long sequences (1024) weighted at 80%
+- Layer-to-GPU mapping with VRAM quotas
+- Custom compute mode and clock management
+- Performance correlation modeling
 
 $END$

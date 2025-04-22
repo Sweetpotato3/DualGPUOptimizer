@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QPushButton,
     QSpinBox,
@@ -264,15 +265,21 @@ class OptimizerTab(QWidget):
                 self.status_label.setText("Error: Empty preset data")
                 return
 
-            # Extract model information
-            model_name = preset_data.get("model_name", "")
+            logger.info(f"Applying preset: {preset_data.get('name', 'Unknown')}")
+            
+            # Extract model information - support both formats
+            model_name = preset_data.get("model_name", preset_data.get("model", ""))
             if model_name:
                 index = self.model_combo.findText(model_name)
                 if index >= 0:
                     self.model_combo.setCurrentIndex(index)
+                else:
+                    logger.warning(f"Model {model_name} not found in combo box")
 
             # Extract context size
             context_size = preset_data.get("context_size", 0)
+            if isinstance(context_size, str) and context_size.isdigit():
+                context_size = int(context_size)
             if context_size > 0:
                 self.context_size.setValue(context_size)
 
@@ -327,14 +334,17 @@ class OptimizerTab(QWidget):
         """Save current configuration as a preset"""
         try:
             from dualgpuopt.services.presets import PresetManager
+            from PySide6.QtWidgets import QInputDialog
 
-            name, ok = QtW.QInputDialog.getText(self, "Save Preset", "Enter preset name:")
+            name, ok = QInputDialog.getText(self, "Save Preset", "Enter preset name:")
 
             if ok and name:
-                # Create preset data
+                # Create preset data with a consistent format for all components
                 preset_data = {
                     "name": name,
+                    "type": "optimizer",
                     "model_name": self.model_combo.currentText(),
+                    "model_path": "",  # Will be set by launcher if available
                     "context_size": self.context_size.value(),
                     "framework": self.framework_combo.currentText(),
                     "precision": self.precision_combo.currentText(),
@@ -345,6 +355,8 @@ class OptimizerTab(QWidget):
                         "max_context": self.max_context.text(),
                         "layer_distribution": self.layer_distribution.text(),
                     },
+                    "prompt_template": "",  # For chat components
+                    "persona": "",          # For chat components
                 }
 
                 # Save preset

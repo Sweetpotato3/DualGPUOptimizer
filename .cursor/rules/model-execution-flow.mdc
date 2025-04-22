@@ -1,67 +1,76 @@
 ---
-description: Documentation of LLM execution workflows, GPU command generation, configuration and resource allocation
-globs: **/dualgpuopt/engine/**,**/dualgpuopt/batch/**,**/dualgpuopt/commands/**,**/dualgpuopt/telemetry.py
+description: Handles LLM execution workflows including command generation, configuration, and GPU resource allocation for llama.cpp and vLLM frameworks.
+globs: **/optimizer.py,**/gpu_info.py,**/runner.py,**/layer_balance.py,**/commands/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Execution Components:
+The model execution flow implements specialized command generation and resource allocation for running large language models across dual GPU configurations.
 
-1. Model Launch Orchestration
-- Dedicated launch controller manages model execution across multiple GPUs 
-- Framework-specific parameter optimization:
-  * llama.cpp: GPU split string generation for memory distribution
-  * vLLM: Tensor parallel size configuration and distribution
-- Automatic resource allocation based on GPU availability and model requirements
-- Handles process lifecycle with OOM recovery and cache management
+## Core Command Generation
+[File: dualgpuopt/optimizer.py]
 
-2. Batch Processing System
-- Length-aware sequence batching optimized for GPU memory constraints
-- Dynamic batch size calculation based on:
-  * Available GPU memory
-  * Model architecture parameters
-  * Token count limits (16384 per batch)
-- Implements backpressure mechanism with configurable backlog limits
-- Automatic recovery from OOM conditions with 25% batch reduction
+The command generation system outputs framework-specific launch commands based on model requirements and GPU configuration:
 
-3. GPU Command Generation 
-- Framework-specific command templating:
-  * llama.cpp: Split ratios, context size, thread allocation
-  * vLLM: Tensor parallel config, memory allocation
-- Model-specific parameter generation:
-  * Mixtral: 60/40 split with distribution 0-15:GPU0, 16-31:GPU1
-  * 70B models: 70/30 split with layer distribution 0-39:GPU0, 40-79:GPU1
-  * 13B models: 50/50 split with even layer distribution
-- Environment variable generation for cross-platform deployments
+1. llama.cpp Command Flow:
+- Calculates ngl (number of layers per GPU) based on model architecture
+- Generates split string (e.g. "50,50") for balanced GPU allocation 
+- Includes tensor split configuration for parallel inference
+- Handles context window sizing based on available VRAM
 
-4. Resource Monitoring
-- Real-time telemetry collection:
-  * Memory utilization tracking
-  * GPU temperature monitoring  
-  * Power consumption analysis
-  * PCIe bandwidth utilization
-- Custom alerting thresholds:
-  * Emergency: Memory ≥95%, Temperature ≥90°C
-  * Critical: Memory ≥90%, Temperature ≥80°C
-  * Warning: Memory ≥75%, Temperature ≥70°C
+2. vLLM Command Flow:
+- Determines tensor parallel size from GPU count
+- Configures GPU device mapping 
+- Sets model-specific parameter values for:
+  - Context length
+  - Memory efficient attention 
+  - Quantization mode
+  - Seed value
 
-5. Memory Recovery System
-- Tiered recovery strategy:
-  * Cache clearing (least disruptive)
-  * Batch size reduction
-  * Memory offloading
-  * Process termination (last resort)
-- Automatic strategy escalation on failure
-- GPU-specific monitoring and recovery logging
+## Layer Distribution System 
+[File: dualgpuopt/layer_balance.py]
 
-Key Implementation Paths:
-- dualgpuopt/commands/gpu_commands.py: Command generation
-- dualgpuopt/batch/smart_batch.py: Batch optimization
-- dualgpuopt/telemetry.py: Resource monitoring
-- dualgpuopt/memory/recovery.py: Memory management
+The layer balancer distributes transformer layers across available GPUs:
 
-Model execution focuses on optimizing GPU resource utilization while maintaining stable operation through sophisticated monitoring and recovery systems.
+1. Layer Assignment Strategy:
+- Weights short sequences (64 tokens) at 20% 
+- Weights long sequences (1024 tokens) at 80%
+- Assigns layers based on profiled execution times
+- Forms blocks of at least 3 contiguous layers
+- Places input embedding on first GPU
+- Places norm/lm_head on last GPU
+
+2. Memory Management:
+- Maintains reserve ratio for each GPU
+- Respects memory quotas during assignment
+- Rebalances on OOM conditions
+- Adjusts distribution based on model family (Llama, Mistral, etc.)
+
+## Model Execution Flow
+[File: dualgpuopt/runner.py]
+
+The execution orchestrator manages the model launch process:
+
+1. Initialization:
+- Validates model path exists
+- Checks GPU memory availability
+- Sets framework-specific env vars
+- Initializes logging streams
+
+2. Launch Control:
+- Non-blocking process execution
+- Output streaming to queue
+- Graceful termination support
+- Error state monitoring
+
+3. Failure Recovery:
+- Clears GPU caches on OOM
+- Retries with reduced batch size
+- Falls back to CPU if needed
+- Logs error conditions
+
+The system focuses on optimizing dual GPU model execution through intelligent resource allocation and framework-specific launch configurations.
 
 $END$
