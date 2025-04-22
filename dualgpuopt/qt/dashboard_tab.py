@@ -3,17 +3,17 @@ Dashboard tab for DualGPUOptimizer Qt implementation.
 Provides real-time GPU metrics and monitoring.
 """
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Optional
 
 from PySide6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QGroupBox, 
     QLabel, QProgressBar, QPushButton, QGridLayout
 )
-from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QFont, QColor
+from PySide6.QtCore import Slot
 
 # Import telemetry
-from dualgpuopt.telemetry import get_telemetry_service, GPUMetrics
+from dualgpuopt.services.telemetry import TelemetryWorker
+from dualgpuopt.gpu_info import GPUMetrics
 
 logger = logging.getLogger('DualGPUOptimizer.Dashboard')
 
@@ -160,13 +160,38 @@ class DashboardTab(QWidget):
         # Setup the UI
         self._setup_ui()
         
-        # Start the telemetry service
-        self._init_telemetry()
+        # Telemetry worker will be connected from the main application
+        self.telemetry_worker = None
         
-        # Setup update timer
-        self.update_timer = QTimer(self)
-        self.update_timer.timeout.connect(self._update_metrics)
-        self.update_timer.start(1000)  # Update every second
+        # Status update
+        self.status_label.setText("Waiting for telemetry service...")
+    
+    def set_telemetry_worker(self, worker: TelemetryWorker):
+        """Set the telemetry worker and connect to its signals
+        
+        Args:
+            worker: The telemetry worker
+        """
+        if not worker:
+            self.status_label.setText("No telemetry worker available")
+            return
+        
+        self.telemetry_worker = worker
+        
+        # Connect to signals
+        self.telemetry_worker.util_updated.connect(self._handle_util_update)
+        self.telemetry_worker.vram_updated.connect(self._handle_vram_update)
+        self.telemetry_worker.temp_updated.connect(self._handle_temp_update)
+        self.telemetry_worker.power_updated.connect(self._handle_power_update)
+        self.telemetry_worker.clock_updated.connect(self._handle_clock_update)
+        self.telemetry_worker.pcie_updated.connect(self._handle_pcie_update)
+        
+        # Create GPU widgets based on count
+        gpu_count = self.telemetry_worker.gpu_count
+        self._create_gpu_widgets(gpu_count)
+        
+        self.status_label.setText(f"Connected to telemetry service. Monitoring {gpu_count} GPUs.")
+        logger.info(f"Connected to telemetry service. Monitoring {gpu_count} GPUs.")
     
     def _setup_ui(self):
         """Set up the UI components"""
@@ -204,28 +229,6 @@ class DashboardTab(QWidget):
         # Add stretch to push everything to the top
         main_layout.addStretch(1)
     
-    def _init_telemetry(self):
-        """Initialize telemetry service"""
-        try:
-            # Get telemetry service
-            self.telemetry_service = get_telemetry_service()
-            
-            # Start service (creates a background thread)
-            self.telemetry_service.start()
-            
-            # Get initial metrics to determine GPU count
-            metrics = self.telemetry_service.get_metrics()
-            self._create_gpu_widgets(len(metrics))
-            
-            # Register callback for updates
-            self.telemetry_service.register_callback(self._telemetry_callback)
-            
-            self.status_label.setText("Telemetry service running")
-            logger.info("Telemetry service initialized")
-        except Exception as e:
-            self.status_label.setText(f"Error initializing telemetry: {e}")
-            logger.error(f"Failed to initialize telemetry: {e}")
-    
     def _create_gpu_widgets(self, gpu_count: int):
         """Create widgets for each GPU
         
@@ -233,6 +236,12 @@ class DashboardTab(QWidget):
             gpu_count: Number of GPUs
         """
         # Clear existing widgets
+        for _ in range(self.metrics_layout.count()):
+            widget = self.metrics_layout.itemAt(0).widget()
+            if widget:
+                self.metrics_layout.removeWidget(widget)
+                widget.deleteLater()
+        
         self.gpu_widgets = []
         
         # Create a widget for each GPU
@@ -243,26 +252,103 @@ class DashboardTab(QWidget):
         
         self.status_label.setText(f"Monitoring {gpu_count} GPUs")
     
-    def _telemetry_callback(self, metrics: Dict[int, GPUMetrics]):
-        """Callback for telemetry updates
+    @Slot(int, int)
+    def _handle_util_update(self, gpu_id: int, util_percent: int):
+        """Handle GPU utilization update signal
         
         Args:
-            metrics: Dictionary of GPU metrics
+            gpu_id: GPU ID
+            util_percent: Utilization percentage
         """
-        # Check if we need to create GPU widgets
-        if not self.gpu_widgets and metrics:
-            self._create_gpu_widgets(len(metrics))
-        
-        # Update each GPU widget
-        for gpu_id, gpu_metrics in metrics.items():
-            if gpu_id < len(self.gpu_widgets):
-                self.gpu_widgets[gpu_id].update_metrics(gpu_metrics)
+        if gpu_id < len(self.gpu_widgets):
+            self.gpu_widgets[gpu_id].util_bar.setValue(util_percent)
+            self.gpu_widgets[gpu_id]._update_bar_color(
+                self.gpu_widgets[gpu_id].util_bar, util_percent, 50, 90)
     
-    def _update_metrics(self):
-        """Update metrics from telemetry service"""
-        if hasattr(self, 'telemetry_service'):
-            metrics = self.telemetry_service.get_metrics()
-            self._telemetry_callback(metrics)
+    @Slot(int, int, int, float)
+    def _handle_vram_update(self, gpu_id: int, used_mb: int, total_mb: int, percent: float):
+        """Handle VRAM update signal
+        
+        Args:
+            gpu_id: GPU ID
+            used_mb: Used memory in MB
+            total_mb: Total memory in MB
+            percent: Usage percentage
+        """
+        if gpu_id < len(self.gpu_widgets):
+            widget = self.gpu_widgets[gpu_id]
+            widget.memory_bar.setValue(int(percent))
+            widget._update_bar_color(widget.memory_bar, percent, 75, 90)
+            
+            # Update the values text
+            current_text = widget.values_label.text().split('\n')
+            if len(current_text) >= 3:
+                current_text[0] = f"Memory: {used_mb}/{total_mb} MB ({percent:.1f}%)"
+                widget.values_label.setText('\n'.join(current_text))
+    
+    @Slot(int, int)
+    def _handle_temp_update(self, gpu_id: int, temp_c: int):
+        """Handle temperature update signal
+        
+        Args:
+            gpu_id: GPU ID
+            temp_c: Temperature in Celsius
+        """
+        if gpu_id < len(self.gpu_widgets):
+            widget = self.gpu_widgets[gpu_id]
+            widget.temp_bar.setValue(temp_c)
+            widget._update_bar_color(widget.temp_bar, temp_c, 70, 85)
+    
+    @Slot(int, int, int, float)
+    def _handle_power_update(self, gpu_id: int, power_w: int, power_limit: int, percent: float):
+        """Handle power update signal
+        
+        Args:
+            gpu_id: GPU ID
+            power_w: Power consumption in watts
+            power_limit: Power limit in watts
+            percent: Usage percentage
+        """
+        if gpu_id < len(self.gpu_widgets):
+            widget = self.gpu_widgets[gpu_id]
+            widget.power_bar.setValue(int(percent))
+            widget._update_bar_color(widget.power_bar, percent, 80, 95)
+    
+    @Slot(int, int, int)
+    def _handle_clock_update(self, gpu_id: int, sm_clock: int, mem_clock: int):
+        """Handle clock update signal
+        
+        Args:
+            gpu_id: GPU ID
+            sm_clock: SM clock in MHz
+            mem_clock: Memory clock in MHz
+        """
+        if gpu_id < len(self.gpu_widgets):
+            widget = self.gpu_widgets[gpu_id]
+            
+            # Update the values text
+            current_text = widget.values_label.text().split('\n')
+            if len(current_text) >= 3:
+                current_text[1] = f"Clocks: {sm_clock}/{mem_clock} MHz"
+                widget.values_label.setText('\n'.join(current_text))
+    
+    @Slot(int, int, int)
+    def _handle_pcie_update(self, gpu_id: int, tx_kb_s: int, rx_kb_s: int):
+        """Handle PCIe update signal
+        
+        Args:
+            gpu_id: GPU ID
+            tx_kb_s: TX bandwidth in KB/s
+            rx_kb_s: RX bandwidth in KB/s
+        """
+        if gpu_id < len(self.gpu_widgets):
+            widget = self.gpu_widgets[gpu_id]
+            
+            # Update the values text
+            current_text = widget.values_label.text().split('\n')
+            if len(current_text) >= 3:
+                current_text[2] = f"PCIe: TX {tx_kb_s/1024:.1f} MB/s, RX {rx_kb_s/1024:.1f} MB/s"
+                widget.values_label.setText('\n'.join(current_text))
     
     def _reset_gpu_memory(self):
         """Reset GPU memory"""
@@ -281,23 +367,7 @@ class DashboardTab(QWidget):
     def showEvent(self, event):
         """Handle show event"""
         super().showEvent(event)
-        # Update metrics when tab is shown
-        self._update_metrics()
     
     def hideEvent(self, event):
         """Handle hide event"""
-        super().hideEvent(event)
-        # Stop timer when tab is hidden to save resources
-        self.update_timer.stop()
-    
-    def closeEvent(self, event):
-        """Handle close event"""
-        # Stop telemetry service if it's running
-        if hasattr(self, 'telemetry_service'):
-            self.telemetry_service.unregister_callback(self._telemetry_callback)
-        
-        # Stop timer
-        if self.update_timer.isActive():
-            self.update_timer.stop()
-        
-        super().closeEvent(event) 
+        super().hideEvent(event) 

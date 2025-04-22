@@ -33,6 +33,35 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Advanced Tools Dock (`ui/advanced.py`)**: Moved diagnostic tools like the Memory Timeline into a separate, hideable dock widget accessible via the "View" menu, decluttering the main interface for core chat/monitoring tasks.
 - **Removed Redundant Calculations**: Efficiency metrics (tok/GB) removed from real-time calculation to reduce overhead; planned for post-session analysis.
 
+### NEW: Refactored Implementation Details
+
+The refactored architecture introduces several key implementation improvements:
+
+#### Signal-Based GPU Monitoring
+
+- **Efficient Qt Signals**: Each GPU metric (utilization, VRAM, temperature, power) is updated via dedicated Qt signals
+- **Reduced CPU Usage**: Eliminated polling loops in favor of event-driven updates
+- **Improved Responsiveness**: UI components connect directly to telemetry signals for immediate updates
+- **Thread Safety**: Worker thread handles GPU communication while UI thread processes signals
+
+#### Direct UI Component Communication
+
+- **Memory Timeline Sharing**: Memory Timeline component shared between Memory Profiler tab and Advanced Tools dock
+- **Engine Integration**: Unified Engine provides model operations directly to the Launcher tab
+- **Alert Propagation**: Alert Service directly updates status bar and system tray through Qt signals
+- **Preset System**: Centralized preset management with access from all tabs
+
+#### Incremental Integration
+
+The refactored architecture is designed for incremental integration:
+
+1. **Core Services Layer**: Backend Engine, Alert Service, and Telemetry Worker can be integrated independently
+2. **UI Components**: Advanced Tools Dock and Preset system can be added without affecting core functionality
+3. **Existing Features**: Gradual migration of existing components to use the refactored services
+4. **Cleanup Phase**: Removal of deprecated code after successful migration
+
+This approach ensures stability during the transition while immediately benefiting from the improved architecture.
+
 ### NEW: Thread-Safe Caching System
 
 We've implemented a comprehensive thread-safe caching system to optimize performance across the application:
@@ -327,6 +356,7 @@ This robust error handling ensures the application remains functional across dif
 ## Event-Driven Architecture (Revised)
 
 The application utilizes a hybrid communication approach:
+
 - **Core Telemetry (GPU Metrics):** Uses direct Qt Signals (`util_updated`, `vram_updated`, etc.) emitted by `services/telemetry.py:TelemetryWorker` for optimal performance and responsiveness. UI elements connect directly to these signals.
 - **Other Communication:** Continues to use the existing Event Bus (`services/event_bus.py`) for less frequent or broader messages like configuration changes, preset loading requests, or complex state updates.
 
@@ -360,7 +390,7 @@ The Qt-based interface features a full-featured tabbed layout with:
 - Leak detection with pattern analysis
 - Memory session tracking
 - Detailed memory statistics
-**Note: This is now located in the "Advanced Tools" dock, hidden by default.**
+  **Note: This is now located in the "Advanced Tools" dock, hidden by default.**
 
 ### Launcher Tab
 

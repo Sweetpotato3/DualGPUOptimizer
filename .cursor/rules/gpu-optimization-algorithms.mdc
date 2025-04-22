@@ -1,61 +1,49 @@
 ---
-description: For analyzing GPU optimization algorithms including memory management, tensor splits, and CUDA process coordination
-globs: 
+description: Specification for GPU memory optimization, tensor splitting algorithms, and distribution calculations for multi-GPU LLM inference
+globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Distribution Algorithms
-File: dualgpuopt/optimizer.py
+Key Memory Optimization Components:
 
-Primary GPU memory distribution logic:
-- Calculates optimal tensor splits based on VRAM ratios between GPUs
-- Dynamically adjusts splits based on base model size and KV cache requirements
-- Maintains 10% safety margin for system overhead
+1. Layer Distribution Algorithm (layer_balance.py)
+- Dynamic layer balancing across GPUs based on weighted performance ratios
+- Profiling using sequence lengths of 64 and 1024 tokens (20%/80% weights)
+- Block optimization with 3-layer minimum for preventing fragmentation
+- Specialized handling for input embeddings and output components
 
-Memory distribution formula:
-```python
-split_ratio = gpu0_vram / (gpu0_vram + gpu1_vram)
-gpu0_layers = int(total_layers * split_ratio)
-gpu1_layers = total_layers - gpu0_layers
-```
+2. Memory Split Calculator (optimizer.py)
+- Tensor parallel fraction calculation based on relative GPU memory sizes
+- Memory requirement estimation incorporating:
+  * Base model weights
+  * KV cache overhead (2.0x factor)
+  * Tensor parallelism overhead (20%)
+  * Minimum context size enforcement (128 tokens)
+  * Safety margin (10% default)
 
-## Tensor Parallel Split Optimization 
-File: dualgpuopt/memory/profiler.py
+3. Model-Specific Optimizations
+- Context size constraints per architecture:
+  * 70B models: 4096 max tokens
+  * Mixtral: 8192 max tokens  
+  * 13B models: 12288 max tokens
+  * Standard models: 16384 max tokens
 
-Optimizes model layer distribution:
-- Maps transformer layers to GPUs based on memory availability 
-- Implements backpressure system for OOM handling
-- Progressive batch size reduction (25% steps) on OOM events
-- Gradual recovery after 5 successful batches
+4. Memory Management Rules
+- Progressive memory reclamation:
+  * CACHE_ONLY: Basic PyTorch cache clearing
+  * CLOCK_RESET: GPU clock manipulation
+  * FULL_RESET: Comprehensive memory reset
+  * SYSTEM_CMD: OS-specific commands
 
-## GPU Memory Reset Logic
-File: dualgpuopt/vram_reset.py
+Implementation Score: 95
+Rationale: Core optimization algorithms for multi-GPU distribution and memory management
 
-Memory reclamation strategies:
-- CACHE_ONLY: Basic cache clearing
-- CLOCK_RESET: GPU clock manipulation
-- FULL_RESET: Complete tensor cleanup 
-- SYSTEM_CMD: OS-specific memory commands
-
-## Smart Batch Sizing
-File: dualgpuopt/batch/smart_batch.py
-
-Batch optimization logic:
-- Length-aware sequence grouping
-- Dynamic batch size calculation based on memory profiles
-- Automatic backpressure on OOM events
-- Progressive recovery with successful batch tracking
-
-## Memory Event Classification
-File: dualgpuopt/memory/profiler.py
-
-Event categorization system:
-- ALLOCATION/DEALLOCATION: Memory changes >1MB
-- GROWTH_SPIKE: Rapid memory increases  
-- LEAK_DETECTED: Sustained growth patterns
-- INFERENCE_START/END: Session boundaries
+File Paths:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py
+- dualgpuopt/gpu_info.py
 
 $END$

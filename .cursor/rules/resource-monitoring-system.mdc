@@ -1,48 +1,59 @@
 ---
-description: Resource monitoring and real-time telemetry collection system for GPU metrics, performance tracking, and hardware state analysis.
-globs: **/telemetry.py,**/telemetry_history.py,**/tray.py
+description: Documents technical implementation of GPU resource monitoring and telemetry collection system with alerting capabilities
+globs: **/telemetry.py,**/tray.py,**/gpu_info.py,**/metrics.py,**/monitor.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## GPU Telemetry Collection System
-Key business logic focuses on real-time GPU metric collection and analysis:
+The resource monitoring system implements real-time GPU metrics collection and alerting with the following key components:
 
-1. GPU Metrics Processing:
-- 60-second rolling metrics history for utilization, memory, temperature, power
-- Multi-tier alert levels based on hardware thresholds:
-  * Memory: 75%, 90%, 95%  
-  * Temperature: 70°C, 80°C, 90°C
-  * Power: 90%, 98%
-- Exponential backoff error recovery for NVML failures
+## GPU Telemetry Collection (Importance: 85)
+- Maintains 60-second rolling history buffer for each GPU metric
+- Collects critical hardware metrics:
+  - Memory utilization and total available memory
+  - GPU core utilization percentage
+  - Temperature readings
+  - Power consumption values
+  - Fan speeds
+  - PCIe bandwidth usage
+  - Clock speeds (core and memory)
 
-2. Mock Data Generation:
-- Realistic mock data generation for testing:
-  * RTX 5070 Ti: 24GB VRAM, 350W power limit
-  * RTX 4060: 12GB VRAM, 200W power limit
-- Correlated metric generation (temperature follows utilization)
-- Randomized fluctuations within realistic bounds
+## Resource Alerting System (Importance: 90)
+Alert thresholds defined for key metrics:
+- Emergency level:
+  - Memory usage ≥95%
+  - Temperature ≥90°C 
+- Critical level:
+  - Memory usage ≥90%
+  - Temperature ≥80°C
+  - Power usage ≥98%
+- Warning level:
+  - Memory usage ≥75%
+  - Temperature ≥70°C 
+  - Power usage ≥90%
 
-3. Telemetry History Management:
-- Thread-safe rolling buffer implementation
-- Automatic pruning of samples older than 60 seconds
-- Per-GPU tracking of:
-  * Average utilization 
-  * Total VRAM usage percentage
-  * Average temperature
-  * Normalized power consumption
+## Auto-Recovery Logic (Importance: 80)
+- Progressive error handling with exponential backoff
+- Auto-switches to mock data generation after repeated failures
+- Maintains separate error states per GPU for partial functionality
+- Recovery attempts triggered by threshold violations
 
-4. Alert System:
-- Hardware-aware alert thresholds
-- Progressive severity levels (NORMAL -> WARNING -> CRITICAL -> EMERGENCY)
-- Configurable alert persistence
-- Automatic alert resolution on metric recovery
+## Mock Data Generation (Importance: 75)
+Simulates realistic GPU behavior patterns with:
+- High-end GPU characteristics:
+  - 24GB VRAM capacity
+  - 350W power limit
+  - 2100MHz base clock
+- Mid-range GPU characteristics:
+  - 12GB VRAM capacity  
+  - 200W power limit
+  - 1800MHz base clock
 
 File Paths:
-- `dualgpuopt/telemetry.py`: Core telemetry collection system
-- `dualgpuopt/telemetry_history.py`: Rolling history management
-- `dualgpuopt/tray.py`: Alert system and notification management
+- dualgpuopt/telemetry.py
+- dualgpuopt/gpu/monitor.py
+- dualgpuopt/memory/monitor.py
 
 $END$

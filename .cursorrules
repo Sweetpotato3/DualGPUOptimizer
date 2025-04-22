@@ -137,8 +137,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Apply this overview to high-level documentation of core business logic for GPU optimization systems, focusing specifically on dual GPU management, monitoring, and machine learning model deployments.
-globs: *.py,dualgpuopt/*
+description: Applies to high-level documentation of dual GPU optimization systems focused on machine learning model deployment, specifically targeting systems managing GPU memory allocation, performance monitoring, and model parameter optimization
+globs: *.py,*.cpp,*.h,*.hpp
 alwaysApply: false
 ---
 
@@ -154,42 +154,44 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer implements specialized optimization and monitoring for dual GPU machine learning deployments, with core business logic distributed across several key subsystems:
+The DualGPUOptimizer implements specialized GPU resource management and optimization for large language model deployment.
 
-GPU Resource Management:
-- Adaptive telemetry system tracks utilization, memory, temperature, and power metrics
-- Multi-tier alert levels based on memory usage (75%, 90%, 95%), temperature (70°C, 80°C, 90°C), and power (90%, 98%)
-- Smart error recovery with exponential backoff for hardware failures
-- Mock GPU simulation for testing with realistic characteristics
+Core System Components:
 
-Memory Optimization:
-- Session-level memory statistics and leak detection using linear regression
-- Spike detection with sliding window analysis for rapid growth (>10%)
-- Memory event classification for allocations, spikes, leaks and inference boundaries
-- Token processing efficiency metrics correlation with memory patterns
+1. GPU Telemetry System (dualgpuopt/telemetry.py)
+- Real-time monitoring of GPU metrics with 60-second history retention
+- Alert thresholds: Emergency (Memory ≥95%, Temp ≥90°C), Critical (Memory ≥90%, Temp ≥80°C)
+- Auto-switches to mock data mode after multiple monitoring failures
 
-Model Layer Distribution:
-- Layer-aware distribution across GPUs based on performance ratios
-- Weighted profiling using short (64 tokens) and long (1024 tokens) sequences
-- Dynamic batch size optimization with OOM recovery mechanisms
-- Length-aware sequence grouping for GPU throughput optimization
+2. Memory Management (dualgpuopt/memory/profiler.py)
+- Session-based GPU memory tracking with lifecycle states
+- Dual-threshold anomaly detection for memory spikes and leaks
+- Memory timeline analysis with configurable history size
+- Event classification system for memory operations
 
-Core System Integration:
-- Event bus system with typed events and priority-based handler execution
-- State management for GPU configurations and model parameters  
-- Framework-specific command generation for llama.cpp and vLLM
-- Advanced telemetry middleware for metrics collection and visualization
+3. Model Optimization (dualgpuopt/optimizer.py)
+- Calculates optimal memory splits between GPUs for model deployment
+- KV cache optimization with MoE architecture support
+- Layer balancing algorithms for tensor parallel configurations
+- Framework-specific command generation (llama.cpp, vLLM)
 
-The business logic focuses on optimizing large language model inference across dual GPU setups through intelligent resource management, proactive monitoring, and adaptive optimization strategies.
+4. Launch Management (dualgpuopt/gui/launcher.py)
+- Framework-specific parameter optimization for model deployment
+- GPU-aware process management with memory monitoring
+- Automatic recovery from OOM conditions with configurable strategies
 
-Key Business-Critical Paths:
-```
-dualgpuopt/
-  telemetry.py          # GPU metrics collection and analysis
-  memory/profiler.py    # Memory leak detection and analysis  
-  optimizer.py          # Layer distribution and split calculation
-  layer_balance.py      # Performance-based layer allocation
-```
+5. Resource Recovery (dualgpuopt/vram_reset.py)
+- Tiered GPU memory reclamation with four methods
+- Progressive error recovery with exponential backoff
+- Platform-specific memory cleanup implementations
+
+The system focuses on optimizing GPU resource allocation for large language models through:
+- Real-time performance monitoring
+- Memory usage optimization
+- Model parameter tuning
+- Automated recovery mechanisms
+
+Integration points between components use an event bus system with priority-based message handling, ensuring critical GPU state changes receive immediate attention while maintaining system stability through component isolation.
 
 $END$
 END SPECIFICATION
