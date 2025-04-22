@@ -3,10 +3,8 @@ Model Manager tab for searching, downloading, and managing ML models.
 """
 from __future__ import annotations
 
-import os
 import pathlib
 import logging
-from typing import Dict, Any, List, Optional, Tuple, Callable
 
 from PySide6.QtCore import Qt, Signal, QThread, Slot
 from PySide6.QtWidgets import (

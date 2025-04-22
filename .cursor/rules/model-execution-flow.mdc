@@ -1,63 +1,62 @@
 ---
-description: Documents core logic for LLM model execution, GPU resource allocation, backend selection, and command generation across llama.cpp and vLLM.
-globs: **/optimizer.py,**/engine/**,**/launcher/**,**/gpu/**
+description: Defines how machine learning models are executed across dual GPUs, including layer distribution, memory management, and command generation.
+globs: 
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The system implements a dual-GPU optimization pipeline for LLM model execution with the following core components:
+The model execution flow implements specialized workflows for running large language models across dual GPU configurations:
 
-## Model Execution Flow
+1. Core Execution Pipeline
 
-1. Backend Selection and Initialization:
-- `engine/backend.py` determines optimal backend (llama.cpp, vLLM) based on:
-  * File format (.gguf -> llama.cpp)  
-  * Model quantization (AWQ -> vLLM)
-  * Architecture requirements (MoE -> vLLM)
+- Tensor Split Optimization:
+  ```python
+  # Calculates optimal memory ratios between GPUs
+  bytes_per_token = model.kv_hidden_size * model.num_layers * 2
+  mb_per_token = (bytes_per_token / (1024 * 1024)) * kv_cache_factor
+  ```
 
-2. GPU Resource Allocation:
-- `optimizer.py` calculates optimal GPU splits:
-  * Memory ratios based on VRAM capacity
-  * Layer distribution for tensor parallelism
-  * Safety margins for context expansion
-  * Adjustments for model architecture (MoE requires 5% extra)
+- Layer Distribution Logic:
+  - Places input embeddings on first GPU by default
+  - Assigns output components (norm layer, language model head) to last GPU
+  - Implements dynamic programming for optimal layer block allocation
+  - Uses weighted profiling (20% short sequences, 80% long sequences)
 
-3. Command Generation:
-- Generates framework-specific launch commands:
-```python
-# llama.cpp format
---main-gpu <gpu0_memory> --gpu-split <split_ratio>
-# vLLM format  
---tensor-parallel-size <num_gpus> --gpu-memory-utilization <ratios>
-```
+2. GPU Memory Management
 
-4. Context Size Optimization:
-- Dynamic context length calculation based on:
-  * Available GPU memory
-  * Model architecture 
-  * KV cache requirements
-  * Tensor parallelism overhead
+- Memory Prediction System:
+  - Estimates usage based on model architecture and batch size
+  - Projects memory growth over execution timeline
+  - Triggers alerts at 75% (WARNING), 90% (CRITICAL), 95% (EMERGENCY)
 
-5. Execution Monitoring:
-- Real-time metrics tracking:
-  * Tokens/second throughput
-  * Memory pressure per GPU
-  * Temperature thresholds
-  * Error states and recovery
+- Recovery Mechanisms:
+  - Cache clearing with PyTorch CUDA cache reset
+  - Progressive batch size reduction (25% steps)
+  - Automatic model offloading when thresholds exceeded
 
-File structure:
-```
-dualgpuopt/
-  engine/
-    backend.py    # Backend selection logic
-    pool.py       # Model instance management 
-  optimizer.py    # GPU split calculations
-  gpu/
-    monitor.py    # Resource monitoring
-```
+3. Command Generation
 
-Key components integrate through an event bus system that coordinates model loading, execution state changes, and resource monitoring events.
+- Framework-Specific Parameters:
+  - llama.cpp: GPU split ratios, layer distribution, thread count
+  - vLLM: Tensor parallel size, memory utilization limits
+  - Generates environment variables for each framework
+
+4. Health Monitoring
+
+- Engine Pool Management:
+  - Tracks engine health with periodic checks
+  - Implements auto-restart for failing engines
+  - Maintains cache of loaded models with LRU eviction
+  - Records performance metrics per model
+
+Key file paths:
+- dualgpuopt/engine/pool.py: Engine lifecycle and health monitoring
+- dualgpuopt/memory/predictor.py: Memory usage prediction and alerts
+- dualgpuopt/model/vram_fit.py: VRAM allocation optimization
+- dualgpuopt/commands/gpu_commands.py: Framework-specific command generation
+
+The system prioritizes stable model execution across dual GPUs while preventing out-of-memory conditions through predictive monitoring and automated recovery mechanisms.
 
 $END$

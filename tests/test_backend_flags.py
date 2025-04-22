@@ -1,5 +1,3 @@
-import builtins, types
-from unittest.mock import patch, MagicMock
 from dualgpuopt.engine.backend import LlamaCppBackend, VLLMBackend
 
 class _DummyPopen:

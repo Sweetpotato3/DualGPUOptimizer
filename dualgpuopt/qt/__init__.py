@@ -87,6 +87,7 @@ __all__ = [
 # Import components
 from dualgpuopt.qt.dashboard_tab import DashboardTab, GPUCard, GPUChart
 from dualgpuopt.qt.launcher_tab import LauncherTab
+
 # Import components (continued)
 from dualgpuopt.qt.main import main
 from dualgpuopt.qt.memory_tab import MemoryProfilerTab

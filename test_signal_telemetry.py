@@ -18,6 +18,7 @@ from dualgpuopt.services.telemetry import TelemetryWorker
 
 logger = logging.getLogger("TelemetryTest")
 
+
 class TelemetryTester(QObject):
     """Test class to verify telemetry signal connections"""
 

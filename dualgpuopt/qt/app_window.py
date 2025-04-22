@@ -12,17 +12,18 @@ from PySide6.QtWidgets import (
     QLabel,
     QMainWindow,
     QMenuBar,
+    QMessageBox,
     QStatusBar,
     QTabWidget,
     QVBoxLayout,
     QWidget,
-    QMessageBox,
 )
+
+from dualgpuopt.engine.pool import EnginePool
+from dualgpuopt.gui.cache_monitor import CacheMonitorWidget
 
 # Import refactored components
 from dualgpuopt.services.alerts import AlertService
-from dualgpuopt.engine.pool import EnginePool
-from dualgpuopt.gui.cache_monitor import CacheMonitorWidget
 
 # Local imports
 from dualgpuopt.services.config_service import get_config_service
@@ -221,7 +222,7 @@ class DualGPUOptimizerApp(QMainWindow):
 
             # Models Tab
             from dualgpuopt.qt.model_manager import ModelManager
-            
+
             self.models_tab = ModelManager()
             self.tab_widget.addTab(self.models_tab, "Models")
 
@@ -354,7 +355,7 @@ class DualGPUOptimizerApp(QMainWindow):
                 "About DualGPUOptimizer",
                 "DualGPUOptimizer\n\n"
                 "A tool for optimizing dual GPU setups for AI workloads.\n\n"
-                "© 2024-2025"
+                "© 2024-2025",
             )
         except Exception as e:
             logger.error(f"Failed to show about dialog: {e}")

@@ -347,13 +347,13 @@ The system focuses on optimizing GPU resource utilization through intelligent wo
 $END$
 END SPECIFICATION
 
-START SPECIFICATION:
----
-description: Generate a high-level overview for the dualgpuopt project, focusing on GPU optimization and monitoring functionality while excluding standard utilities and framework-specific code. Apply when documenting key business logic organization.
-globs: *.py,*.ini,*.cfg,*.toml
-alwaysApply: false
+START SPECIFICATION
 ---
 
+description: Generate high-level overview documentation focused on DualGPUOptimizer's core business logic, organization and key systems. Applies when documenting project-level architecture and critical business workflows.
+globs: *.py,*.md
+alwaysApply: false
+---
 
 # main-overview
 
@@ -365,51 +365,67 @@ alwaysApply: false
 - Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
+DualGPUOptimizer System Architecture
 
-The DualGPUOptimizer project implements a GPU resource management and optimization system centered around four core business domains:
+Core Business Systems:
 
-1. GPU Telemetry Management (dualgpuopt/telemetry.py) [Score: 95]
-- Real-time monitoring of dual GPU configurations
-- Custom alert classification system based on memory, temperature, and power thresholds  
-- Rolling 60-second metrics history with differential tracking
-- Specialized GPU load characterization and mock data generation
+1. GPU Metrics & Telemetry
 
-2. Memory Profiling System (dualgpuopt/memory/profiler.py) [Score: 90]
-- Session-based GPU memory tracking with inference-specific monitoring
-- Custom leak detection algorithm using linear regression
-- Per-inference memory pattern analysis with token correlation
-- Memory timeline analysis with 20-point sliding window
-- Event classification specific to ML model memory usage
+- Comprehensive GPU performance monitoring
+- Real-time metric collection: utilization, memory, temperature, power
+- Custom AlertLevel system with four severity tiers
+- 60-second rolling history with multi-GPU aggregation
+- Automatic failover to mock data after 5 consecutive errors
+- File: dualgpuopt/telemetry.py
 
-3. Multi-GPU Management Interface (dualgpuopt/gui/main_app.py) [Score: 85]
-- Implements dual GPU optimization interface with real-time metrics
-- Adaptive UI scaling based on window dimensions
-- Fault-tolerant tab management architecture
-- Event bus coordination for GPU metrics and configurations
+2. Memory Profiling & Management
 
-4. GPU Resource Monitoring (dualgpuopt/qt/app_window.py) [Score: 80]
-- Custom thresholding system for GPU metrics
-- Engine pool management with model caching
-- Alert service with severity-based notifications
-- Real-time cache statistics monitoring
-- Mock mode for testing/development
+- Specialized dual-GPU memory profiling system
+- Session-based memory tracking with token count correlation
+- Critical event detection: leaks, spikes, allocation patterns
+- Linear regression analysis for growth rate calculation
+- Retention analysis with 10MB threshold for leak detection
+- File: dualgpuopt/memory/profiler.py
 
-The system integrates these components through:
+3. Layer Distribution Optimization
 
-- Event-driven architecture for real-time GPU metrics
-- Centralized telemetry service for metrics aggregation
-- Thread-safe memory management across GPUs  
-- Fault tolerance with graceful degradation
+- Dynamic layer allocation across dual GPUs
+- Performance profiling with weighted sequence analysis
+- Automated layer distribution based on GPU capabilities
+- Memory quota enforcement with balancing algorithms
+- File: dualgpuopt/layer_balance.py
 
-Core file structure:
+4. Model Execution Management
 
-/dualgpuopt
-  /memory/ - Memory profiling and optimization
-  /gui/    - Multi-GPU management interface
-  /qt/     - Qt-based monitoring components  
-  /telemetry/ - GPU metrics collection
+- Framework-specific launch command generation
+- Tensor parallel size optimization
+- Dynamic batch size calculation
+- Memory-based GPU split optimization
+- File: dualgpuopt/commands/gpu_commands.py
 
-The business logic focuses on optimizing GPU resource utilization for machine learning workloads while providing comprehensive monitoring and alerting capabilities.
+5. State & Configuration Management
+
+- Central application state management
+- GPU overclock profile persistence
+- Theme and UI customization settings
+- Idle detection and power management
+- File: dualgpuopt/services/state_service.py
+
+Key Integration Points:
+
+- GPU telemetry feeds into memory profiling system
+- Layer distribution uses telemetry data for optimization
+- State service coordinates settings across components
+- Model execution integrates with layer distribution
+
+Business Value:
+The system provides comprehensive dual-GPU optimization through:
+
+- Real-time performance monitoring and alerting
+- Memory leak detection and prevention
+- Intelligent workload distribution
+- Framework-agnostic model execution
+- Persistent configuration management
 
 $END$
 END SPECIFICATION

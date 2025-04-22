@@ -531,8 +531,9 @@ def probe_gpus(max_workers: int = 4) -> List[GPU]:
         error_msg = (
             "NVIDIA Management Library (NVML) not found.\n"
             "This usually means NVIDIA drivers are not installed or not detected.\n"
-            "Please install the latest NVIDIA drivers for your graphics card.\n\n"
-            "You can run in mock mode for testing by setting the DGPUOPT_MOCK_GPUS=1 environment variable."
+            "Please install the latest NVIDIA drivers for your graphics card.\n"
+            "You can run in mock mode for testing by setting the "
+            "DGPUOPT_MOCK_GPUS=1 environment variable."
         )
         logger.error(error_msg)
         raise RuntimeError(error_msg)

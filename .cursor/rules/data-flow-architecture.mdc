@@ -1,90 +1,56 @@
 ---
-description: For analyzing data flow patterns, data transformations, and communication between components in GPU optimization systems
-globs: *.py,dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py
+description: Data flow analysis specification for GPU optimization and resource management systems, focusing on metrics, configuration, and optimization parameters.
+globs: 
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-The dual GPU optimizer implements a multi-layered data flow architecture for GPU resource management and optimization:
+Key Data Flow Components:
 
-## Core Data Flows
+1. GPU Telemetry Flow
+```
+GPU Hardware -> NVML Interface -> Telemetry Service -> Event Bus -> UI Components
+```
+- Telemetry service collects metrics (utilization, memory, temperature, power) from GPUs
+- Metrics flow through event bus to visualization components
+- Alert thresholds trigger notifications for critical conditions
+- Historical data maintained in 60-second rolling buffer
 
-### GPU Telemetry Pipeline
-- GPU metrics collection via NVML interface
-- Real-time processing through middleware pipeline
-- Distribution to visualization and monitoring components
-- Storage in 60-second rolling history buffer
-- Alert generation based on threshold violations
+2. Model Configuration Flow
+```
+Model Selection -> Parameter Resolution -> GPU Split Calculation -> Command Generation
+```
+- Model parameters determine memory requirements and context sizes
+- GPU split ratios calculated based on available resources
+- Framework-specific commands generated (llama.cpp/vLLM)
+- Configuration applied through launcher service
 
-Key data points:
-- GPU utilization percentage
-- Memory usage and pressure
-- Temperature readings
-- Power consumption levels
-- Clock speeds (SM/Memory)
-- PCIe bandwidth metrics
-- Fan speed settings
+3. Memory Management Pipeline
+```
+Memory Monitor -> Recovery Service -> Event Bus -> UI Alerts
+```
+- Continuous monitoring of GPU memory usage
+- Triggers recovery actions when thresholds exceeded
+- Recovery strategies executed in priority order
+- Results published to event bus for UI updates
 
-### Memory Profiling Flow
-- Per-inference memory tracking
-- Session-based monitoring with baselines
-- Token count correlation analysis
-- Growth pattern detection using sliding windows
-- Event classification and alerting
+4. Optimization Parameter Flow
+```
+Optimizer -> Layer Balance -> Command Generator -> Launch Service
+```
+- Optimizer determines optimal split ratios
+- Layer balancer distributes model across GPUs
+- Command generator creates framework-specific launch parameters
+- Launch service executes optimized configuration
 
-### Optimization Pipeline
-- Model parameter analysis
-- GPU split ratio calculation
-- Layer distribution optimization
-- Command generation for deployment
-- Configuration validation and persistence
+File Paths:
+- Telemetry: `dualgpuopt/telemetry.py`
+- Memory: `dualgpuopt/memory/profiler.py`
+- Optimization: `dualgpuopt/optimizer.py`
+- Launch: `dualgpuopt/gui/launcher.py`
 
-### Event Distribution System
-- Priority-based event bus (LOW, NORMAL, HIGH, CRITICAL)
-- Typed event inheritance for GPU operations
-- Synchronous and asynchronous event processing
-- Event correlation and aggregation
-
-## Data Transformations
-
-### Memory Timeline Analysis
-- 20-point sliding window (10s at 0.5s intervals)
-- Growth trend calculation per GPU
-- Cross-reference with inference events
-- 30-minute history retention (3600 samples)
-
-### Alert Level Processing
-- Emergency: Memory ≥95% or Temperature ≥90°C 
-- Critical: Memory ≥90% or Temperature ≥80°C or Power ≥98%
-- Warning: Memory ≥75% or Temperature ≥70°C or Power ≥90%
-- Normal: Below all thresholds
-
-### Model Profile Transformations
-- Layer distribution calculations
-- Memory requirement estimations
-- Context size optimizations
-- Split ratio computations
-
-## Integration Points
-
-### Telemetry Integration
-- Real-time metric updates to UI
-- Event bus publication
-- Alert system notifications
-- Status badge updates
-
-### GPU Command Generation
-- Framework-specific transformations
-- Environment variable generation
-- Parameter validation and optimization
-- Command string formatting
-
-### Memory Management
-- Cache state tracking
-- Allocation/deallocation events
-- Growth spike detection
-- Leak identification
+The system implements a robust data flow architecture centered around GPU resource optimization, with emphasis on real-time metric collection, memory management, and dynamic parameter optimization for model deployment.
 
 $END$

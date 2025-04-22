@@ -1,76 +1,57 @@
 ---
-description: Provides a comprehensive resource monitoring system for monitoring GPU metrics, performance, utilization, and health in dual-GPU environments.
-globs: 
+description: Resource monitoring system specification focused on hardware metrics, telemetry collection, and alert mechanism implementations
+globs: **/telemetry.py,**/metrics.py,**/monitor.py,**/alerts.py,**/sensors/**
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The resource monitoring system provides real-time telemetry and monitoring of GPU resources with these key components:
+Core Business Logic:
 
-## GPU Telemetry Collection
-Location: dualgpuopt/telemetry.py
+1. GPU Metrics Collection System
+- Collects realtime GPU performance metrics:
+  - Utilization percentage 
+  - Memory usage/availability
+  - Temperature
+  - Power consumption
+  - PCIe bandwidth
+  - Clock speeds (SM and memory)
+  - Fan speeds
+- Maintains 60-second rolling history per GPU
+- Implements alert system with 4 severity levels:
+  - NORMAL: Within safe thresholds
+  - WARNING: Memory ≥75% or Temp ≥70°C
+  - CRITICAL: Memory ≥90% or Temp ≥80°C 
+  - EMERGENCY: Memory ≥95% or Temp ≥90°C
 
-Primary metrics tracked:
-- Utilization percentage per GPU
-- Memory usage and pressure monitoring 
-- Temperature readings with thresholds
-- Power consumption tracking
-- Clock speed monitoring (SM/Memory)
-- PCIe bandwidth utilization
-- Fan speed status
+2. Telemetry History Management
+- Rolling 60-second metrics buffer for each GPU
+- Aggregated cross-GPU metrics:
+  - Average utilization
+  - Total memory usage/availability  
+  - Average temperature
+- Automatic pruning of data older than 60 seconds
+- Thread-safe sample series implementation
 
-Alert classification logic:
-- EMERGENCY: Memory ≥95% or Temperature ≥90°C
-- CRITICAL: Memory ≥90% or Temperature ≥80°C or Power ≥98%
-- WARNING: Memory ≥75% or Temperature ≥70°C or Power ≥90%  
-- NORMAL: Below thresholds
+3. Error Recovery System
+- Exponential backoff for consecutive failures
+- Maximum 5 consecutive errors before fallback
+- Mock data generation with realistic characteristics:
+  - High-end GPU profile (24GB VRAM, 350W)
+  - Mid-range GPU profile (12GB VRAM, 200W)
+- Recovery attempt limit of 3 (configurable)
 
-## Historical Metrics 
-Location: dualgpuopt/telemetry_history.py
+4. Alert Management
+- Publishes alerts through event bus system
+- Triggers system tray notifications
+- Status badge visualization with color coding
+- Priority-based alert queue with 3-second delay
 
-- Maintains 60-second rolling window of metrics
-- Tracks per-GPU and aggregate system metrics
-- Records differential metrics:
-  - GPU utilization changes
-  - VRAM usage patterns
-  - Temperature trends
-  - Power draw variations
-
-## Memory Profiling
-Location: dualgpuopt/memory/profiler.py
-
-- Session-based memory tracking for dual GPUs
-- Memory anomaly detection:
-  - Leak detection using linear regression
-  - Growth pattern analysis
-  - Memory spike detection (>0.1 MB/s)
-  - Retention validation (>5MB threshold)
-- Inference analysis:
-  - Pre/post memory baselines
-  - Per-inference deltas
-  - Token count correlation
-  - Memory timeline analysis with 20-point sliding window
-
-## Dashboard Visualization
-Location: dualgpuopt/gui/dashboard.py
-
-- Real-time metrics visualization
-- Color-coded status indicators based on thresholds
-- Historical trend graphs
-- Resource utilization gauges
-- Active alert indicators
-- System health status display
-
-## Telemetry Service
-Location: dualgpuopt/services/telemetry.py
-
-- Event-driven metric updates
-- Thread-safe data collection
-- Configurable sampling intervals
-- Background monitoring worker
-- Health check integration
-- Mock data support for testing
+File Paths:
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory/monitor.py 
+- dualgpuopt/services/alerts.py
+- dualgpuopt/services/telemetry.py
 
 $END$

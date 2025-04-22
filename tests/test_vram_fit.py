@@ -1,5 +1,4 @@
-import math
-from dualgpuopt.model.vram_fit import fit_plan, _need
+from dualgpuopt.model.vram_fit import fit_plan
 
 GPU8  = [{"memory_total": 8 * 1024}]           # one 8 GB card
 GPU24 = [{"memory_total": 24 * 1024}]          # one 24 GB card
