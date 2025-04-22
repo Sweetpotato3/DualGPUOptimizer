@@ -1,0 +1,59 @@
+{
+  "name": "LégisQuébec Crawler",
+  "description": "Crawls public-domain legal texts from LégisQuébec",
+  "base_url": "https://www.legisquebec.gouv.qc.ca",
+  "output_dir": "corpora/qc_statutes/raw",
+  "language": "fr",
+  "targets": [
+    {
+      "name": "Code civil du Québec",
+      "url": "/fr/document/lc/CCQ-1991",
+      "id": "ccq"
+    },
+    {
+      "name": "Charte des droits et libertés de la personne",
+      "url": "/fr/document/lc/C-12",
+      "id": "cdlp"
+    },
+    {
+      "name": "Code de procédure civile",
+      "url": "/fr/document/lc/C-25.01",
+      "id": "cpc"
+    },
+    {
+      "name": "Loi sur la protection du consommateur",
+      "url": "/fr/document/lc/P-40.1",
+      "id": "lpc"
+    },
+    {
+      "name": "Code criminel",
+      "url": "/fr/document/lc/C-46",
+      "id": "cc"
+    }
+  ],
+  "crawl_config": {
+    "delay": 2.0,
+    "timeout": 30,
+    "user_agent": "Legal Corpus Researcher/1.0",
+    "max_depth": 3,
+    "follow_links": true,
+    "save_format": "html",
+    "preserve_structure": true
+  },
+  "extraction": {
+    "article_selector": "div.article",
+    "title_selector": "h3.titre",
+    "metadata_selectors": {
+      "chapter": "div.chapitre",
+      "section": "div.section"
+    },
+    "exclude_selectors": [
+      "div.note",
+      "div.historique"
+    ]
+  },
+  "throttle": {
+    "requests_per_minute": 20,
+    "max_concurrent": 1
+  }
+} 
