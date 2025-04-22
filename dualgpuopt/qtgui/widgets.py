@@ -15,7 +15,6 @@ from PySide6 import QtCore as QtC
 
 from dualgpuopt.telemetry_history import hist, TelemetrySample
 # Import telemetry module if needed for GPUMetrics
-from dualgpuopt import telemetry
 
 # Configure logger
 logger = logging.getLogger(__name__)

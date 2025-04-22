@@ -3,8 +3,7 @@ Advanced tools dock with memory timeline visualization.
 Hidden by default, accessible via View menu.
 """
 from __future__ import annotations
-import numpy as np
-from typing import List, Tuple, Dict, Optional
+from typing import List
 from PySide6 import QtWidgets as QtW
 from PySide6 import QtCore as QtC
 from PySide6 import QtGui as QtG

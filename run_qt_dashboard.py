@@ -22,7 +22,7 @@ def check_numpy_version():
         if major_version >= 2:
             warnings.warn(
                 f"NumPy version {numpy_version} detected. Some modules may not work correctly with NumPy 2.x. "
-                "If you encounter errors, consider downgrading to 'numpy<2'."
+                "If you encounter errors, consider downgrading to 'numpy<2'.", stacklevel=2
             )
             
             # If using NumPy 2.x, set environment variable to help modules cope

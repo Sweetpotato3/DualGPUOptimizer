@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Dict, Tuple
 import time
 import logging
-import sys
 
 from PySide6.QtCore import QObject, QThread, Signal, Slot
 

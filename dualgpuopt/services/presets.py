@@ -5,7 +5,7 @@ persona, and template in a single JSON format.
 from __future__ import annotations
 import json
 import pathlib
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, List
 from PySide6 import QtWidgets as QtW, QtCore as QtC
 
 class PresetManager:
