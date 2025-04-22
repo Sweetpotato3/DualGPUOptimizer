@@ -1,62 +1,52 @@
 ---
-description: Resource monitoring and telemetry system for tracking GPU metrics, utilization, and performance alerts.
-globs: **/telemetry.py,**/gpu/monitor.py,**/metrics/*.py,**/telemetry/*.py
+description: Specifications for GPU resource monitoring and telemetry system for tracking utilization, memory, temperature and power metrics
+globs: **/telemetry.py,**/telemetry/*.py,**/monitor/*.py,**/gpu/monitor.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The telemetry system implements a comprehensive GPU resource monitoring framework with the following key components:
+## Core Telemetry Management System
 
-## Telemetry Collection Engine
-- Implements fault-tolerant GPU metrics collection with exponential backoff recovery 
-- Maintains 60-second rolling metrics history using HistoryBuffer
-- Smart caching system for GPU names with TTL to prevent memory leaks
-- Auto-fallback to mock data after consecutive failures
+### Alerts and Thresholds
+- Three-tier alert classification for GPU metrics:
+  - EMERGENCY: Memory usage ≥95% or Temperature ≥90°C
+  - CRITICAL: Memory usage ≥90% or Temperature ≥80°C or Power usage ≥98% 
+  - WARNING: Memory usage ≥75% or Temperature ≥70°C or Power usage ≥90%
+  - NORMAL: All metrics below warning thresholds
 
-## Metrics & Alerting
-Implements weighted alert thresholds based on business rules:
-```
-EMERGENCY: 
-- Memory ≥95% 
-- Temperature ≥90°C
+### GPU Differentiation Logic
+- Profile-based monitoring for different GPU tiers:
+  - High-end (GPU 0): 24GB memory, 350W power limit 
+  - Mid-range (GPU 1): 12GB memory, 200W power limit
+- Adaptive monitoring based on GPU capabilities
 
-CRITICAL:
-- Memory ≥90%
-- Temperature ≥80°C
-- Power ≥98%
-
-WARNING:
-- Memory ≥75%  
-- Temperature ≥70°C
-- Power ≥90%
-```
-
-## Multi-GPU Analytics
-- Calculates aggregate performance metrics across GPU cluster:
+### Metric Collection
+- Rolling 60-second telemetry buffer for each GPU
+- Key metrics tracked:
+  - GPU utilization percentage
+  - Memory usage/available/total
+  - Core and memory clock speeds
+  - PCIe bandwidth (TX/RX)
+  - Temperature and power draw
+- Cross-GPU aggregation for:
   - Average utilization
   - Total memory pressure  
   - System-wide temperature trends
-- Maintains separate profiles for high/mid-range GPUs with different baselines for:
-  - Power limits
-  - Memory capacity
-  - Clock speed ranges
+  - Power consumption patterns
 
-## Telemetry Distribution
-Implements hierarchical event distribution:
-- Real-time per-GPU metrics
-- System-wide aggregate metrics 
-- Historical trend data
+### Error Recovery
+- Exponential backoff retry mechanism
+- Configurable maximum recovery attempts
+- Mock data fallback on consecutive failures
+- Thread-safe metric collection with recovery
 
-Supports dual event format:
-- Enhanced format with comprehensive metrics
-- Legacy format for existing integrations
+### File Paths
+- dualgpuopt/telemetry.py: Core telemetry system
+- dualgpuopt/telemetry_history.py: Historical data management
+- dualgpuopt/gpu/monitor.py: GPU monitoring implementation
 
-## File Paths
-- dualgpuopt/telemetry.py
-- dualgpuopt/gpu/monitor.py
-- dualgpuopt/metrics/
-- dualgpuopt/telemetry/
+Importance Score: 95 - Critical system for GPU resource monitoring and optimization
 
 $END$

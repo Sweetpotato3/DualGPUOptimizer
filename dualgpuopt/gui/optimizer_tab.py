@@ -296,8 +296,8 @@ class OptimizerTab(ttk.Frame):
                     num_heads=int(self.heads_var.get()),
                     kv_heads=int(self.kv_heads_var.get()),
                 )
-            except ValueError:
-                raise ValueError("All model parameters must be valid integers")
+            except ValueError as err:
+                raise ValueError("All model parameters must be valid integers") from err
         else:
             # Use preset but update context length
             model = MODEL_PRESETS[model_name]
@@ -311,8 +311,8 @@ class OptimizerTab(ttk.Frame):
                     num_heads=model.num_heads,
                     kv_heads=model.kv_heads,
                 )
-            except ValueError:
-                raise ValueError("Context length must be a valid integer")
+            except ValueError as err:
+                raise ValueError("Context length must be a valid integer") from err
 
     def _calculate_split(self):
         """Calculate and display the optimal GPU split"""

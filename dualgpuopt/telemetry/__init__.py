@@ -8,10 +8,15 @@ from dualgpuopt.telemetry import get_telemetry_service
 from dualgpuopt.telemetry.sample import TelemetrySample
 
 # Import GPUMetrics directly - this is required by several modules
+__all__ = ["TelemetrySample", "get_telemetry_service"]
 try:
-    from dualgpuopt.telemetry import GPUMetrics  # Direct import attempt
+    # Check if the module exists before importing
+    import importlib.util
+    if importlib.util.find_spec("dualgpuopt.telemetry.metrics"):
+        from dualgpuopt.telemetry.metrics import GPUMetrics
+        __all__.append("GPUMetrics")
 except ImportError:
-    # If GPUMetrics doesn't exist in telemetry module directly, this is a no-op
+    # If GPUMetrics doesn't exist in metrics module, this is a no-op
     pass
 
 __all__ = ["TelemetrySample", "get_telemetry_service"]

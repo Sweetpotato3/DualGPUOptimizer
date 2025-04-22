@@ -1,76 +1,68 @@
 ---
-description: Handles LLM execution workflows including command generation, configuration, and GPU resource allocation for llama.cpp and vLLM frameworks.
-globs: **/optimizer.py,**/gpu_info.py,**/runner.py,**/layer_balance.py,**/commands/*.py
+description: Documents the execution flow and command generation for LLM inference across dual GPUs including memory management and allocation
+globs: **/optimizer.py,**/model_profiles.py,**/launcher*.py,**/gpu_commands.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized command generation and resource allocation for running large language models across dual GPU configurations.
+The model execution flow implements specialized handling for running large language models across dual GPU configurations:
 
-## Core Command Generation
-[File: dualgpuopt/optimizer.py]
+## Command Generation and Model Launch
 
-The command generation system outputs framework-specific launch commands based on model requirements and GPU configuration:
+Key components:
+- Framework-specific command generation for llama.cpp and vLLM with tensor parallel configurations
+- GPU split ratio calculations based on available VRAM
+- Memory allocation strategies with safety margins and reserved buffers
+- Model preset handling for common architectures (Llama-2, Mistral, Mixtral)
 
-1. llama.cpp Command Flow:
-- Calculates ngl (number of layers per GPU) based on model architecture
-- Generates split string (e.g. "50,50") for balanced GPU allocation 
-- Includes tensor split configuration for parallel inference
-- Handles context window sizing based on available VRAM
+File: dualgpuopt/optimizer.py
 
-2. vLLM Command Flow:
-- Determines tensor parallel size from GPU count
-- Configures GPU device mapping 
-- Sets model-specific parameter values for:
-  - Context length
-  - Memory efficient attention 
-  - Quantization mode
-  - Seed value
+## Memory Management Pipeline
 
-## Layer Distribution System 
-[File: dualgpuopt/layer_balance.py]
+The memory management system implements:
 
-The layer balancer distributes transformer layers across available GPUs:
+- Rolling 60-second metric history for memory pressure monitoring
+- Alert threshold classification:
+  - Emergency: Memory usage ≥95% or Temperature ≥90°C
+  - Critical: Memory usage ≥90% or Temperature ≥80°C 
+  - Warning: Memory usage ≥75% or Temperature ≥70°C
 
-1. Layer Assignment Strategy:
-- Weights short sequences (64 tokens) at 20% 
-- Weights long sequences (1024 tokens) at 80%
-- Assigns layers based on profiled execution times
-- Forms blocks of at least 3 contiguous layers
-- Places input embedding on first GPU
-- Places norm/lm_head on last GPU
+Files:
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory/profiler.py
 
-2. Memory Management:
-- Maintains reserve ratio for each GPU
-- Respects memory quotas during assignment
-- Rebalances on OOM conditions
-- Adjusts distribution based on model family (Llama, Mistral, etc.)
+## Layer Distribution Logic
 
-## Model Execution Flow
-[File: dualgpuopt/runner.py]
+Implements layer distribution across dual GPUs:
+- Custom profiling logic for transformer layer execution timing
+- Position-aware performance modeling for early/late layers
+- Block consolidation to minimize cross-GPU transitions
+- Quota-based allocation with configurable reserve ratio
 
-The execution orchestrator manages the model launch process:
+File: dualgpuopt/layer_balance.py
 
-1. Initialization:
-- Validates model path exists
-- Checks GPU memory availability
-- Sets framework-specific env vars
-- Initializes logging streams
+## Execution Flow Control
 
-2. Launch Control:
-- Non-blocking process execution
-- Output streaming to queue
-- Graceful termination support
-- Error state monitoring
+The launch controller manages:
+- Model parameter validation against GPU capabilities
+- Dynamic context length adjustment based on available memory
+- Framework-specific initialization and configuration 
+- Process monitoring and graceful termination
 
-3. Failure Recovery:
-- Clears GPU caches on OOM
-- Retries with reduced batch size
-- Falls back to CPU if needed
-- Logs error conditions
+Files:
+- dualgpuopt/gui/launcher/launch_controller.py
+- dualgpuopt/gui/launcher/parameter_resolver.py
 
-The system focuses on optimizing dual GPU model execution through intelligent resource allocation and framework-specific launch configurations.
+## Memory Recovery System
+
+Implements tiered recovery strategies:
+1. Cache-only: Clears PyTorch cache
+2. Clock reset: Manipulates GPU clock settings
+3. Full reset: Comprehensive tensor cleanup
+4. System-level: OS-specific resource recovery
+
+File: dualgpuopt/memory/recovery.py
 
 $END$

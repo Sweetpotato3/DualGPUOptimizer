@@ -12,11 +12,10 @@ from PySide6.QtWidgets import QApplication
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
-logger = logging.getLogger("TelemetryTest")
 
-# Import the telemetry worker
 from dualgpuopt.services.telemetry import TelemetryWorker
 
+logger = logging.getLogger("TelemetryTest")
 
 class TelemetryTester(QObject):
     """Test class to verify telemetry signal connections"""

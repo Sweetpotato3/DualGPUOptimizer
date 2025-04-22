@@ -9,7 +9,10 @@ from typing import Dict
 
 try:
     from dualgpuopt.telemetry import GPUMetrics, get_telemetry_service, hist
-    from dualgpuopt.telemetry.sample import TelemetrySample
+    import importlib.util
+    # Check if TelemetrySample is available without importing it
+    if importlib.util.find_spec("dualgpuopt.telemetry.sample"):
+        pass  # Module exists but we don't need to import it
 except ImportError:
     print("Error: Could not import telemetry modules. Make sure the path is correct.")
     sys.exit(1)

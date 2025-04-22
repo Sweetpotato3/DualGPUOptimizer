@@ -1,77 +1,49 @@
 ---
-description: Analyzes GPU memory optimization algorithms, tensor parallel splits, and memory management strategies for dual GPU setups
-globs: **/optimizer.py,**/gpu_info.py,**/telemetry.py,**/memory/*.py,**/gpu/*.py
+description: GPU memory allocation algorithms and optimization strategies for deep learning model inference on dual GPU setups
+globs: **/optimizer.py,**/gpu_info.py,**/gpu/memory/*.py,**/gpu/telemetry/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-The GPU optimization system implements memory distribution and tensor parallelism algorithms for dual GPU configurations.
+## Core GPU Memory Management
 
-## Memory Split Optimization
-File: dualgpuopt/optimizer.py
+The memory distribution system implements specialized algorithms for allocating model layers and tensors across dual GPU configurations:
 
-- Calculates optimal memory splits between GPUs based on:
-  - Model architecture parameters (hidden size, layers, heads)
-  - Available GPU memory on each device
-  - KV cache memory requirements
-  - Safety margin allocations
-- Implements tensor parallel split calculation:
-  - Determines optimal layer distribution
-  - Calculates split ratios (e.g. 60/40, 70/30)
-  - Handles model-specific requirements
+### Memory Split Calculation
+- Uses relative VRAM sizes of GPUs to determine optimal tensor splits
+- Implements safety margins (2GB system, 2x KV cache, 20% tensor parallel)
+- Dynamically adjusts splits based on model architecture and quantization level
+- Minimum 20% allocation per GPU to maintain stable tensor parallelism
 
-## GPU Memory Management
-File: dualgpuopt/memory/profiler.py
+### Layer Distribution Algorithm
+- Balances transformer layers across GPUs based on memory and latency profiles
+- Weights layer performance by sequence length (80% long sequences, 20% short)
+- Block-aware distribution to minimize cross-GPU communication
+- Respects position-dependent performance variations (±20%)
 
-- Memory leak detection through sliding window analysis
-- Linear regression for memory growth rate calculation
-- Session-based memory tracking:
-  - Pre/post inference baselines 
-  - Per-inference memory deltas
-  - Token count correlation
-  - Usage pattern analysis
-- Categories memory events:
-  - Allocations/Deallocations
-  - Growth spikes
-  - Leaks
-  - Inference boundaries
+### Memory Usage Calculation 
+- Model-specific base memory estimation
+- KV cache scaling with context length and batch size  
+- Dynamic overhead factoring for different attention mechanisms:
+  - MQA: 0.25x overhead factor
+  - GQA: 0.5x overhead factor 
+  - Standard: 1.0x overhead factor
+- Mixture of Experts (MoE) models: Expert count scaling
 
-## Memory Reclamation
-File: dualgpuopt/vram_reset.py
+### Context Length Optimization
+- Maximum safe context calculation based on:
+  - Available GPU memory
+  - Model architecture (layers, heads, dimensions) 
+  - Precision level (FP16/INT8/INT4)
+  - MoE scaling factors
+- Power-of-2 rounding for large contexts (≥4096)
+- 128-token multiples for smaller contexts
 
-- Multi-stage GPU memory reclamation:
-  1. Cache clearing
-  2. Clock reset
-  3. Tensor deletion
-  4. System-level commands
-- Hardware-specific policies for different GPU states
-- Cross-platform memory reclamation
-- Memory tracking and verification
-
-## Memory Distribution System
-File: dualgpuopt/memory/monitor.py
-
-Memory monitoring system with domain-specific thresholds:
-- Warning alert: Memory usage ≥75% 
-- Critical alert: Memory usage ≥90%
-- Emergency alert: Memory usage ≥95%
-
-Implements memory distribution optimization:
-- Per-GPU quota allocation
-- Dynamic reallocation based on workload
-- Cache pressure monitoring
-- Automatic cleanup triggers
-
-## Layer Performance Profiling
-File: dualgpuopt/layer_balance.py
-
-- Weighted profiling with two sequence lengths:
-  - Short sequences (64) weighted at 20%
-  - Long sequences (1024) weighted at 80%
-- Layer-to-GPU mapping with VRAM quotas
-- Custom compute mode and clock management
-- Performance correlation modeling
+## File Paths
+- `dualgpuopt/optimizer.py`: Core memory split algorithms
+- `dualgpuopt/layer_balance.py`: Layer distribution logic
+- `dualgpuopt/ctx_size.py`: Context length calculation
 
 $END$

@@ -28,11 +28,11 @@ try:
 except ImportError:
     TTKTHEMES_AVAILABLE = False
 
-# Import ttkwidgets for additional widgets if available
+# Check if ttkwidgets is available for additional widgets
 try:
-    import ttkwidgets
+    from importlib.util import find_spec
 
-    TTKWIDGETS_AVAILABLE = True
+    TTKWIDGETS_AVAILABLE = find_spec("ttkwidgets") is not None
 except ImportError:
     TTKWIDGETS_AVAILABLE = False
 
@@ -942,7 +942,10 @@ class DualGpuApp(ttk.Frame):
 
             self.mem_text = ttk.Label(
                 mem_frame,
-                text=f"{gpu.mem_used_gb:.1f} GB / {gpu.mem_total_gb:.1f} GB ({gpu.mem_used_percent:.1f}%)",
+                text=(
+                    f"{gpu.mem_used_gb:.1f} GB / {gpu.mem_total_gb:.1f} GB "
+                    f"({gpu.mem_used_percent:.1f}%)"
+                ),
             )
             self.mem_text.grid(row=1, column=0, sticky="e")
 
@@ -1094,7 +1097,10 @@ class DualGpuApp(ttk.Frame):
 
                         frame["mem_bar"]["value"] = mem_percent
                         frame["mem_text"].config(
-                            text=f"{mem_used/1024:.1f} GB / {mem_total/1024:.1f} GB ({mem_percent:.1f}%)"
+                            text=(
+                                f"{mem_used/1024:.1f} GB / {mem_total/1024:.1f} GB "
+                                f"({mem_percent:.1f}%)"
+                            )
                         )
 
                         # Update GPU utilization
@@ -1725,7 +1731,8 @@ class DualGpuApp(ttk.Frame):
         configio.save_cfg(self.cfg)
         messagebox.showinfo(
             "Settings Saved",
-            "All settings have been saved successfully.\nSome changes may require a restart to take effect.",
+            "All settings have been saved successfully.\n"
+            "Some changes may require a restart to take effect.",
         )
 
         # Update monitoring settings immediately if possible
