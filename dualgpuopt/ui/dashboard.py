@@ -20,6 +20,7 @@ try:
     from dualgpuopt.ui.advanced import AdvancedDock
     from dualgpuopt.services.telemetry import telemetry_worker
     from dualgpuopt.engine.backend import Engine
+    from dualgpuopt.qt.dashboard_tab import DashboardTab
 except ImportError as e:
     print(f"Error importing modules: {e}")
     print("Ensure the files exist in the expected dualgpuopt/services and dualgpuopt/ui directories.")
@@ -55,6 +56,12 @@ class Dashboard(QMainWindow):
         self.advanced_dock.hide() # Hidden by default
         print("Advanced tools dock added (hidden).")
         
+        # --- Setup Main Dashboard Tab ---
+        self.dashboard_tab = DashboardTab(parent=self)
+        self.setCentralWidget(self.dashboard_tab)
+        self.dashboard_tab.set_telemetry_worker(telemetry_worker)
+        print("Dashboard tab initialized.")
+        
         # --- Setup View Menu ---
         view_menu = self.menuBar().addMenu("&View")
         advanced_action = view_menu.addAction("&Advanced Tools")
@@ -71,7 +78,7 @@ class Dashboard(QMainWindow):
 
         # --- Start Telemetry Worker ---
         # The telemetry_worker instance is created in services/telemetry.py
-        # Connect signals to placeholder methods
+        # Connect signals to UI update methods
         telemetry_worker.util_updated.connect(self._update_util_display)
         telemetry_worker.vram_updated.connect(self._update_vram_display)
         telemetry_worker.temp_updated.connect(self._update_temp_display)
@@ -81,56 +88,105 @@ class Dashboard(QMainWindow):
         telemetry_worker.start() # Start collecting data
         print("Telemetry worker started and signals connected.")
 
-        # --- Placeholder for central widget / other UI elements ---
-        # Example: self.setCentralWidget(YourMainChatWidget())
-
     # --- Slot Methods for Signals ---
     
     def _apply_preset(self, preset_data: dict):
         print(f"Applying preset: {preset_data.get('name', 'Unnamed')}")
-        # TODO: Implement logic to apply model_path, gpu_settings etc.
-        # Example: self.engine.load(preset_data['model_path'], **preset_data['gpu_settings'])
-        pass
+        # Apply the preset data to the engine
+        if not preset_data:
+            alert_service.alert("WARNING", "Empty preset data received")
+            return
+            
+        try:
+            # Update status to show we're applying preset
+            self.statusBar().showMessage(f"Applying preset: {preset_data.get('name', 'Unnamed')}...")
+            
+            # Apply model path and settings to the engine
+            if 'model_path' in preset_data:
+                self.engine.set_model_path(preset_data['model_path'])
+                
+            if 'gpu_settings' in preset_data:
+                self.engine.configure(**preset_data['gpu_settings'])
+                
+            # Apply any template or persona data if present
+            if 'template' in preset_data:
+                self.engine.set_prompt_template(preset_data['template'])
+                
+            if 'persona' in preset_data:
+                self.engine.set_persona(preset_data['persona'])
+                
+            # Update status to success
+            self.statusBar().showMessage(f"Preset '{preset_data.get('name', 'Unnamed')}' applied successfully", 3000)
+        except Exception as e:
+            alert_service.alert("CRITICAL", f"Failed to apply preset: {str(e)}")
 
     def _update_util_display(self, value: float):
-        # TODO: Update your UI element showing overall utilization
-        # print(f"Overall Util: {value:.1f}%")
-        pass
+        # Forward the utilization update to the dashboard tab
+        self.statusBar().showMessage(f"GPU Utilization: {value:.1f}%", 2000)
+        # In a real implementation, you might update a chart or other UI element here
+        self.advanced_dock.memory_timeline.add_data_point(value)
 
     def _update_vram_display(self, value: float):
-        # TODO: Update your UI element showing overall VRAM %
-        # print(f"Overall VRAM: {value:.1f}%")
-        # Check thresholds for alerts
+        # Forward the VRAM update and check thresholds for alerts
         if value > 90:
             alert_service.alert("CRITICAL", f"VRAM High: {value:.1f}%")
         elif value > 75:
             alert_service.alert("WARNING", f"VRAM Warn: {value:.1f}%")
+            
+        # Update status bar temporarily
+        self.statusBar().showMessage(f"VRAM Usage: {value:.1f}%", 2000)
 
     def _update_temp_display(self, value: float):
-        # TODO: Update your UI element showing overall Temperature
-        # print(f"Overall Temp: {value:.1f}°C")
-        pass
+        # Forward the temperature update and check for critical temps
+        if value > 85:
+            alert_service.alert("CRITICAL", f"GPU Temperature High: {value:.1f}°C")
+        elif value > 75:
+            alert_service.alert("WARNING", f"GPU Temperature Elevated: {value:.1f}°C")
+        
+        # Update status bar temporarily
+        self.statusBar().showMessage(f"GPU Temperature: {value:.1f}°C", 2000)
         
     def _update_power_display(self, value: float):
-        # TODO: Update your UI element showing overall Power %
-        # print(f"Overall Power: {value:.1f}%")
-        pass
+        # Forward the power update and check for high power consumption
+        if value > 95:
+            alert_service.alert("CRITICAL", f"Power Usage High: {value:.1f}%")
+        
+        # Update status bar temporarily
+        self.statusBar().showMessage(f"Power Usage: {value:.1f}%", 2000)
         
     def _update_full_metrics(self, metrics: dict):
-        # This signal provides per-GPU data if needed
-        # TODO: Update more detailed UI elements if necessary
-        # print(f"Full metrics received for {len(metrics)} GPUs")
-        pass
+        # This signal provides per-GPU data - update the advanced dock
+        # and also pass through to the dashboard tab's components
+        
+        # If memory timeline is available, add data points based on average memory usage
+        if hasattr(self.advanced_dock, 'memory_timeline') and metrics:
+            # Calculate average memory usage across all GPUs
+            avg_memory = sum(m.memory_percent for m in metrics.values()) / len(metrics)
+            self.advanced_dock.memory_timeline.add_data_point(avg_memory)
         
     def _export_current_view(self):
         print("Exporting current view...")
-        # TODO: Determine active widget/view and call its export method
-        # Example: 
-        # if self.advanced_dock.isVisible():
-        #    self.advanced_dock._export_png()
-        # else:
-        #    pass # Export main dashboard view? 
-        pass
+        
+        # Determine which view is active and call the appropriate export method
+        if self.advanced_dock.isVisible():
+            # If advanced dock is visible, export from it
+            self.advanced_dock._export_png()
+        else:
+            # Export the main dashboard view
+            from PySide6.QtGui import QPixmap
+            from PySide6.QtWidgets import QFileDialog
+            
+            # Capture the current central widget (dashboard tab)
+            pixmap = self.dashboard_tab.grab()
+            
+            # Ask for save location
+            file_path, _ = QFileDialog.getSaveFileName(
+                self, "Save Dashboard View", "dashboard.png", "PNG Files (*.png)"
+            )
+            
+            if file_path:
+                pixmap.save(file_path, "PNG")
+                self.statusBar().showMessage(f"Dashboard exported to {file_path}", 3000)
         
     def closeEvent(self, event):
         """Ensure telemetry thread stops on close."""

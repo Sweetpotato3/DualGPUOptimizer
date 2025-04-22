@@ -15,25 +15,24 @@ DualGPUOptimizer is a specialized application for managing and optimizing dual G
 - **Smart Layer Distribution**: Balances model layers across multiple GPUs based on available memory
 - **Enhanced Memory Profiling**: Interactive memory timeline with zooming, filtering, and event markers
 - **Advanced Chart Functionality**: Export capabilities, timeline markers, and zoom controls
-- **NEW: Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
-- **NEW: Configuration Presets**: Save and load optimized configurations for quick reuse
-- **NEW: Enhanced Alert System**: Multi-level GPU alert classification with priority-based notifications
-- **NEW: Telemetry History**: Historical metrics storage with time-based filtering capabilities
-- **NEW: Improved Event System**: Robust typed events for GPU telemetry with enhanced testing support
-- **NEW: Thread-Safe Caching System**: High-performance caching for memory-intensive operations with comprehensive monitoring
+- **Direct Settings Application**: One-click transfer of optimal settings from Optimizer to Launcher
+- **Configuration Presets**: Save and load optimized configurations for quick reuse
+- **Enhanced Alert System**: Multi-level GPU alert classification with priority-based notifications
+- **Telemetry History**: Historical metrics storage with time-based filtering capabilities
+- **Improved Event System**: Robust typed events for GPU telemetry with enhanced testing support
+- **Thread-Safe Caching System**: High-performance caching for memory-intensive operations with comprehensive monitoring
 
 ## Recent Improvements
 
-### NEW: Streamlined Architecture (Refactor 2024-XX)
+### Streamlined Architecture (Refactor 2024)
 
-- **Unified Backend Engine (`engine/backend.py`)**: Replaced separate command generation logic with a single `Engine` class that auto-detects model types (GGUF, AWQ, HF) and manages the appropriate backend (llama.cpp, vLLM, Transformers). Simplifies model loading and execution.
-- **Signal-Based Telemetry (`services/telemetry.py`)**: Migrated core GPU metric updates (util, VRAM, temp, power) from polling to a `QObject`-based worker emitting Qt Signals. Reduces CPU usage and improves UI responsiveness.
-- **Simplified Alert System (`services/alerts.py`)**: Reduced alert complexity from four tiers to two essential levels: `WARNING` and `CRITICAL`. Integrated directly with a status bar badge and system tray notifications.
-- **Unified Preset Management (`services/presets.py`, `PresetDock`)**: Merged previous systems for model configurations, personas, and templates into a single JSON-based preset format managed via a dedicated dock widget (`~/.dualgpuopt/presets/`).
-- **Advanced Tools Dock (`ui/advanced.py`)**: Moved diagnostic tools like the Memory Timeline into a separate, hideable dock widget accessible via the "View" menu, decluttering the main interface for core chat/monitoring tasks.
-- **Removed Redundant Calculations**: Efficiency metrics (tok/GB) removed from real-time calculation to reduce overhead; planned for post-session analysis.
+- **Signal-Based Telemetry System**: Migrated from event-based telemetry to a Qt Signal-based architecture for GPU metric updates (util, VRAM, temp, power). This reduces CPU usage, improves UI responsiveness, and provides real-time updates without polling.
+- **Simplified Alert System**: Streamlined from four tiers to two essential levels (**WARNING** and **CRITICAL**), directly integrated with the status bar badge and system tray notifications.
+- **Unified Preset Management**: Consolidated separate systems for model configurations, personas, and templates into a single JSON-based preset format managed via a dedicated dock widget (`~/.dualgpuopt/presets/`).
+- **Advanced Tools Dock**: Moved diagnostic tools like the Memory Timeline into a separate, hideable dock widget accessible via the "View" menu, decluttering the main interface.
+- **Unified Backend Engine**: Replaced separate command generation with a single `Engine` class that auto-detects model types and manages the appropriate backend, simplifying model loading and execution.
 
-### NEW: Refactored Implementation Details
+### Implementation Details
 
 The refactored architecture introduces several key implementation improvements:
 
@@ -51,18 +50,16 @@ The refactored architecture introduces several key implementation improvements:
 - **Alert Propagation**: Alert Service directly updates status bar and system tray through Qt signals
 - **Preset System**: Centralized preset management with access from all tabs
 
-#### Incremental Integration
+#### Hybrid Communication Architecture
 
-The refactored architecture is designed for incremental integration:
+The application utilizes a hybrid communication approach:
 
-1. **Core Services Layer**: Backend Engine, Alert Service, and Telemetry Worker can be integrated independently
-2. **UI Components**: Advanced Tools Dock and Preset system can be added without affecting core functionality
-3. **Existing Features**: Gradual migration of existing components to use the refactored services
-4. **Cleanup Phase**: Removal of deprecated code after successful migration
+- **Core Telemetry (GPU Metrics):** Uses direct Qt Signals (`util_updated`, `vram_updated`, etc.) emitted by `TelemetryWorker` for optimal performance and responsiveness.
+- **Other Communication:** Uses the Event Bus for less frequent or broader messages like configuration changes, preset loading requests, or complex state updates.
 
-This approach ensures stability during the transition while immediately benefiting from the improved architecture.
+This balances performance for high-frequency data with the flexibility of an event bus for other system communication.
 
-### NEW: Thread-Safe Caching System
+### Thread-Safe Caching System
 
 We've implemented a comprehensive thread-safe caching system to optimize performance across the application:
 
@@ -96,7 +93,7 @@ We've implemented a comprehensive thread-safe caching system to optimize perform
 
 The caching system is used throughout memory prediction, batch calculation, and optimization modules to dramatically improve performance while maintaining thread safety in multi-threaded environments.
 
-### NEW: Enhanced Event Bus System
+### Enhanced Event Bus System
 
 We've significantly improved the event bus system used for component communication:
 
@@ -111,7 +108,7 @@ We've significantly improved the event bus system used for component communicati
 
 The enhanced event system provides a more robust foundation for component communication throughout the application, improving reliability and testability of the GPU monitoring and telemetry subsystems.
 
-### NEW: Advanced GPU Alert System
+### Advanced GPU Alert System
 
 We've implemented a comprehensive alert system for GPU monitoring:
 
@@ -122,7 +119,7 @@ We've implemented a comprehensive alert system for GPU monitoring:
 
 The enhanced alert system provides earlier warnings of potential issues and more accurate classification of GPU conditions, helping prevent out-of-memory errors and thermal throttling.
 
-### NEW: Telemetry History Functionality
+### Telemetry History Functionality
 
 We've added comprehensive telemetry history tracking:
 
@@ -150,23 +147,19 @@ These optimizations ensure stable performance even during extended monitoring se
 
 We've significantly improved the workflow for generating and applying optimal GPU settings:
 
-- **Direct Settings Transfer**: Apply optimizer-generated settings directly to the launcher with a single click -> **Replaced by loading presets.**
-- **Automatic Tab Switching**: Automatically switch to the launcher tab after applying settings -> **N/A with preset system.**
-- **Configuration Presets**: Save and load optimized configurations for quick reuse -> **Now the primary method via PresetDock.**
+- **Configuration Presets**: Save and load optimized configurations for quick reuse through the unified preset system
 - **Parameter Validation**: Smart validation ensures applied settings are compatible with the current environment
 - **Comprehensive Parameters**: Automatically transfers all relevant settings including context sizes, GPU splits, and precision settings
 
-This streamlined workflow eliminates the need for manual copy-pasting of settings between tabs or components.
-
 ### Configuration Preset System
 
-The **new unified preset system** allows you to save and reuse optimized configurations:
+The unified preset system allows you to save and reuse optimized configurations:
 
 - **Named Presets**: Save configurations with custom names (.json files in `~/.dualgpuopt/presets/`)
 - **One-Click Loading**: Load entire configurations via the Preset Dock (double-click)
-- **Persistent Storage**: Presets are saved between application sessions.
-- **Combined Parameters**: Presets now store model path, prompt template, persona, and GPU settings together.
-- **Easy Management**: Create, delete, and refresh presets directly from the dock toolbar.
+- **Persistent Storage**: Presets are saved between application sessions
+- **Combined Parameters**: Presets now store model path, prompt template, persona, and GPU settings together
+- **Easy Management**: Create, delete, and refresh presets directly from the dock toolbar
 
 The preset system makes it simple to switch between different model configurations without reconfiguring settings each time.
 
@@ -238,7 +231,7 @@ We've added a comprehensive memory profiling system with the following features:
 - **Actionable Reports**: Provides recommendations based on memory usage analysis
 - **CSV Export**: Exports memory timeline data for external analysis
 
-The Memory Profiler is accessible through a dedicated tab in the Dashboard and helps optimize memory usage for large language models by identifying inefficient memory patterns.
+The Memory Profiler is accessible through the Advanced Tools dock and helps optimize memory usage for large language models by identifying inefficient memory patterns.
 
 ### Performance Optimizations
 
@@ -310,13 +303,6 @@ These optimizations significantly improve performance, particularly when working
 - Implemented error explanations with detailed diagnostic information
 - Improved widget creation with safe fallback mechanisms
 
-### Completed Event-Driven Architecture
-
-- Fully implemented event bus system for component communication
-- Added typed event classes for GPU metrics, configuration changes, and UI updates
-- Ensured all components properly subscribe to relevant events
-- Implemented event priority system for critical updates
-
 ## Enhanced Dependency Management System
 
 DualGPUOptimizer now features a robust dependency management system that:
@@ -353,15 +339,6 @@ The recovery system includes strategies for:
 
 This robust error handling ensures the application remains functional across different environments and hardware configurations, even when facing unpredictable issues.
 
-## Event-Driven Architecture (Revised)
-
-The application utilizes a hybrid communication approach:
-
-- **Core Telemetry (GPU Metrics):** Uses direct Qt Signals (`util_updated`, `vram_updated`, etc.) emitted by `services/telemetry.py:TelemetryWorker` for optimal performance and responsiveness. UI elements connect directly to these signals.
-- **Other Communication:** Continues to use the existing Event Bus (`services/event_bus.py`) for less frequent or broader messages like configuration changes, preset loading requests, or complex state updates.
-
-This architecture balances performance for high-frequency data (telemetry) with the flexibility of an event bus for other system communication.
-
 ## Complete Qt-Based Interface
 
 The Qt-based interface features a full-featured tabbed layout with:
@@ -374,23 +351,23 @@ The Qt-based interface features a full-featured tabbed layout with:
 - PCIe bandwidth monitoring
 - GPU clock speed visualization
 - Memory reset capabilities
-- **NEW: Historical metrics charts** with selectable metrics
+- Historical metrics charts with selectable metrics
 
 ### Optimizer Tab
 
-- Model selection for popular LLMs (Llama, Mistral, Mixtral) -> **Selection often driven by loading Presets.**
+- Model selection via preset loading
 - Automatic GPU memory split ratio calculation
 - Context length optimization
-- Custom model parameter configuration -> **Managed within Presets.**
-- Command generation for frameworks like llama.cpp and vLLM -> **Handled internally by the unified `Engine`.**
+- Model parameter configuration managed within presets
+- Command generation handled internally by the unified `Engine`
 
-### Memory Profiler Tab -> **Advanced Tools Dock**
+### Memory Profiler (Advanced Tools Dock)
 
 - Memory timeline visualization
 - Leak detection with pattern analysis
 - Memory session tracking
 - Detailed memory statistics
-  **Note: This is now located in the "Advanced Tools" dock, hidden by default.**
+- **Note: This is now located in the "Advanced Tools" dock, hidden by default.**
 
 ### Launcher Tab
 
@@ -626,10 +603,10 @@ If you need to override default behavior:
   - `qt/`: Qt UI components for the new interface
   - `gui/`: Legacy GUI components and widgets
   - `ui/`: UI compatibility layers
-  - `services/`: Background services for configuration, events, etc.
+  - `services/`: Background services (telemetry, alerts, presets)
   - `batch/`: Batch processing logic
   - `memory/`: Memory management and monitoring
-  - `commands/`: Command generation for different frameworks
+  - `engine/`: Unified engine for model execution
   - `error_handler/`: Error handling and recovery system
   - `dependency_manager.py`: Dependency management system
 
@@ -681,119 +658,6 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 These improvements create a more stable foundation, enabling the application to run in a wider range of environments with better error recovery.
 
-## New: Comprehensive Testing Framework
-
-DualGPUOptimizer now includes a comprehensive testing framework to ensure code quality and prevent regressions:
-
-### Testing Architecture
-
-The testing framework is organized into three main levels:
-
-- **Unit Tests**: Testing individual components in isolation
-- **Integration Tests**: Testing interactions between components
-- **Functional Tests**: End-to-end testing of complete features
-
-### Key Test Features
-
-- **Mock GPU Support**: Tests run without requiring actual GPU hardware
-- **Event System Testing**: Comprehensive tests for the event-driven architecture
-- **Memory Prediction Tests**: Validation of memory allocation calculations
-- **Telemetry Verification**: Tests for real-time monitoring accuracy
-- **Error Recovery Verification**: Tests that error recovery works correctly
-
-### Running Tests
-
-```bash
-# Run only unit tests (fastest)
-make test-unit
-
-# Run integration tests
-make test-integration
-
-# Run all tests with coverage report
-make test-coverage
-
-# Run all tests
-make test-all
-```
-
-### Test Coverage Goals
-
-The project aims for high test coverage in critical areas:
-
-- Core GPU optimization logic: >90% coverage
-- Memory management system: >85% coverage
-- Command generation: >80% coverage
-- Event system: >85% coverage
-- Error handling: >90% coverage
-
-The comprehensive test suite ensures the application remains stable and reliable, even as new features are added or components are refactored.
-
-## New: Modern Qt Interface
-
-DualGPUOptimizer now features a brand new Qt-based user interface that provides:
-
-- **Modern Design**: Sleek, responsive UI with card-based components and improved visual hierarchy
-- **Enhanced Stability**: More robust rendering and dependency management compared to Tkinter
-- **Improved Aesthetics**: High-quality visuals with consistent styling and intuitive controls
-- **Single Dependency**: Simplifies installation by relying on PySide6 instead of multiple Tkinter extensions
-
-### Qt Interface Benefits
-
-- **Better Error Handling**: Comprehensive error recovery and graceful fallbacks
-- **Consistent Theming**: Unified dark theme with proper visual feedback
-- **Responsive Layouts**: Automatically adjusts to window size changes
-- **Enhanced GPU Monitoring**: More detailed and visually appealing GPU metrics display
-- **Improved Optimizer**: More intuitive interface for calculating GPU configurations
-- **Memory Profiling**: Visualize GPU memory usage over time with leak detection and analysis
-
-### Running the Qt Interface
-
-To use the new Qt interface, first install PySide6:
-
-```
-pip install PySide6==6.5.2
-```
-
-Then run the Qt application:
-
-```
-python run_qt_app.py
-```
-
-For mock mode (no GPU required):
-
-```
-python run_qt_app.py --mock
-```
-
-The Qt interface runs in parallel with the existing Tkinter interface and doesn't replace it, allowing you to choose whichever version works best for your environment.
-
-### Qt Interface Features
-
-The Qt interface includes several key tabs:
-
-1. **Dashboard Tab**: Real-time monitoring of GPU metrics with visual indicators for temperature, memory usage, and power consumption
-
-2. **Optimizer Tab**: Calculate optimal GPU memory splits for large language models with customizable parameters and command generation
-
-3. **Launcher Tab**: Interface for launching and managing model execution with:
-
-   - Framework-specific command generation (llama.cpp, vLLM)
-   - Process management with real-time output monitoring
-   - Multiple concurrent model execution support
-   - Command customization with GPU split and tensor parallelism options
-   - Process control with start/stop functionality
-   - Tabbed interface for monitoring multiple processes
-
-4. **Memory Profiler Tab**: Analyze GPU memory usage patterns with:
-   - Real-time memory usage timeline visualization
-   - Memory leak detection with severity indicators
-   - Interactive memory event log with color-coded events
-   - Session statistics and analysis reports
-   - CSV export functionality for external analysis
-   - Inference tracking with token count recording
-
 ## Quick Start
 
 To quickly get started with DualGPUOptimizer:
@@ -818,6 +682,7 @@ python run.py --mock
    - The **Dashboard** tab shows real-time GPU metrics
    - The **Optimizer** tab calculates memory splits for models
    - The **Launcher** tab controls model execution
+   - The **View > Advanced Tools** menu reveals the memory timeline and advanced diagnostics
 
 For developers, you can also run directly with:
 
