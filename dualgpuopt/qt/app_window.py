@@ -232,6 +232,11 @@ class DualGPUOptimizerApp(QMainWindow):
             self.settings_tab = SettingsTab()
             self.tab_widget.addTab(self.settings_tab, "Settings")
 
+            # Training Tab
+            from dualgpuopt.qt.training_tab import TrainingTab
+            self.training_tab = TrainingTab(self)
+            self.tab_widget.addTab(self.training_tab, "Training")
+
             # Cache Monitor Tab
             self.cache_tab = CacheMonitorWidget(self)
             self.tab_widget.addTab(self.cache_tab, "Engine Pool")

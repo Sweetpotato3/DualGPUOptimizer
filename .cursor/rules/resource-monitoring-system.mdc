@@ -1,63 +1,61 @@
 ---
-description: Technical specification for GPU resource monitoring, telemetry collection, and alert management system.
-globs: **/telemetry.py,**/tray.py,**/metrics.py,**/monitor.py,**/alerts.py
+description: Resource monitoring and telemetry system for dual GPU setups, focusing on memory, utilization, temperature and performance metrics tracking.
+globs: */telemetry.py,*/telemetry_history.py,*/gpu/monitor.py,*/memory/monitor.py,*/services/telemetry.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-## Telemetry Collection System (telemetry.py)
+The resource monitoring system implements specialized GPU telemetry collection and analysis through several key components:
 
-GPU Metrics Model:
-- Comprehensive metric tracking for:
-  - Resource utilization
-  - Memory usage/pressure 
-  - Temperature thresholds
-  - Power consumption
-  - Clock speeds
-  - PCIe bandwidth
+## Core Telemetry Collection
+- Implements polling-based metrics collection with configurable intervals
+- Tracks per-GPU metrics:
+  * Utilization percentage
+  * Memory usage/pressure
+  * Temperature values
+  * Power consumption
+  * Clock speeds
+  * PCIe bandwidth
 
-Alert Level System:
-- NORMAL: Default operating state
-- WARNING: Memory ≥75% or Temperature ≥70°C 
-- CRITICAL: Memory ≥90% or Temperature ≥80°C or Power ≥98%
-- EMERGENCY: Memory ≥95% or Temperature ≥90°C
+## Alert Classification System
+Implements a four-tier alert system based on GPU health metrics:
+```python
+- EMERGENCY: Memory usage ≥ 95% or Temperature ≥ 90°C
+- CRITICAL: Memory usage ≥ 90% or Temperature ≥ 80°C or Power usage ≥ 98%
+- WARNING: Memory usage ≥ 75% or Temperature ≥ 70°C or Power usage ≥ 90%
+- NORMAL: All metrics below thresholds
+```
 
-Performance History:
-- 60-second rolling window of metrics per GPU
-- Aggregate metrics across all GPUs
-- Memory pressure calculation 
-- Power utilization relative to max TDP
-- Average utilization tracking
+## Telemetry History Management
+- Maintains 60-second rolling window of metrics history
+- Specialized multi-GPU aggregation:
+  * System-wide utilization averages
+  * Total memory consumption tracking
+  * Temperature pattern analysis across devices
 
-Recovery Logic:
-- Exponential backoff for NVML failures
-- Mock data generation on consecutive failures
-- Recovery attempts capped by ENV_MAX_RECOVERY_ATTEMPTS
-- Per-GPU error state tracking
+## Error Recovery Logic
+- Progressive backoff for NVML recovery attempts
+- Automatic fallback to mock data generation
+- Configurable recovery attempts with exponential backoff
 
-## Memory Monitoring (monitor.py)
+## Mock Data Generation Rules
+Simulates realistic GPU behavior:
+- High-end GPU (RTX 5090):
+  * 24GB memory
+  * 350W power limit 
+- Mid-range GPU (RTX 4080):
+  * 16GB memory
+  * 200W power limit
 
-Memory Usage Tracking:
-- Real-time memory allocation monitoring
-- Per-GPU memory pressure calculation
-- Memory leak detection via sliding window analysis
-- Growth rate tracking using linear regression
-- 30-second deduplication window for leak alerts
-
-Session Management:
-- Pre/post inference memory baselines
-- Memory retention tracking above 10MB threshold
-- Token count and memory statistics per session
-- Memory pattern categorization:
-  - ALLOCATION: Positive deltas
-  - DEALLOCATION: Negative deltas 
-  - GROWTH_SPIKE: Rapid increases
-  - LEAK_DETECTED: Sustained growth
-
-Relevant File Paths:
-- dualgpuopt/telemetry.py
-- dualgpuopt/monitor.py
+Key File Paths:
+```
+dualgpuopt/telemetry.py
+dualgpuopt/telemetry_history.py
+dualgpuopt/gpu/monitor.py 
+dualgpuopt/memory/monitor.py
+dualgpuopt/services/telemetry.py
+```
 
 $END$

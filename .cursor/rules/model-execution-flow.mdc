@@ -1,57 +1,61 @@
 ---
-description: Defines LLM model execution workflows, command generation, GPU split configuration, and backend selection logic.
-globs: */*/model/*,*/*/engine/*,*/*/batch/*,*/*/commands/*,*/*/services/*
+description: Documents how LLM models are executed across GPUs including command generation, config handling, and GPU resource allocation
+globs: **/commands/*.py,**/engine/*.py,**/services/*.py,**/launcher/*.py,**/optimizer.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Command Generation and Model Execution
-The system implements framework-specific command generation for both llama.cpp and vLLM backends:
+## Command Generation & Launch Parameters
 
-```python
-# Framework-specific command generation 
-llama_cmd = f"--model {model_path} --ctx-size {ctx_size} --gpu-split {split}"
-vllm_cmd = f"--model {model_path} --tensor-parallel-size {gpu_count}"
-```
+1. Framework-Specific Command Generation (dualgpuopt/optimizer.py):
+- Generates optimized launch commands for llama.cpp and vLLM based on model/GPU configurations 
+- Calculates tensor parallel sizes and GPU memory splits
+- Handles context length recommendations based on available VRAM
+- Sets environment variables for CUDA/NCCL optimization
 
-## Model Distribution Strategy
-- Calculates optimal GPU split ratios based on available VRAM and model size
-- Adjusts tensor parallelism based on number of available GPUs
-- Handles memory calculations with safety margins:
-  - System overhead: 2GB reserved
-  - Tensor parallel overhead: 20%
-  - KV cache scaling: 2x multiplier
+2. Launch Controller Logic (dualgpuopt/gui/launcher/launch_controller.py):
+- Manages model launch process through separate process management
+- Coordinates GPU resource allocation between loaded models
+- Implements graceful process termination with cleanup
+- Handles OOM recovery through cache clearing
 
-## Backend Selection Logic
-1. Selection based on model format:
-   - GGUF files -> llama.cpp backend
-   - AWQ files -> vLLM backend
-   - HF models -> HFBackend
-   
-2. Process management:
-   - Non-blocking process execution for inference
-   - Output streaming with token processing
-   - Resource cleanup on process termination
+## Engine Management
 
-## Batch Processing
-Smart batching implementation with:
-- Length-aware sequence batching
-- Token-based backpressure 
-- Memory quota enforcement
-- OOM recovery and retry
+1. Engine Pool System (dualgpuopt/engine/pool/core.py):
+- Implements hot-swapping LRU cache for loaded model instances
+- Health monitoring with auto-recovery for failed engines
+- Metrics tracking for load times and performance
+- Built-in fallback to mock engines on failures
 
-## Engine Pool Management
-- LRU caching of loaded models
-- Health monitoring with auto-recovery
-- Backend-specific validation
-- Resource cleanup
+2. Backend Selection (dualgpuopt/engine/backend.py):
+- Routes model loading requests to appropriate backends:
+  - GGUF files to LlamaCppBackend
+  - AWQ models to VLLMBackend 
+  - Standard models to HFBackend
+- Validates model formats against backend capabilities
+- Configures tensor parallel settings per backend
 
-Key file paths:
+## Optimization System
+
+1. Layer Balance Optimization (dualgpuopt/layer_balance.py):
+- Custom algorithm for distributing model layers across GPUs
+- Uses profiling data from 64 and 1024 sequence samples
+- Weights allocation based on 20% short / 80% long sequences
+- Maintains minimum 3-layer blocks per GPU
+
+2. Memory Split Optimization (dualgpuopt/optimizer.py):
+- Analyzes available GPU memory and model requirements
+- Calculates optimal tensor parallel splits
+- Generates environment settings for layer distribution
+- Handles specialized MoE model memory requirements
+
+Relevant File Paths:
+- dualgpuopt/optimizer.py
+- dualgpuopt/layer_balance.py 
+- dualgpuopt/engine/pool/core.py
 - dualgpuopt/engine/backend.py
-- dualgpuopt/engine/pool.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/commands/gpu_commands.py
+- dualgpuopt/gui/launcher/launch_controller.py
 
 $END$

@@ -511,13 +511,13 @@ The system focuses on efficient distribution and monitoring of machine learning 
 $END$
 END SPECIFICATION
 
-START SPECIFICATION:
----
-description: Create high-level overview documentation for software systems focused on GPU optimization, hardware monitoring, memory management, and machine learning model execution. This rule applies when documenting systems that handle GPU resource allocation, hardware telemetry, and model deployment across multiple GPUs.
-globs: *.py,*.md
-alwaysApply: false
+START SPECIFICATION
 ---
 
+description: Use for generating high-level architectural overviews focused on business logic and domain-specific implementations from source code related to GPU optimization, monitoring, and ML workload management. Apply to codebases with multiple GPU-related components, particularly for dual-GPU optimization systems.
+globs: *.py,*.cpp,*.h
+alwaysApply: false
+---
 
 # main-overview
 
@@ -529,61 +529,61 @@ alwaysApply: false
 - Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
+DualGPUOptimizer implements specialized GPU management and optimization for machine learning workloads, focusing on dual-GPU configurations.
 
-The DualGPUOptimizer application implements specialized GPU monitoring, memory management, and model optimization across multiple GPUs.
+Core Business Components:
 
-## Core Architecture
+1. GPU Telemetry System (dualgpuopt/telemetry.py):
 
-### GPU Telemetry System (Score: 95)
-File: dualgpuopt/telemetry.py
-- Comprehensive GPU metrics monitoring with 4 severity levels (NORMAL, WARNING, CRITICAL, EMERGENCY)
-- Rolling 60-second metrics history per GPU device
-- Implements exponential backoff for NVML failures with mock data fallback
-- Custom alert thresholds for memory, temperature, and power usage
+- Real-time monitoring of critical GPU metrics
+- Multi-level alert classification (EMERGENCY, CRITICAL, WARNING, NORMAL)
+- Rolling history metrics with 60-second window
+- Progressive backoff recovery for hardware failures
 
-### Memory Management (Score: 92)
-File: dualgpuopt/memory/profiler.py
-- Real-time memory leak detection using sliding window analysis
-- Session-based memory tracking during model inference
-- Delta analysis between inference starts/ends
-- Memory pattern classification (ALLOCATION, DEALLOCATION, GROWTH_SPIKE, LEAK_DETECTED)
+2. Legal Assistant Integration (dualgpuopt/serve/legal_api.py):
 
-### Model Optimization Engine (Score: 90)
-File: dualgpuopt/optimizer.py
-- Custom algorithm for calculating optimal memory distribution across dual GPUs
-- Model-specific parameter mapping and memory profiling
-- Framework-specific command generation for llama.cpp and vLLM
-- Tensor parallelism optimization for multi-GPU setups
+- RAG-enhanced legal document processing
+- Quebec law domain specialization
+- Legal citation generation and validation
+- Custom prompt engineering for legal context
 
-### Layer Distribution System (Score: 88)
-File: dualgpuopt/layer_balance.py
-- Adaptive latency-aware layer distribution across GPUs
-- Two-phase profiling approach with weighted sequence lengths
-- Memory quota-aware distribution with performance optimization
-- Dynamic block merging for contiguous layer arrangements
+3. Memory Optimization (dualgpuopt/memory/profiler.py):
 
-### Engine Pool Management (Score: 85)
-File: dualgpuopt/engine/pool.py
-- LRU caching for model instances with health monitoring
-- Automatic model recovery and reloading on health check failures
-- Backend-specific health check implementations
-- Dynamic metrics recording and performance tracking
+- Specialized memory profiling for dual-GPU LLM inference
+- Two-tier leak detection system with thresholds
+- Session-based memory analysis
+- Token count impact tracking
 
-### Legal Document Processing (Score: 82)
-File: dualgpuopt/serve/legal_api.py
-- Quebec-French legal prompt formatting with context injection
-- RAG integration for legal document retrieval
-- Legal context template management
-- Domain-specific response streaming for legal content
+4. Layer Balancing (dualgpuopt/layer_balance.py):
 
-### Smart Batching System (Score: 80)
-File: dualgpuopt/batch/smart_batch.py
-- Length-aware sequence batching for legal text processing
-- Token-based backpressure system
-- Model-specific memory optimization
-- OOM recovery for long legal documents
+- Dynamic layer distribution across GPUs
+- Performance-weighted layer allocation
+- Contiguous block optimization
+- Automated transitions between GPUs
 
-This architecture provides comprehensive GPU resource management and optimization for machine learning model deployment, with specialized components for legal document processing and memory management.
+5. Model Launch Management (dualgpuopt/qt/launcher_tab.py):
+
+- Framework-specific command generation
+- GPU split calculations with memory constraints
+- Tensor parallel configuration
+- OOM detection and recovery
+
+6. Cache Monitor (dualgpuopt/qt/cache_monitor.py):
+
+- LRU model caching system
+- Health check automation
+- Automatic cache eviction
+- Performance metrics tracking
+
+File Organization:
+
+- Core GPU logic: dualgpuopt/gpu/*
+- Memory management: dualgpuopt/memory/*
+- UI components: dualgpuopt/gui/*
+- Model management: dualgpuopt/model/*
+- Telemetry: dualgpuopt/telemetry/*
+
+The system focuses on optimizing GPU resource allocation and monitoring for large language models, with particular emphasis on dual-GPU configurations and legal domain applications.
 
 $END$
 END SPECIFICATION

@@ -3,19 +3,19 @@ Main application module for the DualGPUOptimizer GUI.
 """
 from __future__ import annotations
 
-import tkinter as tk
-from tkinter import ttk, messagebox
 import logging
+import os
 import queue
 import sys
-import os
-from typing import Dict, List, Optional, Any
+import tkinter as tk
+from tkinter import messagebox, ttk
+from typing import Any, Dict, List, Optional
 
 # Import ttkbootstrap for modern UI
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.constants import *
     from ttkbootstrap import Style
+    from ttkbootstrap.constants import *
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
@@ -30,32 +30,32 @@ except ImportError:
 
 <<<<<<< HEAD
 # Import constants first to avoid circular imports
-from dualgpuopt.gui.constants import (
-    PAD,
-    DEFAULT_CHART_HEIGHT,
+from dualgpuopt.gui.constants import (  # New purple theme colors
+    BLUE_ACCENT,
+    CYAN_ACCENT,
+    DARK_BACKGROUND,
     DEFAULT_CHART_BG,
     DEFAULT_CHART_FG,
-    GPU_COLORS,
+    DEFAULT_CHART_HEIGHT,
     DEFAULT_FONT,
     DEFAULT_FONT_SIZE,
-<<<<<<< HEAD
-    UPDATE_INTERVAL_MS,
-    # New purple theme colors
-    PURPLE_PRIMARY,
-    PURPLE_HIGHLIGHT,
-    BLUE_ACCENT,
-    PINK_ACCENT,
-    CYAN_ACCENT,
-    ORANGE_ACCENT,
-    DARK_BACKGROUND,
+    GPU_COLORS,
+    HEAD,
     LIGHT_FOREGROUND,
-    WARNING_COLOR
+    ORANGE_ACCENT,
+    PAD,
+    PINK_ACCENT,
+    PURPLE_HIGHLIGHT,
+    PURPLE_PRIMARY,
+    UPDATE_INTERVAL_MS,
+    WARNING_COLOR,
+    <<<<<<<,
 )
 
 # Define the progressbar thickness here since it's specific to this module
 PROGRESSBAR_THICKNESS = 8
 
-from dualgpuopt import gpu_info, telemetry, VERSION
+from dualgpuopt import VERSION, gpu_info, telemetry
 from dualgpuopt.tray import init_tray
 
 =======
@@ -68,31 +68,32 @@ PROGRESSBAR_THICKNESS = 8
 =======
 >>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 from dualgpuopt import gpu_info, telemetry
+from dualgpuopt.gui.theme import apply_theme, generate_colors, update_widgets_theme
 from dualgpuopt.tray import init_tray
-from dualgpuopt.gui.theme import apply_theme, update_widgets_theme, generate_colors
 
 >>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
-# Import services
-from dualgpuopt.services.event_service import event_bus
-from dualgpuopt.services.state_service import app_state
+# Import GUI components after constants
+from dualgpuopt.gui.dashboard import GpuDashboard
+from dualgpuopt.gui.launcher import LauncherTab
+from dualgpuopt.gui.optimizer import OptimizerTab
+from dualgpuopt.gui.settings import SettingsTab
 from dualgpuopt.services.config_service import config_service
 from dualgpuopt.services.error_service import error_service
 
-# Import GUI components after constants
-from dualgpuopt.gui.dashboard import GpuDashboard
-from dualgpuopt.gui.settings import SettingsTab
-from dualgpuopt.gui.optimizer import OptimizerTab
-from dualgpuopt.gui.launcher import LauncherTab
+# Import services
+from dualgpuopt.services.event_service import event_bus
+from dualgpuopt.services.state_service import app_state
 
 <<<<<<< HEAD
 class DualGpuApp:
     """Main application class for the Dual GPU Optimizer GUI."""
 =======
+from dualgpuopt.services.config_service import config_service
+from dualgpuopt.services.error_service import error_service
+
 # Import our new services
 from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.state_service import app_state
-from dualgpuopt.services.config_service import config_service
-from dualgpuopt.services.error_service import error_service
 
 
 class DualGpuApp(ttk.Frame):

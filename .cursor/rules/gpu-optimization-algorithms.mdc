@@ -1,82 +1,78 @@
 ---
-description: Specification for GPU memory distribution algorithms, split ratios, tensor parallel optimizations, and resource allocation
-globs: **/optimizer.py,**/gpu_info.py,**/gpu/*.py,**/memory/*.py,**/vram_*.py
+description: Documentation of GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies
+globs: **/*.py,**/gpu/*.py,**/optimizer/*.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core GPU Memory Distribution System
+## Memory Split Calculation
 
-1. GPU Split Ratio Calculation:
+Core algorithm for distributing model layers across multiple GPUs based on available VRAM:
+
+1. Memory Allocation Strategy:
 ```python
-def calculate_split(gpu1_mem, gpu2_mem):
-    total = gpu1_mem + gpu2_mem
-    gpu1_ratio = gpu1_mem / total
-    gpu2_ratio = gpu2_mem / total
-    return gpu1_ratio, gpu2_ratio
-```
-
-2. Tensor Parallel Distribution:
-- Calculates optimal layer distribution across multiple GPUs
-- Considers memory capacity, PCIe bandwidth, and GPU compute capability
-- Custom algorithm for uneven GPU memory configurations
-- Located in: `dualgpuopt/optimizer.py`
-
-3. Memory Allocation Strategy:
-- Dynamic reserved memory calculation based on model size
-- Safety margins implemented for OOM prevention:
-  - 2GB base system reservation
-  - 10% safety margin for tensor operations
-  - 20% tensor parallel overhead allowance
-- Located in: `dualgpuopt/memory/profiler.py`
-
-## Memory Pattern Analysis
-
-1. Token Memory Requirements:
-```python
+# Calculates per-token memory requirements
 bytes_per_token = model.kv_hidden_size * model.num_layers * 2
+memory_overhead = 0.2  # 20% overhead for tensor operations
+split_ratio = gpu1_vram / (gpu1_vram + gpu2_vram)
 ```
 
-2. Context Length Optimization:
-- Maximum context calculation based on:
+2. GPU Layer Distribution:
+- Balances layers across GPUs based on relative memory capacity
+- Handles dynamic KV cache allocation with attention-based memory requirements
+- Implements fallback mechanisms for OOM conditions
+
+3. Tensor Parallel Split Optimization:
+- Splits large language models into tensor parallel shards
+- Optimizes communication patterns between GPUs
+- Handles model-specific requirements (MQA/GQA, Mixtral MoE)
+
+## Memory Profiling System
+
+Key components for memory tracking and optimization:
+
+1. Profile Collection:
+- Track memory patterns across multiple GPUs
+- Monitor allocation/deallocation events
+- Detect memory growth spikes and leaks
+- Associate memory usage with inference sessions
+
+2. Memory Leak Detection:
+- Uses sliding window analysis 
+- Calculates memory growth rates
+- Two-tier threshold system:
+  - Spike threshold for rapid growth
+  - Leak threshold for sustained growth
+
+3. Session Analysis:
+- Track inference memory baselines
+- Calculate per-GPU deltas
+- Monitor token count impact
+- Pattern analysis for memory anomalies
+
+## Optimization Algorithms 
+
+1. Context Length Calculator:
+- Determines maximum safe context size based on:
   - Available GPU memory
   - Model architecture parameters
+  - Tensor parallel configuration
   - KV cache requirements
-- Located in: `dualgpuopt/memory/vram_fit.py`
 
-## Memory Leak Prevention
+2. Layer Balancing:
+- Distributes model layers for optimal latency
+- Considers memory quotas per GPU
+- Handles contiguous layer blocks
+- Special handling for embedding layers
 
-1. Growth Pattern Detection:
-- Sliding window analysis for memory usage trends
-- Linear regression on usage patterns
-- Leak threshold configured at 10MB retained memory
-- Located in: `dualgpuopt/memory/profiler.py`
-
-2. Recovery Actions:
-- Cache clearing with exponential backoff
-- Automatic tensor cleanup
-- Dynamic batch size reduction
-- Located in: `dualgpuopt/memory/recovery.py`
-
-## GPU Resource Monitoring
-
-1. Telemetry System:
-- Real-time memory pressure tracking
-- PCIe bandwidth monitoring
-- Temperature and power thresholds
-- Located in: `dualgpuopt/telemetry.py`
-
-2. Alert Levels:
-- WARNING: Memory ≥75% or Temperature ≥70°C
-- CRITICAL: Memory ≥90% or Temperature ≥80°C
-- EMERGENCY: Memory ≥95% or Temperature ≥90°C
-
-Importance Scores:
-- GPU Split Algorithm: 95 (Core optimization logic)
-- Memory Pattern Analysis: 90 (Critical for performance)
-- Leak Prevention: 85 (Essential for stability)
-- Resource Monitoring: 80 (Supporting optimization)
+Relevant file paths:
+```
+dualgpuopt/optimizer.py
+dualgpuopt/memory/profiler.py
+dualgpuopt/gpu_info.py
+dualgpuopt/layer_balance.py
+```
 
 $END$

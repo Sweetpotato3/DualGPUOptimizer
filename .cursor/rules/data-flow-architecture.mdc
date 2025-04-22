@@ -1,81 +1,58 @@
 ---
-description: Specification for analyzing data flow and communication patterns between components in GPU optimization systems.
-globs: dualgpuopt/**/*.py,dual_gpu_optimizer/**/*.py,integrated_app/**/*.py
+description: Documents the data flow between components in GPU resource management and optimization systems.
+globs: *.py,*/dualgpuopt/**
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Key data flows for the DualGPUOptimizer system:
+Key data flows in the DualGPUOptimizer system:
 
-1. GPU Telemetry Pipeline
-- GPU metrics collection through NVML service
-- Event-based propagation to visualization components
-- Rolling 60-second history buffer for time-series data
-- Alert generation based on threshold violations
+## GPU Telemetry Flow
+- Telemetry service collects raw GPU metrics (utilization, memory, temperature, power)
+- Metrics are processed through middleware pipeline
+- Data published to event bus for real-time monitoring
+- Historical metrics stored in 60-second rolling buffer
+- Alerts generated based on threshold violations
 - File: `dualgpuopt/telemetry.py`
 
-2. Memory Monitoring Flow
-- Real-time memory tracking per GPU device
-- Growth pattern analysis for leak detection 
-- Snapshot data collection during inference sessions
-- Token count correlation with memory usage
-- Files: 
-  - `dualgpuopt/memory/profiler.py`
-  - `dualgpuopt/memory/monitor.py`
+## Memory Profiling Flow 
+- GPU memory events tracked across dual-GPU setup
+- Events categorized as allocations, spikes, leaks
+- Timeline data aggregated for analysis
+- Session-based memory metrics calculated
+- Leak detection flags sent to monitoring system
+- File: `dualgpuopt/memory/profiler.py`
 
-3. UI Data Integration
-- Telemetry events routed through event bus
-- GPU metrics displayed via dashboard components
-- Performance data updates at configurable intervals
-- Status propagation through status bar services
-- Files:
-  - `dualgpuopt/gui/main_app.py`
-  - `dualgpuopt/gui/dashboard.py`
+## Model Parameter Flow
+- Model configurations loaded from presets
+- Parameters validated against GPU capabilities
+- Optimized splits calculated for dual GPUs
+- Commands generated for framework execution
+- Results dispatched to launcher
+- File: `dualgpuopt/optimizer.py`
 
-4. Resource Optimization Flow
-- Model parameter analysis and GPU memory mapping
-- Layer distribution calculations across GPUs
-- Split ratio determination based on GPU capabilities
-- Command generation for model deployment
-- Files:
-  - `dualgpuopt/optimizer.py`
-  - `dualgpuopt/layer_balance.py`
+## Event Distribution Flow
+- GPU metrics published via event bus
+- Configuration changes propagate to components
+- Status updates sent to UI subscribers
+- Health check results trigger recovery actions
+- File: `dualgpuopt/services/event_bus.py`
 
-5. Health Monitoring Pipeline
-- Continuous GPU health status monitoring
-- Error state tracking per device
-- Recovery attempt management
-- Alert generation and status updates
-- File: `dualgpuopt/telemetry_history.py`
+## Resource Management Flow
+- GPU detection triggers telemetry initialization
+- Memory thresholds control allocation limits 
+- OOM events trigger recovery procedures
+- Cache eviction managed by LRU policy
+- Resource stats aggregated for monitoring
+- File: `dualgpuopt/engine/pool/core.py`
 
-6. Legal Document Processing Flow
-- Legal text vectorization and embedding generation
-- Document chunking and metadata preservation
-- RAG query processing and context retrieval
-- Files:
-  - `dualgpuopt/serve/legal_api.py`
-  - `dualgpuopt/rag/retrieve.py`
-
-7. Error Handling Pipeline
-- Error categorization and severity assessment 
-- Recovery strategy selection
-- Alert propagation through event system
-- Resource cleanup coordination
-- Files:
-  - `dualgpuopt/error_handler/base.py`
-  - `dualgpuopt/error_handler/handler.py`
-
-8. Settings Management Flow
-- Configuration changes through settings service
-- Event-based propagation to components
-- Persistence to disk for settings state
-- Theme and appearance update distribution
-- Files:
-  - `dualgpuopt/services/config_service.py`
-  - `dualgpuopt/services/event_bus.py`
-
-This architecture emphasizes real-time data flow for GPU monitoring, optimization, and error handling, with specialized paths for legal document processing and user configuration management.
+Importance Scores:
+- GPU Telemetry Flow: 95 (Critical metrics pipeline)
+- Memory Profiling Flow: 90 (Core optimization data) 
+- Model Parameter Flow: 85 (Key configuration flow)
+- Event Distribution Flow: 80 (Integration backbone)
+- Resource Management Flow: 85 (Resource coordination)
 
 $END$
