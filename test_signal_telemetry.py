@@ -13,6 +13,7 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 
+# Import telemetry worker
 from dualgpuopt.services.telemetry import TelemetryWorker
 
 logger = logging.getLogger("TelemetryTest")

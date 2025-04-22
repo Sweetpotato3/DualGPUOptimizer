@@ -1,72 +1,66 @@
 ---
-description: Documents data flow patterns between components for GPU optimization and monitoring systems.
-globs: 
+description: Specification for documenting data flow between system components for GPU optimization and telemetry monitoring
+globs: **/dualgpuopt/**/*.py,**/dual_gpu_optimizer/**/*.py
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-## Core Data Flow Components
+## Core Data Flows
 
-1. Telemetry Pipeline
-- GPU metrics flow from NVML through telemetry service to UI components
-- Real-time metrics include: utilization, memory, temperature, power consumption
-- telemetry_history.py maintains 60-second rolling buffer of metrics
-- Dashboard components consume metrics via event bus subscription
-- File path: dualgpuopt/telemetry.py
+### 1. GPU Telemetry Collection Pipeline
+- GPU metrics flow from NVML through middleware pipeline
+- Telemetry samples collected at configurable intervals (default 0.8s)
+- Alert middleware processes samples for threshold violations:
+  * Memory usage > 90%
+  * Temperature > 80°C
+  * Power usage > 95%
+- Event bus distributes processed metrics to visualization components
 
-2. Memory Profiling Flow
-- Memory events flow from GPU allocation hooks to profiler service
-- Profiler tracks memory timelines and leak detection analysis
-- Generates inference session reports with memory deltas
-- Dashboard visualizes memory patterns in real-time
-- File path: dualgpuopt/memory/profiler.py
+File: dualgpuopt/telemetry.py
 
-3. Optimization Data Pipeline
-- Model parameters and GPU capabilities flow into optimizer
-- Optimizer generates tensor split configurations and command templates
-- Results flow to launcher for model execution
-- File path: dualgpuopt/optimizer.py
+### 2. Model Execution Data Flow
+- Engine pool manages model instance lifecycle and data routing
+- Command generation produces framework-specific configurations
+- Process monitoring streams output through message queues
+- Model process output flows through logging middleware
 
-4. Event Bus Architecture  
-- Centralized event bus routes telemetry data, alerts, and state changes
-- Components communicate through typed events with priority levels
-- Publishers: Telemetry service, memory profiler, error handler
-- Subscribers: Dashboard, optimizer, launcher components
-- File path: dualgpuopt/services/event_bus.py
+Files: 
+- dualgpuopt/engine/pool/core.py
+- dualgpuopt/commands/gpu_commands.py
 
-5. Resource Configuration Flow
-- GPU resource data flows from NVML to configuration service
-- Optimizer consumes configuration to determine memory splits
-- Launcher receives optimized configurations for model execution
-- File path: dualgpuopt/configio.py
+### 3. Memory Management Pipeline
+- GPU memory metrics flow through profiling system
+- Memory pattern analysis detects:
+  * Growth spikes above spike_threshold
+  * Sustained leaks above leak_threshold
+  * Per-inference memory deltas
+- Alert events published through event bus for visualization
+- Recovery commands flow through command system to GPU
 
-6. Alert Propagation
-- Memory alerts flow from profiler to event bus
-- Temperature/utilization alerts from telemetry service
-- Critical alerts propagate to system tray and UI
-- Alert thresholds configurable per metric type
-- File path: dualgpuopt/services/alerts.py
+Files:
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/memory/recovery.py
 
-## Key Integration Points
+### 4. Configuration Data Flow
+- Settings flow from UI through config service
+- Preset configurations distributed to relevant components
+- GPU-specific settings routed through command system
+- State changes published through event bus
 
-1. Telemetry-to-Dashboard Flow
-- Raw GPU metrics transformed into visualization data
-- 60-second history window maintained
-- Real-time graph updates via event subscription
-- File path: dualgpuopt/gui/dashboard.py
+Files:
+- dualgpuopt/services/config_service.py
+- dualgpuopt/services/state_service.py
 
-2. Profiler-to-Optimizer Flow  
-- Memory profiles inform tensor split calculations
-- Leak detection triggers optimization adjustments
-- File path: dualgpuopt/memory/profiler.py
+### 5. Metrics Visualization Pipeline
+- GPU metrics flow from telemetry through event bus
+- UI components subscribe to metric updates
+- Chart components maintain 60-point historical buffers
+- Alert badges subscribe to threshold violations
 
-3. Optimizer-to-Launcher Flow
-- Optimized configurations flow to model launcher
-- Generated commands include GPU assignments
-- File path: dualgpuopt/gui/launcher.py
-
-The data flow architecture centers around real-time GPU metric collection and optimization, with event-driven updates propagating through the system. Components maintain loose coupling through the event bus while sharing critical resource data.
+Files:
+- dualgpuopt/gui/dashboard.py
+- dualgpuopt/qtgui/widgets.py
 
 $END$

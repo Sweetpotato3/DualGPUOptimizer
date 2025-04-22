@@ -5,16 +5,14 @@ import queue
 import threading
 import time
 import tkinter as tk
-from typing import Any, Callable, Dict, List, Optional, Tuple
+
+# Configure logger
+# Configure logger
+from dualgpuopt.engine.pool import EnginePool
+from dualgpuopt.ui.chat_compat import DEPENDENCIES as CHAT_DEPENDENCIES
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.ChatTab")
-
-# Import EnginePool for model management
-from dualgpuopt.engine.pool import EnginePool
-
-# Import from UI compatibility layer instead of directly
-from dualgpuopt.ui.chat_compat import DEPENDENCIES as CHAT_DEPENDENCIES
 
 # Use dependencies from the compatibility layer
 if CHAT_DEPENDENCIES["requests"]["available"] and CHAT_DEPENDENCIES["sseclient"]["available"]:
@@ -578,6 +576,6 @@ class ChatTab(ttk.Frame):
             else:
                 # For narrow windows, minimize the sidebar
                 self.h_paned.sashpos(0, int(width * 0.8))
-        except (tk.TclError, AttributeError) as e:
+        except (tk.TclError, AttributeError):
             # Handle case where sash may not be available yet
             pass

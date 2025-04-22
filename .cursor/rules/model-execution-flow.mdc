@@ -1,64 +1,67 @@
 ---
-description: Defines execution workflow for LLM models across multiple GPUs, including command generation and resource allocation
-globs: **/dualgpuopt/engine/**,**/dualgpuopt/gpu/**,**/dualgpuopt/launcher/**
+description: Technical specification for GPU-accelerated model execution flows, optimization strategies, and resource management in multi-GPU systems.
+globs: dualgpuopt/**/*.py,hooks/**/*.py,examples/**/*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The LLM execution workflow consists of several key components:
+The model execution flow centers around dual GPU optimization and workload distribution through several core components:
 
-## Command Generation Flow
-1. Framework Detection & Command Generation:
-- Detects model format (GGUF/AWQ/HF) and selects appropriate framework
-- Generates framework-specific commands:
-  - llama.cpp: GPU split and layer balancing commands
-  - vLLM: Tensor parallelism and memory allocation commands
+## Command Generation System
+File: dualgpuopt/commands/gpu_commands.py
 
-2. Resource Allocation:
-- Calculates optimal memory splits between GPUs based on:
-  - Model size and architecture
-  - Available GPU VRAM
-  - Memory overhead requirements
-- Determines tensor parallel configurations
-- Applies fractional GPU allocation for smaller models
+- Model Launch Generation:
+  - llama.cpp: Generates GPU split strings and layer allocations based on calculated ratios
+  - vLLM: Produces tensor parallelism configurations for multi-GPU setups
+  - Context lengths dynamically calculated from GPU memory availability
+  - Automatic thread allocation based on GPU core counts
 
-## Execution Pipeline
-1. Pre-execution Setup:
-- VRAM reset sequence if enabled 
-- Cache clearing
-- Memory monitoring initialization
-- Layer balancing calculation
+## Model Runner
+File: dualgpuopt/runner.py
 
-2. Process Management:
-- Launches model process with configured parameters
-- Monitors process health and memory pressure
-- Handles OOM recovery through cache clearing
-- Manages concurrent model instances
+- Launch Protocol:
+  1. Pre-launch GPU memory reset and validation 
+  2. Framework-specific environment setup (CUDA_VISIBLE_DEVICES, etc)
+  3. Command execution with supervised process management
+  4. Real-time output monitoring and alert system
 
-3. Resource Monitoring:
-- Tracks real-time GPU metrics
-- Publishes telemetry events
-- Monitors memory usage thresholds
-- Triggers cleanup on memory pressure
+## Resource Manager 
+File: dualgpuopt/gpu_info.py
 
-## Recovery Flow
-1. Progressive Recovery Strategy:
-- Stage 1: Clear CUDA cache
-- Stage 2: Reduce batch size
-- Stage 3: Reload model with reduced parameters
-- Stage 4: Failover to mock mode
+- VRAM Distribution:
+  - Calculates memory splits based on total/free ratios
+  - Reserves system memory overhead (2GB default)
+  - Implements safety margins for OOM prevention
+  - Manages tensor allocation across GPUs
 
-2. Automatic Retries:
-- Implements exponential backoff
-- Maximum 3 retry attempts
-- Falls back to mock data after failures
-- Maintains operation logs for diagnostics
+## Model Profiles
+File: dualgpuopt/model_profiles.py
 
-Key Paths:
-- `dualgpuopt/engine/pool/core.py`: Engine pool management
-- `dualgpuopt/gpu/monitor.py`: GPU monitoring
-- `dualgpuopt/launcher/process_monitor.py`: Process management
+Core execution profiles for different model architectures:
+- Llama-2: Default 5-65% split across GPUs
+- Mistral: 40-60% balanced configuration  
+- Mixtral: MoE-aware splits with 8-expert distribution
+
+## Layer Balancing
+File: dualgpuopt/layer_balance.py
+
+- Progressive Layer Distribution:
+  1. Profile GPU performance characteristics
+  2. Calculate optimal splits using 20/80 weighted ratios
+  3. Apply minimum block size (3 layers)
+  4. Generate layer maps for framework consumption
+
+## Execution Monitoring
+File: dualgpuopt/memory/monitor.py
+
+- Real-time telemetry:
+  - Memory pressure tracking
+  - Temperature monitoring 
+  - Utilization metrics
+  - Auto-recovery on OOM conditions
+
+The execution flow orchestrates these components to achieve optimal model deployment across dual GPU configurations while maintaining stability and performance monitoring.
 
 $END$

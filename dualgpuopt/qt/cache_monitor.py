@@ -1,15 +1,21 @@
 from __future__ import annotations
-from PySide6 import QtWidgets as QtW, QtCore as QtC
+
+from PySide6 import QtCore as QtC
+from PySide6 import QtWidgets as QtW
+
 from dualgpuopt.engine.pool.core import EnginePool
+
 
 class CacheMonitor(QtW.QDockWidget):
     def __init__(self, parent=None):
         super().__init__("Engine Pool", parent)
-        self.table = QtW.QTableWidget(0, 2); self.table.setHorizontalHeaderLabels(["Model", "Evict"])
+        self.table = QtW.QTableWidget(0, 2)
+        self.table.setHorizontalHeaderLabels(["Model", "Evict"])
         self.setWidget(self.table)
         self.refresh_btn = QtW.QPushButton("Refresh", clicked=self.refresh)
         self.setTitleBarWidget(self.refresh_btn)
-        self.timer = QtC.QTimer(interval=2500, timeout=self.refresh); self.timer.start()
+        self.timer = QtC.QTimer(interval=2500, timeout=self.refresh)
+        self.timer.start()
 
     def refresh(self):
         stats = EnginePool.stats()
@@ -20,4 +26,5 @@ class CacheMonitor(QtW.QDockWidget):
             btn = QtW.QPushButton("Evict", clicked=lambda _, p=m: self._evict(p))
             self.table.setCellWidget(r, 1, btn)
 
-    def _evict(self, path): EnginePool.evict(path) 
+    def _evict(self, path):
+        EnginePool.evict(path)

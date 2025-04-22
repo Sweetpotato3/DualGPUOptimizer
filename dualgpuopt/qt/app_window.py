@@ -16,12 +16,10 @@ from PySide6.QtWidgets import (
     QTabWidget,
     QVBoxLayout,
     QWidget,
-    QToolBar,
     QMessageBox,
 )
 
 # Import refactored components
-from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.alerts import AlertService
 from dualgpuopt.engine.pool import EnginePool
 from dualgpuopt.gui.cache_monitor import CacheMonitorWidget

@@ -1,56 +1,66 @@
 ---
-description: Guidelines for implementing GPU optimization algorithms and memory management strategies across dual GPU setups
-globs: **/optimizer.py,**/gpu_info.py,**/layer_balance.py,**/memory/profiler.py,**/memory/*.py
+description: Specifies GPU memory optimization and tensor parallel distribution algorithms for maximizing dual-GPU utilization
+globs: **/optimizer.py,**/gpu_info.py,**/gpu/*.py,**/memory/*.py,**/telemetry/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-Core algorithms for optimizing GPU resource allocation and memory distribution:
+## Memory Distribution Core Components
 
-1. GPU Layer Distribution Algorithm (layer_balance.py):
-- Progressive layer assignment based on relative GPU performance
-- Weighted workload distribution using 20%/80% split for short/long sequences 
-- Block merging logic to maintain contiguous chunks with min size of 3 layers
-- Dynamic rebalancing based on runtime profiling data
-- Quota-based assignment system with configurable reserve ratio (90% default)
+1. **GPU Split Optimization**
+- Located in `dualgpuopt/optimizer.py`
+- Calculates optimal memory distribution across multiple GPUs based on:
+  * Per-token memory requirements for KV cache 
+  * Tensor parallelism overhead (20%)
+  * System memory overhead (2GB default)
+  * Safety margin (10% default)
+  * KV cache factor adjustments (2.0x default)
 
-2. Memory Profiling and Leak Detection (memory/profiler.py):
-- Rolling window analysis (60s) for memory growth pattern detection
-- Leak classification using linear regression on memory deltas
-- Spike detection via threshold-based growth rate analysis (>0.1)
-- Token-count correlation tracking for memory retention
-- Per-GPU memory timeline maintenance with 30s alert cooldown
+2. **Memory Pattern Analysis**
+- Located in `dualgpuopt/memory/profiler.py` 
+- Real-time detection of memory usage patterns during LLM inference
+- Identifies memory spikes, leaks and retention
+- Tracks per-inference memory metrics:
+  * Token counts
+  * Memory deltas
+  * GPU-specific allocation patterns
+  * Growth rates and recovery patterns
 
-3. Context Size Optimization (optimizer.py):
-- KV cache scaling calculation using model architecture
-- Dynamic tensor parallel fraction calculation
-- MoE expert count adjustment for mixture models
-- Heuristic safety margins (10% default) for memory buffers
-- Minimum context enforcement (128 tokens)
+3. **Tensor Split Calculation**
+- Located in `dualgpuopt/optimizer.py`
+- Determines optimal tensor parallel splits based on:
+  * Available GPU memory ratios
+  * Model layer counts
+  * Attention head configuration
+  * MoE model factors (if applicable)
+  * Framework-specific constraints
 
-4. GPU Split Calculation (optimizer.py):
-- Memory ratio-based distribution between GPUs
-- Tensor parallelism overhead factoring (20%)
-- Framework-specific command generation for llama.cpp/vLLM
-- Model architecture parameter validation 
-- Memory fragmentation prevention with 512MB splits
+4. **Memory Telemetry**
+- Located in `dualgpuopt/telemetry.py`
+- Implements specialized metrics collection for dual GPU systems
+- Maintains 60-second rolling window of historical metrics
+- Classifies alerts based on thresholds:
+  * EMERGENCY: Memory ≥95%, Temperature ≥90°C
+  * CRITICAL: Memory ≥90%, Temperature ≥80°C, Power ≥98%
+  * WARNING: Memory ≥75%, Temperature ≥70°C, Power ≥90%
 
-5. Memory Recovery System (memory/recovery.py):
-- Multi-stage VRAM reclamation:
-  * Cache-only clear
-  * Clock reset
-  * Full tensor release
-  * System-level cleanup
-- Before/after memory tracking
-- Platform-specific implementations (Windows/Linux)
+5. **VRAM Recovery System**
+- Located in `dualgpuopt/vram_reset.py`
+- Multi-strategy GPU memory reclamation:
+  * CACHE_ONLY: PyTorch cache clearing
+  * CLOCK_RESET: GPU clock management
+  * FULL_RESET: Comprehensive memory cleanup
+  * SYSTEM_CMD: OS-specific commands
+- Implements platform-specific memory reclamation for Windows/Linux
 
-File Paths:
-- dualgpuopt/optimizer.py
-- dualgpuopt/gpu_info.py 
-- dualgpuopt/layer_balance.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/recovery.py
+## Importance Scores
+
+- GPU Split Optimization: 95 (Core memory distribution logic)
+- Memory Pattern Analysis: 90 (Critical for leak detection)
+- Tensor Split Calculation: 85 (Key for model parallelization)
+- Memory Telemetry: 80 (Essential monitoring system)
+- VRAM Recovery: 75 (Important but supplementary)
 
 $END$

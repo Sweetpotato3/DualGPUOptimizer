@@ -880,6 +880,7 @@ class DualGpuApp(ttk.Frame):
 
         # Start log refreshing
         self.after(500, self._pump_log)
+
     def _build_dashboard_tab(self, parent: ttk.Frame) -> None:
         """Create the GPU Dashboard tab with detailed GPU information and visualizations."""
         parent.columnconfigure(0, weight=1)

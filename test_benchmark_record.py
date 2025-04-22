@@ -7,7 +7,6 @@ Records model performance metrics and displays the fastest models.
 import logging
 import time
 import random
-from typing import Dict, List, Any
 from unittest.mock import patch
 
 from dualgpuopt.engine.backend import Engine

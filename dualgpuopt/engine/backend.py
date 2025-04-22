@@ -7,10 +7,10 @@ from __future__ import annotations
 
 import logging
 import pathlib
+import shutil
 import socket
 import subprocess
 import time
-import shutil
 from typing import Iterator, Optional, Protocol
 
 log = logging.getLogger("backend")

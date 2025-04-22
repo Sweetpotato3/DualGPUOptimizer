@@ -1,71 +1,65 @@
 ---
-description: Resource monitoring system for tracking and managing GPU metrics, telemetry, alerts and health in a dual-GPU optimization environment
-globs: 
+description: Resource monitoring system for tracking GPU metrics, alerts, and telemetry data in dual GPU optimization scenarios
+globs: **/telemetry.py,**/tray.py,**/memory/*.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-The telemetry system provides robust GPU resource monitoring through key components:
+## Core Resource Monitoring Components
 
-### Core Telemetry Components
+### GPU Telemetry Collection
+- Specialized metrics tracking for dual GPU systems including:
+  - Per-GPU utilization and memory metrics 
+  - Temperature monitoring
+  - Power usage tracking
+  - Fan speed monitoring 
+  - PCIe bandwidth measurement
+- Maintains 60-second historical data using HistoryBuffer
 
-1. GPU Metrics Collection
-- Real-time tracking of critical GPU metrics:
-  - Utilization percentage
-  - Memory pressure
-  - Temperature
-  - Power usage 
-  - PCIe bandwidth
-- Rolling 60-second metrics history for trend analysis
-- Per-GPU isolation of metrics
-- System-wide aggregation for multi-GPU environments
+### Alert Classification System
+Implements multi-level alert thresholds for GPU resources:
 
-2. Alert Level Management
-- Business-critical threshold monitoring:
-  - Emergency: Memory ≥95%, Temperature ≥90°C
-  - Critical: Memory ≥90%, Temperature ≥80°C, Power ≥98%
-  - Warning: Memory ≥75%, Temperature ≥70°C, Power ≥90%
-- Custom alert callbacks per severity level
-- Alert persistence and aggregation across GPUs
+EMERGENCY:
+- Memory usage >= 95%
+- Temperature >= 90°C 
 
-3. Failover System
+CRITICAL:
+- Memory usage >= 90%
+- Temperature >= 80°C
+- Power usage >= 98%
+
+WARNING:  
+- Memory usage >= 75%
+- Temperature >= 70°C  
+- Power usage >= 90%
+
+### Sample Collection
+- Fault-tolerant collection with automatic mock data fallback
 - Progressive recovery with exponential backoff
-- Mock data generation for testing/development
-- Auto-switching after 3 consecutive collection failures
-- Hardware-specific mock data patterns mimicking real behavior:
-  - Correlated power usage and utilization
-  - Temperature following workload patterns 
-  - Memory usage tracking GPU utilization
+- Separate collection strategies for high-end vs mid-range GPUs
+- Dynamic sampling rate adjustment based on GPU capabilities
 
-4. GPU-Specific Business Rules
-- Different monitoring profiles for GPU tiers:
-  - High-end (RTX 4090): 24GB thresholds
-  - Mid-range (RTX 4080): 16GB thresholds
-- Tailored safety margins per GPU model
-- Custom alert thresholds based on hardware capabilities
+### Event Processing Pipeline
+- Dual-mode event publishing (enhanced/legacy)
+- Custom metric monitors for:
+  - Temperature thresholds
+  - Memory pressure
+  - Power envelope
+- Time-series aggregation for trend analysis
+- Automatic history pruning after 60 seconds
 
-### Memory Monitoring 
+### Memory Pattern Analysis
+- Real-time memory usage profiling during inference
+- Sliding window analysis with configurable thresholds for:
+  - Memory spikes (rapid increases)
+  - Potential leaks (sustained growth)
+  - Post-inference retention patterns
 
-1. Memory Event Detection
-- Leak detection through sustained growth rate analysis
-- Spike detection via linear regression over sliding windows
-- Memory retention tracking between inference sessions
-- Abnormal pattern recognition with statistical analysis
-
-2. Memory Timeline Analysis
-- 30-minute rolling history with 0.5s granularity
-- Memory delta calculations across inference boundaries
-- Growth rate thresholds:
-  - Leak: >0.05 sustained growth
-  - Spike: >0.1 rapid growth
-- 30-second cooldown between leak alerts per GPU
-
-Relevant File Paths:
-- `dualgpuopt/telemetry.py`
-- `dualgpuopt/memory/profiler.py`
-- `dualgpuopt/telemetry_history.py`
-- `dualgpuopt/vram_reset.py`
+## File Paths
+- dualgpuopt/telemetry.py
+- dualgpuopt/tray.py
+- dualgpuopt/memory/profiler.py
 
 $END$

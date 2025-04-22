@@ -3,19 +3,27 @@ Thread‑safe LRU Engine pool with automatic watchdog and Prometheus metrics.
 """
 
 from __future__ import annotations
-import atexit, threading, time
-from collections import OrderedDict, Counter
+
+import atexit
+import threading
+import time
+from collections import Counter, OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Dict, Any, Optional, Iterable
 from pathlib import Path
+from typing import Any, Dict, Iterable, Optional
 
-from dualgpuopt.engine.backend import LlamaCppBackend, VLLMBackend, HFBackend  # noqa
-from dualgpuopt.engine.backend import Engine
+from dualgpuopt.engine.backend import (  # noqa
+    Engine,
+    HFBackend,
+    LlamaCppBackend,
+    VLLMBackend,
+)
 from dualgpuopt.services.event_bus import publish
 
 try:
-    from dualgpuopt.engine.metrics import update_pool_metrics, record_model_load_time
+    from dualgpuopt.engine.metrics import record_model_load_time, update_pool_metrics
+
     METRICS = True
 except ImportError:
     METRICS = False
@@ -43,9 +51,12 @@ class _LRU:
         self._data: OrderedDict[str, _Entry] = OrderedDict()
 
     @property
-    def maxsize(self): return self._max
+    def maxsize(self):
+        return self._max
+
     @maxsize.setter
-    def maxsize(self, v): self._max = max(1, v)
+    def maxsize(self, v):
+        self._max = max(1, v)
 
     def get(self, k: str) -> Optional[_Entry]:
         ent = self._data.get(k)
@@ -66,7 +77,8 @@ class _LRU:
         if ent:
             _executor.submit(ent.engine.unload)
 
-    def items(self) -> Iterable[tuple[str, _Entry]]: return list(self._data.items())
+    def items(self) -> Iterable[tuple[str, _Entry]]:
+        return list(self._data.items())
 
 
 class EnginePool:
@@ -79,11 +91,13 @@ class EnginePool:
     def get(cls, model: str, **kw) -> Engine:
         with _lock:
             ent = cls._cache.get(model)
-        if ent and ent.engine.backend.health():          # no lock while pinging
-            with _lock: cls._stats["hits"] += 1
+        if ent and ent.engine.backend.health():  # no lock while pinging
+            with _lock:
+                cls._stats["hits"] += 1
             return ent.engine
 
-        with _lock: cls._stats["misses"] += 1
+        with _lock:
+            cls._stats["misses"] += 1
 
         if ent:  # unhealthy
             cls._cache.pop(model)
@@ -103,22 +117,28 @@ class EnginePool:
         return eng
 
     @classmethod
-    def evict(cls, model: str): cls._cache.pop(model)
+    def evict(cls, model: str):
+        cls._cache.pop(model)
+
     @classmethod
-    def clear(cls):                         # unload synchronously
-        for k, ent in cls._cache.items():
+    def clear(cls):  # unload synchronously
+        for _k, ent in cls._cache.items():
             ent.engine.unload()
         cls._cache._data.clear()
 
     @classmethod
     def stats(cls) -> Dict[str, Any]:
         with _lock:
-            miss = cls._stats["misses"]; hit = cls._stats["hits"]
+            miss = cls._stats["misses"]
+            hit = cls._stats["hits"]
             total = hit + miss
-            return {**cls._stats,
-                    "cache_size": len(cls._cache._data),
-                    "hit_rate": 100 * hit / total if total else 0,
-                    "models": list(cls._cache._data)}
+            return {
+                **cls._stats,
+                "cache_size": len(cls._cache._data),
+                "hit_rate": 100 * hit / total if total else 0,
+                "models": list(cls._cache._data),
+            }
+
     # ---------- internal ----------
     @classmethod
     def _maybe_start_watchdog(cls):
@@ -138,14 +158,21 @@ class EnginePool:
                     ent.fails = 0
                     continue
                 ent.fails += 1
-                with _lock: cls._stats["health_failures"] += 1
+                with _lock:
+                    cls._stats["health_failures"] += 1
                 if ent.fails >= MAX_FAIL:
-                    publish("alert", {"level": "CRITICAL",
-                                      "message": f"Restarting backend for {Path(path).name}"})
+                    publish(
+                        "alert",
+                        {
+                            "level": "CRITICAL",
+                            "message": f"Restarting backend for {Path(path).name}",
+                        },
+                    )
                     ent.engine.unload()
                     _executor.submit(ent.engine.load, path, **ent.kwargs).result()
                     ent.fails = 0
-                    with _lock: cls._stats["auto_restarts"] += 1
+                    with _lock:
+                        cls._stats["auto_restarts"] += 1
             if METRICS:
                 update_pool_metrics(cls.stats())
 
@@ -155,4 +182,4 @@ class EnginePool:
 def _shutdown():
     _executor.shutdown(wait=True)
     for _, ent in EnginePool._cache.items():
-        ent.engine.unload() 
+        ent.engine.unload()

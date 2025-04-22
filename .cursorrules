@@ -280,3 +280,69 @@ The system provides comprehensive dual GPU optimization focusing on memory manag
 
 $END$
 END SPECIFICATION
+
+START SPECIFICATION
+---
+
+description: Generate high-level overview documentation for projects focused on GPU optimization and monitoring, especially those handling dual GPU configurations, memory management, and performance telemetry. This applies when documenting core business logic related to GPU workload distribution and performance tracking.
+globs: *.py,*.cpp,*.h
+alwaysApply: false
+---
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+Core Domain: GPU Optimization and Monitoring System
+
+Key Business Components:
+
+1. GPU Memory Management
+
+- Advanced memory profiling across dual GPU configurations
+- Real-time memory usage tracking with 60-second rolling window
+- Specialized alert system with severity levels:
+  - EMERGENCY: Memory ≥95%, Temperature ≥90°C
+  - CRITICAL: Memory ≥90%, Temperature ≥80°C
+  - WARNING: Memory ≥75%, Temperature ≥70°C
+- Memory reclamation strategies for OOM prevention
+
+2. Workload Distribution
+
+- Layer balancing algorithms for transformer models
+- Dynamic memory split optimization for dual GPUs
+- Real-time workload distribution based on GPU capabilities
+- Framework-specific command generation for llama.cpp and vLLM
+
+3. Telemetry System
+
+- Real-time GPU metrics collection and monitoring
+- Custom metrics pipeline for dual GPU correlation
+- Threshold-based alerting with configurable parameters
+- Rolling metrics history with automatic pruning
+
+4. Model Execution Management
+
+- LRU caching system for model engines
+- Automatic health monitoring with failure thresholds
+- Progressive recovery with exponential backoff
+- Framework-specific launch optimization
+
+Core Files:
+
+- dualgpuopt/memory/profiler.py: Memory profiling and leak detection
+- dualgpuopt/telemetry.py: GPU metrics collection
+- dualgpuopt/optimizer.py: Workload distribution
+- dualgpuopt/layer_balance.py: Layer distribution algorithm
+- dualgpuopt/engine/pool.py: Model execution management
+
+The system focuses on optimizing GPU resource utilization through intelligent workload distribution, proactive memory management, and comprehensive performance monitoring. It handles specialized cases like transformer model layer distribution and framework-specific optimizations.
+
+$END$
+END SPECIFICATION

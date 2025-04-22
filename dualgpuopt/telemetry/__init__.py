@@ -12,8 +12,10 @@ __all__ = ["TelemetrySample", "get_telemetry_service"]
 try:
     # Check if the module exists before importing
     import importlib.util
+
     if importlib.util.find_spec("dualgpuopt.telemetry.metrics"):
         from dualgpuopt.telemetry.metrics import GPUMetrics
+
         __all__.append("GPUMetrics")
 except ImportError:
     # If GPUMetrics doesn't exist in metrics module, this is a no-op
