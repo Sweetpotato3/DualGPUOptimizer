@@ -36,7 +36,7 @@ def main():
     model = peft.get_peft_model(model, lora_cfg)
 
     # adaptive batch – aim at 90 % VRAM
-    max_batch = int(plan["gpu_layers"]/4) if "gpu_layers" in plan else 64
+    max_batch = int(os.environ.get("PER_DEVICE_BATCH", int(plan["gpu_layers"]/4) if "gpu_layers" in plan else 64))
     train_args = transformers.TrainingArguments(
         args.output_dir, num_train_epochs=args.epochs,
         per_device_train_batch_size=max_batch,
@@ -48,8 +48,17 @@ def main():
     def tok_sec_callback(logs):
         if "loss" in logs:
             step = logs["global_step"]
+            epoch = logs.get("epoch", 0)
+            total_epochs = args.epochs
+            pct = min(99, int(epoch * 100 / total_epochs)) if total_epochs > 0 else 0
+            
             tok_s = logs["train_runtime"] and logs["train_tokens_processed"]/logs["train_runtime"]
-            if tok_s: TOK_S.set(tok_s)
+            loss = logs.get("loss", 0.0)
+            
+            if tok_s: 
+                TOK_S.set(tok_s)
+                print(f"Epoch {math.floor(epoch)}/{total_epochs} | Step {step} {pct}% | tok/s:{tok_s:.1f} loss:{loss:.4f}")
+    
     trainer = transformers.Trainer(model, train_args, train_dataset=ds, callbacks=[tok_sec_callback])
     start = time.time(); trainer.train(); dur = time.time()-start
 

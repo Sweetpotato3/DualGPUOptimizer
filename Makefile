@@ -1,4 +1,4 @@
-.PHONY: test test-unit test-integration test-functional test-all test-coverage clean lint format help ingest train eval serve
+.PHONY: test test-unit test-integration test-functional test-all test-coverage clean lint format help ingest train eval serve gui
 
 # Variables
 PYTHON := python
@@ -22,6 +22,7 @@ help:
 	@echo "  train             Train a model"
 	@echo "  eval              Evaluate the model"
 	@echo "  serve             Serve the model"
+	@echo "  gui               Start the GUI application"
 
 test: test-unit
 
@@ -84,3 +85,6 @@ eval:
 
 serve:
 	$(PY) serve.legal_api
+
+gui:
+	$(PY) dualgpuopt.qt.app_window
