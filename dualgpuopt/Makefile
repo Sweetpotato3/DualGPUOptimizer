@@ -3,7 +3,6 @@
 # Default development environment setup
 setup:
 	python -m pip install -e .[dev,train]
-	pre-commit install
 	cursor trust
 
 # One-liner for data download and processing

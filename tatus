@@ -1,0 +1,129 @@
+[1mdiff --git a/dual_gpu_optimizer/dualgpuopt/gui/app.py b/dual_gpu_optimizer/dualgpuopt/gui/app.py[m
+[1mindex 1ce7ea7..207e42e 100644[m
+[1m--- a/dual_gpu_optimizer/dualgpuopt/gui/app.py[m
+[1m+++ b/dual_gpu_optimizer/dualgpuopt/gui/app.py[m
+[36m@@ -9,7 +9,7 @@[m [mimport queue[m
+ import sys[m
+ import tkinter as tk[m
+ from tkinter import messagebox, ttk[m
+[31m-from typing import Any, Dict, List, Optional[m
+[32m+[m[32mfrom typing import Any, Dict[m
+ [m
+ # Import ttkbootstrap for modern UI[m
+ try:[m
+[36m@@ -30,31 +30,19 @@[m [mexcept ImportError:[m
+ [m
+ # Import constants first to avoid circular imports[m
+ from dualgpuopt.gui.constants import (  # New purple theme colors[m
+[31m-    BLUE_ACCENT,[m
+[31m-    CYAN_ACCENT,[m
+[31m-    DARK_BACKGROUND,[m
+     DEFAULT_CHART_BG,[m
+     DEFAULT_CHART_FG,[m
+[31m-    DEFAULT_CHART_HEIGHT,[m
+     DEFAULT_FONT,[m
+     DEFAULT_FONT_SIZE,[m
+[31m-    GPU_COLORS,[m
+[31m-    HEAD,[m
+[31m-    LIGHT_FOREGROUND,[m
+[31m-    ORANGE_ACCENT,[m
+     PAD,[m
+[31m-    PINK_ACCENT,[m
+[31m-    PURPLE_HIGHLIGHT,[m
+[31m-    PURPLE_PRIMARY,[m
+     UPDATE_INTERVAL_MS,[m
+[31m-    WARNING_COLOR,[m
+ )[m
+ [m
+ # Define the progressbar thickness here since it's specific to this module[m
+ PROGRESSBAR_THICKNESS = 8[m
+ [m
+ from dualgpuopt import VERSION, gpu_info, telemetry[m
+[31m-from dualgpuopt.gui.theme import apply_theme, generate_colors, update_widgets_theme[m
+[32m+[m[32mfrom dualgpuopt.gui.theme import apply_theme[m
+ from dualgpuopt.tray import init_tray[m
+ [m
+ # Import GUI components after constants[m
+[1mdiff --git a/dualgpuopt/ui/fallback_widgets.py b/dualgpuopt/ui/fallback_widgets.py[m
+[1mindex d120592..9add826 100644[m
+[1m--- a/dualgpuopt/ui/fallback_widgets.py[m
+[1m+++ b/dualgpuopt/ui/fallback_widgets.py[m
+[36m@@ -36,6 +36,7 @@[m [mclass ScrolledFrame(ttk.Frame):[m
+         Initialize the ScrolledFrame[m
+ [m
+         Args:[m
+[32m+[m[32m        ----[m
+             parent: Parent widget[m
+             autohide: Whether to hide the scrollbar when not needed[m
+             **kwargs: Additional keyword arguments for the Frame[m
+[36m@@ -81,6 +82,7 @@[m [mclass ScrolledFrame(ttk.Frame):[m
+         Custom scrollbar set method that supports auto-hiding[m
+ [m
+         Args:[m
+[32m+[m[32m        ----[m
+             first: First position (0.0 to 1.0)[m
+             last: Last position (0.0 to 1.0)[m
+ [m
+[36m@@ -130,6 +132,7 @@[m [mclass Meter(ttk.Frame):[m
+         Initialize the fallback Meter[m
+ [m
+         Args:[m
+[32m+[m[32m        ----[m
+             parent: Parent widget[m
+             metersize: Size of the meter[m
+             amountused: Current value[m
+[36m@@ -233,6 +236,7 @@[m [mclass Floodgauge(ttk.Progressbar):[m
+         Initialize the Floodgauge[m
+ [m
+         Args:[m
+[32m+[m[32m        ----[m
+             parent: Parent widget[m
+             text: Text to display[m
+             font: Font to use[m
+[36m@@ -323,6 +327,7 @@[m [mclass DateEntry(ttk.Entry):[m
+         Initialize the DateEntry[m
+ [m
+         Args:[m
+[32m+[m[32m        ----[m
+             parent: Parent widget[m
+             firstweekday: First day of the week[m
+             startdate: Initial date (YYYY-MM-DD)[m
+[36m@@ -392,7 +397,8 @@[m [mclass DateEntry(ttk.Entry):[m
+         """[m
+         Get the current date as a string[m
+ [m
+[31m-        Returns:[m
+[32m+[m[32m        Returns[m
+[32m+[m[32m        -------[m
+             str: Current date in YYYY-MM-DD format[m
+ [m
+         """[m
+[36m@@ -413,10 +419,12 @@[m [mdef get_widget_class(widget_name: str, original_module=None):[m
+     Get a widget class, using fallback if the original is not available[m
+ [m
+     Args:[m
+[32m+[m[32m    ----[m
+         widget_name: Name of the widget class[m
+         original_module: Original module that should contain the widget[m
+ [m
+     Returns:[m
+[32m+[m[32m    -------[m
+         A widget class, either from the original module or a fallback[m
+ [m
+     """[m
+[36m@@ -449,6 +457,7 @@[m [mdef create_widget_safely([m
+     Create a widget with error handling and fallbacks[m
+ [m
+     Args:[m
+[32m+[m[32m    ----[m
+         widget_class: Name of the widget class to create[m
+         parent: Parent widget[m
+         module: Module containing the widget class[m
+[36m@@ -456,6 +465,7 @@[m [mdef create_widget_safely([m
+         **kwargs: Keyword arguments for the widget[m
+ [m
+     Returns:[m
+[32m+[m[32m    -------[m
+         Created widget[m
+ [m
+     """[m
