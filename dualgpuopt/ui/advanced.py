@@ -193,3 +193,11 @@ class AdvancedDock(QtW.QDockWidget):
             # Capture widget as image
             pixmap = self.memory_timeline.grab()
             pixmap.save(file_path, "PNG")
+
+
+class AdvancedToolsDock(AdvancedDock):
+    """Compatibility alias for AdvancedDock"""
+    
+    def set_memory_timeline(self, timeline):
+        """Set memory timeline object"""
+        self.memory_timeline = timeline

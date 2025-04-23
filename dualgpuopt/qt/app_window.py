@@ -215,7 +215,8 @@ class DualGPUOptimizerApp(QMainWindow):
             # Connect memory tab to advanced dock if available
             if hasattr(self, "advanced_dock") and self.advanced_dock:
                 # Memory timeline is shared between memory tab and advanced dock
-                self.advanced_dock.set_memory_timeline(self.memory_tab.memory_timeline)
+                if hasattr(self.memory_tab, "memory_timeline"):
+                    self.advanced_dock.set_memory_timeline(self.memory_tab.memory_timeline)
 
             # Launcher Tab
             from dualgpuopt.qt.launcher_tab import LauncherTab
