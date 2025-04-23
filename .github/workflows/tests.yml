@@ -1,14 +1,23 @@
 name: tests
 on: [push, pull_request]
+
+# Set minimal permissions required for tests
+permissions:
+  contents: read
+
 jobs:
   lint-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with:
+          python-version: ${{ matrix.python-version }}
       - run: pip install -r dualgpuopt/requirements_legal.txt pytest coverage ruff black mypy pytest-env
-      - run: pip install --pre qdarktheme
+      - run: pip install -r requirements-dev.txt
       - run: ruff check .
       - run: black --check .
       - run: mypy dualgpuopt

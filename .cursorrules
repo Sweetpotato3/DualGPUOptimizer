@@ -590,8 +590,8 @@ END SPECIFICATION
 
 START SPECIFICATION:
 ---
-description: Apply this overview documentation when creating high-level documentation of GPU optimization and monitoring systems, focusing on dual-GPU configurations with specialized memory management and model deployment features. This rule should be applied to codebases managing GPU resources, ML model optimization, and telemetry data collection.
-globs: *.py,src/*,lib/*
+description: Applied when documenting high-level architecture overview of the DualGPUOptimizer project, focusing on core business logic organization and key domain components
+globs: *.py,*.md,*.txt
 alwaysApply: false
 ---
 
@@ -607,57 +607,48 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer implements specialized GPU resource optimization and monitoring focused on:
-
-1. GPU Memory Management System
-
-- GPU telemetry collection with alert thresholds:
-  - EMERGENCY: Memory ≥95%, Temperature ≥90°C
-  - CRITICAL: Memory ≥90%, Temperature ≥80°C
-  - WARNING: Memory ≥75%, Temperature ≥70°C
-- Memory leak detection with:
-  - Rapid growth spike detection
-  - Gradual leak monitoring
-  - Custom cooldown periods
-- Historical metrics tracking with 60-second rolling window
-
-2. Model Optimization Engine
-
-- Layer balancing across dual GPUs:
-  - Performance profiling at different sequence lengths
-  - Utilization-based distribution with memory quotas
-  - Tensor parallelism configuration
-- Memory prediction and allocation:
-  - Model size estimation from architecture
-  - Context length optimization
-  - Batch size autotuning
-
-3. Telemetry and Monitoring
-
-- Real-time GPU metrics collection:
-  - Utilization rates
-  - Memory pressure
-  - Temperature monitoring
-  - Power consumption
-  - PCIe bandwidth
-- Metrics visualization and alerting
-
-4. Recovery System
-
-- Progressive recovery strategy:
-  - CACHE_ONLY: PyTorch cache clearing
-  - CLOCK_RESET: GPU clock configuration reset
-  - FULL_RESET: Complete memory reclamation
-  - SYSTEM_CMD: OS-specific memory management
+DualGPUOptimizer implements a specialized system for managing and optimizing large language model deployment across multiple GPUs.
 
 Core Business Components:
 
-- Memory profiling: `dualgpuopt/memory/profiler.py`
-- GPU telemetry: `dualgpuopt/telemetry.py`
-- Layer balancing: `dualgpuopt/layer_balance.py`
-- Recovery system: `dualgpuopt/vram_reset.py`
+1. GPU Resource Management (dualgpuopt/gpu/monitor.py):
+- Real-time GPU telemetry system tracking utilization, memory, temperature
+- Implements multi-tiered alert system with specific thresholds
+- Automatic recovery strategies for GPU memory pressure
+- Historical metrics with 60-second rolling window
 
-The system implements comprehensive GPU resource management with emphasis on memory optimization, workload distribution, and real-time monitoring for dual-GPU setups running large language models.
+2. Model Optimization Engine (dualgpuopt/optimizer.py):
+- Calculates optimal GPU memory splits for model deployment
+- Layer distribution algorithms for parallel processing
+- Context length optimization based on model architecture
+- Framework-specific command generation (llama.cpp, vLLM)
+
+3. Memory Management System (dualgpuopt/memory/monitor.py):
+- Predictive memory usage monitoring
+- OOM prevention through proactive resource management
+- Memory leak detection during model inference
+- Automatic recovery procedures for memory pressure
+
+4. Legal Domain Integration (dualgpuopt/rag/retrieve.py):
+- Specialized legal document retrieval system
+- French legal language model evaluation framework
+- Domain-specific citation generation
+- Custom relevance thresholds for legal content
+
+5. Model Execution Management (dualgpuopt/engine/pool/core.py):
+- Dynamic model loading/unloading with LRU caching
+- Health monitoring system with automatic recovery
+- Resource quota management across GPUs
+- Framework-specific deployment optimizations
+
+The system architecture focuses on optimizing LLM deployment across multiple GPUs while providing specialized features for legal document processing and analysis. The core value lies in intelligent resource distribution and management of GPU resources for machine learning workloads.
+
+Key Integration Points:
+- Telemetry system feeds into optimization engine for dynamic resource allocation
+- Memory monitoring triggers automatic recovery procedures
+- Model pool coordinates with memory management for resource optimization
+
+The implementation emphasizes reliable model deployment with automatic failover and recovery mechanisms while maintaining domain-specific optimizations for legal text processing.
 
 $END$
 END SPECIFICATION

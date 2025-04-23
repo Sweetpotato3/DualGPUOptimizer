@@ -1,71 +1,65 @@
 ---
-description: Documents the execution flow and configuration of LLM models, focusing on command generation, memory allocation, and resource management.
-globs: **/model/**,**/engine/**,**/gpu/**,**/memory/**
+description: Handles model loading, GPU allocation, execution flow and resource management for large language model inference
+globs: **/model/*.py,**/engine/*.py,**/gpu/*.py,**/optimizer*.py,**/vram*.py
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-The model execution flow implements specialized handling of LLM deployment across dual GPUs with focus on memory optimization and resource allocation.
+Core Model Execution Components:
 
-## Command Generation
-The launcher component generates framework-specific commands for model execution:
+1. Engine Pool Management (dualgpuopt/engine/pool.py)
+- Manages active model instances with LRU cache (2 model maximum)
+- Implements health monitoring with 3-failure threshold 
+- Auto-restarts failed model instances
+- Tracks performance metrics and status
+- Graceful model switching and unloading
 
-```python
-# llama.cpp configuration
-- GPU split ratios for memory allocation
-- Layer distribution parameters
-- Context size optimization
+2. Mixed Precision Execution (dualgpuopt/mpolicy.py)
+- FP32 precision for critical operations (LayerNorm, softmax)
+- Manages tensor parallelism across dual GPUs
+- Context-aware autocast selection
+- Adaptive gradient scaling
 
-# vLLM configuration
-- Tensor parallel configuration
-- GPU device mapping
-- Memory allocation strategy
-```
+3. GPU Memory Split Logic (dualgpuopt/vram_reset.py)
+- Four-tier memory reset strategy:
+  * CACHE_ONLY: PyTorch cache clearing
+  * CLOCK_RESET: GPU clock manipulation
+  * FULL_RESET: Total memory reclamation
+  * SYSTEM_CMD: OS-level recovery
+- Platform-specific implementations
+- Selective device targeting
+- Memory reclamation tracking
 
-## Memory Management Strategy
-- Dynamic memory profiler tracks GPU allocation patterns during inference
-- Implements sliding window analysis for leak detection
-- Memory recovery with progressive strategy:
-  - Cache clearing
-  - Clock reset
-  - Full reset
-  - System command fallback
+4. Model Launch Workflow (dualgpuopt/optimizer.py)
+- GPU memory split optimization with model-specific ratios:
+  * 70B models: 70/30 split, 40 layers
+  * Mixtral: 60/40 split, 16 layers
+  * 13B models: 50/50 split, 20 layers
+  * Standard: Single GPU, full layers
+- Dynamic context size limits:
+  * 70B: 4096 max
+  * Mixtral: 8192 max  
+  * 13B: 12288 max
+  * Standard: 16384 max
+- Command generation for:
+  * llama.cpp deployment
+  * vLLM tensor parallel setup
 
-## Resource Allocation
-- Calculates optimal tensor splits based on:
-  - Available VRAM per GPU
-  - Model architecture parameters
-  - Context window requirements
-  - Framework-specific overheads
+5. Smart Batch Processing (dualgpuopt/batch/smart_batch.py)
+- Length-aware batch scheduling
+- OOM recovery with 25% reduction
+- 5-batch window for stability monitoring
+- Gradual recovery up to 95% capacity
+- 16,384 token batch limit
+- 256 token sequence threshold
 
-## Process Lifecycle
-1. Pre-execution:
-   - VRAM reset
-   - Memory pressure check
-   - Resource allocation calculation
-
-2. Execution:
-   - Command generation with optimized parameters
-   - Process launch with resource constraints
-   - Output/error stream handling
-
-3. Post-execution:
-   - Memory cleanup
-   - Resource release
-   - Metrics collection
-
-## Health Monitoring
-- Real-time memory pressure monitoring
-- Temperature threshold tracking
-- Power consumption monitoring
-- Automated recovery on resource exhaustion
-
-## Key Files
-- `dualgpuopt/engine/backend.py`: Framework-specific execution backends
-- `dualgpuopt/memory/profiler.py`: Memory tracking and optimization
-- `dualgpuopt/gpu_info.py`: Resource monitoring and allocation
-- `dualgpuopt/runner.py`: Process execution management
+File paths containing core logic:
+- dualgpuopt/engine/pool.py
+- dualgpuopt/optimizer.py 
+- dualgpuopt/vram_reset.py
+- dualgpuopt/batch/smart_batch.py
+- dualgpuopt/mpolicy.py
 
 $END$

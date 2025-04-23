@@ -1,67 +1,53 @@
 ---
-description: Specification for GPU memory distribution and optimization algorithms, tensor parallel splits, and memory allocation strategies
-globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/mpolicy.py,dualgpuopt/layer_balance.py,dualgpuopt/memory/**
+description: Specifies GPU optimization algorithms and memory management strategies for dual GPU setups running large language models
+globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/memory/*.py,dualgpuopt/engine/*.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-The GPU optimization and memory allocation algorithms comprise several key components:
+Core GPU Memory Distribution Logic:
 
-## Layer Distribution Algorithm
-- GPU-aware layer distribution system with latency profiling across sequence lengths
-- Assigns transformer model layers between GPUs using execution time measurements
-- Uses weighted profiling: 20% short sequences (64 tokens), 80% long sequences (1024 tokens)
-- Maintains reserve ratio (default 0.9) to prevent GPU memory exhaustion
-- Implements block merging for layer groups smaller than 3 layers
+1. Layer Distribution Algorithm (dualgpuopt/optimizer.py):
+- Custom layer balancing algorithm for distributing transformer layers across dual GPUs
+- Weighted sequence profiling with 20/80 ratio between short (64 tokens) and long (1024 tokens) sequences
+- Minimum block size enforcement of 3 layers to minimize cross-GPU communication
+- Strategic block merging based on neighbor size ratios
+- Device mapping rules:
+  * Input embeddings -> first GPU
+  * Output components -> last GPU
+  * Layer assignments based on weighted performance ratios
 
-File: `dualgpuopt/layer_balance.py`
+2. Memory Split Optimization (dualgpuopt/gpu_info.py):
+- Dynamic tensor parallel fraction calculation based on relative GPU memory sizes
+- Model-specific memory allocation:
+  * 70B models: 70/30 split with 40-layer distribution
+  * Mixtral: 60/40 split with 16-layer segments
+  * 13B models: 50/50 split with 20-layer segments
+- Context size limits per model:
+  * 70B: 4096 tokens max
+  * Mixtral: 8192 tokens max
+  * 13B: 12288 tokens max
 
-## Memory Split Calculator
-- Calculates optimal memory distribution between GPUs based on model architecture
-- Implements KV cache sizing with architecture-specific factors:
-  - MQA models: 0.25x multiplier
-  - GQA models: 0.5x multiplier
-  - Standard attention: 1x multiplier
-- Accounts for tensor parallelism overhead in memory estimates
-- Provides framework-specific split configurations for llama.cpp and vLLM
+3. Memory Management System (dualgpuopt/memory/profiler.py):
+- Adaptive memory leak detection algorithm:
+  * Analyzes growth patterns using sliding window
+  * Leak threshold: 5MB absolute change
+  * Cool-down period: 30s between alerts
+  * Growth rate conversion to MB/s
+- Inference session tracking with:
+  * Pre/post memory baselines
+  * Per-inference memory deltas
+  * Token count correlation
+  * Targeted leak analysis
 
-File: `dualgpuopt/optimizer.py`
+Key components contain custom algorithms for:
+- GPU layer distribution optimization
+- Memory allocation strategies
+- Leak detection and monitoring
+- Model-specific resource management
 
-## GPU Memory Monitoring
-- Real-time memory tracking with alert thresholds:
-  - Emergency: ≥95% memory usage
-  - Critical: ≥90% memory usage
-  - Warning: ≥75% memory usage
-- Implements memory reclamation with multi-tier strategy:
-  - Cache clearing
-  - GPU clock reset
-  - Full memory reset
-  - System-level cleanup
-- Tracks successful reclamation above 256MB threshold
-
-File: `dualgpuopt/memory/monitor.py`
-
-## Memory Profiling
-- Session-based memory tracking during inference
-- Detects memory leaks through two mechanisms:
-  - Rapid growth detection (immediate alerts)
-  - Gradual leak tracking (sustained growth)
-- Memory change threshold of 5MB for leak reporting
-- 30-second cooldown between leak alerts per GPU
-- Correlates memory patterns with inference stages
-
-File: `dualgpuopt/memory/profiler.py`
-
-## Mixed Precision Policies
-- Implements optimized dtype policies for different operations:
-  - FP32: LayerNorm, Softmax, Residuals
-  - FP16/BF16: Matrix multiplications
-  - INT8/INT4: Weight storage
-- Autocast context manager preserves precision for critical ops
-- Framework-specific command generation for precision settings
-
-File: `dualgpuopt/mpolicy.py`
+The system focuses on optimizing large language model deployment across dual GPU configurations through intelligent resource allocation and monitoring.
 
 $END$

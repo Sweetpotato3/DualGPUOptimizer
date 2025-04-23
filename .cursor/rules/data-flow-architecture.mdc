@@ -1,6 +1,6 @@
 ---
-description: Specifies data flow patterns between GPU optimization components, telemetry systems, and monitoring services
-globs: dualgpuopt/telemetry/*,dualgpuopt/memory/*,dualgpuopt/engine/*,dualgpuopt/services/*,dualgpuopt/gui/*
+description: Documents data flow between components in a dual-GPU optimization system for machine learning workloads.
+globs: **/services/**/*.py,**/telemetry/**/*.py,**/engine/**/*.py,**/memory/**/*.py
 alwaysApply: false
 ---
 
@@ -9,51 +9,44 @@ alwaysApply: false
 
 Core Data Flow Components:
 
-1. Telemetry Pipeline Architecture
-- Metrics Collection: GPU utilization, memory, temperature, power consumption collected by telemetry.py
-- Centralized event bus distributes metrics to visualization components
-- Rolling 60-second buffer maintains historical metrics in telemetry_history.py
-- Thresholds trigger alerts through event system:
-  * EMERGENCY: Memory ≥95% or Temperature ≥90°C
-  * CRITICAL: Memory ≥90% or Temperature ≥80°C
-  * WARNING: Memory ≥75% or Temperature ≥70°C
+1. GPU Telemetry Pipeline (dualgpuopt/telemetry.py)
+- Metric Collection Flow:
+  - GPU utilization/memory/temperature/power metrics collected via NVML
+  - 60-second rolling history buffer maintained per GPU
+  - Synchronous data feed to visualization components through event bus
+  - Failover to mock data generation on hardware access failures
 
-2. Memory Profiling Flow
-- Sessions track inference-specific memory patterns and token counts
-- Per-GPU timelines maintain snapshots for analysis
-- Linear regression on usage windows detects:
-  * Rapid growth spikes (immediate alerts)
-  * Gradual leaks (sustained growth)
-- Inference boundaries trigger memory delta calculations
-- Results published to profiling dashboard
+2. Memory Event Flow (dualgpuopt/memory/profiler.py)
+- Memory Event Processing:
+  - Capture allocation/deallocation/growth events
+  - Associate events with specific inference sessions
+  - Channel memory metrics to monitoring dashboards
+  - Feed historical data to leak detection system
 
-3. Engine Pool Data Flow
-- Model loading triggers cache analysis/eviction
-- Health checks propagate status through event bus
-- Metrics collection includes:
-  * Cache hits/misses
-  * Load times
-  * Health check results
-- Results feed into prometheus metrics
+3. Model Optimization Flow (dualgpuopt/engine/backend.py)
+- Model Processing Pipeline:
+  - Initial model format detection (.gguf, .safetensors, HF)
+  - Route to appropriate engine implementation
+  - Stream inference results through non-blocking queue
+  - Monitor engine health via status checks
 
-4. GPU Command Pipeline
-- Optimizer generates tensor parallel configurations
-- Layer balancing algorithm determines distribution
-- Results flow to command generation
-- Commands propagate to process management
+4. Cross-Component Data Exchange:
+- GPU Metrics → Memory Monitor → Optimizer
+- Model States → Engine Pool → Launch Controller
+- Memory Events → Alert System → Dashboard
+- Telemetry Data → Event Bus → UI Components
 
-5. Recovery Data Flow
-- Memory pressure triggers progressive recovery:
-  * Cache clearing
-  * Process termination
-  * System commands
-- Results feed back to monitoring system
+5. Resource Management Flow:
+- Engine Pool → Memory Monitor → Recovery System
+- GPU States → Optimizer → Command Generator
+- Memory Alerts → Event Bus → Status Display
 
-Key Files:
-- dualgpuopt/telemetry.py: Core metrics collection
-- dualgpuopt/memory/profiler.py: Memory analysis
-- dualgpuopt/engine/pool/core.py: Model caching
-- dualgpuopt/services/event_bus.py: Event distribution
-- dualgpuopt/services/telemetry.py: Metrics processing
+Key Integration Points:
+- Telemetry Service interfaces with NVML for hardware metrics
+- Memory Profiler feeds data to leak detection system
+- Engine Pool coordinates with Memory Monitor for resource constraints
+- Event Bus provides central nervous system for metric distribution
+
+The architecture emphasizes reliable metric collection and distribution while maintaining system stability through graceful degradation and failover mechanisms.
 
 $END$

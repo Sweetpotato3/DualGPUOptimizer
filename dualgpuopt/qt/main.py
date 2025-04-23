@@ -4,9 +4,6 @@ import sys
 from PySide6.QtCore import QCoreApplication, Qt
 from PySide6.QtWidgets import QApplication
 
-# Import qdarktheme for theme styling
-import qdarktheme
-
 # Set application attributes for high DPI screens
 QCoreApplication.setAttribute(Qt.AA_EnableHighDpiScaling, True)
 QCoreApplication.setAttribute(Qt.AA_UseHighDpiPixmaps, True)
@@ -61,8 +58,14 @@ def main():
     app.setApplicationName("DualGPUOptimizer")
     app.setStyle("Fusion")  # Provides a consistent look across platforms
     
-    # Apply dark theme styling
-    app.setStyleSheet(qdarktheme.load_stylesheet("dark")) # API unchanged; keep call
+    # Apply dark theme styling with graceful fallback
+    try:
+        import qdarktheme
+        qdarktheme.setup_theme("dark")
+        logger.info("Dark theme applied successfully")
+    except (ImportError, AttributeError):
+        logger.warning("Could not apply dark theme - continuing without theming")
+        pass  # run without theme
 
     # Import here to avoid circular imports
     from dualgpuopt.qt.app_window import DualGPUOptimizerApp

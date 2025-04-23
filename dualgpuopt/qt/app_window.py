@@ -4,6 +4,7 @@ Main application window for DualGPUOptimizer Qt implementation
 
 import logging
 import os
+import sys
 from typing import Any, Dict, Optional
 
 from PySide6.QtCore import Qt, QTimer
@@ -46,6 +47,11 @@ class DualGPUOptimizerApp(QMainWindow):
             parent: Parent widget
         """
         super().__init__(parent)
+
+        # Check Python version compatibility
+        if sys.version_info >= (3, 12):
+            logger.warning("GUI stack officially supports Python <3.12. "
+                          "You're on %s. Proceeding, but wheels may be missing.", sys.version.split()[0])
 
         # Set up main window properties
         self.setWindowTitle("DualGPUOptimizer")
