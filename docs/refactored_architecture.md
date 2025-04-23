@@ -228,4 +228,4 @@ self.telemetry_worker.start()
 
 Run the test script using the provided batch or shell script:
 - Windows: `run_integration_test.bat`
-- Linux/Mac: `./run_integration_test.sh` 
+- Linux/Mac: `./run_integration_test.sh`

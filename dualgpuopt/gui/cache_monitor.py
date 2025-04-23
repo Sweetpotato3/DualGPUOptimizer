@@ -8,7 +8,6 @@ from __future__ import annotations
 import logging
 import subprocess
 import threading
-from typing import List
 
 try:
     from PySide6.QtCore import QTimer, Signal, Slot
@@ -154,7 +153,7 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         # Models table
         self.models_table = QTableWidget(0, 4)
         self.models_table.setHorizontalHeaderLabels(
-            ["Model", "VRAM (MiB)", "GPU Util (%)", "Actions"]
+            ["Model", "VRAM (MiB)", "GPU Util (%)", "Actions"],
         )
         self.models_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.models_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
@@ -203,7 +202,7 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         # Update hit rate
         self.hit_rate_progress.setValue(int(stats["hit_rate"]))
         self.hit_rate_progress.setFormat(
-            f"{stats['hit_rate']:.1f}% ({stats['hits']}/{stats['hits'] + stats['misses']})"
+            f"{stats['hit_rate']:.1f}% ({stats['hits']}/{stats['hits'] + stats['misses']})",
         )
 
         # Update health checks
@@ -218,7 +217,7 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         # Update models table
         self._update_models_table(stats["models"])
 
-    def _update_models_table(self, models: List[str]):
+    def _update_models_table(self, models: list[str]):
         """Update the models table with currently cached models."""
         if not UI_AVAILABLE:
             return
@@ -316,7 +315,7 @@ class CacheMonitorWidget(QWidget if UI_AVAILABLE else object):
         env = {"HF_HUB_DISABLE_SYMLINKS": "1"}
 
         cmd = ["python", "-m", "autoawq", "quantize", model_path]
-        proc = subprocess.run(cmd, capture_output=True, text=True, env=env)
+        proc = subprocess.run(cmd, capture_output=True, text=True, env=env, check=False)
 
         if proc.returncode != 0:
             self.logger.error(f"Quantization failed: {proc.stderr}")

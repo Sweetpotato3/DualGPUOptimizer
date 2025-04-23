@@ -2,33 +2,37 @@
 Common GPU module functionality
 """
 from __future__ import annotations
-import platform
+
 import logging
-import sys
-from typing import Dict, Any, List, Optional
+import platform
+from typing import Any
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU")
 
+
 # Create a local GpuMetrics class to avoid circular imports with telemetry
 class GpuMetrics:
     """Local GpuMetrics class that matches the structure in telemetry.py"""
-    def __init__(self,
-                 gpu_id: int,
-                 name: str,
-                 utilization: int,
-                 memory_used: int,
-                 memory_total: int,
-                 temperature: int,
-                 power_usage: float,
-                 power_limit: float,
-                 fan_speed: int,
-                 clock_sm: int,
-                 clock_memory: int,
-                 pcie_tx: int,
-                 pcie_rx: int,
-                 timestamp: float,
-                 error_state: bool = False):
+
+    def __init__(
+        self,
+        gpu_id: int,
+        name: str,
+        utilization: int,
+        memory_used: int,
+        memory_total: int,
+        temperature: int,
+        power_usage: float,
+        power_limit: float,
+        fan_speed: int,
+        clock_sm: int,
+        clock_memory: int,
+        pcie_tx: int,
+        pcie_rx: int,
+        timestamp: float,
+        error_state: bool = False,
+    ):
         self.gpu_id = gpu_id
         self.name = name
         self.utilization = utilization
@@ -69,13 +73,22 @@ class GpuMetrics:
         """Return formatted PCIe bandwidth usage"""
         return f"TX: {self.pcie_tx/1024:.1f} MB/s, RX: {self.pcie_rx/1024:.1f} MB/s"
 
+
 # Try to import our compatibility layer
 try:
     from .compat import (
-        IS_MAC, IS_NVIDIA, MOCK_MODE, NVML_INITIALIZED,
-        DEPENDENCIES, GpuMetric, set_mock_mode, is_mock_mode,
-        generate_mock_gpus, reinit_nvml
+        DEPENDENCIES,
+        IS_MAC,
+        IS_NVIDIA,
+        MOCK_MODE,
+        NVML_INITIALIZED,
+        GpuMetric,
+        generate_mock_gpus,
+        is_mock_mode,
+        reinit_nvml,
+        set_mock_mode,
     )
+
     logger.info("Imported GPU compatibility layer")
 
     # Get pynvml module if available
@@ -97,6 +110,7 @@ except ImportError as e:
     try:
         if IS_NVIDIA:
             import pynvml
+
             pynvml.nvmlInit()
             NVML_INITIALIZED = True
             logger.info("NVML initialized directly")
@@ -109,6 +123,7 @@ except ImportError as e:
     # GPU metrics
     class GpuMetric:
         """Constants for GPU metrics"""
+
         UTILIZATION = "util"
         MEMORY_TOTAL = "mem_total"
         MEMORY_USED = "mem_used"
@@ -120,11 +135,19 @@ except ImportError as e:
         PCIE_RX = "pcie_rx"
 
         @classmethod
-        def get_all_metrics(cls) -> List[str]:
+        def get_all_metrics(cls) -> list[str]:
             """Get list of all available metrics"""
-            return [cls.UTILIZATION, cls.MEMORY_TOTAL, cls.MEMORY_USED,
-                    cls.TEMPERATURE, cls.POWER_USAGE, cls.CLOCK_SM,
-                    cls.CLOCK_MEMORY, cls.PCIE_TX, cls.PCIE_RX]
+            return [
+                cls.UTILIZATION,
+                cls.MEMORY_TOTAL,
+                cls.MEMORY_USED,
+                cls.TEMPERATURE,
+                cls.POWER_USAGE,
+                cls.CLOCK_SM,
+                cls.CLOCK_MEMORY,
+                cls.PCIE_TX,
+                cls.PCIE_RX,
+            ]
 
     def set_mock_mode(enabled: bool = True) -> None:
         """Enable or disable mock mode"""
@@ -136,7 +159,7 @@ except ImportError as e:
         """Get the current state of mock mode"""
         return MOCK_MODE
 
-    def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
+    def generate_mock_gpus(count: int = 2) -> list[dict[str, Any]]:
         """Generate mock GPU data"""
         mock_gpus = []
 
@@ -194,6 +217,7 @@ except ImportError as e:
             NVML_INITIALIZED = False
             return False
 
+
 # Helper functions for type conversion
 def ensure_float(value: Any) -> float:
     """Ensure a value is a float, converting if necessary"""
@@ -205,6 +229,7 @@ def ensure_float(value: Any) -> float:
         logger.warning(f"Could not convert {value} to float, using 0.0")
         return 0.0
 
+
 def ensure_int(value: Any) -> int:
     """Ensure a value is an int, converting if necessary"""
     if value is None:
@@ -215,15 +240,19 @@ def ensure_int(value: Any) -> int:
         logger.warning(f"Could not convert {value} to int, using 0")
         return 0
 
+
 # Utility function to format memory sizes
 def format_memory(bytes_or_mb: int, use_mb: bool = True) -> str:
-    """Format memory size in human-readable form
+    """
+    Format memory size in human-readable form
 
     Args:
+    ----
         bytes_or_mb: Memory size in bytes or MB
         use_mb: Whether the input is in MB (True) or bytes (False)
 
     Returns:
+    -------
         Formatted memory string
     """
     if use_mb:

@@ -16,7 +16,7 @@ During handling of the above exception, another exception occurred:
 
 Traceback (most recent call last):
   File "D:\RetroRemasterProject\Tools\DualGPUOptimizer\DualGPUOptimizer\run_optimizer.py", line 92, in <module>
-    input("Press Enter to exit...") 
+    input("Press Enter to exit...")
     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 KeyboardInterrupt
 ^C

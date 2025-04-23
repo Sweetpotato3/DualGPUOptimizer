@@ -153,4 +153,4 @@ set PORT=%PORT%
 python -m dualgpuopt.serve.legal_api
 exit /b 0
 
-echo Done! 
+echo Done!

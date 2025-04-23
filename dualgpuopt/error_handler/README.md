@@ -66,4 +66,4 @@ show_error_dialog(
     message="Failed to process the file",
     details="File format not recognized"
 )
-``` 
+```

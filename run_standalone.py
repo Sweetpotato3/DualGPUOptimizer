@@ -3,9 +3,10 @@ Standalone launcher for DualGPUOptimizer.
 This script will check for dependencies and run the application.
 """
 import os
-import sys
 import pathlib
 import subprocess
+import sys
+
 
 def main():
     print("DualGPUOptimizer Launcher")
@@ -18,6 +19,7 @@ def main():
     # Check for required dependencies
     try:
         import rich
+
         print("✓ Rich library found")
     except ImportError:
         print("✗ Rich library not found. Installing...")
@@ -31,6 +33,7 @@ def main():
     # Try to import the core module
     try:
         import dualgpuopt
+
         print("✓ DualGPUOptimizer core module found")
     except ImportError:
         print("✗ DualGPUOptimizer module not found.")
@@ -38,9 +41,11 @@ def main():
         # Try installing the local package
         current_dir = pathlib.Path(__file__).parent
         if (current_dir / "dual_gpu_optimizer").exists():
-            print(f"Found dual_gpu_optimizer directory. Installing...")
+            print("Found dual_gpu_optimizer directory. Installing...")
             try:
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "-e", "./dual_gpu_optimizer"])
+                subprocess.check_call(
+                    [sys.executable, "-m", "pip", "install", "-e", "./dual_gpu_optimizer"]
+                )
                 print("✓ DualGPUOptimizer installed")
                 # Try importing again
                 try:
@@ -60,6 +65,7 @@ def main():
     try:
         # Import and run the main module
         from dualgpuopt.__main__ import main
+
         main()
     except Exception as e:
         print(f"Error running application: {e}")
@@ -72,6 +78,7 @@ def main():
         with open(log_dir / "launcher.log", "w") as f:
             f.write(f"Error: {e}\n")
             import traceback
+
             f.write(traceback.format_exc())
 
         print(f"Error details written to: {log_dir / 'launcher.log'}")
@@ -79,6 +86,7 @@ def main():
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

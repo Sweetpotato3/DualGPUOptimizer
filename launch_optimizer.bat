@@ -10,4 +10,4 @@ set PYTORCH_ENABLE_OBSOLETE_CUDA_COMPAT=1
 call .venv\Scripts\activate.bat
 python run_optimizer.py
 
-pause 
+pause

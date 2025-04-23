@@ -6,10 +6,11 @@ This script checks for the icon file, copies it if needed,
 and then launches the modern UI with real GPU detection.
 """
 import os
-import sys
 import shutil
-from pathlib import Path
 import subprocess
+import sys
+from pathlib import Path
+
 
 def ensure_icon_exists():
     """Ensure the icon file exists in the assets directory."""
@@ -52,6 +53,7 @@ def ensure_icon_exists():
     print("Warning: Unable to find or generate icon file.")
     return False
 
+
 def main():
     """Main entry point for the launcher."""
     print("Preparing to launch DualGPUOptimizer Modern UI...")
@@ -67,13 +69,14 @@ def main():
     # Launch the modern UI with real GPU detection
     print("Launching DualGPUOptimizer Modern UI with real GPU detection...")
     try:
-        subprocess.run([sys.executable, "run_modern_ui.py"])
+        subprocess.run([sys.executable, "run_modern_ui.py"], check=False)
     except Exception as e:
         print(f"Error launching application: {e}")
         input("Press Enter to exit...")
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -10,7 +10,7 @@ APP_VERSION = "0.2.0"
 # UI settings
 THEME = "darkly"
 STATUS_DURATION = 5000  # duration to show status messages in ms
-VRAM_WARN_MB = 256     # minimum MB reclaimed to show as success
+VRAM_WARN_MB = 256  # minimum MB reclaimed to show as success
 
 # Asset paths - use relative path from this file
 ASSET_DIR = Path(__file__).parent / "assets"
@@ -30,5 +30,5 @@ COLORS = {
     "light": "#ecf0f1",
     "dark": "#2c3e50",
     "text": "#2c3e50",
-    "background": "#ecf0f1"
+    "background": "#ecf0f1",
 }

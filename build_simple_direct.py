@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     """
     Build the application using a direct approach (no spec file).
@@ -16,6 +17,7 @@ def main():
     # Get the torch DLLs
     try:
         import torch
+
         torch_path = Path(torch.__file__).parent
         torch_lib_path = torch_path / "lib"
     except ImportError:
@@ -40,7 +42,7 @@ def main():
         "--clean",
         "--windowed",
         "--name=DualGPUOptimizer",
-        f"--add-binary={nvml_path};."
+        f"--add-binary={nvml_path};.",
     ]
 
     # Add torch DLLs if available
@@ -49,42 +51,62 @@ def main():
             cmd.append(f"--add-binary={dll};.")
 
     # Add data files
-    cmd.extend([
-        f"--add-data={assets_dir};dualgpuopt/assets",
-        f"--add-data={presets_dir};dualgpuopt/presets",
-        f"--icon={icon_path}"
-    ])
+    cmd.extend(
+        [
+            f"--add-data={assets_dir};dualgpuopt/assets",
+            f"--add-data={presets_dir};dualgpuopt/presets",
+            f"--icon={icon_path}",
+        ]
+    )
 
     # Add essential hidden imports
     for module in [
-        "pynvml", "rich", "rich.console", "rich.panel", "rich.table",
-        "rich.progress", "rich.layout", "rich.text", "tomli_w",
-        "tomllib", "argparse", "concurrent.futures", "psutil",
-        "asyncio", "ttkbootstrap", "ttkbootstrap.style",
-        "ttkbootstrap.widgets", "ttkbootstrap.tooltip",
-        "dualgpuopt.gui.constants", "prometheus_client"
+        "pynvml",
+        "rich",
+        "rich.console",
+        "rich.panel",
+        "rich.table",
+        "rich.progress",
+        "rich.layout",
+        "rich.text",
+        "tomli_w",
+        "tomllib",
+        "argparse",
+        "concurrent.futures",
+        "psutil",
+        "asyncio",
+        "ttkbootstrap",
+        "ttkbootstrap.style",
+        "ttkbootstrap.widgets",
+        "ttkbootstrap.tooltip",
+        "dualgpuopt.gui.constants",
+        "prometheus_client",
     ]:
         cmd.append(f"--hidden-import={module}")
 
     # Add torch modules if available
     if torch_lib_path:
-        cmd.extend([
-            "--hidden-import=torch",
-            "--hidden-import=torch.cuda"
-        ])
+        cmd.extend(
+            [
+                "--hidden-import=torch",
+                "--hidden-import=torch.cuda",
+            ]
+        )
 
     # Add specific torch modules we know we need
     cmd.append("--collect-submodules=ttkbootstrap")
 
     # Exclude problematic modules
-    cmd.extend([
-        "--exclude-module=torch._dynamo",
-        "--exclude-module=torch._inductor",
-        "--exclude-module=torch._functorch",
-        "--exclude-module=torch.distributed",
-        "--exclude-module=torch.testing",
-        "--exclude-module=torch.utils.tensorboard"
-    ])
+    cmd.extend(
+        [
+            "--exclude-module=torch._dynamo",
+            "--exclude-module=torch._inductor",
+            "--exclude-module=torch._functorch",
+            "--exclude-module=torch.distributed",
+            "--exclude-module=torch.testing",
+            "--exclude-module=torch.utils.tensorboard",
+        ]
+    )
 
     # Add main script
     cmd.append(main_py)
@@ -98,6 +120,7 @@ def main():
 
     print("✅ Build completed successfully!")
     print(f"Application is available at: {os.path.abspath('dist/DualGPUOptimizer')}")
+
 
 if __name__ == "__main__":
     main()

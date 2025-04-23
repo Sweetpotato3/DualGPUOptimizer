@@ -166,7 +166,7 @@ async def chat(prompt:str, x_api_key:str=Header(...)):
     # optional retrieval
     docs = retrieve.top_k(prompt, k=3)
     context = '\n'.join(docs)
-    full_prompt = f"<context>{context}</context>\nQ: {prompt}\nA:"  
+    full_prompt = f"<context>{context}</context>\nQ: {prompt}\nA:"
     def gen():
         for tok in engine.stream(full_prompt, max_tokens=512):
             yield tok
@@ -255,18 +255,18 @@ dualgpuopt/
 
 > **Goal:** make the autonomous agent understand exactly *where* to put each file, how to run scripts, and how to hook live telemetry while coding.
 
-1. **Project checkout**  
+1. **Project checkout**
    ```bash
    git clone https://github.com/your‑org/dualgpuopt.git
    code dualgpuopt   # opens in VS Code / Cursor
    ```
 
-2. **Workspace layout**  
-   * Convert the root to a VS Code *Workspace*.  
-   * Folders already exist (`engine/`, `model/`, `qt/`, `datasets/`, `scripts/`, `tests/`).  
+2. **Workspace layout**
+   * Convert the root to a VS Code *Workspace*.
+   * Folders already exist (`engine/`, `model/`, `qt/`, `datasets/`, `scripts/`, `tests/`).
    * Cursor’s language‑server will pick up `pyproject.toml` (PEP‑621) for black/isort settings.
 
-3. **Cursor tasks**  
+3. **Cursor tasks**
    Add to `.vscode/tasks.json` (Cursor understands native tasks):
    ```json
    {
@@ -285,8 +285,8 @@ dualgpuopt/
    }
    ```
 
-4. **File‑watcher for Operator dumps**  
-   In `.vscode/settings.json` add:  
+4. **File‑watcher for Operator dumps**
+   In `.vscode/settings.json` add:
    ```json
    "files.watcherExclude": {
       "**/corpora/qc_statutes/raw/**": true,
@@ -295,7 +295,7 @@ dualgpuopt/
    ```
    → prevents the raw HTML dump from overloading the TS/JS watcher.
 
-5. **Run & debug configuration**  
+5. **Run & debug configuration**
    `.vscode/launch.json` entry to attach to FastAPI server:
    ```json
    {
@@ -313,15 +313,15 @@ dualgpuopt/
    }
    ```
 
-6. **Cursor agent cues**  
-   * Every code snippet in this document is **fully qualified** (folder + filename).  
-   * Use the VS Code command palette → *“Cursor: Run in Workspace”* to generate missing imports.  
+6. **Cursor agent cues**
+   * Every code snippet in this document is **fully qualified** (folder + filename).
+   * Use the VS Code command palette → *“Cursor: Run in Workspace”* to generate missing imports.
    * The `tests/` folder is automatically picked up by *Cursor Test Explorer*.
 
-7. **Telemetry overlay**  
+7. **Telemetry overlay**
    Install the *Prometheus Metrics* VS Code extension and point it at `http://localhost:8005/metrics`.  Cursor shows charts in a side panel while training.
 
-8. **One‑shot bootstrap**  
+8. **One‑shot bootstrap**
    Add a `Makefile` target so the agent can call `make setup`:
    ```makefile
    setup:
@@ -329,4 +329,3 @@ dualgpuopt/
    	pre-commit install
    	cursor trust
    ```
-

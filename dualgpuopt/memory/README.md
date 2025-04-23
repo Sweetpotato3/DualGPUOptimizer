@@ -102,7 +102,7 @@ Complete example with all components:
 
 ```python
 from dualgpuopt.memory import (
-    get_memory_monitor, MemoryAlertLevel, MemoryRecoveryStrategy, 
+    get_memory_monitor, MemoryAlertLevel, MemoryRecoveryStrategy,
     DEFAULT_PROFILES, initialize_memory_profiles
 )
 
@@ -157,4 +157,4 @@ This refactored module maintains backward compatibility with the original `memor
 
 ```python
 from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel
-``` 
+```

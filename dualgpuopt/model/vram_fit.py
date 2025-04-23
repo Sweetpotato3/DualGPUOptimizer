@@ -6,12 +6,12 @@ import json
 import logging
 import os
 import subprocess
-import re
 from typing import Any, Dict, List, Optional, Tuple
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ SAFETY_MARGIN = float(os.getenv("DUALGPUOPT_SAFETY_MARGIN", "0.1"))  # 10% safet
 TP_OVERHEAD = float(os.getenv("DUALGPUOPT_TP_OVERHEAD", "0.2"))  # 20% tensor parallelism overhead
 KV_CACHE_FACTOR = float(os.getenv("DUALGPUOPT_KV_CACHE_FACTOR", "2.0"))  # KV cache size multiplier
 MIN_CONTEXT_SIZE = int(
-    os.getenv("DUALGPUOPT_MIN_CONTEXT", "128")
+    os.getenv("DUALGPUOPT_MIN_CONTEXT", "128"),
 )  # Minimum context size to consider
 
 
@@ -32,12 +32,16 @@ def _detect_gpus() -> List[Dict[str, int]]:
     """
     try:
         out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=index,memory.total,memory.free",
-             "--format=csv,noheader,nounits"], encoding="utf-8"
+            [
+                "nvidia-smi",
+                "--query-gpu=index,memory.total,memory.free",
+                "--format=csv,noheader,nounits",
+            ],
+            encoding="utf-8",
         )
         gpus = []
         for line in out.strip().splitlines():
-            idx, tot, free = [int(x.strip()) for x in line.split(",")]
+            idx, tot, free = (int(x.strip()) for x in line.split(","))
             gpus.append({"id": idx, "memory_total": tot, "memory_free": free})
         return gpus
     except Exception as e:
@@ -46,17 +50,21 @@ def _detect_gpus() -> List[Dict[str, int]]:
 
 
 def calculate_gpu_split(
-    model_bytes: int, gpu_info: List[Dict[str, int]], safety_margin: float = SAFETY_MARGIN
+    model_bytes: int,
+    gpu_info: List[Dict[str, int]],
+    safety_margin: float = SAFETY_MARGIN,
 ) -> Tuple[List[float], Dict[str, Any]]:
     """
     Calculate optimal split ratios for model across available GPUs.
 
     Args:
+    ----
         model_bytes: Model size in bytes
         gpu_info: List of GPU info dictionaries with memory_total (in MB)
         safety_margin: Safety margin as a fraction of total memory
 
     Returns:
+    -------
         Tuple containing:
         - List of split ratios (e.g. [0.6, 0.4] for 60%/40% split)
         - Dictionary with additional information (total memory, etc.)
@@ -81,7 +89,7 @@ def calculate_gpu_split(
     # Calculate if model fits in available memory
     if model_size_mb > total_available_mb:
         logger.warning(
-            f"Model size ({model_size_mb:.2f} MB) exceeds available memory ({total_available_mb:.2f} MB)"
+            f"Model size ({model_size_mb:.2f} MB) exceeds available memory ({total_available_mb:.2f} MB)",
         )
 
     # Calculate optimal split ratios based on available memory
@@ -113,6 +121,7 @@ def calculate_max_context_size(
     Calculate maximum context size based on model size and available memory.
 
     Args:
+    ----
         model_bytes: Model size in bytes
         gpu_info: List of GPU info dictionaries with memory_total (in MB)
         kv_cache_bytes_per_token: Bytes per token in KV cache
@@ -120,6 +129,7 @@ def calculate_max_context_size(
         safety_margin: Safety margin as a fraction of total memory
 
     Returns:
+    -------
         Maximum context size in tokens
     """
     # First calculate split ratios
@@ -158,23 +168,27 @@ def calculate_max_context_size(
 
 
 def fit_plan(
-    model_bytes: int, 
-    gpus: Optional[List[Dict[str, int]]] = None
+    model_bytes: int,
+    gpus: Optional[List[Dict[str, int]]] = None,
 ) -> Dict[str, Any]:
     """
     Create a complete fitting plan for the model.
 
     Args:
+    ----
         model_bytes: Model size in bytes
         gpus: Optional list of GPU info dictionaries (if None, will use detected GPUs)
 
     Returns:
+    -------
         Dictionary with the complete fitting plan
     """
     # If GPUs not provided, use auto-detection
     if gpus is None:
-        gpus = _detect_gpus() or [{"memory_total": 8192}]  # Default to one 8GB GPU if detection fails
-    
+        gpus = _detect_gpus() or [
+            {"memory_total": 8192}
+        ]  # Default to one 8GB GPU if detection fails
+
     # Accept heterogeneous setups – sort biggest → smallest
     gpus.sort(key=lambda g: g["memory_total"], reverse=True)
 
@@ -204,7 +218,7 @@ def fit_plan(
 
         model_bytes_adjusted = model_bytes // num_shards
         logger.info(
-            f"Detected potential multi-shard checkpoint, adjusting size by factor of {num_shards}"
+            f"Detected potential multi-shard checkpoint, adjusting size by factor of {num_shards}",
         )
 
     # Estimate KV cache size for this model (based on model size heuristic)
@@ -222,7 +236,10 @@ def fit_plan(
     context_sizes = {}
     for batch_size in [1, 4, 8]:
         context_sizes[str(batch_size)] = calculate_max_context_size(
-            model_bytes, gpus, kv_bytes_per_token, batch_size
+            model_bytes,
+            gpus,
+            kv_bytes_per_token,
+            batch_size,
         )
 
     # Format GPU split string for llama.cpp (if multiple GPUs)
@@ -233,7 +250,7 @@ def fit_plan(
         total_ratio = sum(split_ratios)
         normalized_ratios = [r / total_ratio for r in split_ratios]
         llama_cpp_split = ",".join(
-            [f"{i}:{ratio:.2f}" for i, ratio in enumerate(normalized_ratios)]
+            [f"{i}:{ratio:.2f}" for i, ratio in enumerate(normalized_ratios)],
         )
 
     # Create the complete plan

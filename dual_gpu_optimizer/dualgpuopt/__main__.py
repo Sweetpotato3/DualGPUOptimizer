@@ -15,18 +15,14 @@ log_path = pathlib.Path.home() / ".dualgpuopt" / "logs" / "startup.log"
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.FileHandler(log_path),
-        logging.StreamHandler(sys.stdout)
-    ]
+    handlers=[logging.FileHandler(log_path), logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("dualgpuopt.startup")
 
 # Try to import the required modules
 try:
     import argparse
-    import time
-    from typing import List, Optional
+    from typing import List
 
     # Check for rich module
     try:
@@ -34,30 +30,43 @@ try:
         from rich.console import Console
         from rich.panel import Panel
         from rich.table import Table
-        from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+        from rich.progress import (
+            Progress,
+            SpinnerColumn,
+            TextColumn,
+            BarColumn,
+            TaskProgressColumn,
+        )
         from rich.layout import Layout
         from rich.text import Text
+
         logger.info("Successfully imported rich module")
     except ImportError as e:
         logger.error(f"Failed to import rich module: {e}")
-        print(f"Error: Missing 'rich' module. Try installing it with: pip install rich")
+        print("Error: Missing 'rich' module. Try installing it with: pip install rich")
         sys.exit(1)
 
     # Try to import optional dependencies
     try:
         import torch
+
         logger.info("Successfully imported torch")
         TORCH_AVAILABLE = True
     except ImportError:
-        logger.warning("Optional dependency 'torch' not found - some features will be disabled")
+        logger.warning(
+            "Optional dependency 'torch' not found - some features will be disabled"
+        )
         TORCH_AVAILABLE = False
 
     try:
         import prometheus_client
+
         logger.info("Successfully imported prometheus_client")
         PROMETHEUS_AVAILABLE = True
     except ImportError:
-        logger.warning("Optional dependency 'prometheus_client' not found - metrics will be disabled")
+        logger.warning(
+            "Optional dependency 'prometheus_client' not found - metrics will be disabled"
+        )
         PROMETHEUS_AVAILABLE = False
 
     # Try to import application modules
@@ -65,10 +74,13 @@ try:
         from dualgpuopt.gui import run_app
         from dualgpuopt.logconfig import setup_logging
         from dualgpuopt import gpu_info, optimizer, configio
+
         logger.info("Successfully imported application modules")
     except ImportError as e:
         logger.error(f"Failed to import application modules: {e}")
-        print(f"Error: Application modules not found. Please ensure the package is installed with: pip install -e ./dual_gpu_optimizer")
+        print(
+            "Error: Application modules not found. Please ensure the package is installed with: pip install -e ./dual_gpu_optimizer"
+        )
         sys.exit(1)
 
     # Initialize rich console
@@ -79,7 +91,7 @@ try:
         # Setup logging
         logger = setup_logging(
             verbose=args.verbose,
-            log_file=pathlib.Path.home() / ".dualgpuopt" / "logs" / "optimizer.log"
+            log_file=pathlib.Path.home() / ".dualgpuopt" / "logs" / "optimizer.log",
         )
 
         print("\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 =====\n")
@@ -95,7 +107,9 @@ try:
             # Show detected GPUs
             print("\nDetected GPUs:")
             for g in gpus:
-                print(f"  GPU {g.index}: {g.name} - {g.mem_total} MiB total, {g.mem_free} MiB free")
+                print(
+                    f"  GPU {g.index}: {g.name} - {g.mem_total} MiB total, {g.mem_free} MiB free"
+                )
 
             # Generate split configuration
             split = optimizer.split_string(gpus)
@@ -118,7 +132,9 @@ try:
                     optimizer.make_env_file(gpus, env_path)
                     print(f"\nEnvironment variables written to: {env_path}")
             else:
-                print("\nNo model path specified. Use --model-path to generate framework-specific commands.")
+                print(
+                    "\nNo model path specified. Use --model-path to generate framework-specific commands."
+                )
 
             return 0
 
@@ -126,7 +142,6 @@ try:
             logger.error(f"Optimization failed: {err}", exc_info=args.verbose)
             print(f"Error: {err}")
             return 1
-
 
     def parse_args(args: List[str] = None) -> argparse.Namespace:
         """Parse command line arguments."""
@@ -136,42 +151,39 @@ try:
 
         # Mode selection
         parser.add_argument(
-            "--cli", action="store_true",
-            help="Run in command-line mode (no GUI)"
+            "--cli", action="store_true", help="Run in command-line mode (no GUI)"
         )
 
         # Common options
         parser.add_argument(
-            "-v", "--verbose", action="store_true",
-            help="Enable verbose logging"
+            "-v", "--verbose", action="store_true", help="Enable verbose logging"
         )
 
         parser.add_argument(
-            "--no-splash", action="store_true",
-            help="Disable splash screen on startup"
+            "--no-splash", action="store_true", help="Disable splash screen on startup"
         )
 
         parser.add_argument(
-            "--mock", action="store_true",
-            help="Use mock GPU data instead of real hardware"
+            "--mock",
+            action="store_true",
+            help="Use mock GPU data instead of real hardware",
         )
 
         # CLI mode options
         parser.add_argument(
-            "-m", "--model-path", type=str,
-            help="Path to model file or repository"
+            "-m", "--model-path", type=str, help="Path to model file or repository"
         )
         parser.add_argument(
-            "-c", "--context-size", type=int,
-            help="Context size (default: 65536)"
+            "-c", "--context-size", type=int, help="Context size (default: 65536)"
         )
         parser.add_argument(
-            "-e", "--env-file", type=str,
-            help="Write environment variables to this file"
+            "-e",
+            "--env-file",
+            type=str,
+            help="Write environment variables to this file",
         )
 
         return parser.parse_args(args)
-
 
     def main() -> int:
         """Main entry point."""
@@ -185,10 +197,7 @@ try:
 
         # Setup logging regardless of mode
         log_file = pathlib.Path.home() / ".dualgpuopt" / "logs" / "gui.log"
-        app_logger = setup_logging(
-            verbose=args.verbose,
-            log_file=log_file
-        )
+        app_logger = setup_logging(verbose=args.verbose, log_file=log_file)
 
         try:
             if args.cli:
@@ -197,7 +206,9 @@ try:
                 # GUI mode
                 # Show splash screen
                 if not args.no_splash:
-                    print("\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 =====")
+                    print(
+                        "\n===== DualGPUOptimizer - LLM Workload Optimization v0.2.0 ====="
+                    )
                     print("Starting GUI application...\n")
 
                 # Launch GUI
@@ -208,7 +219,6 @@ try:
             print(f"Error: {err}")
             print(f"For more details, check the log file at: {log_file}")
             return 1
-
 
     if __name__ == "__main__":
         sys.exit(main())
@@ -227,7 +237,7 @@ except Exception as e:
     print(f"Check log file at: {log_path}")
 
     # Keep console open if running the exe directly
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         input("Press Enter to exit...")
 
     sys.exit(1)

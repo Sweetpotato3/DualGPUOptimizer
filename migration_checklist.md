@@ -59,4 +59,4 @@
 - [ ] Engine unloading might not clean up all resources
 - [ ] Telemetry Worker might have excessive CPU usage in some cases
 - [ ] Advanced Tools Dock rendering might be slow with large datasets
-- [ ] Alert Service might send duplicate alerts in some edge cases 
+- [ ] Alert Service might send duplicate alerts in some edge cases

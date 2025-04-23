@@ -18,15 +18,18 @@ if parent_dir not in sys.path:
 # Functions for mock mode control, but don't enable by default
 MOCK_MODE = False
 
+
 def enable_mock_mode():
     """Enable mock mode for testing without GPUs"""
     global MOCK_MODE
     MOCK_MODE = True
 
+
 def disable_mock_mode():
     """Disable mock mode"""
     global MOCK_MODE
     MOCK_MODE = False
+
 
 def is_mock_mode_enabled():
     """Check if mock mode is enabled."""

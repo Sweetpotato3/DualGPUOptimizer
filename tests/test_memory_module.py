@@ -1,21 +1,16 @@
 """
 Tests for the Memory module
 """
-import unittest
-from unittest.mock import patch, MagicMock, call
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Add parent directory to path so we can import directly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from dualgpuopt.memory import (
-    monitor,
-    metrics,
-    alerts,
-    recovery,
-    predictor
-)
+from dualgpuopt.memory import alerts, metrics, monitor, predictor, recovery
+
 
 class TestMemoryMonitor(unittest.TestCase):
     """Tests for the Memory Monitor module"""
@@ -31,7 +26,7 @@ class TestMemoryMonitor(unittest.TestCase):
                 "type": "nvidia",
                 "util": 50,
                 "mem_total": 16384,  # 16 GB
-                "mem_used": 8192,     # 8 GB (50% usage)
+                "mem_used": 8192,  # 8 GB (50% usage)
                 "temperature": 70.0,
                 "power_usage": 200.0,
             },
@@ -41,14 +36,14 @@ class TestMemoryMonitor(unittest.TestCase):
                 "type": "nvidia",
                 "util": 30,
                 "mem_total": 24576,  # 24 GB
-                "mem_used": 4096,     # 4 GB (~16% usage)
+                "mem_used": 4096,  # 4 GB (~16% usage)
                 "temperature": 60.0,
                 "power_usage": 150.0,
-            }
+            },
         ]
 
         # Apply the mock
-        self.patcher = patch('dualgpuopt.memory.monitor.gpu_info', self.mock_gpu_info)
+        self.patcher = patch("dualgpuopt.memory.monitor.gpu_info", self.mock_gpu_info)
         self.patcher.start()
 
         # Create a test monitor
@@ -87,10 +82,10 @@ class TestMemoryMonitor(unittest.TestCase):
                 "name": "Test GPU 0",
                 "mem_total": 16384,
                 "mem_used": 15565,  # 95% usage
-            }
+            },
         ]
 
-        with patch('dualgpuopt.memory.monitor.gpu_info', high_usage_mock):
+        with patch("dualgpuopt.memory.monitor.gpu_info", high_usage_mock):
             # Create a new monitor with the high usage mock
             critical_monitor = monitor.MemoryMonitor()
 
@@ -118,15 +113,16 @@ class TestMemoryMonitor(unittest.TestCase):
                 "name": "Test GPU 0",
                 "mem_total": 16384,
                 "mem_used": 13107,  # 80% usage
-            }
+            },
         ]
 
-        with patch('dualgpuopt.memory.monitor.gpu_info', low_memory_mock):
+        with patch("dualgpuopt.memory.monitor.gpu_info", low_memory_mock):
             # Create a new monitor with the low memory mock
             low_monitor = monitor.MemoryMonitor()
 
             # Should report low memory
             self.assertTrue(low_monitor.is_memory_low(0))
+
 
 class TestMemoryMetrics(unittest.TestCase):
     """Tests for the Memory Metrics module"""
@@ -158,6 +154,7 @@ class TestMemoryMetrics(unittest.TestCase):
         self.assertEqual(metrics.format_memory_size(1536), "1.5 GB")
         self.assertEqual(metrics.format_memory_size(1536, precision=2), "1.50 GB")
 
+
 class TestMemoryAlerts(unittest.TestCase):
     """Tests for the Memory Alerts module"""
 
@@ -186,10 +183,11 @@ class TestMemoryAlerts(unittest.TestCase):
         self.assertIn("95.0%", alert.message)
         self.assertIn("CRITICAL", alert.message)
 
+
 class TestMemoryRecovery(unittest.TestCase):
     """Tests for the Memory Recovery module"""
 
-    @patch('dualgpuopt.memory.recovery.gc.collect')
+    @patch("dualgpuopt.memory.recovery.gc.collect")
     def test_attempt_memory_recovery(self, mock_gc_collect):
         """Test attempt_memory_recovery function"""
         # Mock monitoring functions
@@ -205,11 +203,15 @@ class TestMemoryRecovery(unittest.TestCase):
         self.assertFalse(result)
 
         # Test with successful recovery
-        mock_is_memory_low.side_effect = [True, False]  # First call returns True, second call returns False
+        mock_is_memory_low.side_effect = [
+            True,
+            False,
+        ]  # First call returns True, second call returns False
         result = recovery.attempt_memory_recovery(0, is_memory_low_func=mock_is_memory_low)
 
         # Function should return True since memory is no longer low
         self.assertTrue(result)
+
 
 class TestMemoryPredictor(unittest.TestCase):
     """Tests for the Memory Predictor module"""
@@ -236,9 +238,11 @@ class TestMemoryPredictor(unittest.TestCase):
     def test_will_run_out_of_memory(self):
         """Test will_run_out_of_memory function"""
         # Mock monitoring functions
-        mock_get_memory_usage = MagicMock(return_value={
-            0: {"total": 16384, "used": 8192, "free": 8192, "percent": 50.0}
-        })
+        mock_get_memory_usage = MagicMock(
+            return_value={
+                0: {"total": 16384, "used": 8192, "free": 8192, "percent": 50.0},
+            }
+        )
 
         # With linear growth of 1000 MB per sample, memory should run out in ~8 samples
         memory_samples = [
@@ -252,7 +256,7 @@ class TestMemoryPredictor(unittest.TestCase):
         result = predictor.will_run_out_of_memory(
             0,
             memory_samples,
-            get_memory_usage_func=mock_get_memory_usage
+            get_memory_usage_func=mock_get_memory_usage,
         )
 
         # Should predict OOM within the threshold period
@@ -272,11 +276,12 @@ class TestMemoryPredictor(unittest.TestCase):
         result = predictor.will_run_out_of_memory(
             0,
             stable_samples,
-            get_memory_usage_func=mock_get_memory_usage
+            get_memory_usage_func=mock_get_memory_usage,
         )
 
         # Should not predict OOM
         self.assertFalse(result.will_oom)
+
 
 if __name__ == "__main__":
     unittest.main()

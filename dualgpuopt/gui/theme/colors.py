@@ -17,7 +17,7 @@ THEME_DARK_PURPLE = {
     "success": "#4CAF50",
     "border": "#3D2A50",
     "input_bg": "#241934",
-    "secondary_bg": "#372952"
+    "secondary_bg": "#372952",
 }
 
 # Define light theme
@@ -32,7 +32,7 @@ THEME_LIGHT = {
     "success": "#388E3C",
     "border": "#E1E1E6",
     "input_bg": "#FFFFFF",
-    "secondary_bg": "#EAEAEF"
+    "secondary_bg": "#EAEAEF",
 }
 
 # Define neon dark theme
@@ -49,7 +49,7 @@ THEME_NEON_DARK = {
     "input_bg": "#13141C",
     "secondary_bg": "#222235",
     "gradient_start": "#37ECBA",
-    "gradient_end": "#E436CA"
+    "gradient_end": "#E436CA",
 }
 
 # Current theme
@@ -59,27 +59,35 @@ current_theme = THEME_DARK_PURPLE
 AVAILABLE_THEMES = {
     "dark_purple": THEME_DARK_PURPLE,
     "light": THEME_LIGHT,
-    "neon_dark": THEME_NEON_DARK
+    "neon_dark": THEME_NEON_DARK,
 }
 
+
 def get_theme_by_name(theme_name):
-    """Get a theme by name
+    """
+    Get a theme by name
 
     Args:
+    ----
         theme_name: Name of the theme
 
     Returns:
+    -------
         The theme dict or the default theme if not found
     """
     return AVAILABLE_THEMES.get(theme_name, THEME_DARK_PURPLE)
 
+
 def update_current_theme(theme_name):
-    """Update the current theme
+    """
+    Update the current theme
 
     Args:
+    ----
         theme_name: Name of the theme to set as current
 
     Returns:
+    -------
         The theme dict that was set
     """
     global current_theme

@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-from typing import Dict, Any, Optional
+from typing import Any, Optional
 
 from dualgpuopt.services.event_bus import event_bus
 
@@ -16,7 +16,7 @@ class AppState:
 
     def __init__(self) -> None:
         """Initialize the application state."""
-        self._state: Dict[str, Any] = {
+        self._state: dict[str, Any] = {
             "model_path": "",
             "context_size": 65536,
             "gpu_settings": {},
@@ -36,10 +36,12 @@ class AppState:
         Get a value from the state.
 
         Args:
+        ----
             key: The state key to retrieve
             default: Default value if key doesn't exist
 
         Returns:
+        -------
             The state value or default
         """
         return self._state.get(key, default)
@@ -49,6 +51,7 @@ class AppState:
         Set a value in the state and notify listeners.
 
         Args:
+        ----
             key: The state key to set
             value: The value to set
         """
@@ -63,11 +66,12 @@ class AppState:
             # Also publish a general state changed event
             event_bus.publish("state_changed", {"key": key, "value": value})
 
-    def update(self, new_state: Dict[str, Any]) -> None:
+    def update(self, new_state: dict[str, Any]) -> None:
         """
         Update multiple state values at once.
 
         Args:
+        ----
             new_state: Dictionary of state updates
         """
         for key, value in new_state.items():
@@ -78,6 +82,7 @@ class AppState:
         Save the current state to disk.
 
         Args:
+        ----
             filepath: Optional custom filepath
         """
         if filepath is None:
@@ -88,7 +93,7 @@ class AppState:
 
         try:
             # Save state
-            with open(filepath, 'w', encoding='utf-8') as f:
+            with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(self._state, f, indent=2)
             self.logger.info(f"State saved to {filepath}")
         except Exception as e:
@@ -99,6 +104,7 @@ class AppState:
         Load state from disk.
 
         Args:
+        ----
             filepath: Optional custom filepath
         """
         if filepath is None:
@@ -109,13 +115,13 @@ class AppState:
             return
 
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, encoding="utf-8") as f:
                 loaded_state = json.load(f)
                 self.update(loaded_state)
             self.logger.info(f"State loaded from {filepath}")
         except json.JSONDecodeError as e:
             self.logger.error(f"Error parsing state file {filepath}: {e}")
-        except IOError as e:
+        except OSError as e:
             self.logger.error(f"Error reading state file {filepath}: {e}")
 
 

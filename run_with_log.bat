@@ -12,4 +12,4 @@ python -u run_optimizer.py > optimizer_log.txt 2>&1
 echo Execution completed. Check optimizer_log.txt for details.
 type optimizer_log.txt
 
-pause 
+pause

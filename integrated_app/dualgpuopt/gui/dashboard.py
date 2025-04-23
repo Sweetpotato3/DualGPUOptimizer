@@ -3,19 +3,24 @@
 GPU metrics dashboard component.
 """
 from __future__ import annotations
+
+import logging
 import tkinter as tk
 from tkinter import ttk
-import time
-import threading
-import logging
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any
 
-from dualgpuopt.gui_constants import (
-    PAD, DARK_BACKGROUND, LIGHT_FOREGROUND, PURPLE_PRIMARY,
-    ORANGE_ACCENT, GPU_COLORS, DEFAULT_FONT, DEFAULT_FONT_SIZE
-)
 from dualgpuopt.gpu_info import GPU, probe_gpus
-from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent, EventPriority
+from dualgpuopt.gui_constants import (
+    DARK_BACKGROUND,
+    DEFAULT_FONT,
+    DEFAULT_FONT_SIZE,
+    GPU_COLORS,
+    LIGHT_FOREGROUND,
+    ORANGE_ACCENT,
+    PAD,
+    PURPLE_PRIMARY,
+)
+from dualgpuopt.services.event_bus import EventPriority, GPUMetricsEvent, event_bus
 
 
 class GPUDashboard(ttk.Frame):
@@ -44,18 +49,18 @@ class GPUDashboard(ttk.Frame):
             "Dashboard.TLabel",
             background=self.bg_color,
             foreground=self.fg_color,
-            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE)
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE),
         )
         style.configure(
             "DashboardTitle.TLabel",
             background=self.bg_color,
             foreground=PURPLE_PRIMARY,
-            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 4, "bold")
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 4, "bold"),
         )
 
         # Initialize variables
-        self.gpu_frames: Dict[int, ttk.Frame] = {}
-        self.gpu_data: Dict[int, Dict[str, tk.StringVar]] = {}
+        self.gpu_frames: dict[int, ttk.Frame] = {}
+        self.gpu_data: dict[int, dict[str, tk.StringVar]] = {}
         self.update_interval_ms = 1000  # 1 second refresh
         self.logger = logging.getLogger("dualgpuopt.gui.dashboard")
 
@@ -71,9 +76,9 @@ class GPUDashboard(ttk.Frame):
         title = ttk.Label(
             self,
             text="GPU Dashboard",
-            style="DashboardTitle.TLabel"
+            style="DashboardTitle.TLabel",
         )
-        title.pack(pady=(PAD, PAD*2), padx=PAD, anchor=tk.W)
+        title.pack(pady=(PAD, PAD * 2), padx=PAD, anchor=tk.W)
 
         # GPU container
         self.gpu_container = ttk.Frame(self, style="Dashboard.TFrame")
@@ -113,20 +118,20 @@ class GPUDashboard(ttk.Frame):
             msg_frame,
             text="No GPUs detected. Either no NVIDIA GPUs are present or the drivers are not loaded.",
             style="Dashboard.TLabel",
-            foreground=ORANGE_ACCENT
-        ).pack(pady=PAD*2)
+            foreground=ORANGE_ACCENT,
+        ).pack(pady=PAD * 2)
 
         ttk.Label(
             msg_frame,
             text="You can use the 'mock' mode to see simulated GPU data for testing.",
-            style="Dashboard.TLabel"
+            style="Dashboard.TLabel",
         ).pack(pady=PAD)
 
     def _create_gpu_frame(self, gpu: GPU) -> None:
         """Create a frame for displaying a GPU's metrics."""
         # Frame for this GPU
         frame = ttk.Frame(self.gpu_container, style="GPU.TFrame")
-        frame.pack(fill=tk.X, pady=PAD/2)
+        frame.pack(fill=tk.X, pady=PAD / 2)
         self.gpu_frames[gpu.index] = frame
 
         # Color indicator
@@ -136,17 +141,17 @@ class GPUDashboard(ttk.Frame):
 
         # Info frame
         info_frame = ttk.Frame(frame, style="GPU.TFrame")
-        info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, pady=PAD/2)
+        info_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, pady=PAD / 2)
 
         # GPU name and basic info
         header_frame = ttk.Frame(info_frame, style="GPU.TFrame")
-        header_frame.pack(fill=tk.X, pady=(0, PAD/2))
+        header_frame.pack(fill=tk.X, pady=(0, PAD / 2))
 
         ttk.Label(
             header_frame,
             text=f"GPU {gpu.index}: {gpu.name}",
             style="Dashboard.TLabel",
-            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2, "bold")
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2, "bold"),
         ).pack(side=tk.LEFT)
 
         # Memory info
@@ -154,12 +159,12 @@ class GPUDashboard(ttk.Frame):
         ttk.Label(
             header_frame,
             text=f"Memory: {mem_text}",
-            style="Dashboard.TLabel"
+            style="Dashboard.TLabel",
         ).pack(side=tk.RIGHT)
 
         # Create metrics grid
         metrics_frame = ttk.Frame(info_frame, style="GPU.TFrame")
-        metrics_frame.pack(fill=tk.X, pady=PAD/2)
+        metrics_frame.pack(fill=tk.X, pady=PAD / 2)
 
         # Initialize data for each metric
         self.gpu_data[gpu.index] = {
@@ -167,7 +172,9 @@ class GPUDashboard(ttk.Frame):
             "temp": tk.StringVar(value=f"{gpu.temperature}°C"),
             "power": tk.StringVar(value=f"{gpu.power_usage:.1f}W / {gpu.power_limit:.1f}W"),
             "fan": tk.StringVar(value=f"{gpu.fan_speed}%"),
-            "clocks": tk.StringVar(value=f"GPU: {gpu.graphics_clock} MHz, Mem: {gpu.memory_clock} MHz")
+            "clocks": tk.StringVar(
+                value=f"GPU: {gpu.graphics_clock} MHz, Mem: {gpu.memory_clock} MHz"
+            ),
         }
 
         # Create metric labels
@@ -176,7 +183,7 @@ class GPUDashboard(ttk.Frame):
             ("Temperature:", "temp"),
             ("Power:", "power"),
             ("Fan Speed:", "fan"),
-            ("Clocks:", "clocks")
+            ("Clocks:", "clocks"),
         ]
 
         for i, (label_text, data_key) in enumerate(metrics):
@@ -189,22 +196,22 @@ class GPUDashboard(ttk.Frame):
                 text=label_text,
                 style="Dashboard.TLabel",
                 width=12,
-                anchor=tk.W
-            ).grid(row=row, column=col*2, sticky=tk.W, padx=(PAD, 0))
+                anchor=tk.W,
+            ).grid(row=row, column=col * 2, sticky=tk.W, padx=(PAD, 0))
 
             # Value
             ttk.Label(
                 metrics_frame,
                 textvariable=self.gpu_data[gpu.index][data_key],
-                style="Dashboard.TLabel"
-            ).grid(row=row, column=col*2+1, sticky=tk.W, padx=(0, PAD*2))
+                style="Dashboard.TLabel",
+            ).grid(row=row, column=col * 2 + 1, sticky=tk.W, padx=(0, PAD * 2))
 
     def _setup_event_handlers(self) -> None:
         """Set up event handlers for GPU metrics updates."""
         event_bus.subscribe_typed(
             GPUMetricsEvent,
             self._on_gpu_metrics_update,
-            priority=EventPriority.NORMAL
+            priority=EventPriority.NORMAL,
         )
 
     def _on_gpu_metrics_update(self, event: GPUMetricsEvent) -> None:

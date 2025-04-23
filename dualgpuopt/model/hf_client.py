@@ -9,7 +9,7 @@ import hashlib
 import os
 import pathlib
 import shutil
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable
 
 import requests
 
@@ -19,7 +19,7 @@ _HDR = {"Authorization": f"Bearer {_TOKEN}"} if _TOKEN else {}
 
 
 @functools.lru_cache(maxsize=128)
-def search(text: str, limit: int = 30) -> List[Dict[str, Any]]:
+def search(text: str, limit: int = 30) -> list[dict[str, Any]]:
     r = requests.get(_API, params={"search": text, "limit": limit}, headers=_HDR, timeout=20)
     r.raise_for_status()
     return [
@@ -41,7 +41,10 @@ def search(text: str, limit: int = 30) -> List[Dict[str, Any]]:
 
 
 def download(
-    model: str, pattern: str, dest: pathlib.Path, progress: Callable[[int, int], None] | None = None
+    model: str,
+    pattern: str,
+    dest: pathlib.Path,
+    progress: Callable[[int, int], None] | None = None,
 ) -> pathlib.Path:
     meta = requests.get(f"{_API}/{model}", headers=_HDR, timeout=20).json()
     files = [f for f in meta["siblings"] if f["rfilename"].endswith(pattern)]

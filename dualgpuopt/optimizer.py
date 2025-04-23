@@ -2,18 +2,16 @@
 Optimizer module for dual GPU setups
 Calculates optimal memory splits and context sizes for LLM inference
 """
-from typing import Dict, List, Optional, Tuple, Set, Any
-import math
+import functools
 import logging
 import os
-import functools
 import time
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List, Optional, Tuple
 
 # Import our core functionality
 from . import gpu_info
-from . import ctx_size
 from .commands.gpu_commands import generate_llama_cpp_cmd, generate_vllm_cmd
 
 # Initialize logger
@@ -25,11 +23,14 @@ ENV_SAFETY_MARGIN = float(os.environ.get("DUALGPUOPT_SAFETY_MARGIN", "0.1"))  # 
 ENV_TP_OVERHEAD = float(os.environ.get("DUALGPUOPT_TP_OVERHEAD", "0.2"))  # 20% default
 ENV_KV_CACHE_FACTOR = float(os.environ.get("DUALGPUOPT_KV_CACHE_FACTOR", "2.0"))  # 2.0x default
 ENV_MIN_CONTEXT = int(os.environ.get("DUALGPUOPT_MIN_CONTEXT", "128"))  # 128 tokens minimum
-ENV_OPT_CACHE_TIMEOUT = int(os.environ.get("DUALGPUOPT_OPT_CACHE_TIMEOUT", "30"))  # 30 seconds cache timeout
+ENV_OPT_CACHE_TIMEOUT = int(
+    os.environ.get("DUALGPUOPT_OPT_CACHE_TIMEOUT", "30")
+)  # 30 seconds cache timeout
 
 # Try to import numpy for vectorized operations
 try:
     import numpy as np
+
     NUMPY_AVAILABLE = True
 except ImportError:
     NUMPY_AVAILABLE = False
@@ -37,7 +38,8 @@ except ImportError:
 
 # Import error handling if available
 try:
-    from dualgpuopt.error_handler import handle_exceptions, ErrorCategory, ErrorSeverity
+    from dualgpuopt.error_handler import ErrorCategory, ErrorSeverity, handle_exceptions
+
     error_handler_available = True
 except ImportError:
     error_handler_available = False
@@ -46,6 +48,7 @@ except ImportError:
 
 class MemoryUnit(Enum):
     """Memory size units"""
+
     MB = 1
     GB = 1024
 
@@ -53,6 +56,7 @@ class MemoryUnit(Enum):
 @dataclass
 class ModelParameters:
     """Parameters defining a large language model"""
+
     name: str
     context_length: int
     hidden_size: int
@@ -77,16 +81,22 @@ class ModelParameters:
 
     def __hash__(self):
         """Make ModelParameters hashable for caching"""
-        return hash((
-            self.name, self.context_length, self.hidden_size,
-            self.num_layers, self.num_heads,
-            self.kv_heads if self.kv_heads is not None else -1
-        ))
+        return hash(
+            (
+                self.name,
+                self.context_length,
+                self.hidden_size,
+                self.num_layers,
+                self.num_heads,
+                self.kv_heads if self.kv_heads is not None else -1,
+            )
+        )
 
 
 @dataclass
 class GPUMemoryInfo:
     """Information about GPU memory availability and capabilities"""
+
     gpu_id: int
     name: str
     total_memory: int  # in MB
@@ -109,12 +119,15 @@ class GPUMemoryInfo:
 
     def __hash__(self):
         """Make GPUMemoryInfo hashable for caching"""
-        return hash((self.gpu_id, self.name, self.total_memory, self.available_memory, self.is_primary))
+        return hash(
+            (self.gpu_id, self.name, self.total_memory, self.available_memory, self.is_primary)
+        )
 
 
 @dataclass
 class SplitConfiguration:
     """Configuration for GPU split parameters"""
+
     tensor_parallel_size: int
     gpu_split: List[float]  # Ratios for each GPU
     memory_per_gpu: List[int]  # Actual memory in MB per GPU
@@ -129,11 +142,14 @@ class SplitConfiguration:
     @property
     def formatted_memory(self) -> str:
         """Returns formatted memory allocation as string"""
-        return ", ".join([f"{mem // 1024}GB" if mem > 1024 else f"{mem}MB" for mem in self.memory_per_gpu])
+        return ", ".join(
+            [f"{mem // 1024}GB" if mem > 1024 else f"{mem}MB" for mem in self.memory_per_gpu]
+        )
 
 
 class Optimizer:
-    """Optimizer class for dual GPU configurations
+    """
+    Optimizer class for dual GPU configurations
 
     Performs memory split calculations and context size optimization for LLM inference
     """
@@ -155,15 +171,15 @@ class Optimizer:
                 name="NVIDIA GeForce RTX (FALLBACK)",
                 total_memory=24 * 1024,  # 24 GB
                 available_memory=20 * 1024,  # 20 GB
-                is_primary=True
+                is_primary=True,
             ),
             GPUMemoryInfo(
                 gpu_id=1,
                 name="NVIDIA GeForce RTX (FALLBACK)",
                 total_memory=16 * 1024,  # 16 GB
                 available_memory=14 * 1024,  # 14 GB
-                is_primary=False
-            )
+                is_primary=False,
+            ),
         ]
 
         # Cache for optimization results
@@ -175,14 +191,18 @@ class Optimizer:
         self._cache_timeout = ENV_OPT_CACHE_TIMEOUT
 
     def get_gpu_info(self) -> List[GPUMemoryInfo]:
-        """Get current GPU memory information
+        """
+        Get current GPU memory information
 
-        Returns:
+        Returns
+        -------
             List of GPUMemoryInfo objects for available GPUs
         """
         # Check if we have a recent cache
         current_time = time.time()
-        if self._cached_gpu_info and (current_time - self._last_gpu_info_time < self._cache_timeout):
+        if self._cached_gpu_info and (
+            current_time - self._last_gpu_info_time < self._cache_timeout
+        ):
             logger.debug("Using cached GPU info")
             return self._cached_gpu_info
 
@@ -207,13 +227,15 @@ class Optimizer:
                 mem_used = min(gpu["mem_used"], mem_total)  # Cannot exceed total
                 available_memory = max(1024, mem_total - mem_used)  # Minimum 1GB available
 
-                gpu_info_list.append(GPUMemoryInfo(
-                    gpu_id=gpu["id"],
-                    name=gpu["name"],
-                    total_memory=mem_total,
-                    available_memory=available_memory,
-                    is_primary=gpu["id"] == 0
-                ))
+                gpu_info_list.append(
+                    GPUMemoryInfo(
+                        gpu_id=gpu["id"],
+                        name=gpu["name"],
+                        total_memory=mem_total,
+                        available_memory=available_memory,
+                        is_primary=gpu["id"] == 0,
+                    )
+                )
 
             # If we got no valid GPUs, use fallback
             if not gpu_info_list:
@@ -231,12 +253,15 @@ class Optimizer:
             return self.fallback_gpus
 
     def calculate_per_token_memory(self, model: ModelParameters) -> float:
-        """Calculate memory required per token for KV cache
+        """
+        Calculate memory required per token for KV cache
 
         Args:
+        ----
             model: Model parameters
 
         Returns:
+        -------
             Memory required per token in MB
         """
         # Check cache first
@@ -248,15 +273,19 @@ class Optimizer:
             # Calculate bytes needed for one token's key and value states across all layers
             bytes_per_token = (
                 # Key states + Value states
-                model.kv_hidden_size *
+                model.kv_hidden_size
+                *
                 # For all layers
-                model.num_layers *
+                model.num_layers
+                *
                 # Size of float16
                 2
             )
 
             # Convert to MB and apply overhead factor
-            mb_per_token = (bytes_per_token / (1024 * 1024)) * self.memory_overhead["kv_cache_factor"]
+            mb_per_token = (bytes_per_token / (1024 * 1024)) * self.memory_overhead[
+                "kv_cache_factor"
+            ]
 
             # Safety bounds - ensure reasonable values
             mb_per_token = max(0.01, min(10.0, mb_per_token))
@@ -270,18 +299,20 @@ class Optimizer:
             # Fallback to a reasonable default (approximately what a 7B model needs)
             return 0.12
 
-    def calculate_max_context(self,
-                             model: ModelParameters,
-                             available_memory: int,
-                             tensor_parallel_size: int = 1) -> Tuple[int, int]:
-        """Calculate maximum and recommended context length
+    def calculate_max_context(
+        self, model: ModelParameters, available_memory: int, tensor_parallel_size: int = 1
+    ) -> Tuple[int, int]:
+        """
+        Calculate maximum and recommended context length
 
         Args:
+        ----
             model: Model parameters
             available_memory: Available GPU memory in MB
             tensor_parallel_size: Number of GPUs to split tensors across
 
         Returns:
+        -------
             Tuple of (max_context_length, recommended_context_length)
         """
         # Check cache first
@@ -294,7 +325,9 @@ class Optimizer:
             effective_memory = available_memory
             if tensor_parallel_size > 1:
                 # When using tensor parallelism, there's some overhead
-                effective_memory = available_memory * (1 - self.memory_overhead["tensor_split_overhead"])
+                effective_memory = available_memory * (
+                    1 - self.memory_overhead["tensor_split_overhead"]
+                )
 
             # Calculate memory per token
             memory_per_token = self.calculate_per_token_memory(model)
@@ -310,7 +343,9 @@ class Optimizer:
 
             # Apply safety margin for recommended context
             recommended_context = int(max_context * (1 - self.memory_overhead["safety_margin"]))
-            recommended_context = max(ENV_MIN_CONTEXT, min(recommended_context, model.context_length))
+            recommended_context = max(
+                ENV_MIN_CONTEXT, min(recommended_context, model.context_length)
+            )
 
             # Round to nearest 128
             recommended_context = (recommended_context // 128) * 128
@@ -329,16 +364,19 @@ class Optimizer:
             # Return reasonable defaults
             return model.context_length, min(2048, model.context_length)
 
-    def optimize_gpu_split(self,
-                           model: ModelParameters,
-                           gpus: Optional[List[GPUMemoryInfo]] = None) -> SplitConfiguration:
-        """Calculate optimal GPU split configuration
+    def optimize_gpu_split(
+        self, model: ModelParameters, gpus: Optional[List[GPUMemoryInfo]] = None
+    ) -> SplitConfiguration:
+        """
+        Calculate optimal GPU split configuration
 
         Args:
+        ----
             model: Model parameters
             gpus: List of GPU info (will query if not provided)
 
         Returns:
+        -------
             SplitConfiguration with optimal settings
         """
         try:
@@ -360,13 +398,14 @@ class Optimizer:
                     gpu_split=[1.0],
                     memory_per_gpu=[16 * 1024],  # 16GB default
                     max_context_length=model.context_length,
-                    recommended_context_length=min(2048, model.context_length)
+                    recommended_context_length=min(2048, model.context_length),
                 )
 
             if len(gpus) < 2:
                 # If only one GPU, no split needed
                 max_context, recommended_context = self.calculate_max_context(
-                    model, gpus[0].available_memory
+                    model,
+                    gpus[0].available_memory,
                 )
 
                 config = SplitConfiguration(
@@ -374,7 +413,7 @@ class Optimizer:
                     gpu_split=[1.0],
                     memory_per_gpu=[gpus[0].available_memory],
                     max_context_length=max_context,
-                    recommended_context_length=recommended_context
+                    recommended_context_length=recommended_context,
                 )
 
                 self._split_cache[cache_key] = config
@@ -411,7 +450,9 @@ class Optimizer:
 
             # Calculate context length based on combined memory
             max_context, recommended_context = self.calculate_max_context(
-                model, total_memory, tensor_parallel_size=len(valid_gpus)
+                model,
+                total_memory,
+                tensor_parallel_size=len(valid_gpus),
             )
 
             config = SplitConfiguration(
@@ -419,7 +460,7 @@ class Optimizer:
                 gpu_split=split_ratios,
                 memory_per_gpu=memory_per_gpu,
                 max_context_length=max_context,
-                recommended_context_length=recommended_context
+                recommended_context_length=recommended_context,
             )
 
             # Store in cache
@@ -434,7 +475,7 @@ class Optimizer:
                 gpu_split=[0.6, 0.4],  # Default 60/40 split
                 memory_per_gpu=[12 * 1024, 8 * 1024],  # 12GB/8GB default
                 max_context_length=model.context_length,
-                recommended_context_length=min(2048, model.context_length)
+                recommended_context_length=min(2048, model.context_length),
             )
 
     def clear_caches(self) -> None:
@@ -446,13 +487,16 @@ class Optimizer:
         logger.debug("Cleared optimizer caches")
 
     def generate_llama_cpp_args(self, config: SplitConfiguration, model_path: str = "") -> str:
-        """Generate llama.cpp command line arguments for the split configuration
+        """
+        Generate llama.cpp command line arguments for the split configuration
 
         Args:
+        ----
             config: Split configuration
             model_path: Optional model path to include
 
         Returns:
+        -------
             Command line arguments for llama.cpp
         """
         try:
@@ -460,29 +504,36 @@ class Optimizer:
             return generate_llama_cpp_cmd(
                 model_path=model_path if model_path else "<model_path>",
                 gpu_split=config.gpu_split,
-                ctx_size=config.recommended_context_length
+                ctx_size=config.recommended_context_length,
             )
         except Exception as e:
             logger.error(f"Error generating llama.cpp arguments: {e}")
             # Return a basic fallback command
-            split_str = ",".join([f"{split:.2f}" for split in config.gpu_split]) if config.gpu_split else "0.6,0.4"
+            split_str = (
+                ",".join([f"{split:.2f}" for split in config.gpu_split])
+                if config.gpu_split
+                else "0.6,0.4"
+            )
             return f"--model {model_path if model_path else '<model_path>'} --ctx-size {config.recommended_context_length} --gpu-layers -1 --split-mode 2 --tensor-split {split_str}"
 
     def generate_vllm_args(self, config: SplitConfiguration, model_path: str = "") -> str:
-        """Generate vLLM command line arguments for the split configuration
+        """
+        Generate vLLM command line arguments for the split configuration
 
         Args:
+        ----
             config: Split configuration
             model_path: Optional model path to include
 
         Returns:
+        -------
             Command line arguments for vLLM
         """
         try:
             return generate_vllm_cmd(
                 model_path=model_path if model_path else "<model_path>",
                 tensor_parallel_size=config.tensor_parallel_size,
-                max_model_len=config.recommended_context_length
+                max_model_len=config.recommended_context_length,
             )
         except Exception as e:
             logger.error(f"Error generating vLLM arguments: {e}")
@@ -491,8 +542,11 @@ class Optimizer:
 
 
 # Apply error handling decorator if available
-def _apply_error_handler(component="Optimizer", severity=ErrorSeverity.ERROR if error_handler_available else None):
+def _apply_error_handler(
+    component="Optimizer", severity=ErrorSeverity.ERROR if error_handler_available else None
+):
     """Apply error handler decorator if available"""
+
     def decorator(func):
         if error_handler_available:
             return handle_exceptions(component=component, severity=severity, reraise=False)(func)
@@ -508,7 +562,9 @@ def _apply_error_handler(component="Optimizer", severity=ErrorSeverity.ERROR if 
                     if func.__name__ == "calculate_gpu_split":
                         return {"error": str(e), "success": False}
                     return None
+
             return wrapper
+
     return decorator
 
 
@@ -517,9 +573,11 @@ _optimizer: Optional[Optimizer] = None
 
 
 def get_optimizer() -> Optimizer:
-    """Get the global optimizer instance
+    """
+    Get the global optimizer instance
 
-    Returns:
+    Returns
+    -------
         The global optimizer instance, creating it if needed
     """
     global _optimizer
@@ -537,12 +595,15 @@ def clear_optimizer_caches() -> None:
 # Compatibility functions for refactored code
 @_apply_error_handler()
 def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[str, Any]:
-    """Calculate optimal GPU split for a model (compatibility function)
+    """
+    Calculate optimal GPU split for a model (compatibility function)
 
     Args:
+    ----
         model_params: Model parameters, or None to use default parameters
 
     Returns:
+    -------
         Dictionary with split configuration
     """
     optimizer = get_optimizer()
@@ -554,7 +615,7 @@ def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[
             context_length=8192,
             hidden_size=4096,
             num_layers=32,
-            num_heads=32
+            num_heads=32,
         )
 
     # Get GPU info and calculate split
@@ -568,18 +629,21 @@ def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[
         "memory_per_gpu": config.memory_per_gpu,
         "max_context": config.max_context_length,
         "recommended_context": config.recommended_context_length,
-        "gpus": gpus
+        "gpus": gpus,
     }
 
 
 @_apply_error_handler()
 def validate_params(params: ModelParameters) -> Tuple[bool, str]:
-    """Validate model parameters
+    """
+    Validate model parameters
 
     Args:
+    ----
         params: ModelParameters object
 
     Returns:
+    -------
         Tuple of (is_valid, error_message)
     """
     # Check basic parameters
@@ -594,7 +658,10 @@ def validate_params(params: ModelParameters) -> Tuple[bool, str]:
 
     # Check if hidden size is divisible by number of heads
     if params.hidden_size % params.num_heads != 0:
-        return False, f"Hidden size ({params.hidden_size}) must be divisible by number of heads ({params.num_heads})"
+        return (
+            False,
+            f"Hidden size ({params.hidden_size}) must be divisible by number of heads ({params.num_heads})",
+        )
 
     # Check KV heads if specified
     if params.kv_heads is not None:
@@ -602,7 +669,10 @@ def validate_params(params: ModelParameters) -> Tuple[bool, str]:
             return False, "Number of KV heads must be positive"
 
         if params.num_heads % params.kv_heads != 0:
-            return False, f"Number of heads ({params.num_heads}) must be divisible by number of KV heads ({params.kv_heads})"
+            return (
+                False,
+                f"Number of heads ({params.num_heads}) must be divisible by number of KV heads ({params.kv_heads})",
+            )
 
     # Check context length
     if params.context_length is not None and params.context_length <= 0:

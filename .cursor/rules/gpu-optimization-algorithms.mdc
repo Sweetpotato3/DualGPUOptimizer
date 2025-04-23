@@ -1,78 +1,67 @@
 ---
-description: Documentation of GPU memory distribution algorithms, tensor parallel splits calculation, and memory allocation strategies
-globs: **/*.py,**/gpu/*.py,**/optimizer/*.py,**/memory/*.py
+description: Specification for GPU memory distribution and optimization algorithms, tensor parallel splits, and memory allocation strategies
+globs: dualgpuopt/optimizer.py,dualgpuopt/gpu_info.py,dualgpuopt/mpolicy.py,dualgpuopt/layer_balance.py,dualgpuopt/memory/**
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Memory Split Calculation
+The GPU optimization and memory allocation algorithms comprise several key components:
 
-Core algorithm for distributing model layers across multiple GPUs based on available VRAM:
+## Layer Distribution Algorithm
+- GPU-aware layer distribution system with latency profiling across sequence lengths
+- Assigns transformer model layers between GPUs using execution time measurements
+- Uses weighted profiling: 20% short sequences (64 tokens), 80% long sequences (1024 tokens)
+- Maintains reserve ratio (default 0.9) to prevent GPU memory exhaustion
+- Implements block merging for layer groups smaller than 3 layers
 
-1. Memory Allocation Strategy:
-```python
-# Calculates per-token memory requirements
-bytes_per_token = model.kv_hidden_size * model.num_layers * 2
-memory_overhead = 0.2  # 20% overhead for tensor operations
-split_ratio = gpu1_vram / (gpu1_vram + gpu2_vram)
-```
+File: `dualgpuopt/layer_balance.py`
 
-2. GPU Layer Distribution:
-- Balances layers across GPUs based on relative memory capacity
-- Handles dynamic KV cache allocation with attention-based memory requirements
-- Implements fallback mechanisms for OOM conditions
+## Memory Split Calculator
+- Calculates optimal memory distribution between GPUs based on model architecture
+- Implements KV cache sizing with architecture-specific factors:
+  - MQA models: 0.25x multiplier
+  - GQA models: 0.5x multiplier
+  - Standard attention: 1x multiplier
+- Accounts for tensor parallelism overhead in memory estimates
+- Provides framework-specific split configurations for llama.cpp and vLLM
 
-3. Tensor Parallel Split Optimization:
-- Splits large language models into tensor parallel shards
-- Optimizes communication patterns between GPUs
-- Handles model-specific requirements (MQA/GQA, Mixtral MoE)
+File: `dualgpuopt/optimizer.py`
 
-## Memory Profiling System
+## GPU Memory Monitoring
+- Real-time memory tracking with alert thresholds:
+  - Emergency: ≥95% memory usage
+  - Critical: ≥90% memory usage
+  - Warning: ≥75% memory usage
+- Implements memory reclamation with multi-tier strategy:
+  - Cache clearing
+  - GPU clock reset
+  - Full memory reset
+  - System-level cleanup
+- Tracks successful reclamation above 256MB threshold
 
-Key components for memory tracking and optimization:
+File: `dualgpuopt/memory/monitor.py`
 
-1. Profile Collection:
-- Track memory patterns across multiple GPUs
-- Monitor allocation/deallocation events
-- Detect memory growth spikes and leaks
-- Associate memory usage with inference sessions
+## Memory Profiling
+- Session-based memory tracking during inference
+- Detects memory leaks through two mechanisms:
+  - Rapid growth detection (immediate alerts)
+  - Gradual leak tracking (sustained growth)
+- Memory change threshold of 5MB for leak reporting
+- 30-second cooldown between leak alerts per GPU
+- Correlates memory patterns with inference stages
 
-2. Memory Leak Detection:
-- Uses sliding window analysis 
-- Calculates memory growth rates
-- Two-tier threshold system:
-  - Spike threshold for rapid growth
-  - Leak threshold for sustained growth
+File: `dualgpuopt/memory/profiler.py`
 
-3. Session Analysis:
-- Track inference memory baselines
-- Calculate per-GPU deltas
-- Monitor token count impact
-- Pattern analysis for memory anomalies
+## Mixed Precision Policies
+- Implements optimized dtype policies for different operations:
+  - FP32: LayerNorm, Softmax, Residuals
+  - FP16/BF16: Matrix multiplications
+  - INT8/INT4: Weight storage
+- Autocast context manager preserves precision for critical ops
+- Framework-specific command generation for precision settings
 
-## Optimization Algorithms 
-
-1. Context Length Calculator:
-- Determines maximum safe context size based on:
-  - Available GPU memory
-  - Model architecture parameters
-  - Tensor parallel configuration
-  - KV cache requirements
-
-2. Layer Balancing:
-- Distributes model layers for optimal latency
-- Considers memory quotas per GPU
-- Handles contiguous layer blocks
-- Special handling for embedding layers
-
-Relevant file paths:
-```
-dualgpuopt/optimizer.py
-dualgpuopt/memory/profiler.py
-dualgpuopt/gpu_info.py
-dualgpuopt/layer_balance.py
-```
+File: `dualgpuopt/mpolicy.py`
 
 $END$

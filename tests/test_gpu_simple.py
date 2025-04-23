@@ -1,13 +1,14 @@
 """
 Simplified tests for the GPU module
 """
-import unittest
-from unittest.mock import patch, MagicMock
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import patch
 
 # Add parent directory to path so we can import directly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 
 class TestGpuModuleSimple(unittest.TestCase):
     """Simplified tests for the GPU module"""
@@ -25,13 +26,13 @@ class TestGpuModuleSimple(unittest.TestCase):
                 "mem_used": 5000,
                 "temperature": 60.0,
                 "power_usage": 200.0,
-            }
+            },
         ]
 
     def test_mock_gpu_functions(self):
         """Test that mock GPU functions work correctly"""
         # Import and test the mock module
-        with patch('dualgpuopt.gpu.mock.generate_mock_gpus', return_value=self.test_gpus):
+        with patch("dualgpuopt.gpu.mock.generate_mock_gpus", return_value=self.test_gpus):
             from dualgpuopt.gpu.mock import generate_mock_gpus
 
             # Test the function
@@ -43,8 +44,8 @@ class TestGpuModuleSimple(unittest.TestCase):
     def test_gpu_info_query(self):
         """Test that query function returns expected data"""
         # Import and test the info module
-        with patch('dualgpuopt.gpu.mock.generate_mock_gpus', return_value=self.test_gpus):
-            with patch('dualgpuopt.gpu.common.MOCK_MODE', True):
+        with patch("dualgpuopt.gpu.mock.generate_mock_gpus", return_value=self.test_gpus):
+            with patch("dualgpuopt.gpu.common.MOCK_MODE", True):
                 from dualgpuopt.gpu.info import query
 
                 # Test the function
@@ -56,8 +57,8 @@ class TestGpuModuleSimple(unittest.TestCase):
     def test_gpu_monitoring(self):
         """Test that monitoring functions work correctly"""
         # Import and test the monitor module
-        with patch('dualgpuopt.gpu.info.query', return_value=self.test_gpus):
-            from dualgpuopt.gpu.monitor import get_temperature, get_utilization, get_memory_info
+        with patch("dualgpuopt.gpu.info.query", return_value=self.test_gpus):
+            from dualgpuopt.gpu.monitor import get_memory_info, get_temperature, get_utilization
 
             # Test temperature function
             temp = get_temperature(0)
@@ -78,14 +79,15 @@ class TestGpuModuleSimple(unittest.TestCase):
     def test_public_api(self):
         """Test that the public API works correctly"""
         # Mock the internals
-        with patch('dualgpuopt.gpu.info.query', return_value=self.test_gpus):
+        with patch("dualgpuopt.gpu.info.query", return_value=self.test_gpus):
             # Import from public API
-            from dualgpuopt.gpu import get_gpu_names, get_gpu_count, get_temperature
+            from dualgpuopt.gpu import get_gpu_count, get_gpu_names, get_temperature
 
             # Test functions
             self.assertEqual(get_gpu_count(), 1)
             self.assertEqual(get_gpu_names(), ["NVIDIA GeForce RTX 4090"])
             self.assertEqual(get_temperature(0), 60.0)
+
 
 if __name__ == "__main__":
     unittest.main()

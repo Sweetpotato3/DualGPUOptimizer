@@ -12,9 +12,11 @@ from typing import List, Dict, Any, Callable, Optional
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.constants import *
+
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
 
 from dualgpuopt.gpu_info import GPU
@@ -28,8 +30,13 @@ from dualgpuopt.commands.gpu_commands import ApplyOverclockCommand
 class OverclockingFrame(ttk.LabelFrame):
     """Frame containing GPU overclocking settings."""
 
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU], pad: int = 16,
-                 on_status_change: Optional[Callable[[str], None]] = None) -> None:
+    def __init__(
+        self,
+        parent: ttk.Frame,
+        gpus: List[GPU],
+        pad: int = 16,
+        on_status_change: Optional[Callable[[str], None]] = None,
+    ) -> None:
         """
         Initialize the overclocking frame.
 
@@ -73,7 +80,9 @@ class OverclockingFrame(ttk.LabelFrame):
     def _register_event_handlers(self) -> None:
         """Register event handlers for events."""
         event_bus.subscribe("command_history_updated", self._update_command_history)
-        event_bus.subscribe("command_executed:apply_overclock", self._handle_overclock_result)
+        event_bus.subscribe(
+            "command_executed:apply_overclock", self._handle_overclock_result
+        )
 
     def _update_command_history(self, data: Dict[str, Any]) -> None:
         """
@@ -84,7 +93,7 @@ class OverclockingFrame(ttk.LabelFrame):
         """
         # Enable/disable the undo button based on history
         can_undo = data.get("can_undo", False)
-        if hasattr(self, 'undo_button'):
+        if hasattr(self, "undo_button"):
             self.undo_button["state"] = "normal" if can_undo else "disabled"
 
     def _handle_overclock_result(self, data: Dict[str, Any]) -> None:
@@ -97,11 +106,15 @@ class OverclockingFrame(ttk.LabelFrame):
         success = data.get("success", False)
 
         if success and self.on_status_change:
-            self.on_status_change(f"Overclock applied to GPU {data.get('gpu_index', '?')}")
+            self.on_status_change(
+                f"Overclock applied to GPU {data.get('gpu_index', '?')}"
+            )
 
     def _create_gpu_selection(self) -> None:
         """Create GPU selection controls."""
-        ttk.Label(self, text="GPU:").grid(row=0, column=0, sticky="w", padx=self.pad, pady=5)
+        ttk.Label(self, text="GPU:").grid(
+            row=0, column=0, sticky="w", padx=self.pad, pady=5
+        )
         self.oc_gpu_var = tk.StringVar()
         gpu_values = [f"GPU {i}: {gpu.short_name}" for i, gpu in enumerate(self.gpus)]
         self.oc_gpu_combo = ttk.Combobox(
@@ -109,7 +122,7 @@ class OverclockingFrame(ttk.LabelFrame):
             textvariable=self.oc_gpu_var,
             values=gpu_values,
             width=20,
-            state="readonly"
+            state="readonly",
         )
         if gpu_values:
             self.oc_gpu_combo.current(0)
@@ -119,11 +132,15 @@ class OverclockingFrame(ttk.LabelFrame):
     def _create_oc_sliders(self) -> None:
         """Create overclocking slider controls."""
         oc_sliders_frame = ttk.Frame(self)
-        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5)
+        oc_sliders_frame.grid(
+            row=1, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5
+        )
         oc_sliders_frame.columnconfigure(1, weight=1)
 
         # Core Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(
+            row=0, column=0, sticky="w", pady=2
+        )
         self.core_clock_var = tk.IntVar(value=0)
         self.core_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -131,14 +148,18 @@ class OverclockingFrame(ttk.LabelFrame):
             to=200,
             orient="horizontal",
             variable=self.core_clock_var,
-            command=lambda v: self._update_label(self.core_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_label(
+                self.core_clock_label, f"{int(float(v))} MHz"
+            ),
         )
         self.core_clock_scale.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
         self.core_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.core_clock_label.grid(row=0, column=2, padx=5, pady=2)
 
         # Memory Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(
+            row=1, column=0, sticky="w", pady=2
+        )
         self.memory_clock_var = tk.IntVar(value=0)
         self.memory_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -146,14 +167,18 @@ class OverclockingFrame(ttk.LabelFrame):
             to=1500,
             orient="horizontal",
             variable=self.memory_clock_var,
-            command=lambda v: self._update_label(self.memory_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_label(
+                self.memory_clock_label, f"{int(float(v))} MHz"
+            ),
         )
         self.memory_clock_scale.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
         self.memory_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.memory_clock_label.grid(row=1, column=2, padx=5, pady=2)
 
         # Power Limit slider
-        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(
+            row=2, column=0, sticky="w", pady=2
+        )
         self.power_limit_var = tk.IntVar(value=100)
         self.power_limit_scale = ttk.Scale(
             oc_sliders_frame,
@@ -161,14 +186,18 @@ class OverclockingFrame(ttk.LabelFrame):
             to=120,
             orient="horizontal",
             variable=self.power_limit_var,
-            command=lambda v: self._update_label(self.power_limit_label, f"{int(float(v))}%")
+            command=lambda v: self._update_label(
+                self.power_limit_label, f"{int(float(v))}%"
+            ),
         )
         self.power_limit_scale.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
         self.power_limit_label = ttk.Label(oc_sliders_frame, text="100%", width=8)
         self.power_limit_label.grid(row=2, column=2, padx=5, pady=2)
 
         # Fan Control slider
-        ttk.Label(oc_sliders_frame, text="Fan Speed:").grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Fan Speed:").grid(
+            row=3, column=0, sticky="w", pady=2
+        )
         self.fan_speed_var = tk.IntVar(value=0)
         self.fan_speed_scale = ttk.Scale(
             oc_sliders_frame,
@@ -176,7 +205,9 @@ class OverclockingFrame(ttk.LabelFrame):
             to=100,
             orient="horizontal",
             variable=self.fan_speed_var,
-            command=lambda v: self._update_label(self.fan_speed_label, f"{int(float(v))}%")
+            command=lambda v: self._update_label(
+                self.fan_speed_label, f"{int(float(v))}%"
+            ),
         )
         self.fan_speed_scale.grid(row=3, column=1, sticky="ew", padx=5, pady=2)
         self.fan_speed_label = ttk.Label(oc_sliders_frame, text="Auto", width=8)
@@ -191,56 +222,53 @@ class OverclockingFrame(ttk.LabelFrame):
                 text="Auto Fan",
                 variable=self.auto_fan_var,
                 style="success.TCheckbutton",
-                command=self._toggle_fan_control
+                command=self._toggle_fan_control,
             )
         else:
             auto_fan_check = ttk.Checkbutton(
                 oc_sliders_frame,
                 text="Auto Fan",
                 variable=self.auto_fan_var,
-                command=self._toggle_fan_control
+                command=self._toggle_fan_control,
             )
         auto_fan_check.grid(row=3, column=3, padx=5, pady=2)
 
     def _create_oc_buttons(self) -> None:
         """Create overclocking action buttons."""
         oc_buttons_frame = ttk.Frame(self)
-        oc_buttons_frame.grid(row=2, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5)
+        oc_buttons_frame.grid(
+            row=2, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5
+        )
 
         ttk.Button(
-            oc_buttons_frame,
-            text="Apply Overclock",
-            command=self._apply_overclock
+            oc_buttons_frame, text="Apply Overclock", command=self._apply_overclock
         ).grid(row=0, column=0, padx=5, pady=5)
 
-        ttk.Button(
-            oc_buttons_frame,
-            text="Reset",
-            command=self._reset_overclock
-        ).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(oc_buttons_frame, text="Reset", command=self._reset_overclock).grid(
+            row=0, column=1, padx=5, pady=5
+        )
 
         self.undo_button = ttk.Button(
             oc_buttons_frame,
             text="Undo",
             command=self._undo_last_command,
-            state="disabled"  # Will be enabled when commands are available
+            state="disabled",  # Will be enabled when commands are available
         )
         self.undo_button.grid(row=0, column=2, padx=5, pady=5)
 
     def _create_warning_info(self) -> None:
         """Create warning information section."""
         warning_frame = ttk.Frame(self)
-        warning_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5)
+        warning_frame.grid(
+            row=3, column=0, columnspan=3, sticky="ew", padx=self.pad, pady=5
+        )
 
         warning_text = (
             "Warning: Overclocking may void warranty and can potentially damage hardware. "
             "Use at your own risk. Ensure your cooling is adequate."
         )
         warning_label = ttk.Label(
-            warning_frame,
-            text=warning_text,
-            wraplength=400,
-            justify="left"
+            warning_frame, text=warning_text, wraplength=400, justify="left"
         )
         warning_label.grid(row=0, column=0, sticky="w")
 
@@ -285,8 +313,12 @@ class OverclockingFrame(ttk.LabelFrame):
             self.auto_fan_var.set(gpu_oc.get("auto_fan", True))
 
             # Update labels
-            self._update_label(self.core_clock_label, f"{self.core_clock_var.get()} MHz")
-            self._update_label(self.memory_clock_label, f"{self.memory_clock_var.get()} MHz")
+            self._update_label(
+                self.core_clock_label, f"{self.core_clock_var.get()} MHz"
+            )
+            self._update_label(
+                self.memory_clock_label, f"{self.memory_clock_var.get()} MHz"
+            )
             self._update_label(self.power_limit_label, f"{self.power_limit_var.get()}%")
 
             # Update fan control
@@ -297,9 +329,13 @@ class OverclockingFrame(ttk.LabelFrame):
                 self.on_status_change(f"Loaded settings for GPU {gpu_idx}")
 
         except (ValueError, IndexError) as e:
-            error_service.handle_error(e, level="WARNING", title="GPU Selection Error",
-                                     show_dialog=False,
-                                     context={"operation": "update_oc_controls", "selection": selected})
+            error_service.handle_error(
+                e,
+                level="WARNING",
+                title="GPU Selection Error",
+                show_dialog=False,
+                context={"operation": "update_oc_controls", "selection": selected},
+            )
 
     def _apply_overclock(self) -> None:
         """Apply overclocking settings to the selected GPU."""
@@ -331,8 +367,12 @@ class OverclockingFrame(ttk.LabelFrame):
             command_manager.execute(command)
 
         except (ValueError, IndexError) as e:
-            error_service.handle_error(e, level="ERROR", title="Overclock Error",
-                                    context={"operation": "apply_overclock"})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Overclock Error",
+                context={"operation": "apply_overclock"},
+            )
 
     def _reset_overclock(self) -> None:
         """Reset overclocking settings to default values."""
@@ -364,9 +404,13 @@ class OverclockingFrame(ttk.LabelFrame):
                         self.on_status_change(f"Reset overclock for GPU {gpu_idx}")
 
             except (ValueError, IndexError) as e:
-                error_service.handle_error(e, level="WARNING", title="Reset Error",
-                                        show_dialog=False,
-                                        context={"operation": "reset_overclock"})
+                error_service.handle_error(
+                    e,
+                    level="WARNING",
+                    title="Reset Error",
+                    show_dialog=False,
+                    context={"operation": "reset_overclock"},
+                )
 
     def _undo_last_command(self) -> None:
         """Undo the last command."""
@@ -378,7 +422,7 @@ class OverclockingFrame(ttk.LabelFrame):
             messagebox.showerror(
                 "Undo Failed",
                 "Failed to undo the last operation",
-                parent=self.winfo_toplevel()
+                parent=self.winfo_toplevel(),
             )
 
     def get_current_settings(self) -> Dict[str, Any]:
@@ -400,7 +444,7 @@ class OverclockingFrame(ttk.LabelFrame):
                 "memory_offset": self.memory_clock_var.get(),
                 "power_limit": self.power_limit_var.get(),
                 "fan_speed": self.fan_speed_var.get(),
-                "auto_fan": self.auto_fan_var.get()
+                "auto_fan": self.auto_fan_var.get(),
             }
         except (ValueError, IndexError):
             return {}

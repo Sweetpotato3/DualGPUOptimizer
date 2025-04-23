@@ -3,12 +3,12 @@ Ultra-simplified launcher for DualGPUOptimizer.
 This script directly launches the mock GPU optimization without dependencies.
 """
 import os
-import sys
 import pathlib
+import sys
 import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
 from dataclasses import dataclass
-from typing import List, Optional
+from tkinter import filedialog, ttk
+from typing import List
 
 # Set environment variable for mock GPU mode
 os.environ["DGPUOPT_MOCK_GPUS"] = "1"
@@ -17,13 +17,15 @@ os.environ["DGPUOPT_MOCK_GPUS"] = "1"
 log_dir = pathlib.Path.home() / ".dualgpuopt" / "logs"
 os.makedirs(log_dir, exist_ok=True)
 
+
 @dataclass
 class GPU:
     """GPU information container."""
+
     index: int
     name: str
     mem_total: int  # MiB
-    mem_free: int   # MiB
+    mem_free: int  # MiB
 
     @property
     def mem_used(self) -> int:
@@ -40,7 +42,7 @@ def get_mock_gpus() -> List[GPU]:
     """Create mock GPU objects for testing or demo purposes."""
     return [
         GPU(0, "NVIDIA GeForce RTX 3090", 24576, 20480),  # 24GB
-        GPU(1, "NVIDIA GeForce RTX 3080", 10240, 8192),   # 10GB
+        GPU(1, "NVIDIA GeForce RTX 3080", 10240, 8192),  # 10GB
     ]
 
 
@@ -57,10 +59,7 @@ def tensor_fractions(gpus: List[GPU]) -> list[float]:
 
 def llama_command(model_path: str, ctx: int, split: str) -> str:
     """Generate a llama.cpp command line."""
-    return (
-        f"./main -m {model_path} "
-        f"--gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}"
-    )
+    return f"./main -m {model_path} " f"--gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}"
 
 
 def vllm_command(model_path: str, tp: int) -> str:
@@ -101,7 +100,9 @@ class DualGpuApp(ttk.Frame):
         gpu_frame.grid(row=1, column=0, columnspan=2, sticky="ew", padx=5, pady=5)
 
         for i, gpu in enumerate(self.gpus):
-            ttk.Label(gpu_frame, text=f"GPU {gpu.index}: {gpu.name}").grid(row=i, column=0, sticky="w")
+            ttk.Label(gpu_frame, text=f"GPU {gpu.index}: {gpu.name}").grid(
+                row=i, column=0, sticky="w"
+            )
             ttk.Label(gpu_frame, text=f"{gpu.mem_total_gb} GB").grid(row=i, column=1, sticky="e")
 
         # Model Input
@@ -130,9 +131,15 @@ class DualGpuApp(ttk.Frame):
         button_frame = ttk.Frame(self, padding=10)
         button_frame.grid(row=4, column=0, columnspan=2, pady=5)
 
-        ttk.Button(button_frame, text="Generate Commands", command=self.update_output).grid(row=0, column=0, padx=5)
-        ttk.Button(button_frame, text="Browse", command=self.browse_model).grid(row=0, column=1, padx=5)
-        ttk.Button(button_frame, text="Exit", command=self.master.destroy).grid(row=0, column=2, padx=5)
+        ttk.Button(button_frame, text="Generate Commands", command=self.update_output).grid(
+            row=0, column=0, padx=5
+        )
+        ttk.Button(button_frame, text="Browse", command=self.browse_model).grid(
+            row=0, column=1, padx=5
+        )
+        ttk.Button(button_frame, text="Exit", command=self.master.destroy).grid(
+            row=0, column=2, padx=5
+        )
 
         # Configure grid
         self.columnconfigure(0, weight=1)
@@ -142,7 +149,7 @@ class DualGpuApp(ttk.Frame):
         """Browse for a model file."""
         filename = filedialog.askopenfilename(
             title="Select Model File",
-            filetypes=[("GGUF Files", "*.gguf"), ("All Files", "*.*")]
+            filetypes=[("GGUF Files", "*.gguf"), ("All Files", "*.*")],
         )
         if filename:
             self.model_var.set(filename)
@@ -163,17 +170,25 @@ class DualGpuApp(ttk.Frame):
         self.output_text.insert(tk.END, "GPU INFORMATION:\n")
         for i, gpu in enumerate(self.gpus):
             self.output_text.insert(tk.END, f"  GPU {gpu.index}: {gpu.name}\n")
-            self.output_text.insert(tk.END, f"    Memory: {gpu.mem_total_gb} GB total, {gpu.mem_free//1024} GB free\n")
+            self.output_text.insert(
+                tk.END, f"    Memory: {gpu.mem_total_gb} GB total, {gpu.mem_free//1024} GB free\n"
+            )
 
         # Add optimization info
         self.output_text.insert(tk.END, "\nOPTIMIZATION RESULTS:\n")
         self.output_text.insert(tk.END, f"  Recommended Split: {split}\n")
-        self.output_text.insert(tk.END, f"  Tensor Fractions: {', '.join(str(f) for f in fractions)}\n")
+        self.output_text.insert(
+            tk.END, f"  Tensor Fractions: {', '.join(str(f) for f in fractions)}\n"
+        )
 
         # Add commands
         self.output_text.insert(tk.END, "\nCOMMANDS:\n")
-        self.output_text.insert(tk.END, f"  llama.cpp:\n    {llama_command(model_path, ctx_size, split)}\n\n")
-        self.output_text.insert(tk.END, f"  vLLM:\n    {vllm_command(model_path, len(self.gpus))}\n")
+        self.output_text.insert(
+            tk.END, f"  llama.cpp:\n    {llama_command(model_path, ctx_size, split)}\n\n"
+        )
+        self.output_text.insert(
+            tk.END, f"  vLLM:\n    {vllm_command(model_path, len(self.gpus))}\n"
+        )
 
 
 def main():
@@ -195,6 +210,7 @@ def main():
         with open(log_dir / "simple_launcher.log", "w") as f:
             f.write(f"Error: {e}\n")
             import traceback
+
             f.write(traceback.format_exc())
         return 1
 

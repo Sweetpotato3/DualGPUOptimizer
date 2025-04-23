@@ -7,8 +7,7 @@ for different model frameworks and architectures.
 from __future__ import annotations
 
 import logging
-import os
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Optional
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.optimizer import calculate_gpu_split
@@ -24,15 +23,16 @@ class ParameterResolver:
     def resolve_llama_parameters(
         self,
         model_path: str,
-        gpus: List[GPU],
+        gpus: list[GPU],
         ctx_size: int,
         batch_size: int = 1,
-        threads: int = 4
-    ) -> Dict[str, Any]:
+        threads: int = 4,
+    ) -> dict[str, Any]:
         """
         Resolve optimal parameters for llama.cpp.
 
         Args:
+        ----
             model_path: Path to the model file
             gpus: List of available GPUs
             ctx_size: Context size for model
@@ -40,6 +40,7 @@ class ParameterResolver:
             threads: Number of CPU threads
 
         Returns:
+        -------
             Dictionary of resolved parameters
         """
         # This is a placeholder for the actual implementation
@@ -54,26 +55,28 @@ class ParameterResolver:
             "ctx_size": ctx_size,
             "gpu_split": split_str,
             "batch_size": batch_size,
-            "threads": threads
+            "threads": threads,
         }
 
     def resolve_vllm_parameters(
         self,
         model_path: str,
-        gpus: List[GPU],
+        gpus: list[GPU],
         max_memory: Optional[str] = None,
-        tensor_parallel_size: Optional[int] = None
-    ) -> Dict[str, Any]:
+        tensor_parallel_size: Optional[int] = None,
+    ) -> dict[str, Any]:
         """
         Resolve optimal parameters for vLLM.
 
         Args:
+        ----
             model_path: Path to the model file
             gpus: List of available GPUs
             max_memory: Maximum memory to use
             tensor_parallel_size: Tensor parallel size
 
         Returns:
+        -------
             Dictionary of resolved parameters
         """
         # This is a placeholder for the actual implementation
@@ -86,17 +89,19 @@ class ParameterResolver:
         return {
             "model_path": model_path,
             "tensor_parallel_size": tensor_parallel_size,
-            "max_memory": max_memory or "auto"
+            "max_memory": max_memory or "auto",
         }
 
-    def generate_llama_command(self, parameters: Dict[str, Any]) -> str:
+    def generate_llama_command(self, parameters: dict[str, Any]) -> str:
         """
         Generate llama.cpp command line.
 
         Args:
+        ----
             parameters: Launch parameters
 
         Returns:
+        -------
             Formatted command string
         """
         model_path = parameters["model_path"]
@@ -113,14 +118,16 @@ class ParameterResolver:
             f"--threads {threads}"
         )
 
-    def generate_vllm_command(self, parameters: Dict[str, Any]) -> str:
+    def generate_vllm_command(self, parameters: dict[str, Any]) -> str:
         """
         Generate vLLM command line.
 
         Args:
+        ----
             parameters: Launch parameters
 
         Returns:
+        -------
             Formatted command string
         """
         model_path = parameters["model_path"]

@@ -13,9 +13,11 @@ logger = logging.getLogger("DualGPUOpt.ErrorUI")
 
 
 def show_error_dialog(title: str, message: str, details: Optional[str] = None) -> None:
-    """Show an error dialog to the user
+    """
+    Show an error dialog to the user
 
     Args:
+    ----
         title: Dialog title
         message: Main error message
         details: Optional technical details
@@ -58,9 +60,11 @@ def show_error_dialog(title: str, message: str, details: Optional[str] = None) -
 
 
 def show_warning_dialog(title: str, message: str) -> None:
-    """Show a warning dialog to the user
+    """
+    Show a warning dialog to the user
 
     Args:
+    ----
         title: Dialog title
         message: Warning message
     """
@@ -98,11 +102,13 @@ def create_error_status_widget(parent, width: int = 20, height: int = 5) -> tupl
     Create a widget to display error status in the UI
 
     Args:
+    ----
         parent: Parent widget
         width: Width of the widget
         height: Height of the widget
 
     Returns:
+    -------
         Tuple containing (widget, update_function)
     """
     try:
@@ -137,6 +143,7 @@ def create_error_status_widget(parent, width: int = 20, height: int = 5) -> tupl
         logger.error(f"Failed to create error status widget: {e}")
         # Return dummy widget and function
         dummy_frame = parent
+
         def dummy_update(error_text: str, tag: Optional[str] = None):
             logger.info(f"Would display: {error_text}")
 
@@ -148,10 +155,11 @@ def register_ui_callbacks(error_callback: Callable) -> None:
     Register UI callbacks for error handling
 
     Args:
+    ----
         error_callback: Function to call when an error occurs
     """
-    from dualgpuopt.error_handler.handler import get_error_handler
     from dualgpuopt.error_handler.base import ErrorSeverity
+    from dualgpuopt.error_handler.handler import get_error_handler
 
     # Get the error handler
     handler = get_error_handler()

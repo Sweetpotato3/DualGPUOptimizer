@@ -34,4 +34,4 @@ clean:
 	rm -rf .pytest_cache/
 	rm -rf __pycache__/
 	rm -rf dualgpuopt/__pycache__/
-	find . -name "*.pyc" -delete 
+	find . -name "*.pyc" -delete

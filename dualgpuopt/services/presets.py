@@ -8,7 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-from typing import Any, Dict, List
+from typing import Any
 
 from PySide6 import QtCore as QtC
 from PySide6 import QtWidgets as QtW
@@ -22,13 +22,13 @@ class PresetManager:
         self.preset_dir.mkdir(parents=True, exist_ok=True)
         logger.info(f"Preset directory: {self.preset_dir}")
 
-    def get_all_presets(self) -> List[str]:
+    def get_all_presets(self) -> list[str]:
         """Return list of available preset names"""
         presets = [p.stem for p in self.preset_dir.glob("*.json")]
         logger.debug(f"Found {len(presets)} presets: {presets}")
         return presets
 
-    def load_preset(self, name: str) -> Dict[str, Any]:
+    def load_preset(self, name: str) -> dict[str, Any]:
         """Load preset by name"""
         path = self.preset_dir / f"{name}.json"
         if not path.exists():
@@ -36,7 +36,7 @@ class PresetManager:
             return {}
 
         try:
-            with open(path, "r", encoding="utf-8") as f:
+            with open(path, encoding="utf-8") as f:
                 data = json.load(f)
                 logger.info(f"Loaded preset '{name}' with {len(data)} keys")
                 return data
@@ -44,7 +44,7 @@ class PresetManager:
             logger.error(f"Error loading preset {name}: {e}")
             return {}
 
-    def save_preset(self, name: str, data: Dict[str, Any]) -> None:
+    def save_preset(self, name: str, data: dict[str, Any]) -> None:
         """Save preset data"""
         path = self.preset_dir / f"{name}.json"
         try:
@@ -225,7 +225,7 @@ class PresetDock(QtW.QDockWidget):
             self.manager.delete_preset(name)
             self._refresh_list()
 
-    def save_current_state(self, name: str, data: Dict[str, Any]):
+    def save_current_state(self, name: str, data: dict[str, Any]):
         """Save current state as preset"""
         self.manager.save_preset(name, data)
         self._refresh_list()

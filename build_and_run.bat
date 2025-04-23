@@ -11,4 +11,4 @@ if not exist dist\DualGPUOptimizer.exe (
 echo.
 echo Build successful! Running the application...
 echo.
-start "" "dist\DualGPUOptimizer.exe" 
+start "" "dist\DualGPUOptimizer.exe"

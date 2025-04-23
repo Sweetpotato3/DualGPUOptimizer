@@ -140,25 +140,25 @@ class DualGPUDashboard(QtW.QMainWindow):
         export_menu.addAction(
             "Export Utilization as PNG",
             lambda: self.util_plot.export_png(
-                str(Path.home() / ".dualgpuopt" / "exports" / "utilization.png")
+                str(Path.home() / ".dualgpuopt" / "exports" / "utilization.png"),
             ),
         )
         export_menu.addAction(
             "Export VRAM as PNG",
             lambda: self.vram_plot.export_png(
-                str(Path.home() / ".dualgpuopt" / "exports" / "vram.png")
+                str(Path.home() / ".dualgpuopt" / "exports" / "vram.png"),
             ),
         )
         export_menu.addAction(
             "Export Utilization as CSV",
             lambda: self.util_plot.export_csv(
-                str(Path.home() / ".dualgpuopt" / "exports" / "utilization.csv")
+                str(Path.home() / ".dualgpuopt" / "exports" / "utilization.csv"),
             ),
         )
         export_menu.addAction(
             "Export VRAM as CSV",
             lambda: self.vram_plot.export_csv(
-                str(Path.home() / ".dualgpuopt" / "exports" / "vram.csv")
+                str(Path.home() / ".dualgpuopt" / "exports" / "vram.csv"),
             ),
         )
 
@@ -227,7 +227,6 @@ class DualGPUDashboard(QtW.QMainWindow):
     def _subscribe_events(self):
         """Subscribe to events from the event bus."""
         # Add event bus subscriptions here
-        pass
 
     def _on_metric_updated(self, metric: str, value: float):
         """Handler for metric update signals from telemetry worker."""

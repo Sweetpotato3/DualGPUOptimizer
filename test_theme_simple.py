@@ -11,20 +11,9 @@ logger = logging.getLogger("ThemeTest")
 try:
     logger.info("Testing imports from dualgpuopt.gui.theme...")
 
-    from dualgpuopt.gui.theme.colors import (
-        current_theme,
-        AVAILABLE_THEMES,
-        THEME_DARK_PURPLE
-    )
-
-    from dualgpuopt.gui.theme.dpi import (
-        FONT_SCALE,
-        DEFAULT_FONT_SIZE
-    )
-
-    from dualgpuopt.gui.theme.core import (
-        get_theme_path
-    )
+    from dualgpuopt.gui.theme.colors import AVAILABLE_THEMES, THEME_DARK_PURPLE, current_theme
+    from dualgpuopt.gui.theme.core import get_theme_path
+    from dualgpuopt.gui.theme.dpi import DEFAULT_FONT_SIZE, FONT_SCALE
 
     logger.info("Import test successful!")
     logger.info(f"Current theme has {len(current_theme)} properties")
@@ -40,10 +29,8 @@ except ImportError as e:
 try:
     logger.info("\nTesting backward compatibility imports...")
 
-    from dualgpuopt.gui.theme import (
-        current_theme as original_current_theme,
-        AVAILABLE_THEMES as original_AVAILABLE_THEMES
-    )
+    from dualgpuopt.gui.theme import AVAILABLE_THEMES as original_AVAILABLE_THEMES
+    from dualgpuopt.gui.theme import current_theme as original_current_theme
 
     logger.info("Backward compatibility test successful!")
     logger.info(f"Original current theme has {len(original_current_theme)} properties")
@@ -51,7 +38,9 @@ try:
 
     # Verify the objects are the same
     logger.info(f"Current theme is the same object: {current_theme is original_current_theme}")
-    logger.info(f"AVAILABLE_THEMES is the same object: {AVAILABLE_THEMES is original_AVAILABLE_THEMES}")
+    logger.info(
+        f"AVAILABLE_THEMES is the same object: {AVAILABLE_THEMES is original_AVAILABLE_THEMES}"
+    )
 
 except ImportError as e:
     logger.error(f"Backward compatibility test failed: {e}")

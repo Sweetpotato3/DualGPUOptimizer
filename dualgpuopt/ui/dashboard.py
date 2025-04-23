@@ -27,7 +27,7 @@ try:
 except ImportError as e:
     print(f"Error importing modules: {e}")
     print(
-        "Ensure the files exist in the expected dualgpuopt/services and dualgpuopt/ui directories."
+        "Ensure the files exist in the expected dualgpuopt/services and dualgpuopt/ui directories.",
     )
     sys.exit(1)
 
@@ -106,7 +106,7 @@ class Dashboard(QMainWindow):
         try:
             # Update status to show we're applying preset
             self.statusBar().showMessage(
-                f"Applying preset: {preset_data.get('name', 'Unnamed')}..."
+                f"Applying preset: {preset_data.get('name', 'Unnamed')}...",
             )
 
             # Apply model path and settings to the engine
@@ -125,10 +125,11 @@ class Dashboard(QMainWindow):
 
             # Update status to success
             self.statusBar().showMessage(
-                f"Preset '{preset_data.get('name', 'Unnamed')}' applied successfully", 3000
+                f"Preset '{preset_data.get('name', 'Unnamed')}' applied successfully",
+                3000,
             )
         except Exception as e:
-            alert_service.alert("CRITICAL", f"Failed to apply preset: {str(e)}")
+            alert_service.alert("CRITICAL", f"Failed to apply preset: {e!s}")
 
     def _update_util_display(self, value: float):
         # Forward the utilization update to the dashboard tab
@@ -188,7 +189,10 @@ class Dashboard(QMainWindow):
 
             # Ask for save location
             file_path, _ = QFileDialog.getSaveFileName(
-                self, "Save Dashboard View", "dashboard.png", "PNG Files (*.png)"
+                self,
+                "Save Dashboard View",
+                "dashboard.png",
+                "PNG Files (*.png)",
             )
 
             if file_path:

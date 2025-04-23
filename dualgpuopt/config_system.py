@@ -8,42 +8,48 @@ This module provides centralized configuration management for all aspects of the
 - Models configuration
 - System settings
 """
-import os
 import json
 import logging
-from typing import Dict, Any, Optional, List, Set, Union
-from pathlib import Path
+import os
 import threading
 from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
 
 logger = logging.getLogger("DualGPUOpt.Config")
 
 # Default configuration directories
-if os.name == 'nt':  # Windows
-    DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.dualgpuopt')
+if os.name == "nt":  # Windows
+    DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".dualgpuopt")
 else:  # Unix-like
-    DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser('~'), '.config', 'dualgpuopt')
+    DEFAULT_CONFIG_DIR = os.path.join(os.path.expanduser("~"), ".config", "dualgpuopt")
 
 # Environment variable for config directory override
 CONFIG_DIR_ENV = "DUALGPUOPT_CONFIG_DIR"
 
+
 # Define configuration keys with categories
 class ConfigCategory(Enum):
     """Categories for configuration settings"""
+
     CORE = "core"
     GPU = "gpu"
     UI = "ui"
     MODELS = "models"
     SYSTEM = "system"
 
+
 class ConfigKey:
     """Configuration keys with metadata"""
-    def __init__(self,
-                 name: str,
-                 category: ConfigCategory,
-                 default_value: Any,
-                 description: str = "",
-                 validator: Optional[callable] = None):
+
+    def __init__(
+        self,
+        name: str,
+        category: ConfigCategory,
+        default_value: Any,
+        description: str = "",
+        validator: Optional[callable] = None,
+    ):
         self.name = name
         self.category = category
         self.default_value = default_value
@@ -54,12 +60,15 @@ class ConfigKey:
         return f"{self.category.value}.{self.name}"
 
     def validate(self, value: Any) -> bool:
-        """Validate a value for this configuration key
+        """
+        Validate a value for this configuration key
 
         Args:
+        ----
             value: Value to validate
 
         Returns:
+        -------
             True if valid, False otherwise
         """
         if self.validator is None:
@@ -70,13 +79,14 @@ class ConfigKey:
         except Exception:
             return False
 
+
 # Core settings
 MOCK_GPU = ConfigKey(
     "mock_gpu",
     ConfigCategory.CORE,
     False,
     "Enable mock GPU mode for testing without real GPUs",
-    lambda x: isinstance(x, bool)
+    lambda x: isinstance(x, bool),
 )
 
 VERBOSE_LOGGING = ConfigKey(
@@ -84,7 +94,7 @@ VERBOSE_LOGGING = ConfigKey(
     ConfigCategory.CORE,
     False,
     "Enable verbose logging",
-    lambda x: isinstance(x, bool)
+    lambda x: isinstance(x, bool),
 )
 
 # GPU settings
@@ -93,7 +103,7 @@ GPU_COUNT = ConfigKey(
     ConfigCategory.GPU,
     None,
     "Override detected GPU count (None for auto-detect)",
-    lambda x: x is None or (isinstance(x, int) and x > 0)
+    lambda x: x is None or (isinstance(x, int) and x > 0),
 )
 
 POLL_INTERVAL = ConfigKey(
@@ -101,7 +111,7 @@ POLL_INTERVAL = ConfigKey(
     ConfigCategory.GPU,
     1.0,
     "Telemetry polling interval in seconds",
-    lambda x: isinstance(x, (int, float)) and x > 0
+    lambda x: isinstance(x, (int, float)) and x > 0,
 )
 
 # UI settings
@@ -110,7 +120,7 @@ THEME = ConfigKey(
     ConfigCategory.UI,
     "default",
     "UI theme name",
-    lambda x: isinstance(x, str)
+    lambda x: isinstance(x, str),
 )
 
 FONT_SIZE = ConfigKey(
@@ -118,7 +128,7 @@ FONT_SIZE = ConfigKey(
     ConfigCategory.UI,
     12,
     "Base font size for UI",
-    lambda x: isinstance(x, int) and 8 <= x <= 24
+    lambda x: isinstance(x, int) and 8 <= x <= 24,
 )
 
 # Models settings
@@ -127,7 +137,7 @@ DEFAULT_MODEL_PATH = ConfigKey(
     ConfigCategory.MODELS,
     "",
     "Default model path",
-    lambda x: isinstance(x, str)
+    lambda x: isinstance(x, str),
 )
 
 MODEL_PRESETS = ConfigKey(
@@ -135,7 +145,7 @@ MODEL_PRESETS = ConfigKey(
     ConfigCategory.MODELS,
     {},
     "Dictionary of model presets",
-    lambda x: isinstance(x, dict)
+    lambda x: isinstance(x, dict),
 )
 
 # System settings
@@ -144,7 +154,7 @@ MAX_RECOVERY_ATTEMPTS = ConfigKey(
     ConfigCategory.SYSTEM,
     3,
     "Maximum recovery attempts for errors",
-    lambda x: isinstance(x, int) and x >= 0
+    lambda x: isinstance(x, int) and x >= 0,
 )
 
 MEMORY_SAFETY_MARGIN = ConfigKey(
@@ -152,7 +162,7 @@ MEMORY_SAFETY_MARGIN = ConfigKey(
     ConfigCategory.SYSTEM,
     0.1,
     "Memory safety margin (0.0-1.0)",
-    lambda x: isinstance(x, (int, float)) and 0 <= x <= 1
+    lambda x: isinstance(x, (int, float)) and 0 <= x <= 1,
 )
 
 # All configuration keys
@@ -160,19 +170,15 @@ ALL_CONFIG_KEYS = [
     # Core
     MOCK_GPU,
     VERBOSE_LOGGING,
-
     # GPU
     GPU_COUNT,
     POLL_INTERVAL,
-
     # UI
     THEME,
     FONT_SIZE,
-
     # Models
     DEFAULT_MODEL_PATH,
     MODEL_PRESETS,
-
     # System
     MAX_RECOVERY_ATTEMPTS,
     MEMORY_SAFETY_MARGIN,
@@ -181,25 +187,32 @@ ALL_CONFIG_KEYS = [
 # Create a lookup dictionary for faster access
 CONFIG_KEYS_DICT = {str(key): key for key in ALL_CONFIG_KEYS}
 
+
 class ConfigChangeEvent:
     """Event for configuration changes"""
+
     def __init__(self, key: str, old_value: Any, new_value: Any):
         self.key = key
         self.old_value = old_value
         self.new_value = new_value
 
+
 class ConfigChangeListener:
     """Base class for configuration change listeners"""
+
     def on_config_changed(self, event: ConfigChangeEvent) -> None:
-        """Called when a configuration value changes
+        """
+        Called when a configuration value changes
 
         Args:
+        ----
             event: Configuration change event
         """
-        pass
+
 
 class ConfigurationSystem:
     """Centralized configuration system"""
+
     _instance = None
     _lock = threading.Lock()
 
@@ -212,9 +225,11 @@ class ConfigurationSystem:
             return cls._instance
 
     def __init__(self, config_dir: Optional[str] = None):
-        """Initialize the configuration system
+        """
+        Initialize the configuration system
 
         Args:
+        ----
             config_dir: Directory for configuration files
         """
         # Skip initialization if already initialized
@@ -247,7 +262,7 @@ class ConfigurationSystem:
             return
 
         try:
-            with open(self.config_file, "r") as f:
+            with open(self.config_file) as f:
                 self._config_data = json.load(f)
             logger.info(f"Loaded configuration from {self.config_file}")
         except Exception as e:
@@ -270,9 +285,11 @@ class ConfigurationSystem:
         self._save_config()
 
     def _save_config(self) -> bool:
-        """Save configuration to file
+        """
+        Save configuration to file
 
-        Returns:
+        Returns
+        -------
             True if successful, False otherwise
         """
         try:
@@ -285,13 +302,16 @@ class ConfigurationSystem:
             return False
 
     def get(self, key: Union[ConfigKey, str], default: Any = None) -> Any:
-        """Get a configuration value
+        """
+        Get a configuration value
 
         Args:
+        ----
             key: Configuration key or string representation
             default: Default value if not found
 
         Returns:
+        -------
             Configuration value or default if not found
         """
         # Convert string key to ConfigKey object if needed
@@ -313,13 +333,16 @@ class ConfigurationSystem:
         return self._config_data[category][config_key.name]
 
     def set(self, key: Union[ConfigKey, str], value: Any) -> bool:
-        """Set a configuration value
+        """
+        Set a configuration value
 
         Args:
+        ----
             key: Configuration key or string representation
             value: New value
 
         Returns:
+        -------
             True if successful, False otherwise
         """
         # Convert string key to ConfigKey object if needed
@@ -353,10 +376,14 @@ class ConfigurationSystem:
 
         return success
 
-    def register_listener(self, key: Union[ConfigKey, str, None], listener: ConfigChangeListener) -> None:
-        """Register a listener for configuration changes
+    def register_listener(
+        self, key: Union[ConfigKey, str, None], listener: ConfigChangeListener
+    ) -> None:
+        """
+        Register a listener for configuration changes
 
         Args:
+        ----
             key: Configuration key to listen for changes to, or None for all changes
             listener: Listener to register
         """
@@ -367,14 +394,19 @@ class ConfigurationSystem:
 
         self._listeners[key_str].append(listener)
 
-    def unregister_listener(self, key: Union[ConfigKey, str, None], listener: ConfigChangeListener) -> bool:
-        """Unregister a listener
+    def unregister_listener(
+        self, key: Union[ConfigKey, str, None], listener: ConfigChangeListener
+    ) -> bool:
+        """
+        Unregister a listener
 
         Args:
+        ----
             key: Configuration key the listener was registered for, or None for all changes
             listener: Listener to unregister
 
         Returns:
+        -------
             True if the listener was found and removed, False otherwise
         """
         key_str = str(key) if key is not None else "*"
@@ -389,9 +421,11 @@ class ConfigurationSystem:
             return False
 
     def _notify_listeners(self, key: str, old_value: Any, new_value: Any) -> None:
-        """Notify listeners of a configuration change
+        """
+        Notify listeners of a configuration change
 
         Args:
+        ----
             key: Key that changed
             old_value: Old value
             new_value: New value
@@ -415,12 +449,15 @@ class ConfigurationSystem:
                     logger.error(f"Error in configuration listener: {e}")
 
     def reset_to_defaults(self, category: Optional[ConfigCategory] = None) -> bool:
-        """Reset configuration to defaults
+        """
+        Reset configuration to defaults
 
         Args:
+        ----
             category: Category to reset, or None for all categories
 
         Returns:
+        -------
             True if successful, False otherwise
         """
         if category is None:
@@ -447,9 +484,11 @@ class ConfigurationSystem:
         return self._save_config()
 
     def get_all_settings(self) -> Dict[str, Any]:
-        """Get all configuration settings as a flat dictionary
+        """
+        Get all configuration settings as a flat dictionary
 
-        Returns:
+        Returns
+        -------
             Dictionary of all settings
         """
         result = {}
@@ -460,12 +499,15 @@ class ConfigurationSystem:
         return result
 
     def import_from_dict(self, config_dict: Dict[str, Any]) -> bool:
-        """Import configuration from a dictionary
+        """
+        Import configuration from a dictionary
 
         Args:
+        ----
             config_dict: Dictionary of configuration values
 
         Returns:
+        -------
             True if successful, False otherwise
         """
         success = True
@@ -478,12 +520,15 @@ class ConfigurationSystem:
         return success
 
     def export_to_file(self, file_path: str) -> bool:
-        """Export configuration to a file
+        """
+        Export configuration to a file
 
         Args:
+        ----
             file_path: Path to export to
 
         Returns:
+        -------
             True if successful, False otherwise
         """
         try:
@@ -495,16 +540,19 @@ class ConfigurationSystem:
             return False
 
     def import_from_file(self, file_path: str) -> bool:
-        """Import configuration from a file
+        """
+        Import configuration from a file
 
         Args:
+        ----
             file_path: Path to import from
 
         Returns:
+        -------
             True if successful, False otherwise
         """
         try:
-            with open(file_path, "r") as f:
+            with open(file_path) as f:
                 new_config = json.load(f)
 
             # Validate and merge configuration
@@ -531,37 +579,48 @@ class ConfigurationSystem:
             logger.error(f"Failed to import configuration: {e}")
             return False
 
+
 # Global instance getter
 def get_config_system() -> ConfigurationSystem:
-    """Get the global configuration system instance
+    """
+    Get the global configuration system instance
 
-    Returns:
+    Returns
+    -------
         ConfigurationSystem instance
     """
     return ConfigurationSystem()
 
+
 # Shorthand function for getting configuration values
 def get_config(key: Union[ConfigKey, str], default: Any = None) -> Any:
-    """Get a configuration value
+    """
+    Get a configuration value
 
     Args:
+    ----
         key: Configuration key or string representation
         default: Default value if not found
 
     Returns:
+    -------
         Configuration value or default if not found
     """
     return get_config_system().get(key, default)
 
+
 # Shorthand function for setting configuration values
 def set_config(key: Union[ConfigKey, str], value: Any) -> bool:
-    """Set a configuration value
+    """
+    Set a configuration value
 
     Args:
+    ----
         key: Configuration key or string representation
         value: New value
 
     Returns:
+    -------
         True if successful, False otherwise
     """
     return get_config_system().set(key, value)

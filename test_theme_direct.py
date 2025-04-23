@@ -1,17 +1,18 @@
 """
 Direct test of theme module components without application initialization
 """
-import sys
 import logging
+import sys
 from pathlib import Path
 
 # Configure logging with timestamp and level
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("ThemeDirectTest")
+
 
 def test_colors_module():
     """Test the colors module"""
@@ -21,11 +22,10 @@ def test_colors_module():
         # Direct import from colors.py
         sys.path.insert(0, str(Path(__file__).resolve().parent))
         from dualgpuopt.gui.theme.colors import (
-            current_theme,
             AVAILABLE_THEMES,
-            THEME_DARK_PURPLE,
+            current_theme,
             get_theme_by_name,
-            update_current_theme
+            update_current_theme,
         )
 
         # Verify the module is working
@@ -47,17 +47,14 @@ def test_colors_module():
         logger.error(f"Colors module test failed: {e}")
         return False
 
+
 def test_dpi_module():
     """Test the DPI module"""
     try:
         logger.info("Testing theme DPI module...")
 
         # Direct import from dpi.py
-        from dualgpuopt.gui.theme.dpi import (
-            FONT_SCALE,
-            DEFAULT_FONT_SIZE,
-            scale_font_size
-        )
+        from dualgpuopt.gui.theme.dpi import DEFAULT_FONT_SIZE, FONT_SCALE, scale_font_size
 
         # Verify the module is working
         logger.info(f"Font scale: {FONT_SCALE}")
@@ -69,15 +66,14 @@ def test_dpi_module():
         logger.error(f"DPI module test failed: {e}")
         return False
 
+
 def test_core_module():
     """Test the core module"""
     try:
         logger.info("Testing theme core module...")
 
         # Direct import from core.py
-        from dualgpuopt.gui.theme.core import (
-            get_theme_path
-        )
+        from dualgpuopt.gui.theme.core import get_theme_path
 
         # Verify the module is working
         logger.info(f"Theme path: {get_theme_path()}")
@@ -86,6 +82,7 @@ def test_core_module():
     except Exception as e:
         logger.error(f"Core module test failed: {e}")
         return False
+
 
 if __name__ == "__main__":
     logger.info("Starting direct theme module tests...")

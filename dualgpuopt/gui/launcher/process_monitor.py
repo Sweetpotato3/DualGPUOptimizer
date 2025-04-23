@@ -6,11 +6,10 @@ This module handles monitoring and management of running model processes.
 from __future__ import annotations
 
 import logging
-import os
 import subprocess
 import threading
 import time
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from typing import Callable, Optional
 
 from dualgpuopt.services.event_service import event_bus
 
@@ -21,27 +20,29 @@ class ProcessMonitor:
     def __init__(self) -> None:
         """Initialize the process monitor."""
         self.logger = logging.getLogger("dualgpuopt.gui.launcher.process")
-        self.active_monitors: Dict[str, threading.Thread] = {}
-        self.stop_events: Dict[str, threading.Event] = {}
-        self.processes: Dict[str, subprocess.Popen] = {}
+        self.active_monitors: dict[str, threading.Thread] = {}
+        self.stop_events: dict[str, threading.Event] = {}
+        self.processes: dict[str, subprocess.Popen] = {}
 
     def start_monitoring(
         self,
         process_id: str,
         process: subprocess.Popen,
         on_exit: Optional[Callable[[str, int], None]] = None,
-        interval: float = 1.0
+        interval: float = 1.0,
     ) -> bool:
         """
         Start monitoring a process.
 
         Args:
+        ----
             process_id: ID for the process
             process: Subprocess Popen object
             on_exit: Callback to execute when process exits
             interval: Monitoring interval in seconds
 
         Returns:
+        -------
             True if monitoring started, False otherwise
         """
         if process_id in self.active_monitors:
@@ -59,7 +60,7 @@ class ProcessMonitor:
         monitor_thread = threading.Thread(
             target=self._monitor_process,
             args=(process_id, process, stop_event, on_exit, interval),
-            daemon=True
+            daemon=True,
         )
         monitor_thread.start()
 
@@ -74,9 +75,11 @@ class ProcessMonitor:
         Stop monitoring a process.
 
         Args:
+        ----
             process_id: ID of the process to stop monitoring
 
         Returns:
+        -------
             True if stopped, False if not found
         """
         if process_id not in self.stop_events:
@@ -103,9 +106,11 @@ class ProcessMonitor:
         Terminate a running process.
 
         Args:
+        ----
             process_id: ID of the process to terminate
 
         Returns:
+        -------
             True if terminated, False if not found
         """
         if process_id not in self.processes:
@@ -145,12 +150,13 @@ class ProcessMonitor:
         process: subprocess.Popen,
         stop_event: threading.Event,
         on_exit: Optional[Callable[[str, int], None]],
-        interval: float
+        interval: float,
     ) -> None:
         """
         Monitor a process until it exits or monitoring is stopped.
 
         Args:
+        ----
             process_id: ID of the process
             process: Subprocess Popen object
             stop_event: Event to signal monitoring should stop
@@ -174,10 +180,13 @@ class ProcessMonitor:
                         self.logger.error(f"Error in process exit callback: {e}")
 
                 # Publish event
-                event_bus.publish("process_exited", {
-                    "process_id": process_id,
-                    "return_code": return_code
-                })
+                event_bus.publish(
+                    "process_exited",
+                    {
+                        "process_id": process_id,
+                        "return_code": return_code,
+                    },
+                )
 
                 # Remove from processes
                 if process_id in self.processes:
@@ -197,21 +206,26 @@ class ProcessMonitor:
         Read and log process output if available.
 
         Args:
+        ----
             process: Subprocess Popen object
         """
         # Only try to read if stdout/stderr are pipes
-        if process.stdout and hasattr(process.stdout, 'readline'):
+        if process.stdout and hasattr(process.stdout, "readline"):
             try:
                 line = process.stdout.readline()
                 if line:
-                    self.logger.debug(f"Process output: {line.decode('utf-8', errors='replace').strip()}")
+                    self.logger.debug(
+                        f"Process output: {line.decode('utf-8', errors='replace').strip()}"
+                    )
             except Exception:
                 pass
 
-        if process.stderr and hasattr(process.stderr, 'readline'):
+        if process.stderr and hasattr(process.stderr, "readline"):
             try:
                 line = process.stderr.readline()
                 if line:
-                    self.logger.warning(f"Process error: {line.decode('utf-8', errors='replace').strip()}")
+                    self.logger.warning(
+                        f"Process error: {line.decode('utf-8', errors='replace').strip()}"
+                    )
             except Exception:
                 pass

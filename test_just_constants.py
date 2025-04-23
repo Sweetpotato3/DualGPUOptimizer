@@ -3,7 +3,6 @@
 Test script that imports only the constants module directly
 """
 import importlib.util
-import sys
 from pathlib import Path
 
 # Direct import without going through __init__.py
@@ -13,7 +12,8 @@ if constants_path.exists():
 
     try:
         spec = importlib.util.spec_from_file_location(
-            "constants", str(constants_path)
+            "constants",
+            str(constants_path),
         )
         constants = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(constants)
@@ -21,7 +21,7 @@ if constants_path.exists():
         print("Constants module loaded successfully!")
         print(f"APP_NAME: {constants.APP_NAME}")
         print(f"THEME: {constants.THEME}")
-        if hasattr(constants, 'GPU_COLORS'):
+        if hasattr(constants, "GPU_COLORS"):
             print(f"GPU_COLORS: {constants.GPU_COLORS}")
     except Exception as e:
         print(f"Error loading constants directly: {e}")

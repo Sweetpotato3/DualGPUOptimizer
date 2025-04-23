@@ -1,14 +1,16 @@
 """
 Test suite for the optimizer module.
 """
-import os
-import tempfile
-from pathlib import Path
-from unittest import mock
 
 import pytest
 
-from dualgpuopt.optimizer import split_string, tensor_fractions, llama_command, vllm_command, make_env_file
+from dualgpuopt.optimizer import (
+    split_string,
+    tensor_fractions,
+    llama_command,
+    vllm_command,
+    make_env_file,
+)
 from dualgpuopt.gpu_info import GPU
 
 
@@ -27,7 +29,7 @@ def mock_gpus_mixed():
     return [
         GPU(0, "NVIDIA RTX 4090", 24576, 24000),  # 24GB GPU
         GPU(1, "NVIDIA RTX 3080", 10240, 10000),  # 10GB GPU
-        GPU(2, "NVIDIA A100", 40960, 40000),      # 40GB GPU
+        GPU(2, "NVIDIA A100", 40960, 40000),  # 40GB GPU
     ]
 
 
@@ -55,7 +57,7 @@ def test_tensor_fractions_mixed(mock_gpus_mixed):
     fractions = tensor_fractions(mock_gpus_mixed)
     assert len(fractions) == 3
     assert fractions[0] == pytest.approx(0.6, abs=0.01)  # 24GB / 40GB
-    assert fractions[1] == pytest.approx(0.25, abs=0.01) # 10GB / 40GB
+    assert fractions[1] == pytest.approx(0.25, abs=0.01)  # 10GB / 40GB
     assert fractions[2] == pytest.approx(1.0, abs=0.01)  # 40GB / 40GB
 
 

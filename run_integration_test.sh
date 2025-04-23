@@ -10,4 +10,4 @@ export DUALGPUOPT_MOCK_GPU=1
 python test_signal_telemetry.py
 
 echo ""
-echo "Test complete." 
+echo "Test complete."

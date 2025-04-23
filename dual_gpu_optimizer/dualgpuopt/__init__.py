@@ -4,7 +4,6 @@ DualGPUOptimizer - A tool for optimizing dual GPU setups.
 from __future__ import annotations
 
 import os
-import sys
 
 # Version information
 VERSION = "0.2.0"
@@ -12,14 +11,17 @@ VERSION = "0.2.0"
 # Expose version as package attribute
 __version__ = VERSION
 
+
 # Set environment variable for mock mode if requested
 def enable_mock_mode():
     """Enable mock mode for testing without real GPUs."""
     os.environ["DGPUOPT_MOCK_GPUS"] = "1"
 
+
 def is_mock_mode_enabled():
     """Check if mock mode is enabled."""
     return os.environ.get("DGPUOPT_MOCK_GPUS") == "1"
+
 
 # Define public API
 __all__ = [

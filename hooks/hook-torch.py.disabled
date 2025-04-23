@@ -23,4 +23,4 @@ excludedimports = [
 ]
 
 # Copy CUDA/MKL DLLs shipped in wheel/.libs (Windows) or .so files (Linux)
-binaries = collect_dynamic_libs("torch") 
+binaries = collect_dynamic_libs("torch")

@@ -5,19 +5,20 @@ These tests verify the functionality of the error handling system,
 including core components, decorators, and UI integration.
 """
 
-import unittest
-from unittest.mock import MagicMock, patch, call
 import sys
-import logging
+import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 # Add the parent directory to sys.path to make dualgpuopt importable
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from dualgpuopt.error_handler import (
-    ErrorCategory, ErrorDetails, ErrorSeverity,
-    handle_exceptions, track_errors,
-    get_error_handler
+    ErrorCategory,
+    ErrorDetails,
+    ErrorSeverity,
+    handle_exceptions,
+    track_errors,
 )
 
 
@@ -78,7 +79,7 @@ class TestErrorHandler(unittest.TestCase):
         """Set up test environment, reset cached modules"""
         # Clear any modules loaded by previous tests
         modules_to_clear = [
-            'dualgpuopt.error_handler',
+            "dualgpuopt.error_handler",
         ]
         for module in modules_to_clear:
             if module in sys.modules:
@@ -86,11 +87,12 @@ class TestErrorHandler(unittest.TestCase):
 
         # Import error handler
         from dualgpuopt.error_handler import ErrorCategory, ErrorSeverity
+
         self.ErrorCategory = ErrorCategory
         self.ErrorSeverity = ErrorSeverity
 
         # Patch logging
-        self.log_patcher = patch('dualgpuopt.error_handler.logging')
+        self.log_patcher = patch("dualgpuopt.error_handler.logging")
         self.mock_logging = self.log_patcher.start()
         self.mock_logger = MagicMock()
         self.mock_logging.getLogger.return_value = self.mock_logger
@@ -120,9 +122,11 @@ class TestErrorHandler(unittest.TestCase):
         from dualgpuopt.error_handler import handle_exceptions
 
         # Create a test function that raises an exception
-        @handle_exceptions(category=self.ErrorCategory.GPU,
-                          severity=self.ErrorSeverity.ERROR,
-                          recovery_fn=lambda e: "recovered")
+        @handle_exceptions(
+            category=self.ErrorCategory.GPU,
+            severity=self.ErrorSeverity.ERROR,
+            recovery_fn=lambda e: "recovered",
+        )
         def test_function():
             raise ValueError("Test error")
 
@@ -134,8 +138,9 @@ class TestErrorHandler(unittest.TestCase):
         self.mock_logger.error.assert_called()
 
         # Create a test function without recovery
-        @handle_exceptions(category=self.ErrorCategory.NETWORK,
-                          severity=self.ErrorSeverity.CRITICAL)
+        @handle_exceptions(
+            category=self.ErrorCategory.NETWORK, severity=self.ErrorSeverity.CRITICAL
+        )
         def test_function_no_recovery():
             raise ValueError("Critical error")
 
@@ -153,7 +158,7 @@ class TestErrorHandler(unittest.TestCase):
         handle_error(
             Exception("Info error"),
             category=self.ErrorCategory.APPLICATION,
-            severity=self.ErrorSeverity.INFO
+            severity=self.ErrorSeverity.INFO,
         )
         self.mock_logger.info.assert_called_with("Info error")
 
@@ -161,7 +166,7 @@ class TestErrorHandler(unittest.TestCase):
         handle_error(
             Exception("Warning error"),
             category=self.ErrorCategory.CONFIGURATION,
-            severity=self.ErrorSeverity.WARNING
+            severity=self.ErrorSeverity.WARNING,
         )
         self.mock_logger.warning.assert_called_with("Warning error")
 
@@ -169,7 +174,7 @@ class TestErrorHandler(unittest.TestCase):
         handle_error(
             Exception("Error message"),
             category=self.ErrorCategory.FILE_SYSTEM,
-            severity=self.ErrorSeverity.ERROR
+            severity=self.ErrorSeverity.ERROR,
         )
         self.mock_logger.error.assert_called_with("Error message")
 
@@ -177,11 +182,11 @@ class TestErrorHandler(unittest.TestCase):
         handle_error(
             Exception("Critical error"),
             category=self.ErrorCategory.GPU,
-            severity=self.ErrorSeverity.CRITICAL
+            severity=self.ErrorSeverity.CRITICAL,
         )
         self.mock_logger.critical.assert_called_with("Critical error")
 
-    @patch('dualgpuopt.error_handler.MAX_RETRY_COUNT', 3)
+    @patch("dualgpuopt.error_handler.MAX_RETRY_COUNT", 3)
     def test_recovery_manager(self):
         """Test recovery manager functionality"""
         from dualgpuopt.error_handler import RecoveryManager
@@ -223,8 +228,12 @@ class TestErrorHandler(unittest.TestCase):
 
         # Log some errors
         telemetry.record_error(self.ErrorCategory.GPU, self.ErrorSeverity.ERROR, "GPU error")
-        telemetry.record_error(self.ErrorCategory.NETWORK, self.ErrorSeverity.WARNING, "Network warning")
-        telemetry.record_error(self.ErrorCategory.GPU, self.ErrorSeverity.ERROR, "Another GPU error")
+        telemetry.record_error(
+            self.ErrorCategory.NETWORK, self.ErrorSeverity.WARNING, "Network warning"
+        )
+        telemetry.record_error(
+            self.ErrorCategory.GPU, self.ErrorSeverity.ERROR, "Another GPU error"
+        )
 
         # Get error counts
         counts = telemetry.get_error_counts()

@@ -3,22 +3,23 @@ GPU compatibility module for DualGPUOptimizer
 Provides graceful fallbacks when pynvml or other dependencies are missing
 """
 from __future__ import annotations
+
 import logging
 import platform
-import sys
-from typing import Dict, Any, List, Optional
+from typing import Any
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.GPU.Compat")
 
 # Track dependency status
 DEPENDENCIES = {
-    "pynvml": {"available": False, "module": None}
+    "pynvml": {"available": False, "module": None},
 }
 
 # Try to import pynvml
 try:
     import pynvml
+
     pynvml.nvmlInit()
     DEPENDENCIES["pynvml"]["available"] = True
     DEPENDENCIES["pynvml"]["module"] = pynvml
@@ -38,14 +39,18 @@ IS_NVIDIA = not IS_MAC and DEPENDENCIES["pynvml"]["available"]
 # Expose if mock mode is active - default to True if pynvml is not available
 MOCK_MODE = not NVML_INITIALIZED
 
+
 # GPU mock data generation for fallback
-def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
-    """Generate mock GPU data for testing or when real data is unavailable
+def generate_mock_gpus(count: int = 2) -> list[dict[str, Any]]:
+    """
+    Generate mock GPU data for testing or when real data is unavailable
 
     Args:
+    ----
         count: Number of mock GPUs to generate
 
     Returns:
+    -------
         List of dictionaries with mock GPU data
     """
     mock_gpus = []
@@ -88,9 +93,11 @@ def generate_mock_gpus(count: int = 2) -> List[Dict[str, Any]]:
 
     return mock_gpus
 
+
 # GPU Metric class for type hints
 class GpuMetric:
     """Common metrics for GPU monitoring"""
+
     UTILIZATION = "util"
     MEMORY_TOTAL = "mem_total"
     MEMORY_USED = "mem_used"
@@ -102,41 +109,60 @@ class GpuMetric:
     PCIE_RX = "pcie_rx"
 
     @classmethod
-    def get_all_metrics(cls) -> List[str]:
-        """Get list of all available metrics
+    def get_all_metrics(cls) -> list[str]:
+        """
+        Get list of all available metrics
 
-        Returns:
+        Returns
+        -------
             List of metric names
         """
-        return [cls.UTILIZATION, cls.MEMORY_TOTAL, cls.MEMORY_USED,
-                cls.TEMPERATURE, cls.POWER_USAGE, cls.CLOCK_SM,
-                cls.CLOCK_MEMORY, cls.PCIE_TX, cls.PCIE_RX]
+        return [
+            cls.UTILIZATION,
+            cls.MEMORY_TOTAL,
+            cls.MEMORY_USED,
+            cls.TEMPERATURE,
+            cls.POWER_USAGE,
+            cls.CLOCK_SM,
+            cls.CLOCK_MEMORY,
+            cls.PCIE_TX,
+            cls.PCIE_RX,
+        ]
+
 
 # Function to get whether mock mode is active
 def is_mock_mode() -> bool:
-    """Get the current state of mock mode
+    """
+    Get the current state of mock mode
 
-    Returns:
+    Returns
+    -------
         True if mock mode is active
     """
     return MOCK_MODE
 
+
 # Function to set mock mode
 def set_mock_mode(enabled: bool = True) -> None:
-    """Enable or disable mock mode
+    """
+    Enable or disable mock mode
 
     Args:
+    ----
         enabled: Whether to enable mock mode
     """
     global MOCK_MODE
     MOCK_MODE = enabled
     logger.info(f"Mock GPU mode {'enabled' if enabled else 'disabled'}")
 
+
 # Re-initialize NVML (useful after changing mock mode)
 def reinit_nvml() -> bool:
-    """Reinitialize NVML
+    """
+    Reinitialize NVML
 
-    Returns:
+    Returns
+    -------
         True if initialization was successful
     """
     global NVML_INITIALIZED

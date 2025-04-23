@@ -4,8 +4,8 @@ UI Compatibility Layer
 Provides graceful fallbacks for UI dependencies that might not be installed.
 """
 from __future__ import annotations
+
 import logging
-import sys
 import tkinter as tk
 from tkinter import ttk
 
@@ -14,21 +14,18 @@ logger = logging.getLogger("DualGPUOpt.UI.Compat")
 
 # Try to import our fallback widgets
 try:
-    from dualgpuopt.ui.fallback_widgets import (
-        ScrolledFrame as FallbackScrolledFrame,
-        Meter as FallbackMeter,
-        Floodgauge as FallbackFloodgauge,
-        DateEntry as FallbackDateEntry,
-        get_widget_class,
-        create_widget_safely,
-        DEFAULT_THEME
-    )
+    from dualgpuopt.ui.fallback_widgets import DEFAULT_THEME, create_widget_safely, get_widget_class
+    from dualgpuopt.ui.fallback_widgets import DateEntry as FallbackDateEntry
+    from dualgpuopt.ui.fallback_widgets import Floodgauge as FallbackFloodgauge
+    from dualgpuopt.ui.fallback_widgets import Meter as FallbackMeter
+    from dualgpuopt.ui.fallback_widgets import ScrolledFrame as FallbackScrolledFrame
+
     fallback_widgets_available = True
     logger.debug("Fallback widget system available")
 except ImportError:
     fallback_widgets_available = False
     logger.warning("Fallback widget system not available - using basic compatibility")
-    
+
     # Default theme colors to use when ttkbootstrap is not available
     DEFAULT_THEME = {
         "bg": "#2b2b2b",
@@ -52,6 +49,7 @@ DEPENDENCIES = {
 # Try to import optional dependencies and mark their availability
 try:
     import ttkbootstrap
+
     DEPENDENCIES["ttkbootstrap"]["available"] = True
     DEPENDENCIES["ttkbootstrap"]["module"] = ttkbootstrap
     logger.info("ttkbootstrap is available")
@@ -60,6 +58,7 @@ except ImportError:
 
 try:
     import ttkthemes
+
     DEPENDENCIES["ttkthemes"]["available"] = True
     DEPENDENCIES["ttkthemes"]["module"] = ttkthemes
     logger.info("ttkthemes is available")
@@ -68,17 +67,20 @@ except ImportError:
 
 try:
     import ttkwidgets
+
     DEPENDENCIES["ttkwidgets"]["available"] = True
     DEPENDENCIES["ttkwidgets"]["module"] = ttkwidgets
     logger.info("ttkwidgets is available")
 except ImportError:
     logger.warning("ttkwidgets is not installed - some widgets will be unavailable")
 
+
 def get_themed_tk() -> tk.Tk:
     """
     Get the best available themed Tk root window
 
-    Returns:
+    Returns
+    -------
         tk.Tk: A Tk window with the best available theming
     """
     if DEPENDENCIES["ttkbootstrap"]["available"]:
@@ -95,24 +97,33 @@ def get_themed_tk() -> tk.Tk:
         style = ttk.Style(root)
         style.configure(".", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
         style.configure("TLabel", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
-        style.configure("TButton", background=DEFAULT_THEME["primary"], foreground=DEFAULT_THEME["fg"])
+        style.configure(
+            "TButton", background=DEFAULT_THEME["primary"], foreground=DEFAULT_THEME["fg"]
+        )
         style.configure("TFrame", background=DEFAULT_THEME["bg"])
         style.configure("TNotebook", background=DEFAULT_THEME["bg"])
-        style.configure("TNotebook.Tab", background=DEFAULT_THEME["secondary"], foreground=DEFAULT_THEME["fg"])
+        style.configure(
+            "TNotebook.Tab", background=DEFAULT_THEME["secondary"], foreground=DEFAULT_THEME["fg"]
+        )
         return root
+
 
 def get_meter_widget(parent: tk.Widget, **kwargs) -> ttk.Frame:
     """
     Get a meter widget if available, or a fallback frame with a progress bar
 
     Args:
+    ----
         parent: Parent widget
         **kwargs: Keyword arguments for the meter
 
     Returns:
+    -------
         Widget that mimics a meter with the best available implementation
     """
-    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(DEPENDENCIES["ttkbootstrap"]["module"], "Meter"):
+    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
+        DEPENDENCIES["ttkbootstrap"]["module"], "Meter"
+    ):
         return DEPENDENCIES["ttkbootstrap"]["module"].Meter(parent, **kwargs)
     elif fallback_widgets_available:
         # Use our enhanced fallback
@@ -146,18 +157,23 @@ def get_meter_widget(parent: tk.Widget, **kwargs) -> ttk.Frame:
 
         return frame
 
+
 def get_scrolled_frame(parent: tk.Widget, **kwargs) -> ttk.Frame:
     """
     Get a scrolled frame widget if available, or a fallback implementation
 
     Args:
+    ----
         parent: Parent widget
         **kwargs: Keyword arguments for the scrolled frame
 
     Returns:
+    -------
         Widget that provides a scrollable frame
     """
-    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(DEPENDENCIES["ttkbootstrap"]["module"], "ScrolledFrame"):
+    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
+        DEPENDENCIES["ttkbootstrap"]["module"], "ScrolledFrame"
+    ):
         return DEPENDENCIES["ttkbootstrap"]["module"].scrolled.ScrolledFrame(parent, **kwargs)
     elif fallback_widgets_available:
         # Use our enhanced fallback
@@ -166,18 +182,23 @@ def get_scrolled_frame(parent: tk.Widget, **kwargs) -> ttk.Frame:
         # Use simple fallback
         return ScrolledFrame(parent, **kwargs)
 
+
 def get_floodgauge_widget(parent: tk.Widget, **kwargs) -> ttk.Progressbar:
     """
     Get a floodgauge widget if available, or a fallback progressbar
 
     Args:
+    ----
         parent: Parent widget
         **kwargs: Keyword arguments for the floodgauge
 
     Returns:
+    -------
         Widget that mimics a floodgauge
     """
-    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(DEPENDENCIES["ttkbootstrap"]["module"], "Floodgauge"):
+    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
+        DEPENDENCIES["ttkbootstrap"]["module"], "Floodgauge"
+    ):
         return DEPENDENCIES["ttkbootstrap"]["module"].Floodgauge(parent, **kwargs)
     elif fallback_widgets_available:
         # Use our enhanced fallback
@@ -186,18 +207,23 @@ def get_floodgauge_widget(parent: tk.Widget, **kwargs) -> ttk.Progressbar:
         # Just return a standard progressbar
         return ttk.Progressbar(parent, **kwargs)
 
+
 def get_date_entry_widget(parent: tk.Widget, **kwargs) -> ttk.Entry:
     """
     Get a date entry widget if available, or a fallback entry
 
     Args:
+    ----
         parent: Parent widget
         **kwargs: Keyword arguments for the date entry
 
     Returns:
+    -------
         Widget that provides date entry functionality
     """
-    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(DEPENDENCIES["ttkbootstrap"]["module"], "DateEntry"):
+    if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
+        DEPENDENCIES["ttkbootstrap"]["module"], "DateEntry"
+    ):
         return DEPENDENCIES["ttkbootstrap"]["module"].DateEntry(parent, **kwargs)
     elif fallback_widgets_available:
         # Use our enhanced fallback
@@ -210,18 +236,23 @@ def get_date_entry_widget(parent: tk.Widget, **kwargs) -> ttk.Entry:
             entry.insert(0, kwargs["startdate"])
         return entry
 
+
 # Enhanced widget creation function that uses our fallback system
-def create_widget(widget_name: str, parent: tk.Widget, module_name: str = "ttkbootstrap", **kwargs) -> tk.Widget:
+def create_widget(
+    widget_name: str, parent: tk.Widget, module_name: str = "ttkbootstrap", **kwargs
+) -> tk.Widget:
     """
     Create a widget safely with fallbacks
 
     Args:
+    ----
         widget_name: Name of the widget class (e.g., 'Button', 'ScrolledFrame')
         parent: Parent widget
         module_name: Name of preferred module ('ttkbootstrap', 'ttkwidgets', etc.)
         **kwargs: Keyword arguments for the widget
 
     Returns:
+    -------
         Created widget with fallbacks if necessary
     """
     # Try to get the module
@@ -232,7 +263,7 @@ def create_widget(widget_name: str, parent: tk.Widget, module_name: str = "ttkbo
     # If we have the fallback widget system
     if fallback_widgets_available:
         return create_widget_safely(widget_name, parent, module, **kwargs)
-    
+
     # Manual fallbacks for common widgets
     if widget_name == "ScrolledFrame":
         return get_scrolled_frame(parent, **kwargs)
@@ -250,7 +281,7 @@ def create_widget(widget_name: str, parent: tk.Widget, module_name: str = "ttkbo
             return widget_class(parent, **kwargs)
         except (AttributeError, TypeError) as e:
             logger.warning(f"Failed to create {widget_name} from {module_name}: {e}")
-    
+
     # Fall back to ttk
     try:
         return getattr(ttk, widget_name)(parent, **kwargs)
@@ -268,26 +299,26 @@ class ScrolledFrame(ttk.Frame):
     """A frame with a scrollbar that scrolls another frame"""
 
     def __init__(self, parent, autohide=True):
-        """Initialize the ScrolledFrame
+        """
+        Initialize the ScrolledFrame
 
         Args:
+        ----
             parent: Parent widget
             autohide: Whether to hide the scrollbar when not needed
         """
         super().__init__(parent)
 
         # Create a canvas with scrollbar
-        self.canvas = tk.Canvas(self, bg=DEFAULT_THEME["bg"],
-                               highlightthickness=0)
-        self.scrollbar = ttk.Scrollbar(self, orient="vertical",
-                                      command=self.canvas.yview)
+        self.canvas = tk.Canvas(self, bg=DEFAULT_THEME["bg"], highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
         # Create the scrollable frame
         self.inner_frame = ttk.Frame(self.canvas)
-        self.inner_frame_id = self.canvas.create_window((0, 0),
-                                                     window=self.inner_frame,
-                                                     anchor="nw")
+        self.inner_frame_id = self.canvas.create_window(
+            (0, 0), window=self.inner_frame, anchor="nw"
+        )
 
         # Pack the widgets
         self.scrollbar.pack(side="right", fill="y")
@@ -297,13 +328,13 @@ class ScrolledFrame(ttk.Frame):
         def _configure_inner_frame(event):
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
             # Set the scrollable frame's width to match the canvas
-            self.canvas.itemconfigure(self.inner_frame_id,
-                                     width=event.width)
+            self.canvas.itemconfigure(self.inner_frame_id, width=event.width)
 
         # Bind to the configure event
         self.inner_frame.bind("<Configure>", _configure_inner_frame)
-        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(
-            self.inner_frame_id, width=e.width))
+        self.canvas.bind(
+            "<Configure>", lambda e: self.canvas.itemconfigure(self.inner_frame_id, width=e.width)
+        )
 
         # Forward methods to the inner frame
         def __getattr__(self, attr):

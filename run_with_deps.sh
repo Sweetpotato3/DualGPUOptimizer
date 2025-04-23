@@ -82,4 +82,4 @@ echo "==================================="
 echo
 
 # Deactivate virtual environment
-deactivate 
+deactivate

@@ -3,42 +3,46 @@
 Direct entry point for DualGPUOptimizer
 Provides a simplified launch method that avoids complex module imports
 """
-import sys
+import dataclasses
 import logging
+import time
 import tkinter as tk
 from pathlib import Path
-import time
-import threading
-import dataclasses
-from typing import Dict, List, Callable, Any, Optional, Set
+from typing import List
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
         logging.FileHandler(Path("logs") / "direct_app.log"),
-    ]
+    ],
 )
 
 logger = logging.getLogger("DualGPUOpt.DirectLauncher")
+
 
 # Event system implementation
 @dataclasses.dataclass
 class Event:
     """Base class for all events"""
+
     timestamp: float = dataclasses.field(default_factory=time.time)
     source: str = "direct_app"
+
 
 @dataclasses.dataclass
 class GPUEvent(Event):
     """Base class for GPU-related events"""
+
     gpu_id: int = 0
+
 
 @dataclasses.dataclass
 class GPUMetricsEvent(GPUEvent):
     """Event for GPU metrics updates"""
+
     name: str = ""
     utilization: float = 0.0
     memory_used: int = 0
@@ -52,14 +56,16 @@ class GPUMetricsEvent(GPUEvent):
     pcie_tx: int = 0
     pcie_rx: int = 0
 
+
 @dataclasses.dataclass
 class OptimizerEvent(Event):
     """Base class for optimizer-related events"""
-    pass
+
 
 @dataclasses.dataclass
 class ModelSelectedEvent(OptimizerEvent):
     """Event fired when a model is selected"""
+
     model_name: str = ""
     context_length: int = 0
     hidden_size: int = 0
@@ -67,14 +73,17 @@ class ModelSelectedEvent(OptimizerEvent):
     num_heads: int = 0
     kv_heads: int = 0
 
+
 @dataclasses.dataclass
 class SplitCalculatedEvent(OptimizerEvent):
     """Event fired when a split is calculated"""
+
     tensor_parallel_size: int = 0
     gpu_split: List[float] = dataclasses.field(default_factory=list)
     context_length: int = 0
     command_llama: str = ""
     command_vllm: str = ""
+
 
 class EventBus:
     """Simple event bus implementation for component communication"""
@@ -85,9 +94,11 @@ class EventBus:
         self.logger = logging.getLogger("DualGPUOpt.EventBus")
 
     def subscribe(self, event_type, callback):
-        """Subscribe to events of a specific type
+        """
+        Subscribe to events of a specific type
 
         Args:
+        ----
             event_type: Type of event to subscribe to (class)
             callback: Function to call when event is published
         """
@@ -99,9 +110,11 @@ class EventBus:
             self.logger.debug(f"Subscribed to event type: {event_type.__name__}")
 
     def publish(self, event):
-        """Publish an event to subscribers
+        """
+        Publish an event to subscribers
 
         Args:
+        ----
             event: Event instance to publish
         """
         for event_type, subscribers in self._subscribers.items():
@@ -112,7 +125,10 @@ class EventBus:
                     except Exception as e:
                         self.logger.error(f"Error in event handler for {event_type.__name__}: {e}")
 
-                self.logger.debug(f"Published event: {event_type.__name__} to {len(subscribers)} subscribers")
+                self.logger.debug(
+                    f"Published event: {event_type.__name__} to {len(subscribers)} subscribers"
+                )
+
 
 # Create a global event bus instance
 event_bus = EventBus()
@@ -120,16 +136,19 @@ event_bus = EventBus()
 # Try to import dependencies at the module level
 try:
     import ttkbootstrap as ttk
+
     TTKBOOTSTRAP_AVAILABLE = True
     logger.info("ttkbootstrap available for import")
 except ImportError:
     from tkinter import ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
     logger.warning("ttkbootstrap not available - using standard ttk")
 
 # Try to import telemetry system
 try:
-    from dualgpuopt.telemetry import get_telemetry_service, GPUMetrics
+    from dualgpuopt.telemetry import GPUMetrics, get_telemetry_service
+
     TELEMETRY_AVAILABLE = True
     logger.info("Telemetry system available")
 except ImportError:
@@ -138,7 +157,8 @@ except ImportError:
 
 # Try to import GPU monitoring capabilities
 try:
-    from dualgpuopt.gpu.compat import is_mock_mode, set_mock_mode, generate_mock_gpus
+    from dualgpuopt.gpu.compat import generate_mock_gpus, is_mock_mode, set_mock_mode
+
     GPU_COMPAT_AVAILABLE = True
     logger.info("GPU compatibility layer available")
 except ImportError:
@@ -155,12 +175,14 @@ except ImportError:
     def generate_mock_gpus(count=2):
         return [
             {"id": 0, "name": "Mock GPU 0", "mem_total": 24576, "mem_used": 8192, "util": 45},
-            {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85}
+            {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85},
         ]
+
 
 # Try to import the Dashboard component
 try:
     from dualgpuopt.gui.dashboard import DashboardView
+
     DASHBOARD_AVAILABLE = True
     logger.info("Dashboard component available")
 except ImportError:
@@ -170,11 +192,13 @@ except ImportError:
 # Try to import the Optimizer component
 try:
     from dualgpuopt.gui.optimizer_tab import OptimizerTab
+
     OPTIMIZER_AVAILABLE = True
     logger.info("Optimizer component available")
 except ImportError:
     OPTIMIZER_AVAILABLE = False
     logger.warning("Optimizer component not available")
+
 
 class GPUInfoFrame(ttk.LabelFrame):
     """Frame showing GPU information with real-time updates"""
@@ -191,7 +215,7 @@ class GPUInfoFrame(ttk.LabelFrame):
         self.status_label = ttk.Label(
             self,
             text="Status: Initializing...",
-            font=("TkDefaultFont", 10, "italic")
+            font=("TkDefaultFont", 10, "italic"),
         )
         self.status_label.pack(anchor="w", padx=10, pady=(0, 10))
 
@@ -234,23 +258,23 @@ class GPUInfoFrame(ttk.LabelFrame):
             ttk.Label(
                 frame,
                 text=f"GPU {i}: {gpu['name']}",
-                font=("TkDefaultFont", 14, "bold")
+                font=("TkDefaultFont", 14, "bold"),
             ).pack(anchor="w", padx=10, pady=(10, 0))
 
             # Memory usage
-            mem_used_mb = gpu['mem_used']
-            mem_total_mb = gpu['mem_total']
+            mem_used_mb = gpu["mem_used"]
+            mem_total_mb = gpu["mem_total"]
             mem_percent = int((mem_used_mb / mem_total_mb) * 100)
 
             ttk.Label(
                 frame,
-                text=f"Memory: {mem_used_mb}MB / {mem_total_mb}MB ({mem_percent}%)"
+                text=f"Memory: {mem_used_mb}MB / {mem_total_mb}MB ({mem_percent}%)",
             ).pack(anchor="w", padx=20)
 
             # GPU utilization
             ttk.Label(
                 frame,
-                text=f"Utilization: {gpu['util']}%"
+                text=f"Utilization: {gpu['util']}%",
             ).pack(anchor="w", padx=20)
 
             # Add a separator between GPUs
@@ -258,21 +282,25 @@ class GPUInfoFrame(ttk.LabelFrame):
                 ttk.Separator(frame, orient="horizontal").pack(fill="x", padx=10, pady=10)
 
             # Publish mock GPU metrics event
-            event_bus.publish(GPUMetricsEvent(
-                gpu_id=i,
-                name=gpu['name'],
-                utilization=gpu['util'],
-                memory_used=gpu['mem_used'],
-                memory_total=gpu['mem_total'],
-                temperature=65,  # Mock temperature
-                power_usage=150,  # Mock power
-                power_limit=300,  # Mock power limit
-            ))
+            event_bus.publish(
+                GPUMetricsEvent(
+                    gpu_id=i,
+                    name=gpu["name"],
+                    utilization=gpu["util"],
+                    memory_used=gpu["mem_used"],
+                    memory_total=gpu["mem_total"],
+                    temperature=65,  # Mock temperature
+                    power_usage=150,  # Mock power
+                    power_limit=300,  # Mock power limit
+                )
+            )
 
     def _on_telemetry_update(self, metrics):
-        """Handle telemetry update from the service
+        """
+        Handle telemetry update from the service
 
         Args:
+        ----
             metrics: Dictionary of GPU ID to GPUMetrics objects
         """
         # Update display
@@ -280,26 +308,38 @@ class GPUInfoFrame(ttk.LabelFrame):
 
         # Publish events through event bus
         for gpu_id, gpu_metrics in metrics.items():
-            event_bus.publish(GPUMetricsEvent(
-                gpu_id=gpu_id,
-                name=gpu_metrics.name,
-                utilization=gpu_metrics.utilization,
-                memory_used=gpu_metrics.memory_used,
-                memory_total=gpu_metrics.memory_total,
-                temperature=gpu_metrics.temperature if hasattr(gpu_metrics, 'temperature') else 0,
-                power_usage=gpu_metrics.power_usage if hasattr(gpu_metrics, 'power_usage') else 0,
-                power_limit=gpu_metrics.power_limit if hasattr(gpu_metrics, 'power_limit') else 0,
-                fan_speed=gpu_metrics.fan_speed if hasattr(gpu_metrics, 'fan_speed') else 0,
-                clock_sm=gpu_metrics.clock_sm if hasattr(gpu_metrics, 'clock_sm') else 0,
-                clock_memory=gpu_metrics.clock_memory if hasattr(gpu_metrics, 'clock_memory') else 0,
-                pcie_tx=gpu_metrics.pcie_tx if hasattr(gpu_metrics, 'pcie_tx') else 0,
-                pcie_rx=gpu_metrics.pcie_rx if hasattr(gpu_metrics, 'pcie_rx') else 0,
-            ))
+            event_bus.publish(
+                GPUMetricsEvent(
+                    gpu_id=gpu_id,
+                    name=gpu_metrics.name,
+                    utilization=gpu_metrics.utilization,
+                    memory_used=gpu_metrics.memory_used,
+                    memory_total=gpu_metrics.memory_total,
+                    temperature=gpu_metrics.temperature
+                    if hasattr(gpu_metrics, "temperature")
+                    else 0,
+                    power_usage=gpu_metrics.power_usage
+                    if hasattr(gpu_metrics, "power_usage")
+                    else 0,
+                    power_limit=gpu_metrics.power_limit
+                    if hasattr(gpu_metrics, "power_limit")
+                    else 0,
+                    fan_speed=gpu_metrics.fan_speed if hasattr(gpu_metrics, "fan_speed") else 0,
+                    clock_sm=gpu_metrics.clock_sm if hasattr(gpu_metrics, "clock_sm") else 0,
+                    clock_memory=gpu_metrics.clock_memory
+                    if hasattr(gpu_metrics, "clock_memory")
+                    else 0,
+                    pcie_tx=gpu_metrics.pcie_tx if hasattr(gpu_metrics, "pcie_tx") else 0,
+                    pcie_rx=gpu_metrics.pcie_rx if hasattr(gpu_metrics, "pcie_rx") else 0,
+                )
+            )
 
     def update_metrics(self, metrics):
-        """Update the display with new GPU metrics
+        """
+        Update the display with new GPU metrics
 
         Args:
+        ----
             metrics: Dictionary of GPU ID to GPUMetrics objects
         """
         # Clear existing frames if the GPUs changed
@@ -320,7 +360,7 @@ class GPUInfoFrame(ttk.LabelFrame):
                 name_label = ttk.Label(
                     frame,
                     text=f"GPU {gpu_id}: {gpu_metrics.name}",
-                    font=("TkDefaultFont", 14, "bold")
+                    font=("TkDefaultFont", 14, "bold"),
                 )
                 name_label.pack(anchor="w", padx=10, pady=(10, 0))
 
@@ -346,12 +386,12 @@ class GPUInfoFrame(ttk.LabelFrame):
 
                 # Store widgets
                 self.gpu_frames[gpu_id] = {
-                    'frame': frame,
-                    'name_label': name_label,
-                    'mem_label': mem_label,
-                    'util_label': util_label,
-                    'temp_label': temp_label,
-                    'power_label': power_label
+                    "frame": frame,
+                    "name_label": name_label,
+                    "mem_label": mem_label,
+                    "util_label": util_label,
+                    "temp_label": temp_label,
+                    "power_label": power_label,
                 }
 
             # Update existing frame with new metrics
@@ -359,32 +399,34 @@ class GPUInfoFrame(ttk.LabelFrame):
 
             # Memory info with formatting
             mem_percent = gpu_metrics.memory_percent
-            widgets['mem_label'].config(
-                text=f"Memory: {gpu_metrics.memory_used}MB / {gpu_metrics.memory_total}MB ({mem_percent:.1f}%)"
+            widgets["mem_label"].config(
+                text=f"Memory: {gpu_metrics.memory_used}MB / {gpu_metrics.memory_total}MB ({mem_percent:.1f}%)",
             )
 
             # Utilization
-            widgets['util_label'].config(
-                text=f"Utilization: {gpu_metrics.utilization}%"
+            widgets["util_label"].config(
+                text=f"Utilization: {gpu_metrics.utilization}%",
             )
 
             # Temperature with color coding
-            if hasattr(gpu_metrics, 'temperature'):
+            if hasattr(gpu_metrics, "temperature"):
                 temp_text = f"Temperature: {gpu_metrics.temperature}°C"
-                widgets['temp_label'].config(text=temp_text)
+                widgets["temp_label"].config(text=temp_text)
 
                 # Color coding based on temperature
                 if gpu_metrics.temperature >= 80:
-                    widgets['temp_label'].config(foreground="red")
+                    widgets["temp_label"].config(foreground="red")
                 elif gpu_metrics.temperature >= 70:
-                    widgets['temp_label'].config(foreground="orange")
+                    widgets["temp_label"].config(foreground="orange")
                 else:
-                    widgets['temp_label'].config(foreground="green")
+                    widgets["temp_label"].config(foreground="green")
 
             # Power usage
-            if hasattr(gpu_metrics, 'power_usage'):
-                power_text = f"Power: {gpu_metrics.power_usage:.1f}W / {gpu_metrics.power_limit:.1f}W"
-                widgets['power_label'].config(text=power_text)
+            if hasattr(gpu_metrics, "power_usage"):
+                power_text = (
+                    f"Power: {gpu_metrics.power_usage:.1f}W / {gpu_metrics.power_limit:.1f}W"
+                )
+                widgets["power_label"].config(text=power_text)
 
     def destroy(self):
         """Clean up resources when the frame is destroyed"""
@@ -392,6 +434,7 @@ class GPUInfoFrame(ttk.LabelFrame):
             self.telemetry.stop()
             logger.info("Telemetry service stopped")
         super().destroy()
+
 
 class EventDrivenDashboardWrapper(ttk.Frame):
     """Wrapper for the Dashboard view that connects it to the event system"""
@@ -417,6 +460,7 @@ class EventDrivenDashboardWrapper(ttk.Frame):
         # so this is for demonstration purposes
         logger.debug(f"Dashboard received GPU metrics event for GPU {event.gpu_id}")
 
+
 class BasicOptimizerFrame(ttk.LabelFrame):
     """Simple optimizer frame when the real optimizer is not available"""
 
@@ -429,13 +473,13 @@ class BasicOptimizerFrame(ttk.LabelFrame):
         ttk.Label(
             self,
             text="The GPU Split Optimizer functionality is not available.",
-            font=("TkDefaultFont", 12)
+            font=("TkDefaultFont", 12),
         ).pack(pady=20)
 
         ttk.Label(
             self,
             text="This component would calculate optimal GPU split configurations\nfor running large language models across multiple GPUs.",
-            justify="center"
+            justify="center",
         ).pack(pady=10)
 
         # Installation message
@@ -445,7 +489,7 @@ class BasicOptimizerFrame(ttk.LabelFrame):
         ttk.Label(
             install_frame,
             text="To enable this functionality, install the required dependencies:",
-            font=("TkDefaultFont", 10, "italic")
+            font=("TkDefaultFont", 10, "italic"),
         ).pack(anchor="w", padx=20)
 
         # Code frame with dependencies
@@ -461,21 +505,31 @@ class BasicOptimizerFrame(ttk.LabelFrame):
             code_frame,
             text=dependencies,
             font=("Courier", 10),
-            justify="left"
+            justify="left",
         ).pack(padx=10, pady=10, anchor="w")
 
         # Sample GUI representation
         sample_frame = ttk.LabelFrame(self, text="Sample Split Configuration")
         sample_frame.pack(padx=20, pady=20, fill="x")
 
-        ttk.Label(sample_frame, text="Tensor Parallel Size:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
+        ttk.Label(sample_frame, text="Tensor Parallel Size:").grid(
+            row=0, column=0, sticky="w", padx=10, pady=5
+        )
         ttk.Label(sample_frame, text="2 GPUs").grid(row=0, column=1, sticky="w", padx=10, pady=5)
 
-        ttk.Label(sample_frame, text="GPU Split Ratio:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
-        ttk.Label(sample_frame, text="0.67, 0.33").grid(row=1, column=1, sticky="w", padx=10, pady=5)
+        ttk.Label(sample_frame, text="GPU Split Ratio:").grid(
+            row=1, column=0, sticky="w", padx=10, pady=5
+        )
+        ttk.Label(sample_frame, text="0.67, 0.33").grid(
+            row=1, column=1, sticky="w", padx=10, pady=5
+        )
 
-        ttk.Label(sample_frame, text="Context Length:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
-        ttk.Label(sample_frame, text="4096 tokens").grid(row=2, column=1, sticky="w", padx=10, pady=5)
+        ttk.Label(sample_frame, text="Context Length:").grid(
+            row=2, column=0, sticky="w", padx=10, pady=5
+        )
+        ttk.Label(sample_frame, text="4096 tokens").grid(
+            row=2, column=1, sticky="w", padx=10, pady=5
+        )
 
         # Subscribe to GPU metrics events to demonstrate event listening
         event_bus.subscribe(GPUMetricsEvent, self._on_gpu_metrics)
@@ -484,6 +538,7 @@ class BasicOptimizerFrame(ttk.LabelFrame):
         """Handle GPU metrics events"""
         # This is just for demonstration - would update UI based on metrics
         logger.debug(f"BasicOptimizerFrame received GPU metrics for GPU {event.gpu_id}")
+
 
 class EventDrivenOptimizerWrapper(ttk.Frame):
     """Wrapper for the Optimizer tab that connects it to the event system"""
@@ -524,14 +579,16 @@ class EventDrivenOptimizerWrapper(ttk.Frame):
             model_name = self.optimizer.model_var.get()
             if model_name != "Custom":
                 model = self.optimizer._get_model_parameters()
-                event_bus.publish(ModelSelectedEvent(
-                    model_name=model.name,
-                    context_length=model.context_length,
-                    hidden_size=model.hidden_size,
-                    num_layers=model.num_layers,
-                    num_heads=model.num_heads,
-                    kv_heads=model.kv_heads if hasattr(model, 'kv_heads') else 0
-                ))
+                event_bus.publish(
+                    ModelSelectedEvent(
+                        model_name=model.name,
+                        context_length=model.context_length,
+                        hidden_size=model.hidden_size,
+                        num_layers=model.num_layers,
+                        num_heads=model.num_heads,
+                        kv_heads=model.kv_heads if hasattr(model, "kv_heads") else 0,
+                    )
+                )
                 logger.info(f"Published ModelSelectedEvent for {model_name}")
 
         def calculate_split_with_event():
@@ -546,13 +603,15 @@ class EventDrivenOptimizerWrapper(ttk.Frame):
 
                 # Publish event only if commands were generated
                 if llama_cmd and vllm_cmd:
-                    event_bus.publish(SplitCalculatedEvent(
-                        tensor_parallel_size=2,  # Would extract from actual results
-                        gpu_split=[0.6, 0.4],    # Would extract from actual results
-                        context_length=self.optimizer._get_model_parameters().context_length,
-                        command_llama=llama_cmd,
-                        command_vllm=vllm_cmd
-                    ))
+                    event_bus.publish(
+                        SplitCalculatedEvent(
+                            tensor_parallel_size=2,  # Would extract from actual results
+                            gpu_split=[0.6, 0.4],  # Would extract from actual results
+                            context_length=self.optimizer._get_model_parameters().context_length,
+                            command_llama=llama_cmd,
+                            command_vllm=vllm_cmd,
+                        )
+                    )
                     logger.info("Published SplitCalculatedEvent")
             except Exception as e:
                 logger.error(f"Error publishing SplitCalculatedEvent: {e}")
@@ -561,13 +620,17 @@ class EventDrivenOptimizerWrapper(ttk.Frame):
         self.optimizer._on_model_selected = on_model_selected_with_event
         self.optimizer._calculate_split = calculate_split_with_event
 
+
 def create_monitoring_component(parent):
-    """Create the appropriate monitoring component based on available dependencies
+    """
+    Create the appropriate monitoring component based on available dependencies
 
     Args:
+    ----
         parent: Parent widget
 
     Returns:
+    -------
         The created monitoring component
     """
     if DASHBOARD_AVAILABLE:
@@ -579,13 +642,17 @@ def create_monitoring_component(parent):
         logger.info("Using basic GPU info frame")
         return GPUInfoFrame(parent)
 
+
 def create_optimizer_component(parent):
-    """Create the appropriate optimizer component based on available dependencies
+    """
+    Create the appropriate optimizer component based on available dependencies
 
     Args:
+    ----
         parent: Parent widget
 
     Returns:
+    -------
         The created optimizer component
     """
     if OPTIMIZER_AVAILABLE:
@@ -596,6 +663,7 @@ def create_optimizer_component(parent):
         # Fall back to the basic optimizer info frame
         logger.info("Using basic optimizer information frame")
         return BasicOptimizerFrame(parent)
+
 
 class StatusBar(ttk.Frame):
     """Status bar for displaying application events"""
@@ -629,20 +697,21 @@ class StatusBar(ttk.Frame):
 
         self.last_update = now
         self.status_label.config(
-            text=f"GPU {event.gpu_id} metrics: {event.utilization:.1f}% util, {event.memory_used}/{event.memory_total} MB"
+            text=f"GPU {event.gpu_id} metrics: {event.utilization:.1f}% util, {event.memory_used}/{event.memory_total} MB",
         )
 
     def _on_model_selected(self, event):
         """Handle model selection events"""
         self.status_label.config(
-            text=f"Model selected: {event.model_name}, {event.num_layers} layers, {event.hidden_size} hidden size"
+            text=f"Model selected: {event.model_name}, {event.num_layers} layers, {event.hidden_size} hidden size",
         )
 
     def _on_split_calculated(self, event):
         """Handle split calculation events"""
         self.status_label.config(
-            text=f"Split calculated: {event.tensor_parallel_size} GPUs, context length {event.context_length}"
+            text=f"Split calculated: {event.tensor_parallel_size} GPUs, context length {event.context_length}",
         )
+
 
 def main():
     """Main entry point"""
@@ -659,7 +728,7 @@ def main():
     ttk.Label(
         main_frame,
         text="DualGPUOptimizer",
-        font=("TkDefaultFont", 24)
+        font=("TkDefaultFont", 24),
     ).pack(pady=20)
 
     # Status message based on dependency availability
@@ -689,7 +758,7 @@ def main():
     ttk.Label(
         main_frame,
         text=status_text,
-        font=("TkDefaultFont", 12)
+        font=("TkDefaultFont", 12),
     ).pack(pady=10)
 
     # Create notebook for tabs
@@ -726,14 +795,14 @@ def main():
             button_frame,
             text="Exit",
             bootstyle="danger",
-            command=root.destroy
+            command=root.destroy,
         ).pack(side="right", padx=10)
     else:
         # Plain ttk buttons
         ttk.Button(
             button_frame,
             text="Exit",
-            command=root.destroy
+            command=root.destroy,
         ).pack(side="right", padx=10)
 
     # Log event about application starting
@@ -742,6 +811,7 @@ def main():
 
     # Run the application
     root.mainloop()
+
 
 if __name__ == "__main__":
     # Ensure the logs directory exists

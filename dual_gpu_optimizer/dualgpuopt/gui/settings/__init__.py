@@ -16,8 +16,8 @@ from dualgpuopt.gui.settings.application_settings import ApplicationSettingsFram
 from dualgpuopt.gui.settings.compat import *
 
 __all__ = [
-    'SettingsTab',
-    'AppearanceFrame',
-    'OverclockingFrame',
-    'ApplicationSettingsFrame'
+    "SettingsTab",
+    "AppearanceFrame",
+    "OverclockingFrame",
+    "ApplicationSettingsFrame",
 ]

@@ -11,4 +11,4 @@ python test_signal_telemetry.py
 
 echo.
 echo Test complete.
-pause 
+pause

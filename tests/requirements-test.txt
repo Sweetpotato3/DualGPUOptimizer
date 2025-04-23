@@ -6,4 +6,4 @@ fastapi-limiter>=0.1.5
 httpx>=0.25.0
 faiss-cpu>=1.7.4
 uvicorn>=0.23.0
-sentence-transformers>=2.2.2 
+sentence-transformers>=2.2.2

@@ -3,28 +3,29 @@ Optimizer tab for the DualGPUOptimizer GUI.
 """
 from __future__ import annotations
 
-import tkinter as tk
-from tkinter import ttk, filedialog
 import json
-import pathlib
 import logging
-from typing import Dict, List, Callable, Any, Optional
+import pathlib
+import tkinter as tk
+from tkinter import filedialog, ttk
+from typing import Any
 
-from dualgpuopt.gpu_info import GPU
 from dualgpuopt import optimizer
+from dualgpuopt.commands import generate_commands
+from dualgpuopt.gpu_info import GPU
 from dualgpuopt.services.event_bus import event_bus
 from dualgpuopt.services.state_service import app_state
-from dualgpuopt.commands import generate_commands
 
 
 class OptimizerTab(ttk.Frame):
     """Optimizer tab that generates optimization configs for GPUs."""
 
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU]) -> None:
+    def __init__(self, parent: ttk.Frame, gpus: list[GPU]) -> None:
         """
         Initialize the optimizer tab.
 
         Args:
+        ----
             parent: Parent frame
             gpus: List of GPU objects
         """
@@ -65,7 +66,7 @@ class OptimizerTab(ttk.Frame):
             presets_frame,
             textvariable=self.preset_var,
             values=preset_names,
-            state="readonly"
+            state="readonly",
         )
         preset_combo.grid(row=0, column=1, sticky="ew", padx=8)
         preset_combo.bind("<<ComboboxSelected>>", self._preset_selected)
@@ -76,7 +77,9 @@ class OptimizerTab(ttk.Frame):
         param_frame.columnconfigure(1, weight=1)
 
         self.ctx_var = tk.IntVar(value=app_state.get("context_size", 65536))
-        ttk.Label(param_frame, text="Context Size:").grid(row=0, column=0, sticky="w", padx=8, pady=8)
+        ttk.Label(param_frame, text="Context Size:").grid(
+            row=0, column=0, sticky="w", padx=8, pady=8
+        )
         ctx_entry = ttk.Entry(param_frame, textvariable=self.ctx_var, width=10)
         ctx_entry.grid(row=0, column=1, sticky="w", padx=8, pady=8)
 
@@ -88,13 +91,13 @@ class OptimizerTab(ttk.Frame):
         for i, gpu in enumerate(self.gpus):
             ttk.Label(
                 gpu_frame,
-                text=f"GPU {gpu.index}: {gpu.name}"
+                text=f"GPU {gpu.index}: {gpu.name}",
             ).grid(row=i, column=0, sticky="w", padx=8, pady=4)
 
             mem_text = f"{gpu.mem_total_gb} GB total, {gpu.mem_free_gb} GB free"
             ttk.Label(
                 gpu_frame,
-                text=mem_text
+                text=mem_text,
             ).grid(row=i, column=1, sticky="w", padx=8, pady=4)
 
         # Output configuration
@@ -173,8 +176,8 @@ class OptimizerTab(ttk.Frame):
                 ("GGML Models", "*.ggml"),
                 ("Pytorch Models", "*.pt *.pth"),
                 ("Bin Files", "*.bin"),
-                ("All Files", "*.*")
-            ]
+                ("All Files", "*.*"),
+            ],
         )
         if path:
             self.model_var.set(path)
@@ -197,11 +200,14 @@ class OptimizerTab(ttk.Frame):
                 self.vllm_var.set(cmd_results["vllm"])
 
                 # Publish commands generated event
-                event_bus.publish("commands_generated", {
-                    "split": split,
-                    "llama_cmd": self.llama_var.get(),
-                    "vllm_cmd": self.vllm_var.get()
-                })
+                event_bus.publish(
+                    "commands_generated",
+                    {
+                        "split": split,
+                        "llama_cmd": self.llama_var.get(),
+                        "vllm_cmd": self.vllm_var.get(),
+                    },
+                )
         except Exception as e:
             self.logger.error(f"Error generating commands: {e}")
 
@@ -210,6 +216,7 @@ class OptimizerTab(ttk.Frame):
         Copy the selected value to clipboard.
 
         Args:
+        ----
             which: Type of value to copy ('split', 'llama', or 'vllm')
         """
         value = ""
@@ -251,17 +258,18 @@ class OptimizerTab(ttk.Frame):
             # Publish preset selected event
             event_bus.publish("preset_selected", {"preset": preset_name, "data": preset_data})
 
-    def _load_presets(self) -> Dict[str, Any]:
+    def _load_presets(self) -> dict[str, Any]:
         """
         Load model presets from the presets directory.
 
-        Returns:
+        Returns
+        -------
             Dictionary of preset configurations
         """
         try:
             preset_path = pathlib.Path(__file__).parent.parent / "presets" / "mixtral.json"
             if preset_path.exists():
-                with open(preset_path, "r", encoding="utf-8") as f:
+                with open(preset_path, encoding="utf-8") as f:
                     presets = json.load(f)
                 self.logger.info(f"Loaded {len(presets)} presets")
                 return presets

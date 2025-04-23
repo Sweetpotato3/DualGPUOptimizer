@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 class MemoryUnit(Enum):
     """Memory units for reporting and calculations"""
+
     BYTES = auto()
     KB = auto()
     MB = auto()
@@ -21,14 +22,15 @@ class MemoryUnit(Enum):
 @dataclass
 class GPUMemoryStats:
     """Container for GPU memory statistics"""
-    gpu_id: int                      # GPU device ID
-    total_memory: int                # Total memory in bytes
-    used_memory: int                 # Used memory in bytes
-    free_memory: int                 # Free memory in bytes
-    reserved_memory: int = 0         # Memory reserved by the system but not used
-    cached_memory: int = 0           # Memory used for caching
+
+    gpu_id: int  # GPU device ID
+    total_memory: int  # Total memory in bytes
+    used_memory: int  # Used memory in bytes
+    free_memory: int  # Free memory in bytes
+    reserved_memory: int = 0  # Memory reserved by the system but not used
+    cached_memory: int = 0  # Memory used for caching
     process_memory: Dict[int, int] = None  # Memory used by each process
-    timestamp: float = None          # When stats were collected
+    timestamp: float = None  # When stats were collected
 
     def __post_init__(self):
         """Initialize optional fields if not provided"""
@@ -47,7 +49,7 @@ class GPUMemoryStats:
             MemoryUnit.BYTES: 1,
             MemoryUnit.KB: 1024,
             MemoryUnit.MB: 1024 * 1024,
-            MemoryUnit.GB: 1024 * 1024 * 1024
+            MemoryUnit.GB: 1024 * 1024 * 1024,
         }[unit]
 
         return {
@@ -55,7 +57,7 @@ class GPUMemoryStats:
             "used": self.used_memory / divisor,
             "free": self.free_memory / divisor,
             "reserved": self.reserved_memory / divisor,
-            "cached": self.cached_memory / divisor
+            "cached": self.cached_memory / divisor,
         }
 
     def as_dict(self) -> Dict[str, Any]:
@@ -69,5 +71,5 @@ class GPUMemoryStats:
             "cached_memory_bytes": self.cached_memory,
             "usage_percent": self.usage_percent(),
             "process_memory": self.process_memory,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }

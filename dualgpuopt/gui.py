@@ -2,16 +2,23 @@
 dualgpuopt.gui – modern neon‑styled GUI
 """
 from __future__ import annotations
-import queue, platform, threading, time, tkinter as tk
+
+import queue
+import threading
+import time
+import tkinter as tk
+from pathlib import Path
+
 import ttkbootstrap as ttk
 from ttkbootstrap.toast import ToastNotification
-from ttkbootstrap.scrolled import ScrolledFrame
-from pathlib import Path
-from dualgpuopt.ui.neon import init_theme, NeonButton, GradientBar
+
+from dualgpuopt.ui.neon import GradientBar, NeonButton
+
 
 # Create a simple Tooltip class
 class Tooltip:
     """Simple tooltip class"""
+
     def __init__(self, widget, text):
         self.widget = widget
         self.text = text
@@ -37,15 +44,19 @@ class Tooltip:
             self.tooltip.destroy()
             self.tooltip = None
 
+
 # Create a simplified Meter class if not available
 class SimpleMeter(ttk.Canvas):
     """Simple meter widget replacement"""
+
     def __init__(self, master, bootstyle="info", subtext="", **kwargs):
         super().__init__(master, width=100, height=100, **kwargs)
         self.bootstyle = bootstyle
         self._value = 0
         self.create_oval(10, 10, 90, 90, outline=self._get_color(), width=2, fill="")
-        self.meter_text = self.create_text(50, 40, text="0%", fill=self._get_color(), font=("Arial", 14, "bold"))
+        self.meter_text = self.create_text(
+            50, 40, text="0%", fill=self._get_color(), font=("Arial", 14, "bold")
+        )
         self.subtext_id = self.create_text(50, 60, text=subtext, fill=self._get_color())
 
     def _get_color(self):
@@ -66,8 +77,10 @@ class SimpleMeter(ttk.Canvas):
             self.itemconfigure(self.meter_text, text=f"{int(self._value)}%")
         super().configure(**{k: v for k, v in kwargs.items() if k != "amountused"})
 
+
 class SimpleTelemetryThread(threading.Thread):
     """Basic telemetry thread sending mock data"""
+
     def __init__(self, message_queue):
         super().__init__(daemon=True)
         self.queue = message_queue
@@ -75,6 +88,7 @@ class SimpleTelemetryThread(threading.Thread):
 
     def run(self):
         import random
+
         while self.running:
             # Send random GPU utilization values (0-100%)
             self.queue.put(("util", random.uniform(10, 90)))
@@ -86,6 +100,7 @@ class SimpleTelemetryThread(threading.Thread):
 
     def stop(self):
         self.running = False
+
 
 class DualGUI(tk.Tk):
     def __init__(self):
@@ -120,7 +135,7 @@ class DualGUI(tk.Tk):
     def _init_theme(self):
         """Initialize the theme"""
         # Set up basic style
-        if hasattr(ttk, 'Style'):
+        if hasattr(ttk, "Style"):
             style = ttk.Style()
             style.theme_use("darkly")
 
@@ -132,9 +147,11 @@ class DualGUI(tk.Tk):
             style.configure("Title.TLabel", font=("Arial", 14, "bold"))
 
             # Configure notebook tabs
-            style.map("TNotebook.Tab",
-                      background=[("selected", "#371B59")],
-                      foreground=[("selected", "white")])
+            style.map(
+                "TNotebook.Tab",
+                background=[("selected", "#371B59")],
+                foreground=[("selected", "white")],
+            )
         else:
             # Fallback to basic styling if ttk.Style is not available
             self.configure(background="#2E1D47")
@@ -150,6 +167,7 @@ class DualGUI(tk.Tk):
         # Add theme toggle button to header toolbar if available
         try:
             from dualgpuopt.gui.theme import ThemeToggleButton
+
             ThemeToggleButton(hdr).pack(side="right", padx=6)
         except ImportError:
             # Fallback to simple button
@@ -157,7 +175,7 @@ class DualGUI(tk.Tk):
 
         # Notebook
         nb = ttk.Notebook(self)
-        nb.pack(fill="both", expand=True, pady=(4,0))
+        nb.pack(fill="both", expand=True, pady=(4, 0))
         self._build_launcher(nb)
         self._build_dashboard(nb)
         self._build_chat(nb)
@@ -170,45 +188,49 @@ class DualGUI(tk.Tk):
     def _build_launcher(self, nb):
         page = ttk.Frame(nb, padding=12, style="Card.TFrame")
         nb.add(page, text="Launcher")
-        ttk.Label(page, text="Model Path").grid(row=0,column=0,sticky="w")
+        ttk.Label(page, text="Model Path").grid(row=0, column=0, sticky="w")
         self.model_var = tk.StringVar(value="TheBloke/dolphin-2.2-yi-34b-200k-AWQ")
-        ttk.Entry(page, textvariable=self.model_var, width=55).grid(row=0,column=1,sticky="ew",padx=6)
+        ttk.Entry(page, textvariable=self.model_var, width=55).grid(
+            row=0, column=1, sticky="ew", padx=6
+        )
         self.launch_btn = NeonButton(page, text="Launch", command=self._on_launch)
-        self.launch_btn.grid(row=0,column=2,padx=8)
+        self.launch_btn.grid(row=0, column=2, padx=8)
         page.columnconfigure(1, weight=1)
         Tooltip(self.launch_btn, text="Start model with AWQ quantization")
 
         # Output box for logs
-        self.out_box = tk.Text(page, height=18, bg="#13141c", fg="#E6E6E6",
-                              insertbackground="white")
-        self.out_box.grid(row=2,column=0,columnspan=3,sticky="nsew",pady=(12,0))
+        self.out_box = tk.Text(
+            page, height=18, bg="#13141c", fg="#E6E6E6", insertbackground="white"
+        )
+        self.out_box.grid(row=2, column=0, columnspan=3, sticky="nsew", pady=(12, 0))
         page.rowconfigure(2, weight=1)
 
     # ------- dashboard -------
     def _build_dashboard(self, nb):
         dash = ttk.Frame(nb, padding=12, style="Card.TFrame")
-        nb.add(dash,text="Dashboard")
-        ttk.Label(dash,text="GPU Utilisation").grid(row=0,column=0,sticky="w")
+        nb.add(dash, text="Dashboard")
+        ttk.Label(dash, text="GPU Utilisation").grid(row=0, column=0, sticky="w")
         self.util_bar = GradientBar(dash)
-        self.util_bar.grid(row=0,column=1,sticky="ew")
-        ttk.Label(dash,text="VRAM Usage").grid(row=1,column=0,sticky="w",pady=8)
+        self.util_bar.grid(row=0, column=1, sticky="ew")
+        ttk.Label(dash, text="VRAM Usage").grid(row=1, column=0, sticky="w", pady=8)
         self.vram_bar = GradientBar(dash)
-        self.vram_bar.grid(row=1,column=1,sticky="ew")
+        self.vram_bar.grid(row=1, column=1, sticky="ew")
 
         # Use our SimpleMeter if ttkbootstrap.Meter is not available
         try:
             from ttkbootstrap import Meter
+
             self.tps = Meter(dash, bootstyle="success", subtext="tok/s")
         except (ImportError, AttributeError):
             self.tps = SimpleMeter(dash, bootstyle="success", subtext="tok/s")
 
-        self.tps.grid(row=0,column=2,rowspan=2,padx=12)
+        self.tps.grid(row=0, column=2, rowspan=2, padx=12)
         dash.columnconfigure(1, weight=1)
 
     # ------- chat -------
     def _build_chat(self, nb):
         chat = ttk.Frame(nb, padding=6, style="Card.TFrame")
-        nb.add(chat,text="Chat")
+        nb.add(chat, text="Chat")
 
         # Simple scrollable text area for messages
         self.chat_frame = ttk.Frame(chat)
@@ -251,11 +273,11 @@ class DualGUI(tk.Tk):
 
     def _on_send(self, *_):
         """Handle sending a message"""
-        txt = self.entry.get("1.0","end").strip()
+        txt = self.entry.get("1.0", "end").strip()
         if not txt:
             return
 
-        self.entry.delete("1.0","end")
+        self.entry.delete("1.0", "end")
         self._append_message(txt, is_user=True)
 
         # Echo the message backwards as a simple demo
@@ -302,7 +324,7 @@ class DualGUI(tk.Tk):
             ToastNotification(
                 title="New Session",
                 message="Started a new chat session",
-                duration=1800
+                duration=1800,
             ).show_toast()
         except:
             # Fallback if ToastNotification fails
@@ -323,7 +345,7 @@ class DualGUI(tk.Tk):
                 "Initializing CUDA context...",
                 f"Loading {model}...",
                 "Creating tensor parallel layers...",
-                "Model loaded successfully!"
+                "Model loaded successfully!",
             ]:
                 time.sleep(0.7)
                 self.after(10, lambda m=msg: self._append_to_output(m))
@@ -343,14 +365,16 @@ class DualGUI(tk.Tk):
 
     def _on_close(self):
         """Handle window closing"""
-        if hasattr(self, 'tele') and self.tele:
+        if hasattr(self, "tele") and self.tele:
             self.tele.stop()
         self.destroy()
+
 
 def run_app():
     """Start the UI application"""
     app = DualGUI()
     app.mainloop()
+
 
 if __name__ == "__main__":
     run_app()

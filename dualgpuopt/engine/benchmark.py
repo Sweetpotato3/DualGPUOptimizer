@@ -16,7 +16,7 @@ import threading
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 logger = logging.getLogger("dualgpuopt.engine.benchmark")
 
@@ -44,19 +44,21 @@ with _lock, _conn:
             FOREIGN KEY(mid) REFERENCES models(id) ON DELETE CASCADE
         );
         CREATE INDEX IF NOT EXISTS ix_bench_mid_ts ON bench(mid,ts DESC);
-    """
+    """,
     )
 
 
 def _get_mid(model: str, backend: str, cfg: str) -> int:
     with _lock, _conn:
         cur = _conn.execute(
-            "SELECT id FROM models WHERE model=? AND backend=? AND cfg=?", (model, backend, cfg)
+            "SELECT id FROM models WHERE model=? AND backend=? AND cfg=?",
+            (model, backend, cfg),
         ).fetchone()
         if cur:
             return cur[0]
         return _conn.execute(
-            "INSERT INTO models(model,backend,cfg) VALUES(?,?,?)", (model, backend, cfg)
+            "INSERT INTO models(model,backend,cfg) VALUES(?,?,?)",
+            (model, backend, cfg),
         ).lastrowid
 
 
@@ -83,6 +85,7 @@ class BenchmarkDB:
         Initialize the benchmark database.
 
         Args:
+        ----
             db_path: Path to the database file (defaults to ~/.dualgpuopt/benchmarks.db)
         """
         self.db_path = db_path or DEFAULT_DB_PATH
@@ -105,7 +108,7 @@ class BenchmarkDB:
                     config TEXT,
                     UNIQUE(model_path, backend, config)
                 )
-            """
+            """,
             )
 
             conn.execute(
@@ -125,15 +128,15 @@ class BenchmarkDB:
                     context_size INTEGER,
                     FOREIGN KEY (model_id) REFERENCES models(id)
                 )
-            """
+            """,
             )
 
             # Create index for faster model lookups
             conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_benchmarks_model_id ON benchmarks(model_id)"
+                "CREATE INDEX IF NOT EXISTS idx_benchmarks_model_id ON benchmarks(model_id)",
             )
             conn.execute(
-                "CREATE INDEX IF NOT EXISTS idx_benchmarks_timestamp ON benchmarks(timestamp)"
+                "CREATE INDEX IF NOT EXISTS idx_benchmarks_timestamp ON benchmarks(timestamp)",
             )
 
     def add_benchmark(
@@ -141,7 +144,7 @@ class BenchmarkDB:
         model_path: str,
         backend: str,
         tokens_per_second: float,
-        config: Optional[Dict[str, Any]] = None,
+        config: Optional[dict[str, Any]] = None,
         gpu_utilization: Optional[float] = None,
         memory_used: Optional[float] = None,
         latency_ms: Optional[float] = None,
@@ -155,6 +158,7 @@ class BenchmarkDB:
         Add a benchmark record to the database.
 
         Args:
+        ----
             model_path: Path or identifier of the model
             backend: Backend used (e.g., "vllm", "llama.cpp", "hf")
             tokens_per_second: Measured tokens per second
@@ -169,6 +173,7 @@ class BenchmarkDB:
             context_size: Optional context size
 
         Returns:
+        -------
             The ID of the newly created benchmark record
         """
         # Serialize config to JSON if provided
@@ -198,7 +203,7 @@ class BenchmarkDB:
             cursor = conn.execute(
                 """
                 INSERT INTO benchmarks (
-                    model_id, timestamp, tokens_per_second, gpu_utilization, 
+                    model_id, timestamp, tokens_per_second, gpu_utilization,
                     memory_used, latency_ms, prompt_tokens, output_tokens,
                     temperature, batch_size, context_size
                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -221,24 +226,29 @@ class BenchmarkDB:
             return cursor.lastrowid
 
     def get_model_benchmarks(
-        self, model_path: str, backend: Optional[str] = None, limit: int = 10
-    ) -> List[Dict[str, Any]]:
+        self,
+        model_path: str,
+        backend: Optional[str] = None,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
         """
         Get benchmark data for a specific model.
 
         Args:
+        ----
             model_path: Path or identifier of the model
             backend: Optional backend filter
             limit: Maximum number of records to return (default 10)
 
         Returns:
+        -------
             List of benchmark records
         """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
 
             query = """
-                SELECT 
+                SELECT
                     b.id, b.timestamp, b.tokens_per_second, b.gpu_utilization,
                     b.memory_used, b.latency_ms, b.prompt_tokens, b.output_tokens,
                     b.temperature, b.batch_size, b.context_size,
@@ -271,36 +281,42 @@ class BenchmarkDB:
             return result
 
     def get_latest_benchmark(
-        self, model_path: str, backend: Optional[str] = None
-    ) -> Optional[Dict[str, Any]]:
+        self,
+        model_path: str,
+        backend: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
         """
         Get the most recent benchmark for a model.
 
         Args:
+        ----
             model_path: Path or identifier of the model
             backend: Optional backend filter
 
         Returns:
+        -------
             Most recent benchmark record or None if not found
         """
         benchmarks = self.get_model_benchmarks(model_path, backend, limit=1)
         return benchmarks[0] if benchmarks else None
 
-    def get_fastest_models(self, limit: int = 5) -> List[Dict[str, Any]]:
+    def get_fastest_models(self, limit: int = 5) -> list[dict[str, Any]]:
         """
         Get the fastest models by average tokens per second.
 
         Args:
+        ----
             limit: Maximum number of models to return
 
         Returns:
+        -------
             List of model records with average performance metrics
         """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
 
             query = """
-                SELECT 
+                SELECT
                     m.model_path, m.backend, m.config,
                     AVG(b.tokens_per_second) as avg_tokens_per_second,
                     MAX(b.tokens_per_second) as max_tokens_per_second,
@@ -325,23 +341,27 @@ class BenchmarkDB:
                 timestamp = record.pop("last_benchmark")
                 record["last_benchmark"] = timestamp
                 record["last_benchmark_datetime"] = datetime.fromtimestamp(timestamp).strftime(
-                    "%Y-%m-%d %H:%M:%S"
+                    "%Y-%m-%d %H:%M:%S",
                 )
                 result.append(record)
 
             return result
 
     def clear_benchmarks(
-        self, model_path: Optional[str] = None, older_than_days: Optional[int] = None
+        self,
+        model_path: Optional[str] = None,
+        older_than_days: Optional[int] = None,
     ) -> int:
         """
         Clear benchmark records from the database.
 
         Args:
+        ----
             model_path: Optional model path to only clear benchmarks for this model
             older_than_days: Optional, only clear benchmarks older than this many days
 
         Returns:
+        -------
             Number of benchmark records deleted
         """
         with sqlite3.connect(self.db_path) as conn:
@@ -377,45 +397,52 @@ def record_benchmark(model_path: str, backend: str, tokens_per_second: float, **
     Convenience function that uses the global benchmark database instance.
 
     Args:
+    ----
         model_path: Path or identifier of the model
         backend: Backend used (e.g., "vllm", "llama.cpp", "hf")
         tokens_per_second: Measured tokens per second
         **kwargs: Additional benchmark metrics
 
     Returns:
+    -------
         The ID of the newly created benchmark record
     """
     return benchmark_db.add_benchmark(model_path, backend, tokens_per_second, **kwargs)
 
 
 def get_model_performance(
-    model_path: str, backend: Optional[str] = None
-) -> Optional[Dict[str, Any]]:
+    model_path: str,
+    backend: Optional[str] = None,
+) -> Optional[dict[str, Any]]:
     """
     Get the latest performance metrics for a model.
 
     Convenience function that uses the global benchmark database instance.
 
     Args:
+    ----
         model_path: Path or identifier of the model
         backend: Optional backend filter
 
     Returns:
+    -------
         The most recent benchmark for the model, or None if not found
     """
     return benchmark_db.get_latest_benchmark(model_path, backend)
 
 
-def get_fastest_models(limit: int = 5) -> List[Dict[str, Any]]:
+def get_fastest_models(limit: int = 5) -> list[dict[str, Any]]:
     """
     Get the fastest models by average tokens per second.
 
     Convenience function that uses the global benchmark database instance.
 
     Args:
+    ----
         limit: Maximum number of models to return
 
     Returns:
+    -------
         List of model records with average performance metrics
     """
     return benchmark_db.get_fastest_models(limit)

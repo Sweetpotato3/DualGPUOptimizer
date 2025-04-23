@@ -7,33 +7,37 @@ based on GPU usage thresholds.
 
 import time
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 
 class MemoryAlertLevel(Enum):
     """Alert levels for memory monitoring"""
-    NORMAL = auto()       # Memory usage normal
-    WARNING = auto()      # Memory usage high but acceptable
-    CRITICAL = auto()     # Memory usage approaching danger zone
-    EMERGENCY = auto()    # Memory usage extremely high, OOM likely
+
+    NORMAL = auto()  # Memory usage normal
+    WARNING = auto()  # Memory usage high but acceptable
+    CRITICAL = auto()  # Memory usage approaching danger zone
+    EMERGENCY = auto()  # Memory usage extremely high, OOM likely
 
 
 class MemoryAlert:
     """Memory alert notification with context and recommendations"""
 
-    def __init__(self,
-                level: MemoryAlertLevel,
-                gpu_id: int,
-                message: str,
-                current_usage: float,
-                threshold: float,
-                timestamp: float = None,
-                recommendations: List[str] = None,
-                context: Dict[str, Any] = None):
+    def __init__(
+        self,
+        level: MemoryAlertLevel,
+        gpu_id: int,
+        message: str,
+        current_usage: float,
+        threshold: float,
+        timestamp: float = None,
+        recommendations: List[str] = None,
+        context: Dict[str, Any] = None,
+    ):
         """
         Initialize memory alert
 
         Args:
+        ----
             level: Alert severity level
             gpu_id: GPU device ID
             message: Alert message

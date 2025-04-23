@@ -73,15 +73,15 @@ class EventDrivenDashboard(ttk.Frame):
         self.power_labels: Dict[str, ttk.Label] = {}
 
         # Data storage
-        self.gpu_history: Dict[int, List[float]] = {}  # GPU index -> list of utilization percentages
+        self.gpu_history: Dict[
+            int, List[float]
+        ] = {}  # GPU index -> list of utilization percentages
         self.max_history_points = 60  # Store 60 data points (1 minute at 1 sample/sec)
         self.seen_gpus: Set[int] = set()  # Track which GPUs we've seen
 
         # Subscribe to GPU metrics events with high priority
         event_bus.subscribe_typed(
-            GPUMetricsEvent,
-            self._handle_gpu_metrics,
-            priority=EventPriority.HIGH
+            GPUMetricsEvent, self._handle_gpu_metrics, priority=EventPriority.HIGH
         )
 
         # Initialize with available GPUs from system
@@ -116,7 +116,9 @@ class EventDrivenDashboard(ttk.Frame):
                     except Exception as e:
                         self.logger.error(f"Error initializing UI for new GPU: {e}")
                         return
-                elif not any(f"gpu_{event.gpu_index}" in key for key in self.gpu_progress.keys()):
+                elif not any(
+                    f"gpu_{event.gpu_index}" in key for key in self.gpu_progress.keys()
+                ):
                     # UI exists but not for this GPU
                     try:
                         self._add_gpu_to_ui(event.gpu_index)
@@ -132,7 +134,9 @@ class EventDrivenDashboard(ttk.Frame):
 
             # Limit history to max_history_points
             if len(self.gpu_history[event.gpu_index]) > self.max_history_points:
-                self.gpu_history[event.gpu_index] = self.gpu_history[event.gpu_index][-self.max_history_points:]
+                self.gpu_history[event.gpu_index] = self.gpu_history[event.gpu_index][
+                    -self.max_history_points :
+                ]
 
             # Update UI components
             self._update_ui_for_gpu(event)
@@ -190,28 +194,36 @@ class EventDrivenDashboard(ttk.Frame):
         gpu_frame.columnconfigure(1, weight=1)
 
         # GPU utilization
-        ttk.Label(gpu_frame, text="Utilization:").grid(row=0, column=0, sticky="w", padx=4, pady=2)
+        ttk.Label(gpu_frame, text="Utilization:").grid(
+            row=0, column=0, sticky="w", padx=4, pady=2
+        )
         gpu_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
         gpu_prog.grid(row=0, column=1, sticky="ew", padx=4, pady=2)
         gpu_label = ttk.Label(gpu_frame, text="0%", width=8)
         gpu_label.grid(row=0, column=2, sticky="e", padx=4, pady=2)
 
         # Memory usage
-        ttk.Label(gpu_frame, text="Memory:").grid(row=1, column=0, sticky="w", padx=4, pady=2)
+        ttk.Label(gpu_frame, text="Memory:").grid(
+            row=1, column=0, sticky="w", padx=4, pady=2
+        )
         mem_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
         mem_prog.grid(row=1, column=1, sticky="ew", padx=4, pady=2)
         mem_label = ttk.Label(gpu_frame, text="0 MB", width=8)
         mem_label.grid(row=1, column=2, sticky="e", padx=4, pady=2)
 
         # Temperature
-        ttk.Label(gpu_frame, text="Temperature:").grid(row=2, column=0, sticky="w", padx=4, pady=2)
+        ttk.Label(gpu_frame, text="Temperature:").grid(
+            row=2, column=0, sticky="w", padx=4, pady=2
+        )
         temp_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
         temp_prog.grid(row=2, column=1, sticky="ew", padx=4, pady=2)
         temp_label = ttk.Label(gpu_frame, text="0°C", width=8)
         temp_label.grid(row=2, column=2, sticky="e", padx=4, pady=2)
 
         # Power usage
-        ttk.Label(gpu_frame, text="Power:").grid(row=3, column=0, sticky="w", padx=4, pady=2)
+        ttk.Label(gpu_frame, text="Power:").grid(
+            row=3, column=0, sticky="w", padx=4, pady=2
+        )
         power_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
         power_prog.grid(row=3, column=1, sticky="ew", padx=4, pady=2)
         power_label = ttk.Label(gpu_frame, text="0W", width=8)
@@ -296,7 +308,14 @@ class EventDrivenDashboard(ttk.Frame):
         for y in range(0, 101, 20):  # 0%, 20%, 40%, 60%, 80%, 100%
             y_pos = height - (y / 100 * height)
             canvas.create_line(0, y_pos, width, y_pos, fill="#555555", dash=(1, 2))
-            canvas.create_text(5, y_pos, text=f"{y}%", anchor="w", fill="#aaaaaa", font=("Helvetica", 7))
+            canvas.create_text(
+                5,
+                y_pos,
+                text=f"{y}%",
+                anchor="w",
+                fill="#aaaaaa",
+                font=("Helvetica", 7),
+            )
 
         # Plot data for each GPU
         for gpu_index, history in self.gpu_history.items():
@@ -323,11 +342,12 @@ class EventDrivenDashboard(ttk.Frame):
 
                 # Add a label at the end of the line
                 canvas.create_text(
-                    points[-1][0] + 5, points[-1][1],
+                    points[-1][0] + 5,
+                    points[-1][1],
                     text=f"GPU {gpu_index}",
                     fill=color,
                     anchor="w",
-                    font=("Helvetica", 8)
+                    font=("Helvetica", 8),
                 )
 
     def destroy(self) -> None:

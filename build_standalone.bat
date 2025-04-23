@@ -9,4 +9,4 @@ if %ERRORLEVEL% NEQ 0 (
 echo.
 echo Build completed successfully!
 echo The executable can be found in the dist\DualGPUOptimizer directory.
-pause 
+pause

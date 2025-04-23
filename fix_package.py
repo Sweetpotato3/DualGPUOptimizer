@@ -3,9 +3,10 @@
 Fix package installation and module import issues.
 """
 import os
-import sys
-import subprocess
 import pathlib
+import subprocess
+import sys
+
 
 def main():
     # Get the current directory
@@ -26,7 +27,7 @@ def main():
         subprocess.run(
             [sys.executable, "-m", "pip", "install", "-e", str(package_dir)],
             cwd=current_dir,
-            check=True
+            check=True,
         )
         print("Package installed successfully")
     except subprocess.CalledProcessError as e:
@@ -51,13 +52,14 @@ def main():
             [sys.executable, "-m", "dual_gpu_optimizer.dualgpuopt", "--mock"],
             cwd=current_dir,
             env=env,
-            check=True
+            check=True,
         )
     except subprocess.CalledProcessError as e:
         print(f"Error running application: {e}")
         return 1
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -121,4 +121,4 @@ theme = config_service.get("theme", "dark_purple")  # Default to dark_purple if 
 
 # Save a setting
 config_service.set("idle_threshold", 30)
-``` 
+```

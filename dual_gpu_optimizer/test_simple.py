@@ -1,1 +1,1 @@
-print('Testing direct import')
+print("Testing direct import")

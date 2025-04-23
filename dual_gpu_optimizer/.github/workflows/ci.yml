@@ -4,7 +4,7 @@ on: [push, pull_request]
 # Explicitly restrict permissions
 permissions:
   contents: read
-  
+
 jobs:
   test:
     strategy:
@@ -17,4 +17,4 @@ jobs:
         with:
           python-version: ${{ matrix.pyver }}
       - run: python -m pip install -r requirements.txt pytest
-      - run: pytest -q 
+      - run: pytest -q

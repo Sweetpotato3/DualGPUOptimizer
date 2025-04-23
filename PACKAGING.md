@@ -200,4 +200,4 @@ If the packaged application doesn't work correctly:
 
 - Windows 10 or higher
 - NVIDIA drivers installed (for real GPU detection)
-- At least 2 NVIDIA GPUs recommended (can run in mock mode with fewer) 
+- At least 2 NVIDIA GPUs recommended (can run in mock mode with fewer)

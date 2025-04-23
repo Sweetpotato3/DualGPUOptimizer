@@ -3,9 +3,8 @@ Configuration I/O module for DualGPUOptimizer
 Provides functions for loading and saving configuration settings
 """
 import json
-import os
-from pathlib import Path
 import logging
+from pathlib import Path
 
 logger = logging.getLogger("DualGPUOpt.ConfigIO")
 
@@ -20,13 +19,16 @@ DEFAULT_CONFIG = {
     "last_model": "TheBloke/dolphin-2.2-yi-34b-200k-AWQ",
     "max_memory_percent": 95,
     "token_speed_sample_size": 20,
-    "personas": {}
+    "personas": {},
 }
 
-def get_config_path():
-    """Get the path to the config file
 
-    Returns:
+def get_config_path():
+    """
+    Get the path to the config file
+
+    Returns
+    -------
         Path: Path to the config file
     """
     # Try to use home directory for configuration
@@ -42,10 +44,13 @@ def get_config_path():
     # Fallback to current directory if home directory is not accessible
     return Path("dualgpuopt_config.json")
 
-def load_cfg():
-    """Load configuration from file
 
-    Returns:
+def load_cfg():
+    """
+    Load configuration from file
+
+    Returns
+    -------
         dict: Configuration settings
     """
     config_path = get_config_path()
@@ -53,7 +58,7 @@ def load_cfg():
 
     try:
         if config_path.exists():
-            with open(config_path, "r") as f:
+            with open(config_path) as f:
                 user_config = json.load(f)
                 config.update(user_config)
                 logger.info(f"Loaded configuration from {config_path}")
@@ -62,10 +67,13 @@ def load_cfg():
 
     return config
 
+
 def save_cfg(config_updates):
-    """Save configuration to file
+    """
+    Save configuration to file
 
     Args:
+    ----
         config_updates (dict): Configuration settings to update
     """
     config_path = get_config_path()
@@ -85,23 +93,30 @@ def save_cfg(config_updates):
     except Exception as e:
         logger.error(f"Error saving configuration: {e}")
 
+
 def get_value(key, default=None):
-    """Get a specific configuration value
+    """
+    Get a specific configuration value
 
     Args:
+    ----
         key (str): Configuration key
         default: Default value if key is not found
 
     Returns:
+    -------
         Value for the specified key
     """
     config = load_cfg()
     return config.get(key, default)
 
+
 def set_value(key, value):
-    """Set a specific configuration value
+    """
+    Set a specific configuration value
 
     Args:
+    ----
         key (str): Configuration key
         value: Value to set
     """

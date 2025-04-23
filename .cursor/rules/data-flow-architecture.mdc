@@ -1,58 +1,59 @@
 ---
-description: Documents the data flow between components in GPU resource management and optimization systems.
-globs: *.py,*/dualgpuopt/**
+description: Specifies data flow patterns between GPU optimization components, telemetry systems, and monitoring services
+globs: dualgpuopt/telemetry/*,dualgpuopt/memory/*,dualgpuopt/engine/*,dualgpuopt/services/*,dualgpuopt/gui/*
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Key data flows in the DualGPUOptimizer system:
+Core Data Flow Components:
 
-## GPU Telemetry Flow
-- Telemetry service collects raw GPU metrics (utilization, memory, temperature, power)
-- Metrics are processed through middleware pipeline
-- Data published to event bus for real-time monitoring
-- Historical metrics stored in 60-second rolling buffer
-- Alerts generated based on threshold violations
-- File: `dualgpuopt/telemetry.py`
+1. Telemetry Pipeline Architecture
+- Metrics Collection: GPU utilization, memory, temperature, power consumption collected by telemetry.py
+- Centralized event bus distributes metrics to visualization components
+- Rolling 60-second buffer maintains historical metrics in telemetry_history.py
+- Thresholds trigger alerts through event system:
+  * EMERGENCY: Memory ≥95% or Temperature ≥90°C
+  * CRITICAL: Memory ≥90% or Temperature ≥80°C
+  * WARNING: Memory ≥75% or Temperature ≥70°C
 
-## Memory Profiling Flow 
-- GPU memory events tracked across dual-GPU setup
-- Events categorized as allocations, spikes, leaks
-- Timeline data aggregated for analysis
-- Session-based memory metrics calculated
-- Leak detection flags sent to monitoring system
-- File: `dualgpuopt/memory/profiler.py`
+2. Memory Profiling Flow
+- Sessions track inference-specific memory patterns and token counts
+- Per-GPU timelines maintain snapshots for analysis
+- Linear regression on usage windows detects:
+  * Rapid growth spikes (immediate alerts)
+  * Gradual leaks (sustained growth)
+- Inference boundaries trigger memory delta calculations
+- Results published to profiling dashboard
 
-## Model Parameter Flow
-- Model configurations loaded from presets
-- Parameters validated against GPU capabilities
-- Optimized splits calculated for dual GPUs
-- Commands generated for framework execution
-- Results dispatched to launcher
-- File: `dualgpuopt/optimizer.py`
+3. Engine Pool Data Flow
+- Model loading triggers cache analysis/eviction
+- Health checks propagate status through event bus
+- Metrics collection includes:
+  * Cache hits/misses
+  * Load times
+  * Health check results
+- Results feed into prometheus metrics
 
-## Event Distribution Flow
-- GPU metrics published via event bus
-- Configuration changes propagate to components
-- Status updates sent to UI subscribers
-- Health check results trigger recovery actions
-- File: `dualgpuopt/services/event_bus.py`
+4. GPU Command Pipeline
+- Optimizer generates tensor parallel configurations
+- Layer balancing algorithm determines distribution
+- Results flow to command generation
+- Commands propagate to process management
 
-## Resource Management Flow
-- GPU detection triggers telemetry initialization
-- Memory thresholds control allocation limits 
-- OOM events trigger recovery procedures
-- Cache eviction managed by LRU policy
-- Resource stats aggregated for monitoring
-- File: `dualgpuopt/engine/pool/core.py`
+5. Recovery Data Flow
+- Memory pressure triggers progressive recovery:
+  * Cache clearing
+  * Process termination
+  * System commands
+- Results feed back to monitoring system
 
-Importance Scores:
-- GPU Telemetry Flow: 95 (Critical metrics pipeline)
-- Memory Profiling Flow: 90 (Core optimization data) 
-- Model Parameter Flow: 85 (Key configuration flow)
-- Event Distribution Flow: 80 (Integration backbone)
-- Resource Management Flow: 85 (Resource coordination)
+Key Files:
+- dualgpuopt/telemetry.py: Core metrics collection
+- dualgpuopt/memory/profiler.py: Memory analysis
+- dualgpuopt/engine/pool/core.py: Model caching
+- dualgpuopt/services/event_bus.py: Event distribution
+- dualgpuopt/services/telemetry.py: Metrics processing
 
 $END$

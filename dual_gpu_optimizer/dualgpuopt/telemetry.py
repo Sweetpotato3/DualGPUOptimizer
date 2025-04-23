@@ -7,13 +7,15 @@ import dataclasses as dc
 import queue
 import threading
 import logging
-from typing import Dict, List, Callable, Protocol, Optional, Any, TypedDict
+from typing import List, Protocol, TypedDict
 
-from dualgpuopt.gpu_info import probe_gpus, GPU
+from dualgpuopt.gpu_info import probe_gpus
 from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
+
 
 class GpuTelemetry(TypedDict):
     """Type definition for GPU telemetry data used by the dashboard."""
+
     gpu_index: int
     name: str
     utilization: float
@@ -27,24 +29,27 @@ class GpuTelemetry(TypedDict):
     graphics_clock: int
     memory_clock: int
 
+
 @dc.dataclass(slots=True)
 class Telemetry:
     ts: float
-    load: List[int]           # GPU utilization %
-    mem_used: List[int]       # MiB
-    pcie_rx: List[int]        # KiB/s
-    pcie_tx: List[int]        # KiB/s
-    temperature: List[int]    # °C
+    load: List[int]  # GPU utilization %
+    mem_used: List[int]  # MiB
+    pcie_rx: List[int]  # KiB/s
+    pcie_tx: List[int]  # KiB/s
+    temperature: List[int]  # °C
     power_usage: List[float]  # Watts
-    memory_util: List[int]    # Memory utilization %
-    fan_speed: List[int]      # Fan speed %
-    graphics_clock: List[int] # MHz
-    memory_clock: List[int]   # MHz
+    memory_util: List[int]  # Memory utilization %
+    fan_speed: List[int]  # Fan speed %
+    graphics_clock: List[int]  # MHz
+    memory_clock: List[int]  # MHz
 
     def to_dict(self, gpu_index: int, gpu_name: str) -> GpuTelemetry:
         """Convert telemetry data for a specific GPU to a dictionary."""
         if gpu_index >= len(self.load):
-            raise IndexError(f"GPU index {gpu_index} out of range (0-{len(self.load)-1})")
+            raise IndexError(
+                f"GPU index {gpu_index} out of range (0-{len(self.load)-1})"
+            )
 
         return {
             "gpu_index": gpu_index,
@@ -58,8 +63,9 @@ class Telemetry:
             "pcie_rx": self.pcie_rx[gpu_index],
             "pcie_tx": self.pcie_tx[gpu_index],
             "graphics_clock": self.graphics_clock[gpu_index],
-            "memory_clock": self.memory_clock[gpu_index]
+            "memory_clock": self.memory_clock[gpu_index],
         }
+
 
 class TelemetryMiddleware(Protocol):
     """Protocol for telemetry middleware components."""
@@ -67,6 +73,7 @@ class TelemetryMiddleware(Protocol):
     def process(self, telemetry: Telemetry) -> None:
         """Process telemetry data."""
         ...
+
 
 class EventBusMiddleware:
     """Middleware that publishes telemetry data to the event bus."""
@@ -78,13 +85,15 @@ class EventBusMiddleware:
     def process(self, telemetry: Telemetry) -> None:
         """Publish telemetry data to the event bus."""
         try:
-            for i, (load, mem, temp, power, fan) in enumerate(zip(
-                telemetry.load,
-                telemetry.mem_used,
-                telemetry.temperature,
-                telemetry.power_usage,
-                telemetry.fan_speed
-            )):
+            for i, (load, mem, temp, power, fan) in enumerate(
+                zip(
+                    telemetry.load,
+                    telemetry.mem_used,
+                    telemetry.temperature,
+                    telemetry.power_usage,
+                    telemetry.fan_speed,
+                )
+            ):
                 # We need to determine memory total, but it's not in the telemetry
                 # object. This is an imperfect solution as we may not get the exact
                 # total that was used to calculate, but it should be close enough
@@ -101,11 +110,12 @@ class EventBusMiddleware:
                     memory_total=mem_total,
                     temperature=float(temp),
                     power_draw=power,
-                    fan_speed=fan
+                    fan_speed=fan,
                 )
                 event_bus.publish_typed(event)
         except Exception as e:
             self.logger.error(f"Error publishing telemetry to event bus: {e}")
+
 
 class LoggingMiddleware:
     """Middleware that logs telemetry data for debugging."""
@@ -117,9 +127,12 @@ class LoggingMiddleware:
     def process(self, telemetry: Telemetry) -> None:
         """Log telemetry data."""
         try:
-            self.logger.debug(f"GPU metrics: load={telemetry.load}, temp={telemetry.temperature}")
+            self.logger.debug(
+                f"GPU metrics: load={telemetry.load}, temp={telemetry.temperature}"
+            )
         except Exception as e:
             self.logger.error(f"Error logging telemetry: {e}")
+
 
 def _collect() -> Telemetry:
     gpus = probe_gpus()
@@ -133,6 +146,7 @@ def _collect() -> Telemetry:
     memory_clock = []
 
     import pynvml as nv
+
     nv.nvmlInit()
 
     try:
@@ -200,26 +214,31 @@ def _collect() -> Telemetry:
         memory_util,
         fan_speed,
         graphics_clock,
-        memory_clock
+        memory_clock,
     )
+
 
 # Global middleware registry
 _middleware: List[TelemetryMiddleware] = []
 
+
 def register_middleware(middleware: TelemetryMiddleware) -> None:
     """Register a middleware component to process telemetry data."""
     _middleware.append(middleware)
+
 
 def unregister_middleware(middleware: TelemetryMiddleware) -> None:
     """Unregister a middleware component."""
     if middleware in _middleware:
         _middleware.remove(middleware)
 
+
 def clear_middleware() -> None:
     """Clear all middleware components."""
     _middleware.clear()
 
-def start_stream(interval: float=1.0) -> "queue.Queue[Telemetry]":
+
+def start_stream(interval: float = 1.0) -> "queue.Queue[Telemetry]":
     """
     Start collecting telemetry at the specified interval.
 
@@ -230,6 +249,7 @@ def start_stream(interval: float=1.0) -> "queue.Queue[Telemetry]":
         Queue of telemetry objects
     """
     q: "queue.Queue[Telemetry]" = queue.Queue()
+
     def run() -> None:
         while True:
             try:
@@ -257,6 +277,7 @@ def start_stream(interval: float=1.0) -> "queue.Queue[Telemetry]":
     th = threading.Thread(target=run, daemon=True)
     th.start()
     return q
+
 
 # Register default middleware
 register_middleware(EventBusMiddleware())

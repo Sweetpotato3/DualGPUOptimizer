@@ -37,9 +37,11 @@ class DualGPUOptimizerApp(QMainWindow):
     """Main application window for DualGPUOptimizer"""
 
     def __init__(self, mock_mode: bool = False, parent: Optional[QWidget] = None):
-        """Initialize the main application window
+        """
+        Initialize the main application window
 
         Args:
+        ----
             mock_mode: Whether to use mock GPU data
             parent: Parent widget
         """
@@ -234,6 +236,7 @@ class DualGPUOptimizerApp(QMainWindow):
 
             # Training Tab
             from dualgpuopt.qt.training_tab import TrainingTab
+
             self.training_tab = TrainingTab(self)
             self.tab_widget.addTab(self.training_tab, "Training")
 
@@ -251,7 +254,7 @@ class DualGPUOptimizerApp(QMainWindow):
             fallback_tab = QWidget()
             fallback_layout = QVBoxLayout(fallback_tab)
             fallback_label = QLabel(
-                f"Failed to initialize tabs: {e}\n\nPlease check logs for details."
+                f"Failed to initialize tabs: {e}\n\nPlease check logs for details.",
             )
             fallback_layout.addWidget(fallback_label)
             self.tab_widget.addTab(fallback_tab, "Error")
@@ -262,7 +265,7 @@ class DualGPUOptimizerApp(QMainWindow):
             # Connect optimizer to launcher
             if hasattr(self, "optimizer_tab") and hasattr(self, "launcher_tab"):
                 self.optimizer_tab.settings_applied.connect(
-                    self.launcher_tab.apply_optimizer_settings
+                    self.launcher_tab.apply_optimizer_settings,
                 )
                 logger.info("Connected optimizer settings to launcher")
         except Exception as e:

@@ -3,12 +3,12 @@
 Rebuild script for DualGPUOptimizer.
 This script rebuilds the application with PyInstaller with all necessary dependencies.
 """
-import os
-import sys
 import pathlib
-import subprocess
-import tempfile
 import shutil
+import subprocess
+import sys
+import tempfile
+
 
 def copy_constants_file():
     """Make sure constants.py is correctly installed in the package."""
@@ -33,6 +33,7 @@ def copy_constants_file():
     except Exception as e:
         print(f"Error copying constants.py: {e}")
         return False
+
 
 def copy_module_files():
     """Create a directory structure for PyInstaller with flattened imports."""
@@ -62,7 +63,8 @@ def copy_module_files():
         # Create a simplified __main__.py that imports only what's needed
         main_py = temp_package_dir / "__main__.py"
         with open(main_py, "w") as f:
-            f.write("""#!/usr/bin/env python3
+            f.write(
+                """#!/usr/bin/env python3
 import os
 import sys
 import logging
@@ -91,7 +93,8 @@ except Exception as e:
     import traceback
     traceback.print_exc()
     sys.exit(1)
-""")
+"""
+            )
 
         print(f"Module files copied to {temp_dir}")
         return temp_dir
@@ -100,6 +103,7 @@ except Exception as e:
         print(f"Error copying module files: {e}")
         shutil.rmtree(temp_dir, ignore_errors=True)
         return None
+
 
 def build_with_pyinstaller(temp_dir):
     """Build the application with PyInstaller."""
@@ -111,16 +115,23 @@ def build_with_pyinstaller(temp_dir):
 
     # Create PyInstaller command
     cmd = [
-        sys.executable, "-m", "PyInstaller",
+        sys.executable,
+        "-m",
+        "PyInstaller",
         "--onefile",
         "--windowed",
         "--clean",
-        "--name", "DualGPUOptimizer",
-        "--add-data", f"{temp_dir}:dualgpuopt",
-        "--hidden-import", "dualgpuopt",
-        "--hidden-import", "dualgpuopt.gui",
-        "--hidden-import", "dualgpuopt.gui.constants",
-        str(pyinstaller_script)
+        "--name",
+        "DualGPUOptimizer",
+        "--add-data",
+        f"{temp_dir}:dualgpuopt",
+        "--hidden-import",
+        "dualgpuopt",
+        "--hidden-import",
+        "dualgpuopt.gui",
+        "--hidden-import",
+        "dualgpuopt.gui.constants",
+        str(pyinstaller_script),
     ]
 
     print(f"Running PyInstaller command: {' '.join(cmd)}")
@@ -135,6 +146,7 @@ def build_with_pyinstaller(temp_dir):
     except Exception as e:
         print(f"Unexpected error during build: {e}")
         return False
+
 
 def main():
     """Main entry point."""
@@ -163,6 +175,7 @@ def main():
         # Clean up temp directory
         if temp_dir:
             shutil.rmtree(temp_dir, ignore_errors=True)
+
 
 if __name__ == "__main__":
     sys.exit(main())

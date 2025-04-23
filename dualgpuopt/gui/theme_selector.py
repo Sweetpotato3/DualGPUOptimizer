@@ -4,10 +4,10 @@ Provides a dropdown for selecting and previewing themes
 """
 from __future__ import annotations
 
+import logging
 import tkinter as tk
 from tkinter import ttk
-import logging
-from typing import Dict, Any, Callable, Optional, List
+from typing import Callable, Optional
 
 from dualgpuopt.gui.theme import AVAILABLE_THEMES, set_theme
 from dualgpuopt.services.event_service import event_bus
@@ -19,6 +19,7 @@ except ImportError:
 
 logger = logging.getLogger("DualGPUOpt.ThemeSelector")
 
+
 class ThemeSelector(ttk.Frame):
     """A theme selection dropdown with previews"""
 
@@ -28,12 +29,13 @@ class ThemeSelector(ttk.Frame):
         label_text: str = "Theme:",
         callback: Optional[Callable[[str], None]] = None,
         padx: int = 8,
-        pady: int = 5
+        pady: int = 5,
     ) -> None:
         """
         Initialize a theme selector widget
 
         Args:
+        ----
             parent: Parent widget
             label_text: Text for the label
             callback: Optional callback when theme changes
@@ -62,7 +64,7 @@ class ThemeSelector(ttk.Frame):
             textvariable=self.theme_var,
             values=theme_values,
             width=12,
-            state="readonly"
+            state="readonly",
         )
         self.theme_combo.pack(side="left", padx=padx, pady=pady)
 
@@ -74,7 +76,7 @@ class ThemeSelector(ttk.Frame):
         self.apply_button = ttk.Button(
             self,
             text="Apply",
-            command=self._apply_theme
+            command=self._apply_theme,
         )
         self.apply_button.pack(side="left", padx=padx, pady=pady)
 
@@ -97,19 +99,28 @@ class ThemeSelector(ttk.Frame):
 
         # Draw theme preview with primary, secondary and accent colors
         self.preview_canvas.create_rectangle(
-            2, 2, 24, 24,
+            2,
+            2,
+            24,
+            24,
             fill=theme_colors["bg"],
-            outline=theme_colors["border"]
+            outline=theme_colors["border"],
         )
         self.preview_canvas.create_rectangle(
-            6, 6, 20, 20,
+            6,
+            6,
+            20,
+            20,
             fill=theme_colors["secondary_bg"],
-            outline=""
+            outline="",
         )
         self.preview_canvas.create_rectangle(
-            10, 10, 14, 14,
+            10,
+            10,
+            14,
+            14,
             fill=theme_colors["accent"],
-            outline=""
+            outline="",
         )
 
     def _apply_theme(self) -> None:

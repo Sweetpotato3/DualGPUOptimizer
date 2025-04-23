@@ -4,18 +4,16 @@ Mock GPU module for testing without actual hardware
 
 from __future__ import annotations
 
-import logging
 import random
 import sys
-from typing import Dict, Any, List
+from typing import Any
 
-from dualgpuopt.gpu.common import MOCK_MODE, logger
+from dualgpuopt.gpu.common import logger
 
 
 def set_mock_mode(enabled: bool) -> None:
     """Enable or disable mock GPU mode"""
     global MOCK_MODE
-    from dualgpuopt.gpu.common import MOCK_MODE as COMMON_MOCK_MODE
 
     # Update in both modules to maintain consistency
     MOCK_MODE = enabled
@@ -32,7 +30,7 @@ def get_mock_mode() -> bool:
 
 
 # Store the last generated mock GPUs for memory updates
-_last_mock_gpus: List[Dict[str, Any]] = []
+_last_mock_gpus: list[dict[str, Any]] = []
 
 
 def update_mock_memory_usage(gpu_id: int, delta: int) -> bool:
@@ -40,10 +38,12 @@ def update_mock_memory_usage(gpu_id: int, delta: int) -> bool:
     Update memory usage for a mock GPU
 
     Args:
+    ----
         gpu_id: GPU ID to update
         delta: Change in memory (positive for allocation, negative for deallocation)
 
     Returns:
+    -------
         True if the update was successful, False otherwise
     """
     global _last_mock_gpus
@@ -71,13 +71,16 @@ def update_mock_memory_usage(gpu_id: int, delta: int) -> bool:
     return True
 
 
-def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
-    """Generate mock GPU data for testing
+def generate_mock_gpus(gpu_count: int = 2) -> list[dict[str, Any]]:
+    """
+    Generate mock GPU data for testing
 
     Args:
+    ----
         gpu_count: Number of mock GPUs to generate (default: 2)
 
     Returns:
+    -------
         List of dictionaries with mock GPU data
     """
     global _last_mock_gpus
@@ -127,7 +130,7 @@ def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
                         "power_usage": 200.0,
                         "clock_sm": 1500,
                         "clock_memory": 1200,
-                    }
+                    },
                 )
             else:
                 mock_gpus.append(
@@ -142,7 +145,7 @@ def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
                         "power_usage": 150.0,
                         "clock_sm": 1300,
                         "clock_memory": 1000,
-                    }
+                    },
                 )
         else:
             # Random utilization between 1-max_util
@@ -177,7 +180,7 @@ def generate_mock_gpus(gpu_count: int = 2) -> List[Dict[str, Any]]:
                     "power_usage": float(power),  # Ensure power is a float
                     "clock_sm": int(clock),
                     "clock_memory": int(clock * 0.75),  # Memory clock is typically lower
-                }
+                },
             )
 
     # Reset the random seed if not in test mode

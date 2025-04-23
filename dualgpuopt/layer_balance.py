@@ -2,24 +2,30 @@
 Layer balancing module for distributing model layers across multiple GPUs
 """
 from __future__ import annotations
-import time
-import logging
+
 import json
-import pathlib
-from typing import Dict, List, Optional, Any
+import logging
 import math
 import os
+import pathlib
+import time
 from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Optional
 
 logger = logging.getLogger("DualGPUOpt.LayerBalance")
+
 
 class LayerProfiler:
     """Profiles transformer layer performance across multiple GPUs"""
 
-    def __init__(self, use_cache: bool = True, cache_dir: Optional[str] = None, profile_runs: int = 5):
-        """Initialize profiler
+    def __init__(
+        self, use_cache: bool = True, cache_dir: Optional[str] = None, profile_runs: int = 5
+    ):
+        """
+        Initialize profiler
 
         Args:
+        ----
             use_cache: Whether to use cached profiling results
             cache_dir: Directory to store profiling cache
             profile_runs: Number of profiling runs to average (more runs = more stability)
@@ -46,18 +52,22 @@ class LayerProfiler:
             self._executor.shutdown(wait=False)
             self._executor = None
 
-    def profile_layer(self, model: Any, layer_idx: int, test_ids: Any, dev: int,
-                     warmup: bool = False) -> float:
-        """Profile a single layer's execution time
-        
+    def profile_layer(
+        self, model: Any, layer_idx: int, test_ids: Any, dev: int, warmup: bool = False
+    ) -> float:
+        """
+        Profile a single layer's execution time
+
         Args:
+        ----
             model: The transformer model
             layer_idx: Layer index to profile
             test_ids: Input tensor for profiling
             dev: Device ID to profile on
             warmup: Whether this is a warmup run (results ignored)
-            
+
         Returns:
+        -------
             Average execution time in seconds
         """
         try:
@@ -95,16 +105,21 @@ class LayerProfiler:
             # Return estimated time on error
             return 0.003 * (1 + 0.05 * layer_idx)  # Slight increase for later layers
 
-    def _profile_sequence_length(self, model: Any, dummy_ids: Any, dev: int, seq_len: int) -> List[float]:
-        """Profile all layers for a specific sequence length
-        
+    def _profile_sequence_length(
+        self, model: Any, dummy_ids: Any, dev: int, seq_len: int
+    ) -> list[float]:
+        """
+        Profile all layers for a specific sequence length
+
         Args:
+        ----
             model: The transformer model
             dummy_ids: Base input tensor
             dev: Device ID
             seq_len: Sequence length to profile
-            
+
         Returns:
+        -------
             List of layer execution times
         """
         try:
@@ -143,10 +158,15 @@ class LayerProfiler:
         except Exception as e:
             logger.error(f"Error profiling sequence length {seq_len}: {e}")
             # Generate mock data with a sensible pattern
-            n_layers = len(model.model.layers) if hasattr(model, 'model') and hasattr(model.model, 'layers') else 32
+            n_layers = (
+                len(model.model.layers)
+                if hasattr(model, "model") and hasattr(model.model, "layers")
+                else 32
+            )
 
             # Create realistic mock data where later layers tend to be slower
             import random
+
             base_time = 0.001  # Base time in seconds
             seq_factor = seq_len / 64.0  # Scaling factor for sequence length
 
@@ -160,17 +180,21 @@ class LayerProfiler:
 
             return times
 
-    def profile(self, model: Any, dummy_ids: Any, dev: int, seq_lengths: List[int] = None) -> Dict[int, List[float]]:
+    def profile(
+        self, model: Any, dummy_ids: Any, dev: int, seq_lengths: list[int] = None
+    ) -> dict[int, list[float]]:
         """
         Profile execution time of each transformer layer on a specific GPU with multiple sequence lengths
 
         Args:
+        ----
             model: The transformer model
             dummy_ids: Tensor with dummy token IDs for profiling
             dev: Device ID to profile on
             seq_lengths: List of sequence lengths to profile with
 
         Returns:
+        -------
             Dictionary mapping sequence length to list of execution times per layer
         """
         if seq_lengths is None:
@@ -178,10 +202,12 @@ class LayerProfiler:
 
         try:
             # Check for cached results
-            cache_file = os.path.join(self.cache_dir, f"profile_gpu{dev}_{model.__class__.__name__}.json")
+            cache_file = os.path.join(
+                self.cache_dir, f"profile_gpu{dev}_{model.__class__.__name__}.json"
+            )
             if self.use_cache and os.path.exists(cache_file):
                 try:
-                    with open(cache_file, 'r') as f:
+                    with open(cache_file) as f:
                         cached_data = json.load(f)
 
                     # Convert string keys back to integers
@@ -219,7 +245,7 @@ class LayerProfiler:
             # Cache the results
             if self.use_cache:
                 try:
-                    with open(cache_file, 'w') as f:
+                    with open(cache_file, "w") as f:
                         json.dump(results, f, indent=2)
                     logger.info(f"Saved profiling results to {cache_file}")
                 except Exception as e:
@@ -233,6 +259,7 @@ class LayerProfiler:
             results = {}
             for seq_len in seq_lengths:
                 import random
+
                 # Create realistic mock data where:
                 # - Later layers tend to be slower than earlier layers
                 # - Longer sequences take more time proportionally
@@ -256,38 +283,47 @@ class LayerProfiler:
             logger.error(f"Error during profiling: {e}")
             # Return mock data on error
             import random
-            return {64: [random.uniform(0.001, 0.005) for _ in range(32)],
-                    1024: [random.uniform(0.005, 0.015) for _ in range(32)]}
+
+            return {
+                64: [random.uniform(0.001, 0.005) for _ in range(32)],
+                1024: [random.uniform(0.005, 0.015) for _ in range(32)],
+            }
 
         finally:
             # Clean up the executor
             self._cleanup_executor()
 
-def rebalance(model: Any, dev_fast: int, dev_slow: int, reserve_ratio: float = 0.9) -> Dict[str, int]:
+
+def rebalance(
+    model: Any, dev_fast: int, dev_slow: int, reserve_ratio: float = 0.9
+) -> dict[str, int]:
     """
     Alias for balance_layers with the same signature for backward compatibility
     """
     return balance_layers(model, dev_fast, dev_slow, reserve_ratio)
 
-def balance_layers(model: Any,
-                   dev_fast: int,
-                   dev_slow: int,
-                   reserve_ratio: float = 0.9) -> Dict[str, int]:
+
+def balance_layers(
+    model: Any, dev_fast: int, dev_slow: int, reserve_ratio: float = 0.9
+) -> dict[str, int]:
     """
     Balance model layers across two GPUs based on performance profiling
 
     Args:
+    ----
         model: The transformer model
         dev_fast: The faster GPU device ID
         dev_slow: The slower GPU device ID
         reserve_ratio: Ratio of layers to assign to faster GPU (0.0-1.0)
 
     Returns:
+    -------
         Dictionary mapping layer names to device IDs
     """
     try:
         import torch
         import torch.multiprocessing as mp
+
         multiprocessing_available = True
     except ImportError:
         multiprocessing_available = False
@@ -295,6 +331,7 @@ def balance_layers(model: Any,
 
     try:
         import torch
+
         # Create dummy input for profiling (128 tokens)
         dummy = torch.randint(10, (1, 128))
 
@@ -305,7 +342,7 @@ def balance_layers(model: Any,
         if multiprocessing_available:
             logger.info("Using multiprocessing for GPU profiling")
             # Create multiprocessing context
-            ctx = mp.get_context('spawn')
+            ctx = mp.get_context("spawn")
 
             # Define profiling function for a process
             def profile_gpu(gpu_id, result_queue):
@@ -360,8 +397,8 @@ def balance_layers(model: Any,
         # Calculate weighted performance ratio
         # We weight long sequences more heavily as they have more impact on inference performance
         weights = {
-            64: 0.2,    # Short sequences get 20% weight
-            1024: 0.8   # Long sequences get 80% weight
+            64: 0.2,  # Short sequences get 20% weight
+            1024: 0.8,  # Long sequences get 80% weight
         }
 
         weighted_perf_ratio = []
@@ -395,6 +432,7 @@ def balance_layers(model: Any,
         logger.warning("PyTorch not available, using estimated performance ratio")
         # Generate estimated performance ratios
         import random
+
         n_layers = 32  # Assume 32 layers as default
 
         # Create a more realistic pattern where ratio tends to vary by layer position
@@ -424,7 +462,7 @@ def balance_layers(model: Any,
     layer_indices_by_performance = sorted(
         range(n_layers),
         key=lambda i: weighted_perf_ratio[i],
-        reverse=True
+        reverse=True,
     )
 
     # First pass: assign layers with highest performance differential
@@ -454,20 +492,27 @@ def balance_layers(model: Any,
     # Log layer distribution
     fast_layers = sum(1 for dev in optimized_mapping.values() if dev == dev_fast)
     slow_layers = sum(1 for dev in optimized_mapping.values() if dev == dev_slow)
-    logger.info(f"Layer balance: {fast_layers} layers on GPU {dev_fast}, {slow_layers} layers on GPU {dev_slow}")
-    logger.info(f"Saved device mapping to {path} (assigned {used:.1f}/{quota:.1f} to GPU {dev_fast})")
+    logger.info(
+        f"Layer balance: {fast_layers} layers on GPU {dev_fast}, {slow_layers} layers on GPU {dev_slow}"
+    )
+    logger.info(
+        f"Saved device mapping to {path} (assigned {used:.1f}/{quota:.1f} to GPU {dev_fast})"
+    )
 
     return optimized_mapping
 
-def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[str, int]:
+
+def optimize_contiguous_blocks(mapping: dict[str, int], n_layers: int) -> dict[str, int]:
     """
     Optimize mapping to create more contiguous blocks of layers on the same GPU
 
     Args:
+    ----
         mapping: Original mapping from layer names to device IDs
         n_layers: Total number of layers
 
     Returns:
+    -------
         Optimized mapping with more contiguous blocks
     """
     # Extract the original device assignments
@@ -476,7 +521,7 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
     # Bitmap of initial devices (1 = change in device)
     device_changes = [0] * n_layers
     for i in range(1, n_layers):
-        if devices[i] != devices[i-1]:
+        if devices[i] != devices[i - 1]:
             device_changes[i] = 1
 
     # Count initial transitions
@@ -494,10 +539,10 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
     blocks = []
     start = 0
     for i in range(1, n_layers):
-        if devices[i] != devices[i-1]:
-            blocks.append((start, i-1, devices[i-1]))
+        if devices[i] != devices[i - 1]:
+            blocks.append((start, i - 1, devices[i - 1]))
             start = i
-    blocks.append((start, n_layers-1, devices[n_layers-1]))
+    blocks.append((start, n_layers - 1, devices[n_layers - 1]))
 
     # Optimize small blocks strategically
     changes_made = True
@@ -518,9 +563,9 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
                 # First block, merge with next if small
                 if block_size < MIN_BLOCK_SIZE:
                     # Get next block's device
-                    next_device = blocks[i+1][2]
+                    next_device = blocks[i + 1][2]
                     # Update device assignments
-                    for j in range(start, end+1):
+                    for j in range(start, end + 1):
                         devices[j] = next_device
                     changes_made = True
                     break
@@ -528,26 +573,26 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
                 # Last block, merge with previous if small
                 if block_size < MIN_BLOCK_SIZE:
                     # Get previous block's device
-                    prev_device = blocks[i-1][2]
+                    prev_device = blocks[i - 1][2]
                     # Update device assignments
-                    for j in range(start, end+1):
+                    for j in range(start, end + 1):
                         devices[j] = prev_device
                     changes_made = True
                     break
             else:
                 # Middle block, determine which neighbor to merge with
                 if block_size < MIN_BLOCK_SIZE:
-                    prev_size = blocks[i-1][1] - blocks[i-1][0] + 1
-                    next_size = blocks[i+1][1] - blocks[i+1][0] + 1
+                    prev_size = blocks[i - 1][1] - blocks[i - 1][0] + 1
+                    next_size = blocks[i + 1][1] - blocks[i + 1][0] + 1
 
                     # Prefer merging with the larger neighbor for stability
                     if prev_size >= next_size:
-                        target_device = blocks[i-1][2]
+                        target_device = blocks[i - 1][2]
                     else:
-                        target_device = blocks[i+1][2]
+                        target_device = blocks[i + 1][2]
 
                     # Update device assignments
-                    for j in range(start, end+1):
+                    for j in range(start, end + 1):
                         devices[j] = target_device
                     changes_made = True
                     break
@@ -557,10 +602,10 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
             blocks = []
             start = 0
             for i in range(1, n_layers):
-                if devices[i] != devices[i-1]:
-                    blocks.append((start, i-1, devices[i-1]))
+                if devices[i] != devices[i - 1]:
+                    blocks.append((start, i - 1, devices[i - 1]))
                     start = i
-            blocks.append((start, n_layers-1, devices[n_layers-1]))
+            blocks.append((start, n_layers - 1, devices[n_layers - 1]))
 
     # Create new mapping
     optimized = {}
@@ -574,15 +619,20 @@ def optimize_contiguous_blocks(mapping: Dict[str, int], n_layers: int) -> Dict[s
 
     return optimized
 
-def get_device_map(save_path: Optional[str] = None, gpu_ratios: Optional[List[float]] = None) -> Dict[str, int]:
+
+def get_device_map(
+    save_path: Optional[str] = None, gpu_ratios: Optional[list[float]] = None
+) -> dict[str, int]:
     """
     Get a device map for a typical dual-GPU setup without profiling
 
     Args:
+    ----
         save_path: Optional path to save the device map JSON
         gpu_ratios: Optional ratio for layer distribution, like [0.6, 0.4]
 
     Returns:
+    -------
         Dictionary mapping layer names to device IDs
     """
     # Simple heuristic - split layers based on ratios or evenly

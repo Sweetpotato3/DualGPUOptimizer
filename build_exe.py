@@ -183,7 +183,7 @@ if __name__ == "__main__":
         print("To ensure the icon displays correctly in Windows Explorer:")
         print("1. Try renaming the executable and changing it back")
         print(
-            "2. If that doesn't work, clear the Windows icon cache by running 'ie4uinit.exe -show'"
+            "2. If that doesn't work, clear the Windows icon cache by running 'ie4uinit.exe -show'",
         )
     else:
         print("\nBuild failed. Please check the errors above.")

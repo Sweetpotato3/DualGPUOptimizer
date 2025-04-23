@@ -2,11 +2,11 @@
 """
 Fix module path issues for the DualGPUOptimizer application.
 """
-import sys
-import os
-import pathlib
 import importlib
 import importlib.util
+import pathlib
+import sys
+
 
 def check_module(module_name):
     """Check if a module can be imported."""
@@ -16,6 +16,7 @@ def check_module(module_name):
     except ImportError as e:
         print(f"Cannot import {module_name}: {e}")
         return False
+
 
 def fix_module_paths():
     """Add necessary paths to sys.path to fix import issues."""
@@ -48,13 +49,13 @@ def fix_module_paths():
 
         # Try creating a constants.py file directly in the package
         try:
-            with open(constants_path, "r") as src_file:
+            with open(constants_path) as src_file:
                 constants_content = src_file.read()
 
             # Create __init__.py files if not present
             init_paths = [
                 package_dir / "dualgpuopt" / "__init__.py",
-                package_dir / "dualgpuopt" / "gui" / "__init__.py"
+                package_dir / "dualgpuopt" / "gui" / "__init__.py",
             ]
 
             for init_path in init_paths:
@@ -76,6 +77,7 @@ def fix_module_paths():
 
     return result
 
+
 def main():
     """Main entry point."""
     # Try to fix module paths
@@ -85,6 +87,7 @@ def main():
     else:
         print("Failed to fix module paths")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

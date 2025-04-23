@@ -106,4 +106,4 @@ The system is designed with legal compliance in mind:
 For more detailed information, refer to:
 - [README_LEGAL_LLM.md](dualgpuopt/README_LEGAL_LLM.md): Detailed documentation
 - [run_legal_llm.bat](run_legal_llm.bat) / [run_legal_llm.sh](run_legal_llm.sh): Helper scripts
-- [requirements_legal.txt](dualgpuopt/requirements_legal.txt): Dependencies 
+- [requirements_legal.txt](dualgpuopt/requirements_legal.txt): Dependencies
