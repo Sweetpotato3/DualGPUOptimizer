@@ -24,6 +24,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE, GPU_COLORS
+
 # Try to import matplotlib for visualization
 try:
     from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -210,7 +213,7 @@ class MemoryChart(QFrame):
                 border-radius: 8px;
                 padding: 8px;
             }
-        """
+        """,
         )
 
         # Main layout
@@ -610,7 +613,7 @@ class EventLogView(QFrame):
                 border-radius: 8px;
                 padding: 8px;
             }
-        """
+        """,
         )
 
         # Main layout
@@ -638,7 +641,7 @@ class EventLogView(QFrame):
                 border: 1px solid #3D2A50;
                 padding: 8px;
             }
-        """
+        """,
         )
         layout.addWidget(self.event_log)
 
@@ -712,7 +715,7 @@ class MemoryStatsPanel(QFrame):
                 border-radius: 8px;
                 padding: 8px;
             }
-        """
+        """,
         )
 
         # Main layout
@@ -740,7 +743,7 @@ class MemoryStatsPanel(QFrame):
                 background-color: #3D2A50;
                 font-weight: bold;
             }
-        """
+        """,
         )
         layout.addWidget(self.tab_widget)
 
@@ -811,7 +814,7 @@ class MemoryStatsPanel(QFrame):
                 border: 1px solid #3D2A50;
                 padding: 8px;
             }
-        """
+        """,
         )
         overview_layout.addWidget(self.analysis_text)
 
@@ -844,7 +847,7 @@ class MemoryStatsPanel(QFrame):
                 border: 1px solid #3D2A50;
                 padding: 8px;
             }
-        """
+        """,
         )
         pattern_layout.addWidget(self.pattern_list)
 
@@ -941,7 +944,7 @@ class MemoryStatsPanel(QFrame):
                 background-color: #8A54FD;
                 border-radius: 3px;
             }
-        """
+        """,
         )
         vis_layout.addWidget(self.eff_bar0)
 
@@ -963,7 +966,7 @@ class MemoryStatsPanel(QFrame):
                 background-color: #4CAF50;
                 border-radius: 3px;
             }
-        """
+        """,
         )
         vis_layout.addWidget(self.eff_bar1)
 
@@ -1008,7 +1011,7 @@ class MemoryStatsPanel(QFrame):
         leaks = stats.get("potential_leaks", [])
         if leaks:
             self.analysis_text.insertHtml(
-                "<b style='color: #F44336;'>Potential Memory Leaks:</b><br>"
+                "<b style='color: #F44336;'>Potential Memory Leaks:</b><br>",
             )
             for leak in leaks:
                 gpu_id = leak.get("gpu_id", 0)
@@ -1018,9 +1021,7 @@ class MemoryStatsPanel(QFrame):
                 color = (
                     "#F44336"
                     if severity == "high"
-                    else "#FF9800"
-                    if severity == "medium"
-                    else "#FFC107"
+                    else "#FF9800" if severity == "medium" else "#FFC107"
                 )
                 html = (
                     f"<p style='margin-left: 12px;'>GPU {gpu_id}: <span style='color: {color};'>{severity}</span> "
@@ -1032,7 +1033,7 @@ class MemoryStatsPanel(QFrame):
         spikes = stats.get("allocation_spikes", [])
         if spikes:
             self.analysis_text.insertHtml(
-                "<br><b style='color: #FF9800;'>Memory Allocation Spikes:</b><br>"
+                "<br><b style='color: #FF9800;'>Memory Allocation Spikes:</b><br>",
             )
             for spike in spikes:
                 gpu_id = spike.get("gpu_id", 0)
@@ -1042,9 +1043,7 @@ class MemoryStatsPanel(QFrame):
                 color = (
                     "#F44336"
                     if severity == "high"
-                    else "#FF9800"
-                    if severity == "medium"
-                    else "#FFC107"
+                    else "#FF9800" if severity == "medium" else "#FFC107"
                 )
                 html = (
                     f"<p style='margin-left: 12px;'>GPU {gpu_id}: <span style='color: {color};'>{severity}</span> "
@@ -1088,13 +1087,15 @@ class MemoryStatsPanel(QFrame):
         if token_count > 0:
             if peak_memory.get(0, 0) > 0:
                 eff0 = min(
-                    100, (token_count / peak_memory.get(0, 1)) * 10
+                    100,
+                    (token_count / peak_memory.get(0, 1)) * 10,
                 )  # Scale for visual effect
                 self.eff_bar0.setValue(int(eff0))
 
             if peak_memory.get(1, 0) > 0:
                 eff1 = min(
-                    100, (token_count / peak_memory.get(1, 1)) * 10
+                    100,
+                    (token_count / peak_memory.get(1, 1)) * 10,
                 )  # Scale for visual effect
                 self.eff_bar1.setValue(int(eff1))
 
@@ -1129,7 +1130,7 @@ class MemoryStatsPanel(QFrame):
                             "description": f"GPU memory usage is imbalanced (ratio: {ratio:.2f})",
                             "severity": "high" if (ratio > 3 or ratio < 0.33) else "medium",
                             "recommendation": "Consider redistributing model layers or using tensor parallelism",
-                        }
+                        },
                     )
 
                     color = "#F44336" if ratio > 3 or ratio < 0.33 else "#FF9800"
@@ -1156,7 +1157,7 @@ class MemoryStatsPanel(QFrame):
                             "severity": severity,
                             "description": f"Steady memory growth detected on GPU {gpu_id}",
                             "recommendation": "Look for resource leaks in model implementation",
-                        }
+                        },
                     )
 
                     color = "#F44336" if severity == "high" else "#FF9800"
@@ -1181,7 +1182,7 @@ class MemoryStatsPanel(QFrame):
                                     "severity": "medium",
                                     "description": f"High memory usage per inference on GPU {gpu_id}",
                                     "recommendation": "Consider quantization or efficient attention mechanisms",
-                                }
+                                },
                             )
 
                             html = (
@@ -1209,7 +1210,7 @@ class MemoryStatsPanel(QFrame):
                                 "severity": "medium" if count >= 5 else "low",
                                 "description": f"Possible memory fragmentation on GPU {gpu_id}",
                                 "recommendation": "Consider implementing memory defragmentation",
-                            }
+                            },
                         )
 
                         color = "#FF9800" if count >= 5 else "#FFC107"
@@ -1236,7 +1237,7 @@ class MemoryStatsPanel(QFrame):
 
                 if high_severity:
                     self.pattern_list.insertHtml(
-                        "<p style='color: #F44336;'>High Priority:</p><ul>"
+                        "<p style='color: #F44336;'>High Priority:</p><ul>",
                     )
                     for pattern in high_severity:
                         self.pattern_list.insertHtml(f"<li>{pattern.get('recommendation')}</li>")
@@ -1244,7 +1245,7 @@ class MemoryStatsPanel(QFrame):
 
                 if med_severity:
                     self.pattern_list.insertHtml(
-                        "<p style='color: #FF9800;'>Medium Priority:</p><ul>"
+                        "<p style='color: #FF9800;'>Medium Priority:</p><ul>",
                     )
                     for pattern in med_severity:
                         self.pattern_list.insertHtml(f"<li>{pattern.get('recommendation')}</li>")
@@ -1259,7 +1260,7 @@ class MemoryStatsPanel(QFrame):
             logger.error(f"Error in memory pattern analysis: {e}")
             self.pattern_list.clear()
             self.pattern_list.insertHtml(
-                f"<p style='color: #F44336;'>Error during analysis: {e!s}</p>"
+                f"<p style='color: #F44336;'>Error during analysis: {e!s}</p>",
             )
 
     def clear_analysis(self):
@@ -1312,7 +1313,7 @@ class MemoryProfilerPanel(QWidget):
             QPushButton:hover {
                 background-color: #66BB6A;
             }
-        """
+        """,
         )
 
         self.stop_button = QPushButton("Stop Profiling")
@@ -1326,7 +1327,7 @@ class MemoryProfilerPanel(QWidget):
             QPushButton:hover {
                 background-color: #EF5350;
             }
-        """
+        """,
         )
 
         button_layout.addWidget(self.start_button)

@@ -1,6 +1,7 @@
 """
 Model Manager tab for searching, downloading, and managing ML models.
 """
+
 from __future__ import annotations
 
 import logging
@@ -23,6 +24,9 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE
 
 from dualgpuopt.engine.pool import EnginePool
 from dualgpuopt.gpu.info import query as gpu_query
@@ -212,11 +216,11 @@ class ModelManager(QWidget):
                     self.res.setItem(r, 3, QTableWidgetItem(plan.get("quant", "N/A")))
 
                     vram_item = QTableWidgetItem(
-                        f"GPU: {plan.get('gpu_layers', 'All')}"
-                        if plan.get("quant") == "gguf"
-                        else "All GPU"
-                        if not plan.get("device_map")
-                        else "Split",
+                        (
+                            f"GPU: {plan.get('gpu_layers', 'All')}"
+                            if plan.get("quant") == "gguf"
+                            else "All GPU" if not plan.get("device_map") else "Split"
+                        ),
                     )
                     self.res.setItem(r, 4, vram_item)
 
@@ -228,7 +232,7 @@ class ModelManager(QWidget):
                     lambda _, idx=r: self._download(
                         self.models[idx]["id"],
                         fit_plan(self.models[idx]["size"] or 1 << 30, gpu_query()),
-                    )
+                    ),
                 )
                 self.res.setCellWidget(r, 6, btn)
 
@@ -272,7 +276,7 @@ class ModelManager(QWidget):
         percent = int(current * 100 / total) if total else 0
         self.progress_bar.setValue(percent)
         self.progress_label.setText(
-            f"Downloaded: {current/(1024*1024):.1f} MB / {total/(1024*1024):.1f} MB ({percent}%)"
+            f"Downloaded: {current/(1024*1024):.1f} MB / {total/(1024*1024):.1f} MB ({percent}%)",
         )
 
     @Slot(str)
@@ -306,7 +310,9 @@ class ModelManager(QWidget):
     def _browse(self):
         """Open a folder browser dialog to select model directory."""
         directory = QFileDialog.getExistingDirectory(
-            self, "Select Models Directory", self.local_dir.text()
+            self,
+            "Select Models Directory",
+            self.local_dir.text(),
         )
         if directory:
             self.local_dir.setText(directory)
@@ -395,7 +401,9 @@ class ModelManager(QWidget):
             # Check if appropriate format
             if method == "awq" and model_path.suffix != ".safetensors":
                 QMessageBox.warning(
-                    self, "Format Error", "AWQ quantization requires a .safetensors model"
+                    self,
+                    "Format Error",
+                    "AWQ quantization requires a .safetensors model",
                 )
                 return
 

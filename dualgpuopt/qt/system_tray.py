@@ -1,13 +1,20 @@
 """
-System tray integration for DualGPUOptimizer
+System tray integration for DualGPUOptimizer GUI.
+Provides quick access to application features from system tray.
 """
+
 import logging
 import os
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from PySide6.QtCore import QObject, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QAction, QMenu, QSystemTrayIcon
+from PySide6.QtWidgets import QAction, QMenu, QSystemTrayIcon, QMessageBox
+
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PRODUCT_NAME
+
+from dualgpuopt.services.config_service import get_config_service
 
 logger = logging.getLogger("DualGPUOptimizer")
 
@@ -42,6 +49,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             parent: Parent QObject
+
         """
         super().__init__(parent)
 
@@ -150,6 +158,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             reason: The activation reason
+
         """
         if reason == QSystemTrayIcon.DoubleClick:
             # Show the main window
@@ -171,6 +180,7 @@ class GPUTrayManager(QObject):
             message: Notification message
             icon_type: Type of notification icon
             show_immediately: Whether to show immediately, bypassing the queue
+
         """
         notification = TrayNotification(title, message, icon_type)
 
@@ -191,6 +201,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             notification: The notification to show
+
         """
         if not self.tray_icon:
             logger.warning("Cannot show notification: no tray icon")
@@ -223,6 +234,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             metrics: List of GPU metrics dictionaries
+
         """
         if not self.tray_icon:
             return
@@ -253,6 +265,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             models: List of model names
+
         """
         # Clear existing items
         self.launch_menu.clear()
@@ -267,7 +280,7 @@ class GPUTrayManager(QObject):
         for model in models:
             model_action = QAction(model, self.launch_menu)
             model_action.triggered.connect(
-                lambda checked=False, m=model: self.launch_model_requested.emit(m)
+                lambda checked=False, m=model: self.launch_model_requested.emit(m),
             )
             self.launch_menu.addAction(model_action)
 
@@ -278,6 +291,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             models: List of model names
+
         """
         self._update_launch_menu(models)
 
@@ -288,6 +302,7 @@ class GPUTrayManager(QObject):
         Args:
         ----
             visible: Whether the tray icon should be visible
+
         """
         if self.tray_icon:
             if visible:

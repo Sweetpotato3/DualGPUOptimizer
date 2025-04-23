@@ -4,10 +4,11 @@ Fallback UI Widgets
 Provides fallback implementations for UI widgets when optional dependencies are missing.
 These implementations ensure the application can run with minimal dependencies.
 """
+
 import logging
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI.Fallback")
@@ -31,27 +32,27 @@ class ScrolledFrame(ttk.Frame):
     """A frame with a scrollbar that scrolls another frame"""
 
     def __init__(self, parent, autohide=True, **kwargs):
-        """Initialize the ScrolledFrame
+        """
+        Initialize the ScrolledFrame
 
         Args:
             parent: Parent widget
             autohide: Whether to hide the scrollbar when not needed
             **kwargs: Additional keyword arguments for the Frame
+
         """
         super().__init__(parent, **kwargs)
 
         # Create a canvas with scrollbar
-        self.canvas = tk.Canvas(self, bg=DEFAULT_THEME["bg"],
-                               highlightthickness=0)
-        self.scrollbar = ttk.Scrollbar(self, orient="vertical",
-                                      command=self.canvas.yview)
+        self.canvas = tk.Canvas(self, bg=DEFAULT_THEME["bg"], highlightthickness=0)
+        self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
         self.canvas.configure(yscrollcommand=self._scrollbar_set)
 
         # Create the scrollable frame
         self.inner_frame = ttk.Frame(self.canvas)
-        self.inner_frame_id = self.canvas.create_window((0, 0),
-                                                     window=self.inner_frame,
-                                                     anchor="nw")
+        self.inner_frame_id = self.canvas.create_window(
+            (0, 0), window=self.inner_frame, anchor="nw"
+        )
 
         # Pack the widgets
         self.scrollbar.pack(side="right", fill="y")
@@ -61,13 +62,13 @@ class ScrolledFrame(ttk.Frame):
         def _configure_inner_frame(event):
             self.canvas.configure(scrollregion=self.canvas.bbox("all"))
             # Set the scrollable frame's width to match the canvas
-            self.canvas.itemconfigure(self.inner_frame_id,
-                                     width=event.width)
+            self.canvas.itemconfigure(self.inner_frame_id, width=event.width)
 
         # Bind to the configure event
         self.inner_frame.bind("<Configure>", _configure_inner_frame)
-        self.canvas.bind("<Configure>", lambda e: self.canvas.itemconfigure(
-            self.inner_frame_id, width=e.width))
+        self.canvas.bind(
+            "<Configure>", lambda e: self.canvas.itemconfigure(self.inner_frame_id, width=e.width)
+        )
 
         # Add mousewheel support
         self._bind_mousewheel()
@@ -76,11 +77,13 @@ class ScrolledFrame(ttk.Frame):
         self.autohide = autohide
 
     def _scrollbar_set(self, first, last):
-        """Custom scrollbar set method that supports auto-hiding
+        """
+        Custom scrollbar set method that supports auto-hiding
 
         Args:
             first: First position (0.0 to 1.0)
             last: Last position (0.0 to 1.0)
+
         """
         self.scrollbar.set(first, last)
 
@@ -88,12 +91,12 @@ class ScrolledFrame(ttk.Frame):
         if self.autohide:
             if float(first) <= 0.0 and float(last) >= 1.0:
                 self.scrollbar.pack_forget()
-            else:
-                if not self.scrollbar.winfo_viewable():
-                    self.scrollbar.pack(side="right", fill="y")
+            elif not self.scrollbar.winfo_viewable():
+                self.scrollbar.pack(side="right", fill="y")
 
     def _bind_mousewheel(self):
         """Bind mousewheel events to the canvas"""
+
         def _on_mousewheel(event):
             # Handle different platforms
             if event.num == 4 or event.delta > 0:
@@ -103,8 +106,8 @@ class ScrolledFrame(ttk.Frame):
 
         # Bind for different platforms
         self.canvas.bind_all("<MouseWheel>", _on_mousewheel)  # Windows
-        self.canvas.bind_all("<Button-4>", _on_mousewheel)    # Linux scroll up
-        self.canvas.bind_all("<Button-5>", _on_mousewheel)    # Linux scroll down
+        self.canvas.bind_all("<Button-4>", _on_mousewheel)  # Linux scroll up
+        self.canvas.bind_all("<Button-5>", _on_mousewheel)  # Linux scroll down
 
 
 class Meter(ttk.Frame):
@@ -123,7 +126,8 @@ class Meter(ttk.Frame):
         bootstyle: str = "primary",
         **kwargs,
     ):
-        """Initialize the fallback Meter
+        """
+        Initialize the fallback Meter
 
         Args:
             parent: Parent widget
@@ -136,6 +140,7 @@ class Meter(ttk.Frame):
             stripethickness: Thickness of the stripes (ignored in fallback)
             bootstyle: Style of the meter (colors)
             **kwargs: Additional keyword arguments
+
         """
         super().__init__(parent, **kwargs)
 
@@ -207,8 +212,9 @@ class Meter(ttk.Frame):
             self.subtext = kwargs["subtext"]
 
         # Handle other configuration options
-        super().configure(**{k: v for k, v in kwargs.items()
-                          if k not in ["amountused", "amounttotal", "subtext"]})
+        super().configure(
+            **{k: v for k, v in kwargs.items() if k not in ["amountused", "amounttotal", "subtext"]}
+        )
 
 
 class Floodgauge(ttk.Progressbar):
@@ -223,7 +229,8 @@ class Floodgauge(ttk.Progressbar):
         mask: str = "{:.0f}%",
         **kwargs,
     ):
-        """Initialize the Floodgauge
+        """
+        Initialize the Floodgauge
 
         Args:
             parent: Parent widget
@@ -232,6 +239,7 @@ class Floodgauge(ttk.Progressbar):
             bootstyle: Style to use
             mask: Format string for the value
             **kwargs: Additional keyword arguments
+
         """
         super().__init__(parent, **kwargs)
 
@@ -272,10 +280,9 @@ class Floodgauge(ttk.Progressbar):
 
         if self.text and value_part:
             return f"{self.text} {value_part}"
-        elif self.text:
+        if self.text:
             return self.text
-        else:
-            return value_part
+        return value_part
 
     def configure(self, **kwargs):
         """Configure the Floodgauge"""
@@ -312,7 +319,8 @@ class DateEntry(ttk.Entry):
         bootstyle: str = "primary",
         **kwargs,
     ):
-        """Initialize the DateEntry
+        """
+        Initialize the DateEntry
 
         Args:
             parent: Parent widget
@@ -320,6 +328,7 @@ class DateEntry(ttk.Entry):
             startdate: Initial date (YYYY-MM-DD)
             bootstyle: Style to use
             **kwargs: Additional keyword arguments
+
         """
         super().__init__(parent, **kwargs)
 
@@ -329,6 +338,7 @@ class DateEntry(ttk.Entry):
         else:
             # Use current date
             from datetime import datetime
+
             today = datetime.today().strftime("%Y-%m-%d")
             self.insert(0, today)
 
@@ -343,13 +353,14 @@ class DateEntry(ttk.Entry):
         self.calendar_button.pack(side="right", fill="y")
 
         # Position button next to entry using place manager
-        self.button_frame.place(in_=self, relx=1, rely=0.5, x=5, anchor="e")
+        self.button_frame.place(in_=self, relx=1, rely=0.5, anchor="e")
 
         # Add validation
         self._validate()
 
     def _validate(self):
         """Add validation to ensure the entry contains a valid date"""
+
         def _validate_date(text):
             if not text:
                 return True
@@ -378,10 +389,12 @@ class DateEntry(ttk.Entry):
         )
 
     def get_date(self):
-        """Get the current date as a string
+        """
+        Get the current date as a string
 
         Returns:
             str: Current date in YYYY-MM-DD format
+
         """
         return self.get()
 
@@ -396,7 +409,8 @@ FALLBACK_WIDGETS = {
 
 
 def get_widget_class(widget_name: str, original_module=None):
-    """Get a widget class, using fallback if the original is not available
+    """
+    Get a widget class, using fallback if the original is not available
 
     Args:
         widget_name: Name of the widget class
@@ -404,6 +418,7 @@ def get_widget_class(widget_name: str, original_module=None):
 
     Returns:
         A widget class, either from the original module or a fallback
+
     """
     if original_module is not None:
         try:
@@ -430,7 +445,8 @@ def create_widget_safely(
     fallback_class=None,
     **kwargs,
 ) -> tk.Widget:
-    """Create a widget with error handling and fallbacks
+    """
+    Create a widget with error handling and fallbacks
 
     Args:
         widget_class: Name of the widget class to create
@@ -441,18 +457,18 @@ def create_widget_safely(
 
     Returns:
         Created widget
+
     """
     # First try to get the requested class
     try:
         if module is not None:
             cls = getattr(module, widget_class)
+        # Try to find in FALLBACK_WIDGETS
+        elif widget_class in FALLBACK_WIDGETS:
+            cls = FALLBACK_WIDGETS[widget_class]
         else:
-            # Try to find in FALLBACK_WIDGETS
-            if widget_class in FALLBACK_WIDGETS:
-                cls = FALLBACK_WIDGETS[widget_class]
-            else:
-                # Try ttk
-                cls = getattr(ttk, widget_class)
+            # Try ttk
+            cls = getattr(ttk, widget_class)
 
         return cls(parent, **kwargs)
     except (AttributeError, ImportError, tk.TclError) as e:
@@ -464,10 +480,8 @@ def create_widget_safely(
                 if isinstance(fallback_class, str):
                     if fallback_class in FALLBACK_WIDGETS:
                         return FALLBACK_WIDGETS[fallback_class](parent, **kwargs)
-                    else:
-                        return getattr(ttk, fallback_class)(parent, **kwargs)
-                else:
-                    return fallback_class(parent, **kwargs)
+                    return getattr(ttk, fallback_class)(parent, **kwargs)
+                return fallback_class(parent, **kwargs)
             except Exception as e2:
                 logger.error(f"Failed to create fallback widget: {e2}")
 

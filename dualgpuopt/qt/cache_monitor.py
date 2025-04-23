@@ -1,7 +1,15 @@
+"""
+Cache monitor widget for engine pool visualization.
+Displays currently loaded models and allows management.
+"""
+
 from __future__ import annotations
 
 from PySide6 import QtCore as QtC
 from PySide6 import QtWidgets as QtW
+
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE, UPDATE_INTERVAL_MS
 
 from dualgpuopt.engine.pool.core import EnginePool
 

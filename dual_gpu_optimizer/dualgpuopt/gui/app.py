@@ -1,6 +1,6 @@
-"""
-Main application module for the DualGPUOptimizer GUI.
-"""
+"""Main application module for DualGPUOptimizer GUI."""
+# LEGACY: This is the Tkinter implementation, which is being phased out in favor of the Qt-based UI.
+# Use dualgpuopt.qt.app_window instead for the current implementation.
 from __future__ import annotations
 
 import logging
@@ -8,391 +8,420 @@ import os
 import queue
 import sys
 import tkinter as tk
-from tkinter import messagebox, ttk
-from typing import Any, Dict, List, Optional
+from tkinter import messagebox
+from typing import Any, Dict
 
-# Import ttkbootstrap for modern UI
+# 3rd-party themes
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap import Style
     from ttkbootstrap.constants import *
-    TTKBOOTSTRAP_AVAILABLE = True
-except ImportError:
-    import tkinter.ttk as ttk
-    TTKBOOTSTRAP_AVAILABLE = False
+    TTKBOOTSTRAP = True
+except ImportError:  # Fallback to std ttk
+    import tkinter.ttk as ttk  # type: ignore
+    TTKBOOTSTRAP = False
 
-# Legacy theme support as fallback
 try:
     from ttkthemes import ThemedTk
-    TTKTHEMES_AVAILABLE = True
+    THEMES = True
 except ImportError:
-    TTKTHEMES_AVAILABLE = False
+    THEMES = False
 
-# Import constants first to avoid circular imports
+# project-internal
+from dualgpuopt import VERSION, gpu_info, telemetry
 from dualgpuopt.gui.constants import (
     PAD,
-    DEFAULT_CHART_BG,
-    DEFAULT_CHART_FG,
-    DEFAULT_CHART_HEIGHT,
+    UPDATE_INTERVAL_MS,
     DEFAULT_FONT,
     DEFAULT_FONT_SIZE,
-    UPDATE_INTERVAL_MS
 )
-
-# Define the progressbar thickness here since it's specific to this module
-PROGRESSBAR_THICKNESS = 8
-
-from dualgpuopt import gpu_info, telemetry
-from dualgpuopt.gui.theme import apply_theme, generate_colors, update_widgets_theme
-from dualgpuopt.tray import init_tray
-
-# Import GUI components after constants
 from dualgpuopt.gui.dashboard import GpuDashboard
 from dualgpuopt.gui.launcher import LauncherTab
 from dualgpuopt.gui.optimizer import OptimizerTab
 from dualgpuopt.gui.settings import SettingsTab
+from dualgpuopt.gui.theme import apply_theme, update_widgets_theme
+from dualgpuopt.tray import init_tray
 from dualgpuopt.services.config_service import config_service
 from dualgpuopt.services.error_service import error_service
-
-# Import services
 from dualgpuopt.services.event_service import event_bus
 from dualgpuopt.services.state_service import app_state
 
+# Define the progressbar thickness here since it's specific to this module
+PROGRESSBAR_THICKNESS = 8
+
 
 class DualGpuApp(ttk.Frame):
-    """Main application class for the DualGPUOptimizer."""
+    """Main GUI frame."""
 
-    def __init__(self, master: tk.Tk) -> None:
-        """
-        Initialize the application.
-
+    def __init__(self, master: tk.Tk | None = None, *, theme: str | None = None,
+                 mock_mode: bool = False) -> None:
+        """Initialize the application GUI and services.
+        
         Args:
-            master: The Tk root window
+            master: Optional root window. If None, one will be created.
+            theme: Optional theme name to use.
+            mock_mode: Whether to use mock GPU data.
         """
-        # Initialize services
-        error_service.set_root(master)
+        # 1. Set up logging first to ensure it's available throughout initialization
+        self.log = logging.getLogger("dualgpuopt.gui.app")
+        self.log.debug("GUI init (mock=%s, theme=%s)", mock_mode, theme)
 
-        # Load state and config
+        # 2. Root window bootstrap
+        root = master or self._create_root(theme)
+        super().__init__(root)
+        self.pack(fill="both", expand=True)
+
+        # 3. Service state
+        self.mock_mode = mock_mode
+        self.msg_q: queue.Queue[tuple[str, Dict[str, Any]]] = queue.Queue()
+
+        # 4. Init backend services
+        self._init_services()
+
+        # 5. GUI widgets
+        self._build_ui()
+
+        # 6. Start periodic tasks
+        root.after(100, self._pump_queue)
+        root.after(UPDATE_INTERVAL_MS, self._tick_telemetry)
+
+        # 7. Tray
+        self.tray_icon = init_tray(root)
+        
+        self.log.info("Application initialization complete")
+
+    def _create_root(self, theme: str | None) -> tk.Tk:
+        """Create and configure the root window with appropriate theme support.
+        
+        Args:
+            theme: Optional theme name to use.
+            
+        Returns:
+            Configured root window.
+        """
+        # Use ttkbootstrap if available
+        if TTKBOOTSTRAP:
+            self.log.debug("Using ttkbootstrap for theming")
+            theme = theme or config_service.get("ui.theme", "darkly")
+            root = ttk.Window(
+                title="Dual GPU Optimizer",
+                themename=theme,
+                size=(1024, 768),
+                position=(100, 100),
+                minsize=(800, 600)
+            )
+        # Fall back to ttkthemes if available
+        elif THEMES:
+            self.log.debug("Using ttkthemes for theming")
+            theme = theme or config_service.get("ui.theme", "black")
+            root = ThemedTk(theme=theme)
+            root.title("Dual GPU Optimizer")
+            root.geometry("1024x768+100+100")
+            root.minsize(800, 600)
+        # Last resort: standard Tk with manual styling
+        else:
+            self.log.debug("Using basic Tk with manual styling")
+            root = tk.Tk()
+            root.title("Dual GPU Optimizer")
+            root.geometry("1024x768+100+100")
+            root.minsize(800, 600)
+
+            # Apply manual dark theme
+            apply_theme(root)
+
+        # Increase base font size
+        default_font = (DEFAULT_FONT, DEFAULT_FONT_SIZE) if sys.platform == "win32" else ("Helvetica", DEFAULT_FONT_SIZE)
+        root.option_add("*Font", default_font)
+
+        # Set up window icon
+        try:
+            icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "gpu_icon.ico")
+            if os.path.exists(icon_path):
+                root.iconbitmap(icon_path)
+        except Exception as e:
+            self.log.warning(f"Failed to set window icon: {e}")
+
+        # Set up close handler
+        root.protocol("WM_DELETE_WINDOW", self._on_close)
+        
+        return root
+
+    def _init_services(self) -> None:
+        """Initialize application services."""
+        # Config / state
+        self.cfg = config_service
         app_state.load_from_disk()
 
-        # Register event handlers
-        self._register_event_handlers()
+        # Error handling
+        error_service.set_root(self.winfo_toplevel())
 
-        # Convert root window to ThemedTk if available
-        if TTKTHEMES_AVAILABLE and not isinstance(master, ThemedTk):
-            try:
-                # Store attributes from current master
-                geometry = master.geometry()
-                title = master.title()
-
-                # Create new ThemedTk window
-                new_master = ThemedTk(theme=config_service.get("ttk_theme", "equilux"))
-                new_master.geometry(geometry)
-                new_master.title(title)
-
-                # Replace master
-                master.destroy()
-                master = new_master
-
-                # Update root in error service
-                error_service.set_root(master)
-            except Exception as e:
-                # Fall back to regular Tk if conversion fails
-                error_service.handle_error(e, level="WARNING", title="Theme Error",
-                                          context={"operation": "initialize ThemedTk"})
-
-        # Initialize frame
-        super().__init__(master)
-        self.master = master
-        self.logger = logging.getLogger("dualgpuopt.gui.app")
-            
+        # GPU & telemetry
         try:
-            # Apply theme to root window before creating widgets
-            self._apply_theme(master)
+            self.gpu_info = gpu_info.GpuInfo(mock_mode=self.mock_mode)
+        except Exception as exc:  # fallback to mock
+            self.log.warning("GPU probe failed – switching to mock mode: %s", exc, exc_info=True)
+            self.gpu_info = gpu_info.GpuInfo(mock_mode=True)
 
-            # Use config/state for variables instead of instance variables
-            self.model_var = tk.StringVar(value=app_state.get("model_path", ""))
-            self.ctx_var = tk.IntVar(value=config_service.get("context_size", 65536))
+        self.telemetry = telemetry.GpuTelemetry(mock_mode=self.mock_mode)
 
-            # Setup data tracking
-            self.tele_q = None
-            self.tele_hist = []  # List of GPU load tuples
-
-            # Detect GPUs
-            try:
-                self.gpus = gpu_info.probe_gpus()
-                if len(self.gpus) < 2:
-                    self.logger.warning("Fewer than 2 GPUs detected")
-                    # Show warning but continue
-                    event_bus.publish("gpu_warning", {"message": "Fewer than 2 GPUs detected"})
-            except Exception as e:
-                # Handle GPU detection errors
-                error_service.handle_gpu_error(e, {"operation": "detect_gpus"})
-                # Use mock GPUs for now to allow UI to initialize
-                os.environ["DGPUOPT_MOCK_GPUS"] = "1"
-                self.gpus = gpu_info.probe_gpus()
-
-            # Generate colors for GPU visualization
-            self.gpu_colors = generate_colors(len(self.gpus))
-
-            # Initialize UI
-            self.init_ui()
-
-            # Setup telemetry
-            self.tele_q = telemetry.start_stream(1.0)
-            self.after(1000, self._tick_chart)
-
-            # Setup tray
-            init_tray(self)
-
-            # Save initial state
-            self._save_state()
-
-            # Log successful startup
-            self.logger.info("Application initialized successfully")
-            event_bus.publish("app_initialized")
-        except Exception as err:
-            error_service.handle_error(err, level="CRITICAL", title="Initialization Error",
-                                      context={"operation": "app_initialization"})
+        # Subscribe to events
+        self._register_event_handlers()
 
     def _register_event_handlers(self) -> None:
         """Register handlers for application events."""
-        # GPU-related events
+        # GPU telemetry update event
+        event_bus.subscribe("gpu.telemetry.updated", self._handle_telemetry_update)
+
+        # GPU error events
+        event_bus.subscribe("gpu.error", self._handle_gpu_error)
+
+        # Config change events
+        event_bus.subscribe("config.changed", self._handle_config_change)
+
+        # Theme change events
+        event_bus.subscribe("ui.theme.changed", self._handle_theme_change)
+
+        # Command events
+        event_bus.subscribe("command.generated", self._handle_command_generated)
+        event_bus.subscribe("command.executed", self._handle_command_executed)
+        event_bus.subscribe("command.error", self._handle_command_error)
+
+        # Log events for status bar
+        event_bus.subscribe("log.info", self._handle_log_event)
+        event_bus.subscribe("log.warning", self._handle_log_event)
+        event_bus.subscribe("log.error", self._handle_log_event)
+        
+        # Mock mode events
         event_bus.subscribe("enable_mock_mode", self._enable_mock_mode)
         event_bus.subscribe("gpu_warning", self._handle_gpu_warning)
 
-        # Config and state events
-        event_bus.subscribe("config_changed:theme", lambda theme: self._theme_changed(theme))
-        event_bus.subscribe("state_changed:model_path", lambda path: self.model_var.set(path))
-        event_bus.subscribe("app_exit", self._save_state)
+    def _build_ui(self) -> None:
+        """Initialize the user interface components."""
+        # Create main container frame
+        self.main_frame = ttk.Frame(self)
+        self.main_frame.pack(fill=tk.BOTH, expand=True, padx=PAD, pady=PAD)
 
-        # Error events for logging
-        event_bus.subscribe("error_occurred", self._log_error_event)
+        # Create notebook for tabbed interface
+        self.notebook = ttk.Notebook(self.main_frame)
+        self.notebook.pack(fill=tk.BOTH, expand=True)
 
-    def _log_error_event(self, error_data: Dict[str, Any]) -> None:
-        """Log error events from the event bus."""
-        # Already logged by error service, just for monitoring
-        pass
+        # Create GPU Dashboard tab
+        dashboard_frame = ttk.Frame(self.notebook)
+        self.dashboard = GpuDashboard(dashboard_frame, self.gpu_info, self.telemetry)
+        self.notebook.add(dashboard_frame, text="GPU Dashboard")
+
+        # Create Optimizer tab
+        optimizer_frame = ttk.Frame(self.notebook)
+        self.optimizer_tab = OptimizerTab(optimizer_frame, self.gpu_info)
+        self.notebook.add(optimizer_frame, text="Optimizer")
+
+        # Create Launcher tab
+        launcher_frame = ttk.Frame(self.notebook)
+        self.launcher_tab = LauncherTab(launcher_frame, self.gpu_info)
+        self.notebook.add(launcher_frame, text="Launcher")
+
+        # Create Settings tab
+        settings_frame = ttk.Frame(self.notebook)
+        self.settings_tab = SettingsTab(settings_frame)
+        self.notebook.add(settings_frame, text="Settings")
+
+        # Create status bar
+        self.status_frame = ttk.Frame(self.main_frame)
+        self.status_frame.pack(fill=tk.X, side=tk.BOTTOM, pady=(PAD, 0))
+
+        # Add status variable
+        self.status_var = tk.StringVar()
+        self.status_var.set("Ready")
+
+        # Create status label
+        self.status_label = ttk.Label(
+            self.status_frame,
+            textvariable=self.status_var,
+            anchor=tk.W
+        )
+        self.status_label.pack(fill=tk.X, side=tk.LEFT)
+
+        # Create version label
+        self.version_label = ttk.Label(
+            self.status_frame,
+            text=f"v{VERSION}",
+            anchor=tk.E
+        )
+        self.version_label.pack(side=tk.RIGHT)
+
+    def _tick_telemetry(self) -> None:
+        """Update GPU telemetry data periodically."""
+        try:
+            data = self.telemetry.get_data()
+            event_bus.publish("gpu.telemetry.updated", data)
+        except Exception as e:
+            self.log.error(f"Error updating telemetry: {e}", exc_info=True)
+        finally:
+            # Always schedule next update
+            self.after(UPDATE_INTERVAL_MS, self._tick_telemetry)
+
+    def _pump_queue(self) -> None:
+        """Process pending messages in the queue."""
+        try:
+            # Process all current messages in the queue
+            while True:
+                kind, payload = self.msg_q.get_nowait()
+                
+                if kind == "telemetry" and hasattr(self, "dashboard"):
+                    self.dashboard.update_telemetry(payload)
+                elif kind == "config_change" and hasattr(self, "settings_tab"):
+                    self.settings_tab.refresh_config()
+                elif kind == "command_generated" and hasattr(self, "launcher_tab"):
+                    self.launcher_tab.update_command(payload.get("command", ""))
+                elif kind == "command_executed" and hasattr(self, "launcher_tab"):
+                    self.launcher_tab.update_execution_status(payload)
+                elif kind == "log":
+                    level = payload.get("level", "INFO")
+                    message = payload.get("message", "")
+                    if level in ["INFO", "WARNING", "ERROR"]:
+                        self.status_var.set(message[:160] + ('...' if len(message) > 160 else ''))
+                
+                self.msg_q.task_done()
+        except queue.Empty:
+            # No more messages
+            pass
+        except Exception as e:
+            self.log.error(f"Error processing message queue: {e}", exc_info=True)
+        
+        # Schedule next check
+        self.after(100, self._pump_queue)
 
     def _enable_mock_mode(self, _=None) -> None:
         """Enable mock mode and restart GPU detection."""
-        import os
-
-        # Set environment variable for mock mode
         os.environ["DGPUOPT_MOCK_GPUS"] = "1"
-        self.logger.info("Mock GPU mode enabled")
-
-        # Clear the current UI
-        for widget in self.winfo_children():
-            widget.destroy()
+        self.log.info("Mock GPU mode enabled")
 
         # Try to initialize with mock GPUs
         try:
-            self.gpus = gpu_info.probe_gpus()
-            self.gpu_colors = generate_colors(len(self.gpus))
-            self.init_ui()
-
-            # Setup telemetry again
-            self.tele_q = telemetry.start_stream(1.0)
-            self.after(1000, self._tick_chart)
-
+            self.gpu_info = gpu_info.GpuInfo(mock_mode=True)
+            self.telemetry = telemetry.GpuTelemetry(mock_mode=True)
+            
             # Notify about mock mode
             event_bus.publish("mock_mode_enabled")
         except Exception as e:
             error_service.handle_error(e, level="CRITICAL", title="Mock Mode Error",
                                      context={"operation": "enable_mock_mode"})
-            self.master.destroy()
 
     def _handle_gpu_warning(self, data: Dict[str, Any]) -> None:
         """Handle GPU warning events."""
         message = data.get("message", "GPU warning")
-        self.logger.warning(message)
+        self.log.warning(message)
+        
         # Display in status bar
         if hasattr(self, "status_var"):
             self.status_var.set(f"Warning: {message}")
 
-    def _apply_theme(self, root: tk.Tk) -> None:
-        """
-        Apply selected theme to the application.
+    def _handle_telemetry_update(self, data: Dict[str, Any]) -> None:
+        """Handle GPU telemetry update event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("telemetry", data))
 
-        Args:
-            root: The root Tk window
-        """
-        theme_name = config_service.get("theme", "dark")
+    def _handle_gpu_error(self, error_data: Dict[str, Any]) -> None:
+        """Handle GPU error event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("gpu_error", error_data))
 
-        # Apply theme
-        self.active_theme = apply_theme(root, theme_name, self.logger)
-        self.chart_bg = self.active_theme.get("chart_bg", "#202020")
+        # Log the error
+        self.log.error(f"GPU error: {error_data.get('message', 'Unknown GPU error')}")
 
-    def _theme_changed(self, theme_name: str) -> None:
-        """
-        Handle theme change.
+        # Show error dialog if critical
+        if error_data.get("critical", False):
+            messagebox.showerror(
+                "GPU Error",
+                f"Critical GPU error: {error_data.get('message', 'Unknown error')}"
+            )
 
-        Args:
-            theme_name: New theme name
-        """
-        # Get ttk theme from config
-        ttk_theme = config_service.get("ttk_theme", "")
+    def _handle_config_change(self, config_data: Dict[str, Any]) -> None:
+        """Handle configuration change event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("config_change", config_data))
 
-        # Apply the theme
-        self.active_theme = apply_theme(self.master, theme_name, self.logger)
-
-        # Update all widgets
-        update_widgets_theme(self, self.active_theme)
-
-        # Update chart background
-        self.chart_bg = self.active_theme.get("chart_bg", "#202020")
-
-        # Update the chart canvas background
-        if hasattr(self, "dashboard") and hasattr(self.dashboard, "chart_canvas"):
-            self.dashboard.chart_canvas.config(bg=self.chart_bg)
-
-        # Publish theme changed event
-        event_bus.publish("theme_applied", {"theme": theme_name, "ttk_theme": ttk_theme})
-
-    def _tick_chart(self) -> None:
-        """
-        Update the chart with new telemetry data.
-        
-        This is called every second to update the dashboard with fresh data.
-        """
-        if not self.tele_q:
-            self.after(1000, self._tick_chart)
+    def _handle_theme_change(self, theme_data: Dict[str, Any]) -> None:
+        """Handle theme change event."""
+        new_theme = theme_data.get("theme")
+        if not new_theme:
             return
+            
+        # Apply theme in-place
+        apply_theme(self.winfo_toplevel(), new_theme, self.log)
+        update_widgets_theme(self, {})
+        
+        # Save the theme in config
+        config_service.set("ui.theme", new_theme)
+        config_service.save()
+        
+        # Publish theme applied event
+        event_bus.publish("theme_applied", {"theme": new_theme})
 
-        try:
-            # Try to get new telemetry
-            telemetry = self.tele_q.get_nowait()
+    def _handle_command_generated(self, command_data: Dict[str, Any]) -> None:
+        """Handle command generation event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("command_generated", command_data))
 
-            # Update each chart using the telemetry
-            for widget in self.winfo_children():
-                if hasattr(widget, "update_telemetry"):
-                    widget.update_telemetry(telemetry)
+    def _handle_command_executed(self, execution_data: Dict[str, Any]) -> None:
+        """Handle command execution event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("command_executed", execution_data))
 
-            # Save the telemetry for history
-            self.tele_hist.append(telemetry)
+    def _handle_command_error(self, error_data: Dict[str, Any]) -> None:
+        """Handle command execution error event."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("command_error", error_data))
 
-            # Limit history to 60 samples
-            if len(self.tele_hist) > 60:
-                self.tele_hist = self.tele_hist[-60:]
+        # Log the error
+        self.log.error(f"Command error: {error_data.get('message', 'Unknown command error')}")
 
-            # Publish telemetry update event
-            event_bus.publish("telemetry_updated", telemetry)
-        except queue.Empty:
-            # No new data, that's okay
-            pass
-        except Exception as e:
-            error_service.handle_error(e, level="WARNING", title="Telemetry Error",
-                                     context={"operation": "update_telemetry"})
-
-        # Schedule next update
-        self.after(1000, self._tick_chart)
-
-    def init_ui(self) -> None:
-        """Initialize the user interface."""
-        # Create main frame that fills parent
-        self.pack(fill=tk.BOTH, expand=True)
-
-        # Configure row/column weights
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
-
-        # Create notebook widget for tabs
-        self.notebook = ttk.Notebook(self)
-        self.notebook.grid(row=0, column=0, sticky="news")
-
-        # Create dashboard tab
-        self.dashboard = GpuDashboard(
-            self.notebook,
-            self.gpus,
-            self.gpu_colors,
-            self.chart_bg
+        # Show error dialog
+        messagebox.showerror(
+            "Command Error",
+            f"Error executing command: {error_data.get('message', 'Unknown error')}"
         )
-        self.notebook.add(self.dashboard, text="Dashboard")
 
-        # Create optimizer tab
-        self.optimizer_tab = OptimizerTab(
-            self.notebook,
-            self.gpus,
-            self.model_var,
-            self.ctx_var
-        )
-        self.notebook.add(self.optimizer_tab, text="Optimizer")
+    def _handle_log_event(self, log_data: Dict[str, Any]) -> None:
+        """Handle log event for status updates."""
+        # Push to message queue for thread-safe UI updates
+        self.msg_q.put(("log", log_data))
 
-        # Create launcher tab
-        self.launcher_tab = LauncherTab(
-            self.notebook,
-            self.gpus,
-            self.model_var
-        )
-        self.notebook.add(self.launcher_tab, text="Launcher")
+    def _on_close(self) -> None:
+        """Handle application close event."""
+        # Ask for confirmation
+        if messagebox.askokcancel("Quit", "Do you want to quit?"):
+            # Save application state
+            self.log.info("Saving application state")
+            app_state.save()
 
-        # Create settings tab
-        self.settings_tab = SettingsTab(
-            self.notebook,
-            self.gpus,
-            config_service
-        )
-        self.notebook.add(self.settings_tab, text="Settings")
+            # Save configuration
+            self.log.info("Saving configuration")
+            config_service.save()
 
-        # Status bar
-        status_frame = ttk.Frame(self)
-        status_frame.grid(row=1, column=0, sticky="ew")
-        status_frame.columnconfigure(0, weight=1)
+            # Shut down telemetry
+            self.log.info("Shutting down telemetry")
+            if hasattr(self, "telemetry") and hasattr(self.telemetry, "shutdown"):
+                self.telemetry.shutdown()
 
-        self.status_var = tk.StringVar(value="Ready")
-        status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor="e")
-        status_label.grid(row=0, column=0, sticky="e", padx=8, pady=4)
+            # Publish app_exit event
+            event_bus.publish("app_exit")
 
-        # Sync model_var with state
-        self.model_var.trace_add("write", self._model_var_changed)
+            # Destroy root window
+            root = self.winfo_toplevel()
+            if root:
+                root.destroy()
 
-    def _model_var_changed(self, *args) -> None:
-        """Handle changes to the model path variable."""
-        app_state.set("model_path", self.model_var.get())
-
-    def _save_state(self, *args) -> None:
-        """Save application state."""
-        # Update state with current values
-        app_state.set("model_path", self.model_var.get())
-
-        # Save to disk
-        app_state.save_to_disk()
-        self.logger.debug("Application state saved")
+            self.log.info("Application closed")
 
 
-def run_app(root: tk.Tk) -> None:
-    """
-    Run the DualGPUOptimizer application.
+def main() -> None:
+    """Entry point when module is run directly."""
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+    )
+    DualGpuApp().winfo_toplevel().mainloop()
 
-    Args:
-        root: The Tk root window
-    """
-    app = DualGpuApp(root)
-    root.protocol("WM_DELETE_WINDOW", lambda: on_close(root, app))
-    root.mainloop()
-
-
-def on_close(root: tk.Tk, app: DualGpuApp) -> None:
-    """
-    Handle application close event.
-
-    Args:
-        root: The root Tk window
-        app: The application instance
-    """
-    # Publish app_exit event
-    event_bus.publish("app_exit")
-
-    # Save state
-    app._save_state()
-
-    # Clean up resources
-    root.destroy()
 
 if __name__ == "__main__":
-    # Create root window
-    root = tk.Tk()
-    root.title("Dual GPU Optimizer")
-    root.geometry("1024x768")
-    run_app(root)
+    main()

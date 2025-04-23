@@ -4,11 +4,17 @@ Provides an interface for launching and managing model execution.
 """
 
 import logging
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from PySide6.QtCore import QProcess, QTimer, Signal, Slot
 from PySide6.QtGui import QFont, QIcon, QTextCursor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
@@ -25,8 +31,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE
+
 from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.presets import PresetManager
+from dualgpuopt.engine.pool import EnginePool
 
 logger = logging.getLogger("DualGPUOptimizer.Launcher")
 
@@ -194,6 +204,7 @@ class LauncherTab(QWidget):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent)
 
@@ -212,6 +223,7 @@ class LauncherTab(QWidget):
         Args:
         ----
             engine: The unified Engine instance
+
         """
         self.engine = engine
         logger.info("Engine instance set in LauncherTab")
@@ -446,6 +458,7 @@ class LauncherTab(QWidget):
         Args:
         ----
             config: Configuration dictionary
+
         """
         # Apply settings
         self.model_path.setText(config.get("model", ""))
@@ -486,6 +499,7 @@ class LauncherTab(QWidget):
         Args:
         ----
             preset_data: Dictionary containing preset configuration
+
         """
         try:
             # Extract settings from preset

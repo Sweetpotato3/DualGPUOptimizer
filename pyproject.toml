@@ -63,7 +63,7 @@ include = '\.pyi?$'
 [tool.ruff]
 line-length = 100
 select = ["ALL"]
-ignore = ["D203", "D212"]
+ignore = ["D203", "D212", "COM812", "ISC001"]
 show-fixes = true
 
 [tool.mypy]
