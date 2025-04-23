@@ -2,6 +2,12 @@
 
 Welcome to the DualGPUOptimizer documentation. This directory contains detailed information about the project, its components, and how to use it effectively.
 
+## System Requirements
+
+- Python 3.8 or higher (Python 3.12 fully supported)
+- NVIDIA GPUs with CUDA support
+- PySide6 ≥ 6.6 (tested on 6.8) for the Qt-based GUI 
+
 ## Available Documentation
 
 - [Quick Start Guide](QUICK_START.md) - Get up and running quickly
@@ -35,6 +41,7 @@ DualGPUOptimizer/
 │   ├── batch/           # Batch processing optimization
 │   ├── commands/        # Framework-specific command generation
 │   ├── gui/             # Tkinter GUI components
+│   ├── qt/              # PySide6/Qt GUI components
 │   ├── resources/       # Icons and assets
 │   ├── services/        # Core services (config, events)
 │   ├── ctx_size.py      # Context size calculation

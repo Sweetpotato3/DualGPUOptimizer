@@ -81,7 +81,7 @@ class TrainingTab(QWidget):
         )
         self.worker.progress.connect(self._on_progress)
         self.worker.log_line.connect(self.log.appendPlainText)
-        self.worker.finished.connect(self._on_done)
+        self.worker.finished.connect(lambda ok=True: self._on_done(ok))
         self.worker.start()
         self.start_btn.setEnabled(False); self.stop_btn.setEnabled(True)
 
