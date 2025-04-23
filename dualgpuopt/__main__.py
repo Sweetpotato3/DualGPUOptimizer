@@ -1,20 +1,20 @@
 """
 Main entry point for DualGPUOptimizer
 """
-import sys
-import logging
 import argparse
+import importlib.util
+import logging
+import sys
 import traceback
 from pathlib import Path
-import importlib.util
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-    ]
+    ],
 )
 
 logger = logging.getLogger("DualGPUOpt.Main")
@@ -25,26 +25,35 @@ try:
     logs_dir.mkdir(exist_ok=True)
     # Add file handler to log to a file as well
     file_handler = logging.FileHandler(logs_dir / "dualgpuopt.log")
-    file_handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+    )
     logging.getLogger().addHandler(file_handler)
     logger.info(f"Logging to {(logs_dir / 'dualgpuopt.log').absolute()}")
 except Exception as e:
     logger.warning(f"Could not set up file logging: {e}")
 
+
 def check_module_availability(module_name):
-    """Check if a Python module is available
+    """
+    Check if a Python module is available
 
     Args:
+    ----
         module_name: Name of the module to check
 
     Returns:
+    -------
         True if the module is available, False otherwise
     """
     return importlib.util.find_spec(module_name) is not None
 
+
 def parse_args():
     """Parse command line arguments"""
-    parser = argparse.ArgumentParser(description="DualGPUOptimizer - GPU optimization for ML model inference")
+    parser = argparse.ArgumentParser(
+        description="DualGPUOptimizer - GPU optimization for ML model inference"
+    )
     parser.add_argument("--cli", action="store_true", help="Run in CLI mode")
     parser.add_argument("-m", "--model", help="Model path or HuggingFace identifier")
     parser.add_argument("-c", "--ctx-size", type=int, help="Context size")
@@ -56,13 +65,17 @@ def parse_args():
     parser.add_argument("--install-deps", action="store_true", help="Install missing dependencies")
     return parser.parse_args()
 
+
 def setup_mock_mode(args):
-    """Set up mock mode if requested
+    """
+    Set up mock mode if requested
 
     Args:
+    ----
         args: Command line arguments
 
     Returns:
+    -------
         True if mock mode was successfully enabled, False otherwise
     """
     if not args.mock:
@@ -74,6 +87,7 @@ def setup_mock_mode(args):
         if check_module_availability("dualgpuopt.dependency_manager"):
             try:
                 from dualgpuopt.dependency_manager import DynamicImporter
+
                 gpu_compat = DynamicImporter.import_gpu_compat()
                 gpu_compat["set_mock_mode"](True)
                 logger.info("Mock GPU mode enabled via dependency manager")
@@ -87,7 +101,7 @@ def setup_mock_mode(args):
             ("dualgpuopt.gpu.compat", "set_mock_mode", "via compatibility layer"),
             ("dualgpuopt.gpu.mock", "set_mock_mode", "via refactored module"),
             ("dualgpuopt.gpu", "set_mock_mode", "via module init"),
-            ("dualgpuopt.gpu_info", "set_mock_mode", "via legacy module")
+            ("dualgpuopt.gpu_info", "set_mock_mode", "via legacy module"),
         ]
 
         for module_name, function_name, message in methods:
@@ -108,10 +122,13 @@ def setup_mock_mode(args):
         logger.warning(f"Unexpected error setting up mock mode: {e}")
         return False
 
-def check_and_warn_missing_modules():
-    """Check for commonly needed optional modules and warn if missing
 
-    Returns:
+def check_and_warn_missing_modules():
+    """
+    Check for commonly needed optional modules and warn if missing
+
+    Returns
+    -------
         Dictionary mapping module names to their availability status
     """
     modules = {
@@ -122,7 +139,7 @@ def check_and_warn_missing_modules():
         "sseclient": {"available": False, "message": "Chat streaming will be unavailable"},
         "ttkbootstrap": {"available": False, "message": "UI will use basic theming"},
         "ttkthemes": {"available": False, "message": "Theme options will be limited"},
-        "ttkwidgets": {"available": False, "message": "Some UI widgets will be unavailable"}
+        "ttkwidgets": {"available": False, "message": "Some UI widgets will be unavailable"},
     }
 
     for module_name in modules:
@@ -132,8 +149,10 @@ def check_and_warn_missing_modules():
 
     return modules
 
+
 def handle_chat_module():
-    """Patch the chat module import to handle missing dependencies gracefully
+    """
+    Patch the chat module import to handle missing dependencies gracefully
 
     Makes sure the chat tab can be loaded even when requests or sseclient are missing
     """
@@ -172,6 +191,7 @@ def handle_chat_module():
     except Exception as e:
         logger.warning(f"Could not patch chat module dependencies: {e}")
 
+
 def main():
     """Main entry point"""
     args = parse_args()
@@ -188,13 +208,14 @@ def main():
         # Import dependency_manager first - will be the same regardless of other imports
         try:
             from dualgpuopt.dependency_manager import (
-                initialize_dependency_status,
-                verify_core_dependencies,
-                print_dependency_status,
+                DynamicImporter,
                 get_missing_dependencies,
+                initialize_dependency_status,
                 install_dependencies,
-                DynamicImporter
+                print_dependency_status,
+                verify_core_dependencies,
             )
+
             logger.debug("Dependency manager imported successfully")
 
             # Initialize dependency state
@@ -276,6 +297,7 @@ def main():
                 else:
                     # Check for tkinter directly
                     import tkinter as tk
+
                     logger.debug("tkinter is available")
             except ImportError:
                 logger.error("tkinter is not installed - required for GUI mode")
@@ -287,6 +309,7 @@ def main():
             try:
                 # Try to import the direct app from the module
                 import run_direct_app
+
                 logger.info("Running direct application (most stable approach)")
                 # Call the main function with mock mode flag
                 if hasattr(run_direct_app, "main"):
@@ -312,6 +335,7 @@ def main():
             try:
                 # Import the direct app launcher which has better dependency handling
                 from dualgpuopt.direct_launcher import run_direct_app
+
                 logger.info("Using direct application launcher with improved dependency handling")
                 run_direct_app(mock=args.mock)
                 return
@@ -324,11 +348,13 @@ def main():
             # THIRD ATTEMPT: Try modern UI with compatibility layer
             try:
                 from dualgpuopt.ui import get_themed_tk
+
                 logger.debug("UI compatibility layer loaded")
 
                 # Try to run the application using our compatible run_app
                 try:
                     from dualgpuopt.gui import run_app
+
                     logger.info("Using modern GUI with compatibility layer")
                     run_app()
                     return
@@ -350,6 +376,7 @@ def main():
             # Try to import ttkbootstrap for enhanced UI - just informational
             try:
                 import ttkbootstrap
+
                 logger.info("ttkbootstrap available for enhanced UI")
             except ImportError:
                 logger.warning("ttkbootstrap not found - falling back to standard theme")
@@ -357,6 +384,7 @@ def main():
             # Attempt 1: Modern GUI via run_app
             try:
                 from dualgpuopt.gui import run_app
+
                 logger.info("Using modern GUI via direct import")
                 gui_attempts.append(("Modern GUI", None))
                 run_app()
@@ -374,6 +402,7 @@ def main():
             # Attempt 2: Legacy main_app.run
             try:
                 from dualgpuopt.gui.main_app import run
+
                 logger.info("Using legacy GUI via main_app")
                 gui_attempts.append(("Legacy main_app", None))
                 run()
@@ -391,6 +420,7 @@ def main():
             # Attempt 3: Legacy main_application.run
             try:
                 from dualgpuopt.gui.main_application import run
+
                 logger.info("Using legacy GUI via main_application")
                 gui_attempts.append(("Legacy main_application", None))
                 run()
@@ -408,6 +438,7 @@ def main():
             # Attempt 4: Simple UI
             try:
                 from dualgpuopt.ui.simple import run_simple_ui
+
                 logger.info("Using simple UI fallback")
                 gui_attempts.append(("Simple UI", None))
                 run_simple_ui()
@@ -425,6 +456,7 @@ def main():
             # Last resort: Try importing direct app again but with different approach
             try:
                 from run_direct_app import main as direct_app_main
+
                 logger.info("Running direct app function as last resort")
                 gui_attempts.append(("Direct app function", None))
                 direct_app_main()
@@ -461,6 +493,7 @@ def main():
         logger.error(f"Unhandled exception: {e}")
         logger.debug(traceback.format_exc())
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

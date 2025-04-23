@@ -1,0 +1,116 @@
+Feeding DualGPUOptimizer with online legal content
+(LégisQuébec, CanLII, Gazette officielle, open-access doctrine …)
+
+1 Decide how you’ll pull data
+
+Method	When to use	Toolchain hook
+ChatGPT Operator (headless browser agent)	No API, lots of links (e.g. LégisQuébec statutes, Gazette PDF index)	Outputs raw HTML/PDF into datasets/raw_qc/
+Official REST API (e.g. CanLII)	API key available, structured JSON/XML	Save JSON per case into datasets/raw_qc/
+Static wget / curl	Small number of known URLs (CC-BY doctrine PDFs)	Same output folder
+Your pipeline treats every file under datasets/raw_qc/ the same, so you can mix all three methods.
+
+2 Create Operator task files
+operator_tasks/legisqc.json
+
+json
+Copy
+Edit
+{
+  "seed_url": "https://legisquebec.gouv.qc.ca/fr/ShowDoc/cs/C-12",
+  "follow_rules": { "same_host": true, "regex_allow": ["/ShowDoc/cs"], "max_depth": 2 },
+  "actions": [
+    {"type": "waitFor", "selector": "#DocZone"},
+    {"type": "extractHtml", "selector": "#DocZone", "save_as": "html"},
+    {"type": "clickAll", "selector": "a.ChapterLink"}
+  ],
+  "storage": { "output_dir": "~/dualgpuopt/datasets/raw_qc/legisqc", "format": "html" }
+}
+operator_tasks/gazette_rss.json – similar, but collect PDFs.
+
+Run via OpenAI CLI (or the Operator web UI):
+
+bash
+Copy
+Edit
+openai operators.tasks.run -f operator_tasks/legisqc.json
+3 Pull API-based corpora
+CanLII (example):
+
+bash
+Copy
+Edit
+export CANLII_KEY=xxxxxxxx
+python scripts/fetch_canlii.py \
+       --year 2024 --court qcca \
+       --api_key $CANLII_KEY \
+       --out datasets/raw_qc/canlii
+fetch_canlii.py saves each judgment as YYYY_QCCA_12345.xml.
+
+4 Ingestion watcher
+ingest/clean_html.py (Cursor will generate) takes any new file in datasets/raw_qc/**:
+
+bash
+Copy
+Edit
+make ingest
+# expands to:
+python ingest/clean_html.py --src datasets/raw_qc --dst datasets/clean_qc/legal.txt
+HTML → stripped text
+
+PDF → pdftotext then cleanup
+
+XML (CanLII) → XPath → text
+
+The script appends JSONL chunks ({"text":…}) to datasets/clean_qc/legal.jsonl.
+
+5 Training step
+bash
+Copy
+Edit
+make train BASE=mistralai/Mistral-7B-Instruct
+# → scripts/train_qlora.py uses datasets/clean_qc/legal.jsonl
+Pulls fit-plan from vram_fit
+
+Streams Prometheus metrics
+
+Checkpoints adapters every 2 h
+
+6 Serve with live RAG citations
+After training finishes:
+
+bash
+Copy
+Edit
+make serve CHECKPOINT=checkpoints/legal-lora/epoch-3
+serve/legal_api.py loads the AWQ checkpoint via EnginePool, plus FAISS index built from the same corpus:
+
+/chat → returns answer + citations list (URL, paragraph id)
+
+/sources/{id} → raw doc snippet for front-end preview
+
+7 Ongoing updates (cron)
+Schedule Operator and API fetches weekly (crontab -e):
+
+arduino
+Copy
+Edit
+0 3 * * 0 openai operators.tasks.run -f .../legisqc.json
+30 3 * * 0 python fetch_canlii.py --year 2025 ...
+Nightly:
+
+go
+Copy
+Edit
+0 4 * * * make ingest && make train --resume latest
+If eval passes (pytest -q tests/test_lexglue_fr.py), tag the checkpoint and restart the FastAPI service (systemctl restart dualgpuopt.service).
+
+Bottom line
+Operator / API tasks dump raw docs →
+
+Watcher cleans & chunks →
+
+QLoRA fine-tunes →
+
+EnginePool + FastAPI serves with RAG citations.
+
+No manual copy-paste: drop sources into datasets/raw_qc/, run make ingest, and the rest of the pipeline is automated.

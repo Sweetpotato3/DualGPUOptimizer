@@ -3,11 +3,11 @@
 Launcher script for DualGPUOptimizer.
 Sets up the Python path and runs the application with mock GPU mode.
 """
-import os
-import sys
-import pathlib
-import importlib.util
 import logging
+import os
+import pathlib
+import sys
+
 
 def setup_environment():
     """Set up the environment for running the application."""
@@ -23,6 +23,7 @@ def setup_environment():
     os.environ["DGPUOPT_MOCK_GPUS"] = "1"
 
     return True
+
 
 def run_application():
     """Run the application."""
@@ -42,7 +43,7 @@ def run_application():
             sys.path.insert(0, str(dualgpuopt_path))
 
             # Try importing GUI components directly
-            from dualgpuopt import gpu_info, telemetry, gui
+            from dualgpuopt import gpu_info, gui, telemetry
             from dualgpuopt.gui import run_app
 
             # Run the app
@@ -53,6 +54,7 @@ def run_application():
             print(f"Failed to run application directly: {e2}")
             return 1
 
+
 def main():
     """Main entry point."""
     # Set up basic logging first
@@ -60,8 +62,8 @@ def main():
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.StreamHandler(sys.stdout)
-        ]
+            logging.StreamHandler(sys.stdout),
+        ],
     )
 
     # Set up the environment
@@ -75,8 +77,10 @@ def main():
     except Exception as e:
         print(f"Error running application: {e}")
         import traceback
+
         traceback.print_exc()
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

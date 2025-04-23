@@ -5,10 +5,11 @@ Direct build script for DualGPUOptimizer Modern UI.
 This script builds a Windows executable without requiring spec files.
 """
 import os
-import sys
-import subprocess
-from pathlib import Path
 import shutil
+import subprocess
+import sys
+from pathlib import Path
+
 
 def ensure_icon_exists():
     """Ensure the icon file exists and return its path."""
@@ -49,22 +50,25 @@ def ensure_icon_exists():
     print("Warning: Unable to find or generate icon file.")
     return None
 
+
 def install_pyinstaller():
     """Ensure PyInstaller is installed."""
     try:
         import PyInstaller
+
         print("PyInstaller is already installed.")
     except ImportError:
         print("Installing PyInstaller...")
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
         print("PyInstaller installed successfully.")
 
+
 def build_executable(icon_path):
     """Build the executable directly using PyInstaller command line."""
     print("Building executable...")
 
     # Determine build type
-    onefile = input("Build as a single executable file? (y/n, default=y): ").strip().lower() != 'n'
+    onefile = input("Build as a single executable file? (y/n, default=y): ").strip().lower() != "n"
 
     cmd = [
         sys.executable,
@@ -105,17 +109,20 @@ def build_executable(icon_path):
         if onefile:
             print(f"\n🎉 Build complete → {exe_path}")
         else:
-            print(f"\n🎉 Build complete → {os.path.abspath('dist/DualGPUOptimizer/DualGPUOptimizer.exe')}")
+            print(
+                f"\n🎉 Build complete → {os.path.abspath('dist/DualGPUOptimizer/DualGPUOptimizer.exe')}"
+            )
         return True
     except subprocess.CalledProcessError as e:
         print(f"Error building executable: {e}")
         return False
 
+
 def main():
     """Main entry point."""
-    print("="*60)
+    print("=" * 60)
     print("DualGPUOptimizer Modern UI Direct Build Script")
-    print("="*60)
+    print("=" * 60)
 
     # Ensure icon exists
     icon_path = ensure_icon_exists()
@@ -131,7 +138,7 @@ def main():
         print("The taskbar icon should now display correctly when running the executable.")
 
         # Ask if user wants to run the executable
-        if input("\nRun the executable now? (y/n): ").strip().lower() == 'y':
+        if input("\nRun the executable now? (y/n): ").strip().lower() == "y":
             if os.path.exists("dist/DualGPUOptimizer.exe"):
                 subprocess.Popen(["dist/DualGPUOptimizer.exe"])
             elif os.path.exists("dist/DualGPUOptimizer/DualGPUOptimizer.exe"):
@@ -141,6 +148,7 @@ def main():
 
     input("\nPress Enter to exit...")
     return 0 if success else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

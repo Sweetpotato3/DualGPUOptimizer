@@ -7,17 +7,18 @@ from __future__ import annotations
 
 import logging
 import tkinter as tk
-from tkinter import ttk, filedialog
-import os
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from tkinter import filedialog, ttk
+from typing import Any
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.constants import *
+
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
-    import tkinter.ttk as ttk
+    from tkinter import ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
 
 from dualgpuopt.gpu_info import GPU
@@ -27,11 +28,12 @@ from dualgpuopt.services.event_service import event_bus
 class LauncherTab(ttk.Frame):
     """Tab for launching models with optimized parameters."""
 
-    def __init__(self, parent: ttk.Frame, gpus: List[GPU] = None) -> None:
+    def __init__(self, parent: ttk.Frame, gpus: list[GPU] = None) -> None:
         """
         Initialize the launcher tab.
 
         Args:
+        ----
             parent: Parent frame
             gpus: List of GPU objects
         """
@@ -61,11 +63,12 @@ class LauncherTab(ttk.Frame):
         event_bus.subscribe("gpu_list_updated", self._handle_gpu_update)
         event_bus.subscribe("process_exited", self._handle_process_exit)
 
-    def _handle_gpu_update(self, data: Dict[str, Any]) -> None:
+    def _handle_gpu_update(self, data: dict[str, Any]) -> None:
         """
         Handle GPU list updates.
 
         Args:
+        ----
             data: Event data containing updated GPU list
         """
         if "gpus" in data:
@@ -74,11 +77,12 @@ class LauncherTab(ttk.Frame):
             # Update UI based on new GPU list
             self._update_gpu_display()
 
-    def _handle_process_exit(self, data: Dict[str, Any]) -> None:
+    def _handle_process_exit(self, data: dict[str, Any]) -> None:
         """
         Handle process exit events.
 
         Args:
+        ----
             data: Event data containing process exit information
         """
         process_id = data.get("process_id", "")
@@ -110,7 +114,9 @@ class LauncherTab(ttk.Frame):
         model_frame.columnconfigure(1, weight=1)
 
         # Model path
-        ttk.Label(model_frame, text="Model path:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(model_frame, text="Model path:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
 
         # Frame for path entry and browse button
         path_frame = ttk.Frame(model_frame)
@@ -127,7 +133,9 @@ class LauncherTab(ttk.Frame):
         browse_button.grid(row=0, column=1)
 
         # Model presets
-        ttk.Label(model_frame, text="Model preset:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(model_frame, text="Model preset:").grid(
+            row=1, column=0, sticky="w", padx=self.PAD, pady=5
+        )
 
         self.model_preset_var = tk.StringVar()
         preset_values = ["Custom", "Llama-2-7B", "Llama-2-13B", "Llama-2-70B", "Mistral-7B"]
@@ -135,7 +143,7 @@ class LauncherTab(ttk.Frame):
             model_frame,
             textvariable=self.model_preset_var,
             values=preset_values,
-            state="readonly"
+            state="readonly",
         )
         self.model_preset_combo.current(0)
         self.model_preset_combo.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
@@ -154,7 +162,7 @@ class LauncherTab(ttk.Frame):
             text="llama.cpp",
             variable=self.framework_var,
             value="llama.cpp",
-            command=self._on_framework_changed
+            command=self._on_framework_changed,
         )
         llama_radio.grid(row=0, column=0, padx=self.PAD, pady=5, sticky="w")
 
@@ -163,7 +171,7 @@ class LauncherTab(ttk.Frame):
             text="vLLM",
             variable=self.framework_var,
             value="vllm",
-            command=self._on_framework_changed
+            command=self._on_framework_changed,
         )
         vllm_radio.grid(row=0, column=1, padx=self.PAD, pady=5, sticky="w")
 
@@ -190,22 +198,28 @@ class LauncherTab(ttk.Frame):
         Create parameters frame for llama.cpp.
 
         Args:
+        ----
             parent: Parent frame
 
         Returns:
+        -------
             Parameters frame
         """
         frame = ttk.Frame(parent)
         frame.columnconfigure(1, weight=1)
 
         # Context size
-        ttk.Label(frame, text="Context size:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(frame, text="Context size:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.ctx_size_var = tk.IntVar(value=2048)
         ctx_size_entry = ttk.Entry(frame, textvariable=self.ctx_size_var, width=10)
         ctx_size_entry.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
 
         # Batch size
-        ttk.Label(frame, text="Batch size:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(frame, text="Batch size:").grid(
+            row=1, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.batch_size_var = tk.IntVar(value=1)
         batch_size_entry = ttk.Entry(frame, textvariable=self.batch_size_var, width=10)
         batch_size_entry.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
@@ -226,7 +240,9 @@ class LauncherTab(ttk.Frame):
         gpu_split_entry = ttk.Entry(gpu_split_frame, textvariable=self.gpu_split_var, width=10)
         gpu_split_entry.pack(side="left", padx=(0, 5))
 
-        ttk.Button(gpu_split_frame, text="Optimize", command=self._optimize_gpu_split).pack(side="left")
+        ttk.Button(gpu_split_frame, text="Optimize", command=self._optimize_gpu_split).pack(
+            side="left"
+        )
 
         return frame
 
@@ -235,16 +251,20 @@ class LauncherTab(ttk.Frame):
         Create parameters frame for vLLM.
 
         Args:
+        ----
             parent: Parent frame
 
         Returns:
+        -------
             Parameters frame
         """
         frame = ttk.Frame(parent)
         frame.columnconfigure(1, weight=1)
 
         # Tensor parallel size
-        ttk.Label(frame, text="Tensor parallel size:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(frame, text="Tensor parallel size:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
 
         tp_frame = ttk.Frame(frame)
         tp_frame.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
@@ -256,13 +276,17 @@ class LauncherTab(ttk.Frame):
         ttk.Label(tp_frame, text=f"(Max: {len(self.gpus)})").pack(side="left")
 
         # Max memory
-        ttk.Label(frame, text="Max memory:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(frame, text="Max memory:").grid(
+            row=1, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.max_memory_var = tk.StringVar(value="auto")
         max_memory_entry = ttk.Entry(frame, textvariable=self.max_memory_var, width=10)
         max_memory_entry.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
 
         # Max model length
-        ttk.Label(frame, text="Max model length:").grid(row=2, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(frame, text="Max model length:").grid(
+            row=2, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.max_model_len_var = tk.IntVar(value=8192)
         max_model_len_entry = ttk.Entry(frame, textvariable=self.max_model_len_var, width=10)
         max_model_len_entry.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=5)
@@ -298,11 +322,15 @@ class LauncherTab(ttk.Frame):
         buttons_frame.grid(row=0, column=1, sticky="e")
 
         # Save configuration button
-        save_config_button = ttk.Button(buttons_frame, text="Save Config", command=self._save_config)
+        save_config_button = ttk.Button(
+            buttons_frame, text="Save Config", command=self._save_config
+        )
         save_config_button.grid(row=0, column=0, padx=5)
 
         # Generate command button
-        generate_button = ttk.Button(buttons_frame, text="Generate Command", command=self._generate_command)
+        generate_button = ttk.Button(
+            buttons_frame, text="Generate Command", command=self._generate_command
+        )
         generate_button.grid(row=0, column=1, padx=5)
 
         # Launch button
@@ -315,8 +343,8 @@ class LauncherTab(ttk.Frame):
             title="Select Model File",
             filetypes=[
                 ("Model files", "*.bin *.gguf *.pt *.ggml *.safetensors"),
-                ("All files", "*.*")
-            ]
+                ("All files", "*.*"),
+            ],
         )
 
         if model_file:
@@ -369,9 +397,9 @@ class LauncherTab(ttk.Frame):
     def _update_gpu_display(self) -> None:
         """Update UI based on available GPUs."""
         # Update tensor parallel size max label
-        if hasattr(self, 'tp_size_var'):
+        if hasattr(self, "tp_size_var"):
             for widget in self.vllm_params_frame.winfo_children():
-                if isinstance(widget, ttk.Frame) and widget.grid_info()['row'] == 0:
+                if isinstance(widget, ttk.Frame) and widget.grid_info()["row"] == 0:
                     for child in widget.winfo_children():
                         if isinstance(child, ttk.Label):
                             child.config(text=f"(Max: {len(self.gpus)})")
@@ -436,6 +464,7 @@ class LauncherTab(ttk.Frame):
         Update UI based on process status.
 
         Args:
+        ----
             process_id: ID of the process
             return_code: Process return code
         """

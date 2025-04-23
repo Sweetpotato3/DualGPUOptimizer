@@ -5,16 +5,14 @@ Provides a basic UI that works with minimal dependencies.
 Used as a fallback when more advanced UI options are not available.
 """
 from __future__ import annotations
+
+import logging
 import tkinter as tk
 from tkinter import ttk
-import threading
-import time
-import logging
-import sys
-from typing import Dict, Any, List, Optional
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI.Simple")
+
 
 class SimpleApp(ttk.Frame):
     """Simple application frame with basic functionality"""
@@ -28,8 +26,9 @@ class SimpleApp(ttk.Frame):
         self.rowconfigure(1, weight=1)
 
         # Create title
-        ttk.Label(self, text="DualGPUOptimizer - Simple UI",
-                 font=("Arial", 16, "bold")).grid(row=0, column=0, pady=10)
+        ttk.Label(self, text="DualGPUOptimizer - Simple UI", font=("Arial", 16, "bold")).grid(
+            row=0, column=0, pady=10
+        )
 
         # Create info frame
         info_frame = ttk.LabelFrame(self, text="Information", padding=10)
@@ -72,6 +71,7 @@ pip install -r requirements.txt
         # Add exit button
         ttk.Button(btn_frame, text="Exit", command=parent.destroy).pack(side="right")
 
+
 def run_simple_ui():
     """Run the simple UI"""
     # Create root window
@@ -85,6 +85,7 @@ def run_simple_ui():
 
     # Run app
     root.mainloop()
+
 
 if __name__ == "__main__":
     run_simple_ui()

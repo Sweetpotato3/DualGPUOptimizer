@@ -1,0 +1,75 @@
+{
+  "name": "CanLII French Crawler",
+  "description": "Crawls French-language case law from CanLII",
+  "base_url": "https://www.canlii.org",
+  "output_dir": "corpora/canlii_fr/raw",
+  "language": "fr",
+  "targets": [
+    {
+      "name": "Cour d'appel du Québec",
+      "url": "/fr/qc/qcca/",
+      "id": "qcca",
+      "min_year": 2015,
+      "max_year": 2023
+    },
+    {
+      "name": "Cour supérieure du Québec",
+      "url": "/fr/qc/qccs/",
+      "id": "qccs",
+      "min_year": 2018,
+      "max_year": 2023
+    },
+    {
+      "name": "Cour du Québec",
+      "url": "/fr/qc/qccq/",
+      "id": "qccq",
+      "min_year": 2020,
+      "max_year": 2023
+    },
+    {
+      "name": "Tribunal des droits de la personne",
+      "url": "/fr/qc/qctdp/",
+      "id": "qctdp",
+      "min_year": 2015,
+      "max_year": 2023
+    }
+  ],
+  "crawl_config": {
+    "delay": 3.0,
+    "timeout": 45,
+    "user_agent": "Legal Corpus Research/1.0",
+    "max_depth": 2,
+    "follow_links": true,
+    "save_format": "html",
+    "preserve_structure": true,
+    "max_cases_per_court": 1000
+  },
+  "extraction": {
+    "judgment_selector": "div.judgment-body",
+    "metadata_selectors": {
+      "citation": "span.citation",
+      "date": "span.judgment-date",
+      "judges": "div.judges-container"
+    },
+    "exclude_selectors": [
+      "div.document-langue",
+      "div.document-correction"
+    ]
+  },
+  "throttle": {
+    "requests_per_minute": 15,
+    "max_concurrent": 1
+  },
+  "filters": {
+    "min_length": 5000,
+    "exclude_keywords": [
+      "ordonnance de non-publication",
+      "ordonnance de confidentialité"
+    ],
+    "require_sections": [
+      "ANALYSE",
+      "CONTEXTE",
+      "QUESTIONS EN LITIGE"
+    ]
+  }
+}

@@ -1,10 +1,11 @@
-import sys
 import os
+import sys
 
 print(f"Python version: {sys.version}")
 
 try:
     import torch
+
     print(f"PyTorch version: {torch.__version__}")
     print(f"CUDA available: {torch.cuda.is_available()}")
 
@@ -16,7 +17,7 @@ try:
         print(f"CUDA device properties: {torch.cuda.get_device_properties(0)}")
     else:
         print("CUDA is not available. Checking environment variables:")
-        for var in ['CUDA_VISIBLE_DEVICES', 'CUDA_PATH', 'PATH']:
+        for var in ["CUDA_VISIBLE_DEVICES", "CUDA_PATH", "PATH"]:
             print(f"  {var}: {os.environ.get(var, 'Not set')}")
 except ImportError as e:
     print(f"Error importing torch: {e}")

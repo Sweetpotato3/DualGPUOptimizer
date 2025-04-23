@@ -1,8 +1,8 @@
 """
 Test script to verify the refactored theme module is working correctly
 """
-import tkinter as tk
 import logging
+import tkinter as tk
 from tkinter import ttk
 
 # Configure logging
@@ -11,12 +11,13 @@ logger = logging.getLogger("ThemeTest")
 
 # Import from the refactored theme package
 from dualgpuopt.gui.theme import (
-    apply_theme,
-    set_theme,
-    current_theme,
     AVAILABLE_THEMES,
-    ThemeToggleButton
+    ThemeToggleButton,
+    apply_theme,
+    current_theme,
+    set_theme,
 )
+
 
 def create_test_window():
     """Create a test window with various widgets"""
@@ -37,7 +38,7 @@ def create_test_window():
     ttk.Label(
         frame,
         text="Theme Refactoring Test",
-        style="Heading.TLabel"
+        style="Heading.TLabel",
     ).pack(pady=20)
 
     # Add some widgets
@@ -56,7 +57,9 @@ def create_test_window():
     # Display current theme
     current_theme_var = tk.StringVar()
     ttk.Label(info_frame, text="Current Theme:").grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=current_theme_var).grid(row=0, column=1, padx=10, pady=5, sticky="w")
+    ttk.Label(info_frame, textvariable=current_theme_var).grid(
+        row=0, column=1, padx=10, pady=5, sticky="w"
+    )
 
     # Display theme colors
     bg_var = tk.StringVar()
@@ -70,7 +73,9 @@ def create_test_window():
     ttk.Label(info_frame, textvariable=fg_var).grid(row=2, column=1, padx=10, pady=5, sticky="w")
 
     ttk.Label(info_frame, text="Accent:").grid(row=3, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(info_frame, textvariable=accent_var).grid(row=3, column=1, padx=10, pady=5, sticky="w")
+    ttk.Label(info_frame, textvariable=accent_var).grid(
+        row=3, column=1, padx=10, pady=5, sticky="w"
+    )
 
     # Add buttons to switch themes
     themes_frame = ttk.Frame(frame)
@@ -80,13 +85,15 @@ def create_test_window():
         ttk.Button(
             themes_frame,
             text=f"Set {theme_name.title()}",
-            command=lambda tn=theme_name: set_theme(root, tn)
+            command=lambda tn=theme_name: set_theme(root, tn),
         ).pack(side=tk.LEFT, padx=5)
 
     # Function to update theme info
     def update_theme_info():
-        theme_name = next((name for name, colors in AVAILABLE_THEMES.items()
-                         if colors == current_theme), "unknown")
+        theme_name = next(
+            (name for name, colors in AVAILABLE_THEMES.items() if colors == current_theme),
+            "unknown",
+        )
         current_theme_var.set(theme_name)
         bg_var.set(current_theme.get("bg", "unknown"))
         fg_var.set(current_theme.get("fg", "unknown"))
@@ -99,6 +106,7 @@ def create_test_window():
     update_theme_info()
 
     return root
+
 
 if __name__ == "__main__":
     logger.info("Starting theme test application...")

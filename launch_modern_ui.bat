@@ -13,4 +13,4 @@ IF EXIST integrated_app\dualgpuopt\assets\windowsicongpu.ico (
 )
 
 echo Launching DualGPUOptimizer Modern UI...
-python run_modern_ui.py 
+python run_modern_ui.py

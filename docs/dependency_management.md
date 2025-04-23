@@ -214,4 +214,4 @@ If a dependency works but causes compatibility issues:
 
 1. Create a more robust fallback in the appropriate compatibility layer
 2. Add version constraints in the dependency definition
-3. Consider making the dependency optional and improving fallback behavior 
+3. Consider making the dependency optional and improving fallback behavior

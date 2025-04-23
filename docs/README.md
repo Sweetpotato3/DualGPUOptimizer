@@ -2,6 +2,12 @@
 
 Welcome to the DualGPUOptimizer documentation. This directory contains detailed information about the project, its components, and how to use it effectively.
 
+## System Requirements
+
+- Python 3.8 or higher (Python 3.12 fully supported)
+- NVIDIA GPUs with CUDA support
+- PySide6 ≥ 6.6 (tested on 6.8) for the Qt-based GUI
+
 ## Available Documentation
 
 - [Quick Start Guide](QUICK_START.md) - Get up and running quickly
@@ -19,13 +25,13 @@ The DualGPUOptimizer is built around several key concepts:
 
 ## Main Components
 
-| Component | Description |
-|-----------|-------------|
-| Model Profiles | Standardized memory consumption patterns for ML models |
-| GPU Telemetry | Real-time monitoring of GPU metrics |
-| Optimization Engine | Algorithms for optimal resource allocation |
-| Launcher | Execution management for inference processes |
-| Dashboard | Visual monitoring of GPU performance |
+| Component           | Description                                            |
+| ------------------- | ------------------------------------------------------ |
+| Model Profiles      | Standardized memory consumption patterns for ML models |
+| GPU Telemetry       | Real-time monitoring of GPU metrics                    |
+| Optimization Engine | Algorithms for optimal resource allocation             |
+| Launcher            | Execution management for inference processes           |
+| Dashboard           | Visual monitoring of GPU performance                   |
 
 ## Project Structure
 
@@ -35,6 +41,7 @@ DualGPUOptimizer/
 │   ├── batch/           # Batch processing optimization
 │   ├── commands/        # Framework-specific command generation
 │   ├── gui/             # Tkinter GUI components
+│   ├── qt/              # PySide6/Qt GUI components
 │   ├── resources/       # Icons and assets
 │   ├── services/        # Core services (config, events)
 │   ├── ctx_size.py      # Context size calculation
@@ -42,7 +49,7 @@ DualGPUOptimizer/
 │   ├── layer_balance.py # Layer distribution optimization
 │   ├── model_profiles.py # Model memory profiles
 │   ├── telemetry.py     # Real-time GPU metrics collection
-│   └── ... 
+│   └── ...
 ├── docs/                # Documentation (you are here)
 ├── tests/               # Test suite
 └── ...
@@ -60,4 +67,4 @@ Documentation improvements are always welcome! To contribute:
 2. Add or update documentation in the `docs/` directory
 3. Submit a pull request
 
-Please maintain the existing documentation style and format. 
+Please maintain the existing documentation style and format.

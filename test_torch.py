@@ -1,8 +1,9 @@
-import torch
 import sys
 
+import torch
+
 # Redirect output to file
-with open('torch_test_output.txt', 'w') as f:
+with open("torch_test_output.txt", "w") as f:
     f.write(f"Python version: {sys.version}\n")
     f.write(f"PyTorch version: {torch.__version__}\n")
     f.write(f"CUDA available: {torch.cuda.is_available()}\n")

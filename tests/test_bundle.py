@@ -2,7 +2,6 @@
 Bundle smoke test for DualGPUOptimizer
 Verifies DLLs are loaded correctly and constants.py is accessible
 """
-import os
 import sys
 import unittest
 from pathlib import Path
@@ -13,14 +12,14 @@ class BundleTest(unittest.TestCase):
 
     def test_meipass_exists(self):
         """Verify _MEIPASS exists when run from bundle"""
-        if getattr(sys, 'frozen', False):
-            self.assertTrue(hasattr(sys, '_MEIPASS'))
+        if getattr(sys, "frozen", False):
+            self.assertTrue(hasattr(sys, "_MEIPASS"))
             meipass = Path(sys._MEIPASS)
             self.assertTrue(meipass.exists())
 
     def test_cuda_dlls_present(self):
         """Verify CUDA DLLs are present when packaged"""
-        if getattr(sys, 'frozen', False):
+        if getattr(sys, "frozen", False):
             meipass = Path(sys._MEIPASS)
 
             # Check for at least one CUDA DLL
@@ -31,7 +30,8 @@ class BundleTest(unittest.TestCase):
         """Verify gui.constants can be imported"""
         try:
             from dualgpuopt.gui import constants
-            self.assertTrue(hasattr(constants, 'GUI_VERSION'))
+
+            self.assertTrue(hasattr(constants, "GUI_VERSION"))
         except ImportError as e:
             self.fail(f"Failed to import dualgpuopt.gui.constants: {e}")
 

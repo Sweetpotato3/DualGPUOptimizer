@@ -1,15 +1,19 @@
-import sys, types
+import sys
+import types
+
 from PyInstaller.utils.hooks import collect_dynamic_libs
+
 
 def _lazy(name: str):
     mod = types.ModuleType(name)
-    mod.__getattr__ = lambda *_: None    # any attr access returns None
+    mod.__getattr__ = lambda *_: None  # any attr access returns None
     sys.modules[name] = mod
+
 
 # Create lazy stubs for problematic modules
 for m in (
-    "torch._inductor",                # full package
-    "torch._inductor.kernel",         # the crashing sub-module
+    "torch._inductor",  # full package
+    "torch._inductor.kernel",  # the crashing sub-module
     "torch._dynamo",
     "torch._functorch.aot_autograd",
 ):

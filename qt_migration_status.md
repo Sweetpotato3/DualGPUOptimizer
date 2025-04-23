@@ -91,4 +91,4 @@ The Qt implementation is structured around these core files:
 - `dualgpuopt/qt/memory_tab.py`: Memory profiling and analysis
 - `dualgpuopt/qt/launcher_tab.py`: Model execution and process management
 - `dualgpuopt/qt/settings_tab.py`: Application settings and preferences
-- `dualgpuopt/qt/system_tray.py`: System tray integration with notifications 
+- `dualgpuopt/qt/system_tray.py`: System tray integration with notifications

@@ -3,14 +3,13 @@ Theme testing and propagation validation tool
 """
 from __future__ import annotations
 
+import logging
 import tkinter as tk
 from tkinter import ttk
-import logging
-import sys
-from typing import Dict, List, Any, Callable, Optional
 
 try:
     from dualgpuopt.services.event_service import event_bus
+
     HAS_EVENT_BUS = True
 except ImportError:
     HAS_EVENT_BUS = False
@@ -18,19 +17,19 @@ except ImportError:
 
 try:
     from dualgpuopt.services.config_service import config_service
+
     HAS_CONFIG_SERVICE = True
 except ImportError:
     HAS_CONFIG_SERVICE = False
     print("Warning: config_service not available, theme persistence will not be tested")
 
-from dualgpuopt.gui.theme import AVAILABLE_THEMES, set_theme, current_theme
+from dualgpuopt.gui.theme import AVAILABLE_THEMES, current_theme
+from dualgpuopt.gui.theme_observer import register_theme_callback, register_themed_widget
 from dualgpuopt.gui.theme_selector import ThemeSelector
-from dualgpuopt.gui.theme_observer import register_themed_widget, register_theme_callback
-from dualgpuopt.gui.themed_widgets import (
-    ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry, ThemedListbox, ColorSwatch
-)
+from dualgpuopt.gui.themed_widgets import ColorSwatch, ThemedButton, ThemedEntry, ThemedLabel
 
 logger = logging.getLogger("DualGPUOpt.ThemeTester")
+
 
 class ThemeTester(tk.Tk):
     """Application for testing theme propagation"""
@@ -84,7 +83,7 @@ class ThemeTester(tk.Tk):
         self.theme_selector = ThemeSelector(
             theme_frame,
             label_text="Theme:",
-            callback=self._on_theme_changed
+            callback=self._on_theme_changed,
         )
         self.theme_selector.pack(anchor="w", padx=10, pady=10)
 
@@ -97,21 +96,25 @@ class ThemeTester(tk.Tk):
         colors_frame.pack(fill=tk.X, padx=10, pady=10)
 
         # Create labels and swatches for each color
-        for i, (color_name, color_key) in enumerate([
-            ("Background", "bg"),
-            ("Foreground", "fg"),
-            ("Accent", "accent"),
-            ("Input BG", "input_bg"),
-            ("Border", "border")
-        ]):
-            ttk.Label(colors_frame, text=f"{color_name}:").grid(row=i, column=0, sticky="w", padx=5, pady=2)
+        for i, (color_name, color_key) in enumerate(
+            [
+                ("Background", "bg"),
+                ("Foreground", "fg"),
+                ("Accent", "accent"),
+                ("Input BG", "input_bg"),
+                ("Border", "border"),
+            ]
+        ):
+            ttk.Label(colors_frame, text=f"{color_name}:").grid(
+                row=i, column=0, sticky="w", padx=5, pady=2
+            )
 
             # Create swatch and store reference
             swatch = ColorSwatch(
                 colors_frame,
                 color=current_theme[color_key],
                 width=30,
-                height=15
+                height=15,
             )
             swatch.grid(row=i, column=1, padx=5, pady=2)
 
@@ -163,7 +166,7 @@ class ThemeTester(tk.Tk):
             ("TTK Entry", ttk_entry),
             ("Themed Button", themed_button),
             ("Themed Entry", themed_entry),
-            ("Themed Label", themed_label)
+            ("Themed Label", themed_label),
         ]
 
         # Initialize widget change counts
@@ -174,7 +177,7 @@ class ThemeTester(tk.Tk):
         monitoring_label = ttk.Label(
             monitor_frame,
             text="Theme Change Monitoring",
-            font=("", 12, "bold")
+            font=("", 12, "bold"),
         )
         monitoring_label.pack(anchor="w", padx=10, pady=10)
 
@@ -193,7 +196,7 @@ class ThemeTester(tk.Tk):
         widget_monitor_label = ttk.Label(
             monitor_frame,
             text="Widget Update Monitoring",
-            font=("", 12, "bold")
+            font=("", 12, "bold"),
         )
         widget_monitor_label.pack(anchor="w", padx=10, pady=5)
 
@@ -201,7 +204,7 @@ class ThemeTester(tk.Tk):
         self.monitor_table = ttk.Treeview(
             monitor_frame,
             columns=("widget", "updates", "status"),
-            show="headings"
+            show="headings",
         )
         self.monitor_table.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
@@ -232,17 +235,21 @@ class ThemeTester(tk.Tk):
             ttk.Label(status_frame, textvariable=config_var).pack(side=tk.RIGHT)
 
     def _on_theme_changed(self, theme_name):
-        """Handle theme change from theme selector
+        """
+        Handle theme change from theme selector
 
         Args:
+        ----
             theme_name: Name of the new theme
         """
         self.status_var.set(f"Theme changed to {theme_name}")
 
     def _monitor_theme_change(self, theme_name):
-        """Monitor theme changes from event bus
+        """
+        Monitor theme changes from event bus
 
         Args:
+        ----
             theme_name: Name of the new theme
         """
         # Increment theme change count
@@ -262,23 +269,27 @@ class ThemeTester(tk.Tk):
                 values=(
                     name,
                     self._widget_change_counts[name],
-                    "Updated" if self._widget_change_counts[name] == self._theme_change_count else "Out of sync"
-                )
+                    "Updated"
+                    if self._widget_change_counts[name] == self._theme_change_count
+                    else "Out of sync",
+                ),
             )
 
         # Log theme change
         logger.info(f"Theme changed to: {theme_name} (change #{self._theme_change_count})")
+
 
 def run_theme_tester():
     """Run the theme tester application"""
     app = ThemeTester()
     app.mainloop()
 
+
 if __name__ == "__main__":
     # Configure logging
     logging.basicConfig(
         level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     )
 
     # Run the tester

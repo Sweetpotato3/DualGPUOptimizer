@@ -8,11 +8,12 @@ import sys
 import tkinter as tk
 from tkinter import ttk
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, Optional, Any
 
 # Import ttkthemes for better theme support
 try:
     from ttkthemes import ThemedTk, ThemedStyle
+
     TTKTHEMES_AVAILABLE = True
 except ImportError:
     TTKTHEMES_AVAILABLE = False
@@ -34,13 +35,13 @@ THEMES = {
     "dark": {
         "bg": "#263238",  # Material Blue Grey 900
         "text": "#eceff1",  # Material Blue Grey 50
-        "chart_bg": "#1a2327", # Darker shade for contrast
+        "chart_bg": "#1a2327",  # Darker shade for contrast
         "highlight": "#42a5f5",  # Material Blue 400
         "button": "#37474f",  # Material Blue Grey 800
         "entry": "#37474f",  # Material Blue Grey 800
         "border": "#546e7a",  # Material Blue Grey 600
         "accent": "#64ffda",  # Material Teal A200
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
     },
     "light": {
         "bg": "#eceff1",  # Material Blue Grey 50
@@ -51,7 +52,7 @@ THEMES = {
         "entry": "#ffffff",  # White
         "border": "#b0bec5",  # Material Blue Grey 200
         "accent": "#00bfa5",  # Material Teal A700
-        "ttk_theme": "arc" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "arc" if TTKTHEMES_AVAILABLE else "clam",
     },
     "system": {
         # Will use system default theme
@@ -66,7 +67,7 @@ THEMES = {
         "entry": "#2e7d32",  # Green 800
         "border": "#43a047",  # Green 600
         "accent": "#b9f6ca",  # Green A100
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
     },
     "blue": {
         "bg": "#0d47a1",  # Dark Blue
@@ -77,12 +78,14 @@ THEMES = {
         "entry": "#1565c0",  # Blue 800
         "border": "#1976d2",  # Blue 700
         "accent": "#80d8ff",  # Light Blue A100
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
-    }
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
+    },
 }
 
 # Available ttk themes from ttkthemes
-AVAILABLE_TTK_THEMES = ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+AVAILABLE_TTK_THEMES = (
+    ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+)
 
 
 def generate_colors(count: int) -> list[str]:
@@ -100,7 +103,9 @@ def generate_colors(count: int) -> list[str]:
     return colors
 
 
-def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] = None) -> Dict[str, Any]:
+def apply_theme(
+    root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] = None
+) -> Dict[str, Any]:
     """
     Apply selected theme to the application.
 
@@ -163,39 +168,59 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
 
             # Configure style for widgets
             style.configure(".", background=theme["bg"], foreground=theme["text"])
-            style.configure("TButton",
-                            background=theme["button"],
-                            foreground=theme["text"],
-                            bordercolor=theme.get("border", theme["button"]))
+            style.configure(
+                "TButton",
+                background=theme["button"],
+                foreground=theme["text"],
+                bordercolor=theme.get("border", theme["button"]),
+            )
 
-            style.map("TButton",
-                     background=[('active', theme.get("highlight"))],
-                     relief=[('pressed', 'sunken')])
+            style.map(
+                "TButton",
+                background=[("active", theme.get("highlight"))],
+                relief=[("pressed", "sunken")],
+            )
 
             # Configure entry fields
-            style.configure("TEntry",
-                           fieldbackground=theme["entry"],
-                           foreground=theme["text"],
-                           bordercolor=theme.get("border", theme["entry"]))
+            style.configure(
+                "TEntry",
+                fieldbackground=theme["entry"],
+                foreground=theme["text"],
+                bordercolor=theme.get("border", theme["entry"]),
+            )
 
             # Configure other widget types
             style.configure("TFrame", background=theme["bg"])
-            style.configure("TLabelframe", background=theme["bg"], foreground=theme["text"])
-            style.configure("TLabelframe.Label", background=theme["bg"], foreground=theme["text"])
+            style.configure(
+                "TLabelframe", background=theme["bg"], foreground=theme["text"]
+            )
+            style.configure(
+                "TLabelframe.Label", background=theme["bg"], foreground=theme["text"]
+            )
             style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
-            style.configure("TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0])
-            style.configure("TNotebook.Tab", background=theme["button"],
-                           foreground=theme["text"], padding=[10, 2])
+            style.configure(
+                "TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0]
+            )
+            style.configure(
+                "TNotebook.Tab",
+                background=theme["button"],
+                foreground=theme["text"],
+                padding=[10, 2],
+            )
 
             # Map states for notebook tabs
-            style.map("TNotebook.Tab",
-                     background=[("selected", theme.get("highlight"))],
-                     foreground=[("selected", theme["bg"])])
+            style.map(
+                "TNotebook.Tab",
+                background=[("selected", theme.get("highlight"))],
+                foreground=[("selected", theme["bg"])],
+            )
 
             # Set progressbar colors
-            style.configure("Horizontal.TProgressbar",
-                           background=theme.get("accent", theme.get("highlight")),
-                           troughcolor=theme.get("chart_bg", "#202020"))
+            style.configure(
+                "Horizontal.TProgressbar",
+                background=theme.get("accent", theme.get("highlight")),
+                troughcolor=theme.get("chart_bg", "#202020"),
+            )
 
             # Set text widget colors via root options
             root.option_add("*Text.Background", theme["entry"])
@@ -204,29 +229,43 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
             root.option_add("*Text.selectForeground", theme.get("bg"))
 
             # Set combobox colors
-            style.map('TCombobox',
-                     fieldbackground=[('readonly', theme["entry"])],
-                     selectbackground=[('readonly', theme.get("highlight"))])
+            style.map(
+                "TCombobox",
+                fieldbackground=[("readonly", theme["entry"])],
+                selectbackground=[("readonly", theme.get("highlight"))],
+            )
 
             # Update notebook styling for better appearance
             notebook_style = ttk.Style()
-            notebook_style.layout("TNotebook", [
-                ("TNotebook.client", {"sticky": "nswe"})
-            ])
-            notebook_style.layout("TNotebook.Tab", [
-                ("TNotebook.tab", {
-                    "sticky": "nswe",
-                    "children": [
-                        ("TNotebook.padding", {
-                            "side": "top",
+            notebook_style.layout(
+                "TNotebook", [("TNotebook.client", {"sticky": "nswe"})]
+            )
+            notebook_style.layout(
+                "TNotebook.Tab",
+                [
+                    (
+                        "TNotebook.tab",
+                        {
                             "sticky": "nswe",
                             "children": [
-                                ("TNotebook.label", {"side": "top", "sticky": ""})
-                            ]
-                        })
-                    ]
-                })
-            ])
+                                (
+                                    "TNotebook.padding",
+                                    {
+                                        "side": "top",
+                                        "sticky": "nswe",
+                                        "children": [
+                                            (
+                                                "TNotebook.label",
+                                                {"side": "top", "sticky": ""},
+                                            )
+                                        ],
+                                    },
+                                )
+                            ],
+                        },
+                    )
+                ],
+            )
 
             # Apply ttk theme if specified
             if ttk_theme and not TTKTHEMES_AVAILABLE:
@@ -235,11 +274,22 @@ def apply_theme(root: tk.Tk, theme_name: str, logger: Optional[logging.Logger] =
                 except tk.TclError:
                     # Fall back to default theme if specified one not available
                     if logger:
-                        logger.warning(f"TTK theme {ttk_theme} not available, using default")
+                        logger.warning(
+                            f"TTK theme {ttk_theme} not available, using default"
+                        )
 
             # Apply font for better readability
-            default_font = ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
-            for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", "TCombobox"]:
+            default_font = (
+                ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
+            )
+            for widget in [
+                "TLabel",
+                "TButton",
+                "TCheckbutton",
+                "TRadiobutton",
+                "TEntry",
+                "TCombobox",
+            ]:
                 try:
                     style = ttk.Style()
                     style.configure(widget, font=default_font)
@@ -274,7 +324,7 @@ def update_widgets_theme(parent: tk.Widget, theme: Dict[str, Any]) -> None:
             fg=theme.get("text", parent.cget("fg")),
             insertbackground=theme.get("text", parent.cget("insertbackground")),
             selectbackground=theme.get("highlight", parent.cget("selectbackground")),
-            selectforeground=theme.get("bg", parent.cget("selectforeground"))
+            selectforeground=theme.get("bg", parent.cget("selectforeground")),
         )
 
     # Recursively update all children

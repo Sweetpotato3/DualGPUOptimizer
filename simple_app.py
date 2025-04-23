@@ -3,17 +3,17 @@
 Simple standalone app for DualGPUOptimizer.
 This is a minimal version that just displays a window with information from constants.py.
 """
+import logging
 import os
 import sys
-import logging
 import tkinter as tk
-from tkinter import ttk
 from pathlib import Path
+from tkinter import ttk
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 logger = logging.getLogger("SimpleApp")
@@ -23,19 +23,20 @@ sys.path.insert(0, str(Path(__file__).parent.absolute()))
 
 # Import the constants directly from the standalone file
 from gui_constants import (
-    PAD,
-    PURPLE_PRIMARY,
-    PURPLE_HIGHLIGHT,
     BLUE_ACCENT,
-    PINK_ACCENT,
     CYAN_ACCENT,
-    ORANGE_ACCENT,
     DARK_BACKGROUND,
-    LIGHT_FOREGROUND,
     DEFAULT_FONT,
     DEFAULT_FONT_SIZE,
-    GPU_COLORS
+    GPU_COLORS,
+    LIGHT_FOREGROUND,
+    ORANGE_ACCENT,
+    PAD,
+    PINK_ACCENT,
+    PURPLE_HIGHLIGHT,
+    PURPLE_PRIMARY,
 )
+
 
 class SimpleApp:
     """A simple app that displays constants values."""
@@ -57,18 +58,18 @@ class SimpleApp:
 
         # Set up style
         self.style = ttk.Style()
-        self.style.configure('TFrame', background=DARK_BACKGROUND)
-        self.style.configure('TLabel', background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
-        self.style.configure('TButton', background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND)
+        self.style.configure("TFrame", background=DARK_BACKGROUND)
+        self.style.configure("TLabel", background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
+        self.style.configure("TButton", background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND)
 
         # Create header
         self.header_label = ttk.Label(
             self.main_frame,
             text="DualGPUOptimizer - GPU Mock Mode",
             font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 8, "bold"),
-            foreground=PURPLE_HIGHLIGHT
+            foreground=PURPLE_HIGHLIGHT,
         )
-        self.header_label.pack(pady=(PAD*2, PAD*4))
+        self.header_label.pack(pady=(PAD * 2, PAD * 4))
 
         # Create color display
         self.create_color_display()
@@ -80,9 +81,9 @@ class SimpleApp:
         self.exit_button = ttk.Button(
             self.main_frame,
             text="Exit",
-            command=self.root.destroy
+            command=self.root.destroy,
         )
-        self.exit_button.pack(pady=PAD*2)
+        self.exit_button.pack(pady=PAD * 2)
 
     def create_color_display(self):
         """Create a display of the theme colors."""
@@ -95,7 +96,7 @@ class SimpleApp:
             color_frame,
             text="Theme Colors",
             font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2),
-            foreground=LIGHT_FOREGROUND
+            foreground=LIGHT_FOREGROUND,
         ).pack(anchor=tk.W, pady=PAD)
 
         # Add color swatches
@@ -105,7 +106,7 @@ class SimpleApp:
             ("Blue Accent", BLUE_ACCENT),
             ("Pink Accent", PINK_ACCENT),
             ("Cyan Accent", CYAN_ACCENT),
-            ("Orange Accent", ORANGE_ACCENT)
+            ("Orange Accent", ORANGE_ACCENT),
         ]
 
         for name, color in colors:
@@ -118,7 +119,7 @@ class SimpleApp:
                 width=30,
                 height=20,
                 bg=color,
-                highlightthickness=0
+                highlightthickness=0,
             )
             color_rect.pack(side=tk.LEFT, padx=(PAD, 5))
 
@@ -126,7 +127,7 @@ class SimpleApp:
             ttk.Label(
                 swatch_frame,
                 text=f"{name} ({color})",
-                foreground=LIGHT_FOREGROUND
+                foreground=LIGHT_FOREGROUND,
             ).pack(side=tk.LEFT)
 
     def create_mock_gpu_display(self):
@@ -140,7 +141,7 @@ class SimpleApp:
             gpu_frame,
             text="Mock GPU Information",
             font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2),
-            foreground=LIGHT_FOREGROUND
+            foreground=LIGHT_FOREGROUND,
         ).pack(anchor=tk.W, pady=PAD)
 
         # Add mock GPU data
@@ -149,14 +150,14 @@ class SimpleApp:
                 "index": 0,
                 "name": "NVIDIA GeForce RTX 4090",
                 "memory": "24 GB",
-                "color": GPU_COLORS[0]
+                "color": GPU_COLORS[0],
             },
             {
                 "index": 1,
                 "name": "NVIDIA GeForce RTX 4080",
                 "memory": "16 GB",
-                "color": GPU_COLORS[1]
-            }
+                "color": GPU_COLORS[1],
+            },
         ]
 
         for gpu in mock_gpus:
@@ -169,7 +170,7 @@ class SimpleApp:
                 width=10,
                 height=40,
                 bg=gpu["color"],
-                highlightthickness=0
+                highlightthickness=0,
             )
             indicator.pack(side=tk.LEFT, padx=(0, 10))
 
@@ -181,22 +182,22 @@ class SimpleApp:
                 info_frame,
                 text=f"GPU {gpu['index']}: {gpu['name']}",
                 font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2, "bold"),
-                foreground=LIGHT_FOREGROUND
+                foreground=LIGHT_FOREGROUND,
             ).pack(anchor=tk.W)
 
             ttk.Label(
                 info_frame,
                 text=f"Memory: {gpu['memory']} | Status: Mock Mode",
-                foreground=LIGHT_FOREGROUND
+                foreground=LIGHT_FOREGROUND,
             ).pack(anchor=tk.W)
 
     def run(self):
         """Run the application."""
         self.root.mainloop()
 
+
 def create_simple_app():
     """Create a simple application to test GUI functionality"""
-
     # Initialize the root window
     root = tk.Tk()
     root.title("Simple DualGPUOptimizer")
@@ -205,6 +206,7 @@ def create_simple_app():
     # Try to apply theme
     try:
         from dualgpuopt.gui.theme import apply_theme
+
         apply_theme(root)
         logger.info("Applied theme successfully")
     except Exception as e:
@@ -223,7 +225,9 @@ def create_simple_app():
     notebook.add(dashboard_tab, text="Dashboard")
 
     # Add content to dashboard tab
-    dashboard_label = ttk.Label(dashboard_tab, text="Dashboard Tab Content", font=("TkDefaultFont", 14))
+    dashboard_label = ttk.Label(
+        dashboard_tab, text="Dashboard Tab Content", font=("TkDefaultFont", 14)
+    )
     dashboard_label.pack(pady=20)
 
     # Add GPU info frame
@@ -242,27 +246,35 @@ def create_simple_app():
     notebook.add(optimizer_tab, text="Optimizer")
 
     # Add content to optimizer tab
-    optimizer_label = ttk.Label(optimizer_tab, text="Optimizer Tab Content", font=("TkDefaultFont", 14))
+    optimizer_label = ttk.Label(
+        optimizer_tab, text="Optimizer Tab Content", font=("TkDefaultFont", 14)
+    )
     optimizer_label.pack(pady=20)
 
     # Add some controls
     controls_frame = ttk.Frame(optimizer_tab)
     controls_frame.pack(pady=10, fill=tk.X)
 
-    ttk.Label(controls_frame, text="Context Size:").grid(row=0, column=0, padx=5, pady=5, sticky=tk.W)
+    ttk.Label(controls_frame, text="Context Size:").grid(
+        row=0, column=0, padx=5, pady=5, sticky=tk.W
+    )
     ttk.Entry(controls_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
     ttk.Label(controls_frame, text="GPU Split:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
     ttk.Entry(controls_frame).grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
 
-    ttk.Button(controls_frame, text="Calculate").grid(row=2, column=0, columnspan=2, padx=5, pady=10)
+    ttk.Button(controls_frame, text="Calculate").grid(
+        row=2, column=0, columnspan=2, padx=5, pady=10
+    )
 
     # Add launcher tab
     launcher_tab = ttk.Frame(notebook)
     notebook.add(launcher_tab, text="Launcher")
 
     # Add content to launcher tab
-    launcher_label = ttk.Label(launcher_tab, text="Launcher Tab Content", font=("TkDefaultFont", 14))
+    launcher_label = ttk.Label(
+        launcher_tab, text="Launcher Tab Content", font=("TkDefaultFont", 14)
+    )
     launcher_label.pack(pady=20)
 
     # Add launch controls
@@ -273,9 +285,13 @@ def create_simple_app():
     ttk.Entry(launch_frame).grid(row=0, column=1, padx=5, pady=5, sticky=tk.W)
 
     ttk.Label(launch_frame, text="Framework:").grid(row=1, column=0, padx=5, pady=5, sticky=tk.W)
-    ttk.Combobox(launch_frame, values=["llama.cpp", "vLLM"]).grid(row=1, column=1, padx=5, pady=5, sticky=tk.W)
+    ttk.Combobox(launch_frame, values=["llama.cpp", "vLLM"]).grid(
+        row=1, column=1, padx=5, pady=5, sticky=tk.W
+    )
 
-    ttk.Button(launch_frame, text="Launch Model").grid(row=2, column=0, columnspan=2, padx=5, pady=10)
+    ttk.Button(launch_frame, text="Launch Model").grid(
+        row=2, column=0, columnspan=2, padx=5, pady=10
+    )
 
     # Create status bar
     status_frame = ttk.Frame(main_frame, relief="sunken", borderwidth=1)
@@ -291,6 +307,7 @@ def create_simple_app():
     logger.info("Starting simple application")
     root.mainloop()
 
+
 def main():
     """Main entry point."""
     # Set environment variable for mock GPU mode
@@ -301,6 +318,7 @@ def main():
     app.run()
 
     return 0
+
 
 if __name__ == "__main__":
     sys.exit(main())

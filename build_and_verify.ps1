@@ -37,4 +37,4 @@ Write-Host "`n=== For OneFile Build ===" -ForegroundColor Yellow
 Write-Host "If you need a single EXE file, run:" -ForegroundColor Yellow
 Write-Host "pyinstaller build.spec --onefile --add-data '%TORCH_HOME%;torch.libs' --collect-submodules torch" -ForegroundColor White
 
-exit 0 
+exit 0

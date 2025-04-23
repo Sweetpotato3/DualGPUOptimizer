@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import the components to test
 from dualgpuopt.gui.settings.appearance import AppearanceFrame
@@ -26,9 +26,7 @@ class TestAppearanceFrame(unittest.TestCase):
 
         # Create the appearance frame with the callback
         self.appearance_frame = AppearanceFrame(
-            self.parent,
-            pad=10,
-            on_theme_change=self.callback
+            self.parent, pad=10, on_theme_change=self.callback
         )
 
     def tearDown(self):
@@ -44,14 +42,12 @@ class TestAppearanceFrame(unittest.TestCase):
         self.assertEqual(self.appearance_frame.pad, 10)
         self.assertEqual(self.appearance_frame.on_theme_change, self.callback)
 
-    @patch('dualgpuopt.gui.theme_selector.ThemeSelector')
+    @patch("dualgpuopt.gui.theme_selector.ThemeSelector")
     def test_theme_selector_created(self, mock_theme_selector):
         """Test that the theme selector is created."""
         # Create a new appearance frame to trigger the component creation
         appearance_frame = AppearanceFrame(
-            self.parent,
-            pad=10,
-            on_theme_change=self.callback
+            self.parent, pad=10, on_theme_change=self.callback
         )
 
         # Verify that the theme selector was created
@@ -65,7 +61,7 @@ class TestAppearanceFrame(unittest.TestCase):
         # Verify that the callback was called with the expected message
         self.callback.assert_called_once_with(f"Theme changed to {test_theme}")
 
-    @patch('dualgpuopt.gui.theme.set_theme')
+    @patch("dualgpuopt.gui.theme.set_theme")
     def test_apply_theme_from_preview(self, mock_set_theme):
         """Test applying a theme from a preview."""
         # Create a mock for the theme_selector
@@ -75,7 +71,9 @@ class TestAppearanceFrame(unittest.TestCase):
         self.appearance_frame._apply_theme_from_preview(test_theme)
 
         # Verify that set_theme was called with the theme name
-        self.appearance_frame.theme_selector.set_theme.assert_called_once_with(test_theme)
+        self.appearance_frame.theme_selector.set_theme.assert_called_once_with(
+            test_theme
+        )
 
         # Verify that set_theme was called
         mock_set_theme.assert_called_once()
@@ -83,9 +81,9 @@ class TestAppearanceFrame(unittest.TestCase):
         # Verify that the callback was called with the expected message
         self.callback.assert_called_once_with(f"Theme changed to {test_theme}")
 
-    @patch('dualgpuopt.services.config_service.config_service.set')
-    @patch('dualgpuopt.services.event_service.event_bus.publish')
-    @patch('tkinter.messagebox.showinfo')
+    @patch("dualgpuopt.services.config_service.config_service.set")
+    @patch("dualgpuopt.services.event_service.event_bus.publish")
+    @patch("tkinter.messagebox.showinfo")
     def test_apply_ttk_theme(self, mock_showinfo, mock_publish, mock_set):
         """Test applying a TTK theme."""
         # Create a mock for ttk_theme_var
@@ -137,8 +135,8 @@ class TestAppearanceFrame(unittest.TestCase):
     def test_get_ttk_theme_without_var(self):
         """Test getting the TTK theme when ttk_theme_var doesn't exist."""
         # Remove ttk_theme_var attribute if it exists
-        if hasattr(self.appearance_frame, 'ttk_theme_var'):
-            delattr(self.appearance_frame, 'ttk_theme_var')
+        if hasattr(self.appearance_frame, "ttk_theme_var"):
+            delattr(self.appearance_frame, "ttk_theme_var")
 
         ttk_theme = self.appearance_frame.get_ttk_theme()
 
@@ -146,5 +144,5 @@ class TestAppearanceFrame(unittest.TestCase):
         self.assertEqual(ttk_theme, "")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

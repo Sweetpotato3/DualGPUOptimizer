@@ -5,9 +5,10 @@ Build script for DualGPUOptimizer Modern UI.
 This script builds a Windows executable with proper taskbar icon.
 """
 import os
-import sys
 import subprocess
+import sys
 from pathlib import Path
+
 
 def ensure_icon_exists():
     """Ensure the icon file exists in the assets directory."""
@@ -32,6 +33,7 @@ def ensure_icon_exists():
         if source.exists():
             print(f"Found icon at {source}, copying to {target_ico}")
             import shutil
+
             shutil.copy2(source, target_ico)
             return True
 
@@ -51,34 +53,40 @@ def ensure_icon_exists():
     print("Warning: Unable to find or generate icon file.")
     return False
 
+
 def install_pyinstaller():
     """Ensure PyInstaller is installed."""
     try:
         import PyInstaller
+
         print("PyInstaller is already installed.")
     except ImportError:
         print("Installing PyInstaller...")
         subprocess.run([sys.executable, "-m", "pip", "install", "pyinstaller"], check=True)
         print("PyInstaller installed successfully.")
 
+
 def build_executable():
     """Build the executable using PyInstaller."""
     print("Building executable...")
 
     # Determine which spec file to use
-    onefile = input("Build as a single executable file? (y/n, default=y): ").strip().lower() != 'n'
+    onefile = input("Build as a single executable file? (y/n, default=y): ").strip().lower() != "n"
 
     spec_file = "DualGPUOptimizer_onefile.spec" if onefile else "DualGPUOptimizer_modern.spec"
 
     try:
         # Run PyInstaller
-        subprocess.run([
-            sys.executable,
-            "-m",
-            "PyInstaller",
-            spec_file,
-            "--clean"
-        ], check=True)
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "PyInstaller",
+                spec_file,
+                "--clean",
+            ],
+            check=True,
+        )
 
         print(f"\n🎉 Build complete → {os.path.abspath('dist/DualGPUOptimizer.exe')}")
         return True
@@ -86,11 +94,12 @@ def build_executable():
         print(f"Error building executable: {e}")
         return False
 
+
 def main():
     """Main entry point."""
-    print("="*60)
+    print("=" * 60)
     print("DualGPUOptimizer Modern UI Build Script")
-    print("="*60)
+    print("=" * 60)
 
     # Ensure icon exists
     ensure_icon_exists()
@@ -109,6 +118,7 @@ def main():
 
     input("\nPress Enter to exit...")
     return 0 if success else 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

@@ -7,6 +7,7 @@ Heuristic for maximum safe context length.
 from __future__ import annotations
 from dualgpuopt.gpu_info import GPU
 
+
 def calc_max_ctx(
     gpus: list[GPU],
     *,

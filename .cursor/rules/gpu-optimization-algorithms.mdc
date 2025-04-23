@@ -1,72 +1,63 @@
 ---
-description: GPU optimization algorithms and memory management for ML model inference across multiple GPUs
-globs: **/optimizer.py,**/gpu_info.py,**/memory/*.py,**/batch/*.py,**/layer_balance.py
+description: Specification for GPU memory distribution algorithms, tensor parallel splits and memory allocation optimization strategies
+globs: **/*optimizer*.py,**/gpu_info.py,**/gpu_split*.py,**/model_distribution.py
 alwaysApply: false
 ---
 
 
 # gpu-optimization-algorithms
 
-## Core Memory Management System (score: 95)
+## Core GPU Memory Distribution Logic 
 
-Primary algorithms for GPU memory optimization across multiple devices:
+The optimizer implements specialized algorithms for distributing large language models across multiple GPUs. Core components include:
 
-1. Per-Token Memory Calculation:
+### Memory Split Calculator
+- Implements dynamic memory split ratios based on model architecture:
+  - 70B models: 70/30 GPU split, max 4096 context 
+  - Mixtral: 60/40 GPU split, max 8192 context
+  - 13B models: 50/50 GPU split, max 12288 context
+  - Other models: 40/60 GPU split, unlimited context
+
+### Tensor Parallel Layer Distribution
+- Dynamic layer distribution based on model architecture parameters:
+  - Calculates optimal tensor parallel fractions per GPU
+  - Balances memory requirements with bandwidth constraints
+  - Special handling for MoE (Mixture of Experts) models
+  - Preserves residual connections across GPU boundaries
+
+### Memory Allocation Strategies
+- Progressive memory allocation steps:
+  1. Base model memory estimation
+  2. KV cache sizing with configurable overhead
+  3. Tensor parallel memory requirements
+  4. Safety margin calculation
+  - Automatic fallback to mock data if hardware monitoring unavailable
+
+### Framework-Specific Command Generation
+- `llama.cpp`: Configures GPU layer distribution and precision
+- `vLLM`: Sets tensor parallelism and model length parameters
+- Custom backends for PyTorch and other frameworks
+
+## Domain-Specific Memory Profiles
+
+- Model-specific memory consumption patterns:
+```python
+MEMORY_PROFILES = {
+  "llama-70b": {
+    "base_memory": 140*1024,  # MB
+    "per_token": 320,         # bytes
+    "kv_scale": 2.0          # multiplier
+  },
+  "mixtral-8x7b": {
+    "base_memory": 120*1024,
+    "per_token": 256,
+    "kv_scale": 1.8
+  }
+}
 ```
-memory_per_token = (model_dim * 2) + (kv_dim * num_layers) + overhead_factor
-gpu_split_ratios = calculate_based_on_relative_memory()
-```
 
-2. Context Length Optimization:
-- Maximum safe context calculation using model architecture parameters
-- Adjusts for tensor parallelism overhead (20% default)
-- Applies 10% safety margin for OOM prevention
-- Enforces minimum 128 token context size
-
-3. Layer Distribution Algorithm:
-- Profiles layer execution times at different sequence lengths (64/1024)
-- Uses 20/80 weighted profiling for short/long sequences
-- Distributes layers based on memory quotas and execution latency
-- Prioritizes placing slower layers on faster GPU within constraints
-
-## Memory Pattern Analysis (score: 85)
-
-1. Memory Usage Profiling:
-- Maintains GPU-specific sliding windows for pattern recognition
-- Calculates growth rates using normalized time series
-- Implements leak detection via linear regression
-- Correlates spikes with tensor allocation events
-
-2. Anomaly Detection:
-- Two-tier spike detection:
-  * Rapid growth (>threshold MB/s)
-  * Sustained growth during inference
-- Memory retention analysis post-inference
-- 5MB minimum change threshold for leak reporting
-- 30-second cooldown between alerts
-
-## Batch Processing Optimization (score: 80)
-
-1. Smart Batching System:
-- Length-aware sequence batching for GPU inference
-- Dynamic batch sizing based on available memory
-- Implements backpressure with configurable queue depths
-- Progressive recovery after OOM events:
-  * 25% batch reduction
-  * Cache clearing attempts
-  * Gradual scale factor recovery (0.95 cap)
-
-2. Memory Reclamation:
-- Tiered reclamation strategy:
-  * CACHE_ONLY: Basic PyTorch cache clearing
-  * CLOCK_RESET: GPU clock manipulation
-  * FULL_RESET: Comprehensive tensor cleanup
-  * SYSTEM_CMD: OS-specific memory commands
-
-File paths containing core algorithms:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/batch/smart_batch.py
+## File Paths
+- `dualgpuopt/optimizer.py`  
+- `dualgpuopt/gpu_info.py`
 
 $END$

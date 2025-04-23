@@ -3,22 +3,23 @@
 Completely standalone modern UI for DualGPUOptimizer
 Contains all necessary widgets and functionality in a single file
 """
-import tkinter as tk
-import threading
-import time
 import queue
 import random
-from pathlib import Path
+import threading
+import time
+import tkinter as tk
 
 # Try to import ttkbootstrap for better styling
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.scrolled import ScrolledFrame
     from ttkbootstrap.toast import ToastNotification
+
     TTKBOOTSTRAP_AVAILABLE = True
     print("Using ttkbootstrap for enhanced UI")
 except ImportError:
-    import tkinter.ttk as ttk
+    from tkinter import ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
     print("ttkbootstrap not found - using standard ttk")
 
@@ -30,8 +31,9 @@ except ImportError:
             self.scrollbar = ttk.Scrollbar(self, orient="vertical", command=self.canvas.yview)
             self.scrollable_frame = ttk.Frame(self.canvas)
 
-            self.scrollable_frame.bind("<Configure>",
-                lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all")))
+            self.scrollable_frame.bind(
+                "<Configure>", lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+            )
             self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
             self.canvas.configure(yscrollcommand=self.scrollbar.set)
 
@@ -54,8 +56,10 @@ except ImportError:
 
 # ========== Custom Widgets ==========
 
+
 class NeonButton(ttk.Button):
     """Button with hover effects"""
+
     def __init__(self, master, text, **kwargs):
         style_name = "NeonButton.TButton"
 
@@ -88,9 +92,9 @@ class NeonButton(ttk.Button):
 
 class GradientBar(tk.Canvas):
     """Animated gradient progress bar"""
+
     def __init__(self, master, width=260, height=14, **kwargs):
-        super().__init__(master, width=width, height=height,
-                        highlightthickness=0, **kwargs)
+        super().__init__(master, width=width, height=height, highlightthickness=0, **kwargs)
         # Store dimensions and values
         self._width = width
         self._height = height
@@ -103,8 +107,12 @@ class GradientBar(tk.Canvas):
 
         # Create rectangle for the bar
         self._rect_id = self.create_rectangle(
-            0, 0, 0, height,
-            fill=self._start_color, outline=""
+            0,
+            0,
+            0,
+            height,
+            fill=self._start_color,
+            outline="",
         )
 
         # Start animation loop
@@ -141,8 +149,16 @@ class GradientBar(tk.Canvas):
                 # Try to use ttkbootstrap's gradient if available
                 try:
                     pct = self._value / 100.0
-                    r1, g1, b1 = int(self._start_color[1:3], 16), int(self._start_color[3:5], 16), int(self._start_color[5:7], 16)
-                    r2, g2, b2 = int(self._end_color[1:3], 16), int(self._end_color[3:5], 16), int(self._end_color[5:7], 16)
+                    r1, g1, b1 = (
+                        int(self._start_color[1:3], 16),
+                        int(self._start_color[3:5], 16),
+                        int(self._start_color[5:7], 16),
+                    )
+                    r2, g2, b2 = (
+                        int(self._end_color[1:3], 16),
+                        int(self._end_color[3:5], 16),
+                        int(self._end_color[5:7], 16),
+                    )
                     r = int(r1 + (r2 - r1) * pct)
                     g = int(g1 + (g2 - g1) * pct)
                     b = int(b1 + (b2 - b1) * pct)
@@ -158,12 +174,12 @@ class GradientBar(tk.Canvas):
 
 class SimpleMeter(ttk.Frame):
     """Simple meter widget"""
+
     def __init__(self, master, bootstyle="success", subtext="", **kwargs):
         super().__init__(master, **kwargs)
 
         # Create a canvas for drawing
-        self.canvas = tk.Canvas(self, width=100, height=100,
-                               highlightthickness=0, bg="#00000000")
+        self.canvas = tk.Canvas(self, width=100, height=100, highlightthickness=0, bg="#00000000")
         self.canvas.pack(fill="both", expand=True)
 
         # Store properties
@@ -176,7 +192,10 @@ class SimpleMeter(ttk.Frame):
         # Add the subtext
         self._subtext = subtext
         self._text_id = self.canvas.create_text(
-            50, 70, text=subtext, fill=self._get_color()
+            50,
+            70,
+            text=subtext,
+            fill=self._get_color(),
         )
 
     def _get_color(self):
@@ -197,7 +216,11 @@ class SimpleMeter(ttk.Frame):
 
         # Create meter text
         self._meter_text = self.canvas.create_text(
-            50, 50, text="0%", fill=self._get_color(), font=("Arial", 14, "bold")
+            50,
+            50,
+            text="0%",
+            fill=self._get_color(),
+            font=("Arial", 14, "bold"),
         )
 
     def configure(self, **kwargs):
@@ -212,6 +235,7 @@ class SimpleMeter(ttk.Frame):
 
 class Tooltip:
     """Simple tooltip for widgets"""
+
     def __init__(self, widget, text):
         self.widget = widget
         self.text = text
@@ -235,8 +259,7 @@ class Tooltip:
         # Create label with text
         style = ttk.Style()
         style.configure("Tooltip.TLabel", background="#555555", foreground="white")
-        label = ttk.Label(self.tooltip, text=self.text,
-                         style="Tooltip.TLabel", padding=(5, 3))
+        label = ttk.Label(self.tooltip, text=self.text, style="Tooltip.TLabel", padding=(5, 3))
         label.pack()
 
     def hide(self, event=None):
@@ -248,6 +271,7 @@ class Tooltip:
 
 class SimpleTelemetryThread(threading.Thread):
     """Thread generating mock telemetry data"""
+
     def __init__(self, message_queue):
         super().__init__(daemon=True)
         self.queue = message_queue
@@ -271,8 +295,10 @@ class SimpleTelemetryThread(threading.Thread):
 
 # ========== Main UI Class ==========
 
+
 class ModernDualGUI(tk.Tk):
     """Main application window with modern UI"""
+
     def __init__(self):
         super().__init__()
         self.title("DualGPUOptimizer - Modern UI")
@@ -310,15 +336,16 @@ class ModernDualGUI(tk.Tk):
 
         # Configure notebook
         style.configure("TNotebook", background="#1A1A2E", borderwidth=0)
-        style.configure("TNotebook.Tab",
-                       background="#222235",
-                       foreground="#E6E6E6",
-                       padding=(12, 5))
+        style.configure(
+            "TNotebook.Tab", background="#222235", foreground="#E6E6E6", padding=(12, 5)
+        )
 
         # Configure selected tab
-        style.map("TNotebook.Tab",
-                 background=[("selected", "#9B59B6")],
-                 foreground=[("selected", "#FFFFFF")])
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", "#9B59B6")],
+            foreground=[("selected", "#FFFFFF")],
+        )
 
     def _build_ui(self):
         """Build the main UI components"""
@@ -327,7 +354,9 @@ class ModernDualGUI(tk.Tk):
         header.pack(fill="x", pady=(0, 4))
 
         NeonButton(header, text="Launch Model", command=self._on_launch).pack(side="left")
-        NeonButton(header, text="New Session", command=self._on_new_session).pack(side="left", padx=6)
+        NeonButton(header, text="New Session", command=self._on_new_session).pack(
+            side="left", padx=6
+        )
 
         # Theme toggle button
         ttk.Button(header, text="🌙/☀️", command=self._toggle_theme).pack(side="right", padx=6)
@@ -354,7 +383,9 @@ class ModernDualGUI(tk.Tk):
         self.notebook.add(tab, text="Launcher")
 
         # Model path input
-        ttk.Label(tab, text="Model Path:", style="Card.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=10)
+        ttk.Label(tab, text="Model Path:", style="Card.TLabel").grid(
+            row=0, column=0, sticky="w", padx=4, pady=10
+        )
         self.model_var = tk.StringVar(value="TheBloke/dolphin-2.2-yi-34b-200k-AWQ")
         model_entry = ttk.Entry(tab, textvariable=self.model_var, width=55)
         model_entry.grid(row=0, column=1, sticky="ew", padx=6)
@@ -368,9 +399,10 @@ class ModernDualGUI(tk.Tk):
         tab.columnconfigure(1, weight=1)
 
         # Output area
-        ttk.Label(tab, text="Output Log:", style="Card.TLabel").grid(row=1, column=0, sticky="nw", padx=4, pady=6)
-        self.out_box = tk.Text(tab, height=20, bg="#13141C", fg="#E6E6E6",
-                              insertbackground="white")
+        ttk.Label(tab, text="Output Log:", style="Card.TLabel").grid(
+            row=1, column=0, sticky="nw", padx=4, pady=6
+        )
+        self.out_box = tk.Text(tab, height=20, bg="#13141C", fg="#E6E6E6", insertbackground="white")
         self.out_box.grid(row=2, column=0, columnspan=3, sticky="nsew", padx=4, pady=4)
         tab.rowconfigure(2, weight=1)
 
@@ -381,12 +413,16 @@ class ModernDualGUI(tk.Tk):
         self.notebook.add(tab, text="Dashboard")
 
         # GPU Utilization
-        ttk.Label(tab, text="GPU Utilization:", style="Card.TLabel").grid(row=0, column=0, sticky="w", padx=4, pady=10)
+        ttk.Label(tab, text="GPU Utilization:", style="Card.TLabel").grid(
+            row=0, column=0, sticky="w", padx=4, pady=10
+        )
         self.util_bar = GradientBar(tab)
         self.util_bar.grid(row=0, column=1, sticky="ew", padx=10)
 
         # VRAM Usage
-        ttk.Label(tab, text="VRAM Usage:", style="Card.TLabel").grid(row=1, column=0, sticky="w", padx=4, pady=10)
+        ttk.Label(tab, text="VRAM Usage:", style="Card.TLabel").grid(
+            row=1, column=0, sticky="w", padx=4, pady=10
+        )
         self.vram_bar = GradientBar(tab)
         self.vram_bar.grid(row=1, column=1, sticky="ew", padx=10)
 
@@ -401,14 +437,20 @@ class ModernDualGUI(tk.Tk):
         stats_frame = ttk.LabelFrame(tab, text="GPU Statistics", style="Card.TFrame")
         stats_frame.grid(row=3, column=0, columnspan=3, sticky="ew", padx=10, pady=20)
 
-        for i, (label, value) in enumerate([
-            ("Temperature:", "45°C"),
-            ("Memory:", "8GB / 24GB"),
-            ("Power:", "120W / 350W"),
-            ("Fan Speed:", "35%")
-        ]):
-            ttk.Label(stats_frame, text=label, style="Card.TLabel").grid(row=i, column=0, sticky="w", padx=10, pady=6)
-            ttk.Label(stats_frame, text=value, style="Card.TLabel").grid(row=i, column=1, sticky="w", padx=10, pady=6)
+        for i, (label, value) in enumerate(
+            [
+                ("Temperature:", "45°C"),
+                ("Memory:", "8GB / 24GB"),
+                ("Power:", "120W / 350W"),
+                ("Fan Speed:", "35%"),
+            ]
+        ):
+            ttk.Label(stats_frame, text=label, style="Card.TLabel").grid(
+                row=i, column=0, sticky="w", padx=10, pady=6
+            )
+            ttk.Label(stats_frame, text=value, style="Card.TLabel").grid(
+                row=i, column=1, sticky="w", padx=10, pady=6
+            )
 
     def _build_chat_tab(self):
         """Build the chat tab"""
@@ -417,8 +459,9 @@ class ModernDualGUI(tk.Tk):
         self.notebook.add(tab, text="Chat")
 
         # Message display area
-        self.chat_display = tk.Text(tab, wrap="word", bg="#13141C", fg="#E6E6E6",
-                                   highlightthickness=0, borderwidth=0)
+        self.chat_display = tk.Text(
+            tab, wrap="word", bg="#13141C", fg="#E6E6E6", highlightthickness=0, borderwidth=0
+        )
         chat_scroll = ttk.Scrollbar(tab, command=self.chat_display.yview)
         self.chat_display.configure(yscrollcommand=chat_scroll.set)
 
@@ -429,8 +472,15 @@ class ModernDualGUI(tk.Tk):
         input_frame = ttk.Frame(tab, style="Card.TFrame", padding=4)
         input_frame.pack(fill="x", side="bottom", padx=4, pady=4)
 
-        self.chat_entry = tk.Text(input_frame, height=3, bg="#13141C", fg="#E6E6E6",
-                                 wrap="word", highlightthickness=0, borderwidth=0)
+        self.chat_entry = tk.Text(
+            input_frame,
+            height=3,
+            bg="#13141C",
+            fg="#E6E6E6",
+            wrap="word",
+            highlightthickness=0,
+            borderwidth=0,
+        )
         self.chat_entry.pack(fill="x", side="left", expand=True, padx=(0, 4))
         self.chat_entry.bind("<Control-Return>", self._on_send)
 
@@ -472,9 +522,9 @@ class ModernDualGUI(tk.Tk):
 
         # Show notification
         if TTKBOOTSTRAP_AVAILABLE:
-            ToastNotification(title="New Session",
-                            message="Started a new chat session",
-                            duration=1800).show_toast()
+            ToastNotification(
+                title="New Session", message="Started a new chat session", duration=1800
+            ).show_toast()
 
         self.status_var.set("New session created")
 
@@ -491,7 +541,7 @@ class ModernDualGUI(tk.Tk):
                 "Initializing CUDA context...",
                 f"Loading {model}...",
                 "Creating tensor parallel layers...",
-                "Model loaded successfully!"
+                "Model loaded successfully!",
             ]
 
             for msg in msgs:
@@ -530,8 +580,7 @@ class ModernDualGUI(tk.Tk):
         self.chat_display.see("end")
 
         # Generate response in background thread
-        threading.Thread(target=self._generate_response,
-                        args=(text,), daemon=True).start()
+        threading.Thread(target=self._generate_response, args=(text,), daemon=True).start()
 
     def _generate_response(self, user_text):
         """Generate a response to user message"""
@@ -572,12 +621,13 @@ class ModernDualGUI(tk.Tk):
     def _on_close(self):
         """Handle window close"""
         # Stop the telemetry thread
-        if hasattr(self, 'tele'):
+        if hasattr(self, "tele"):
             self.tele.stop()
         self.destroy()
 
 
 # ========== Main Entry Point ==========
+
 
 def main():
     """Main entry point"""
@@ -586,6 +636,7 @@ def main():
         app.mainloop()
     except Exception as e:
         import traceback
+
         print(f"Error starting application: {e}")
         traceback.print_exc()
         return 1

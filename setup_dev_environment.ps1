@@ -36,4 +36,4 @@ Write-Host "To start the application, run:" -ForegroundColor Cyan
 Write-Host "python -m dualgpuopt" -ForegroundColor White
 Write-Host ""
 Write-Host "To build the application with PyInstaller, run:" -ForegroundColor Cyan
-Write-Host "pyinstaller dual_gpu_optimizer_app.spec" -ForegroundColor White 
+Write-Host "pyinstaller dual_gpu_optimizer_app.spec" -ForegroundColor White

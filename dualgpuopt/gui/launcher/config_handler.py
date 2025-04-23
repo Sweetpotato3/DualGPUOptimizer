@@ -8,8 +8,7 @@ from __future__ import annotations
 import json
 import logging
 import os
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Union, Any
+from typing import Any, Optional
 
 from dualgpuopt.services.config_service import config_service
 
@@ -22,6 +21,7 @@ class ConfigHandler:
         Initialize the configuration handler.
 
         Args:
+        ----
             config_dir: Directory to store configurations (defaults to user config dir)
         """
         self.logger = logging.getLogger("dualgpuopt.gui.launcher.config")
@@ -36,18 +36,19 @@ class ConfigHandler:
         # Load existing configurations
         self.configs = self._load_configs()
 
-    def _load_configs(self) -> Dict[str, Dict[str, Any]]:
+    def _load_configs(self) -> dict[str, dict[str, Any]]:
         """
         Load configurations from file.
 
-        Returns:
+        Returns
+        -------
             Dictionary of configurations
         """
         if not os.path.exists(self.config_file):
             return {}
 
         try:
-            with open(self.config_file, "r") as f:
+            with open(self.config_file) as f:
                 return json.load(f)
         except Exception as e:
             self.logger.error(f"Error loading launch configurations: {e}")
@@ -57,7 +58,8 @@ class ConfigHandler:
         """
         Save configurations to file.
 
-        Returns:
+        Returns
+        -------
             True if saved successfully, False otherwise
         """
         try:
@@ -68,27 +70,31 @@ class ConfigHandler:
             self.logger.error(f"Error saving launch configurations: {e}")
             return False
 
-    def get_config(self, name: str) -> Optional[Dict[str, Any]]:
+    def get_config(self, name: str) -> Optional[dict[str, Any]]:
         """
         Get a configuration by name.
 
         Args:
+        ----
             name: Name of the configuration
 
         Returns:
+        -------
             Configuration dictionary or None if not found
         """
         return self.configs.get(name)
 
-    def save_config(self, name: str, config: Dict[str, Any]) -> bool:
+    def save_config(self, name: str, config: dict[str, Any]) -> bool:
         """
         Save a configuration.
 
         Args:
+        ----
             name: Name of the configuration
             config: Configuration dictionary
 
         Returns:
+        -------
             True if saved successfully, False otherwise
         """
         self.configs[name] = config
@@ -99,9 +105,11 @@ class ConfigHandler:
         Delete a configuration.
 
         Args:
+        ----
             name: Name of the configuration
 
         Returns:
+        -------
             True if deleted successfully, False otherwise
         """
         if name in self.configs:
@@ -109,23 +117,26 @@ class ConfigHandler:
             return self._save_configs()
         return False
 
-    def list_configs(self) -> List[str]:
+    def list_configs(self) -> list[str]:
         """
         List all available configurations.
 
-        Returns:
+        Returns
+        -------
             List of configuration names
         """
         return list(self.configs.keys())
 
-    def get_default_config(self, framework: str) -> Dict[str, Any]:
+    def get_default_config(self, framework: str) -> dict[str, Any]:
         """
         Get default configuration for a framework.
 
         Args:
+        ----
             framework: Framework to get default configuration for
 
         Returns:
+        -------
             Default configuration dictionary
         """
         if framework == "llama.cpp":
@@ -133,13 +144,13 @@ class ConfigHandler:
                 "ctx_size": 2048,
                 "batch_size": 1,
                 "threads": 4,
-                "gpu_split": "auto"
+                "gpu_split": "auto",
             }
         elif framework == "vllm":
             return {
                 "tensor_parallel_size": "auto",
                 "max_memory": "auto",
-                "max_model_len": 8192
+                "max_model_len": 8192,
             }
         else:
             return {}

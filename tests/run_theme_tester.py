@@ -1,9 +1,9 @@
 """
 Script to run the theme tester tool
 """
+import logging
 import os
 import sys
-import logging
 from pathlib import Path
 
 # Add the parent directory to the path
@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 # Import necessary modules
@@ -26,6 +26,7 @@ except ImportError:
 # Import theme tester
 try:
     from dualgpuopt.gui.theme_tester import run_theme_tester
+
     print("Starting theme tester application...")
     run_theme_tester()
 except ImportError as e:
@@ -39,7 +40,7 @@ except ImportError as e:
         "dualgpuopt.gui.theme_observer",
         "dualgpuopt.gui.themed_widgets",
         "dualgpuopt.services.event_service",
-        "dualgpuopt.services.config_service"
+        "dualgpuopt.services.config_service",
     ]
 
     for module in modules_to_check:

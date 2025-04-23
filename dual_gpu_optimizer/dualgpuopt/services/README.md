@@ -70,7 +70,7 @@ event_bus.subscribe_typed(GPUMetricsEvent, handle_gpu_metrics)
 
 # Subscribe with high priority
 event_bus.subscribe_typed(
-    GPUMetricsEvent, 
+    GPUMetricsEvent,
     handle_gpu_metrics,
     priority=EventPriority.HIGH
 )
@@ -78,7 +78,7 @@ event_bus.subscribe_typed(
 # Subscribe with an async handler
 async def async_handler(event: GPUMetricsEvent) -> None:
     await some_async_operation(event)
-    
+
 event_bus.subscribe_typed(
     GPUMetricsEvent,
     async_handler,
@@ -123,4 +123,4 @@ class MyCustomEvent(Event):
 
 ## Middleware System
 
-The services package works with a middleware system that allows service modules to be extended with additional functionality. See the telemetry module for an example of middleware implementation. 
+The services package works with a middleware system that allows service modules to be extended with additional functionality. See the telemetry module for an example of middleware implementation.

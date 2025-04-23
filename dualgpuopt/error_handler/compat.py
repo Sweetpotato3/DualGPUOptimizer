@@ -13,12 +13,12 @@ from dualgpuopt.error_handler.ui import show_error_dialog
 
 # For backward compatibility
 __all__ = [
-    'ErrorCategory',
-    'ErrorDetails',
-    'ErrorSeverity',
-    'ErrorHandler',
-    'handle_exceptions',
-    'get_error_handler',
-    'install_global_handler',
-    'show_error_dialog',
+    "ErrorCategory",
+    "ErrorDetails",
+    "ErrorSeverity",
+    "ErrorHandler",
+    "handle_exceptions",
+    "get_error_handler",
+    "install_global_handler",
+    "show_error_dialog",
 ]

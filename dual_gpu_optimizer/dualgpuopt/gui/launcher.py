@@ -6,7 +6,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, scrolledtext
 import queue
-from typing import Dict, List, Optional, Callable, Any
+from typing import List
 
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.runner import Runner
@@ -35,31 +35,28 @@ class LauncherTab(ttk.Frame):
         control_frame.columnconfigure(0, weight=0)
 
         # Framework selection
-        ttk.Label(control_frame, text="Framework:").grid(row=0, column=0, sticky="w", padx=(0, 8))
+        ttk.Label(control_frame, text="Framework:").grid(
+            row=0, column=0, sticky="w", padx=(0, 8)
+        )
         self.framework_var = tk.StringVar(value="llama.cpp")
         framework_combo = ttk.Combobox(
             control_frame,
             textvariable=self.framework_var,
             values=["llama.cpp", "vLLM"],
             state="readonly",
-            width=10
+            width=10,
         )
         framework_combo.grid(row=0, column=1, sticky="w", padx=8)
 
         # Launch button
         self.launch_btn = ttk.Button(
-            control_frame,
-            text="Launch",
-            command=self._start_runner
+            control_frame, text="Launch", command=self._start_runner
         )
         self.launch_btn.grid(row=0, column=2, padx=8)
 
         # Stop button
         self.stop_btn = ttk.Button(
-            control_frame,
-            text="Stop",
-            command=self._stop_runner,
-            state="disabled"
+            control_frame, text="Stop", command=self._stop_runner, state="disabled"
         )
         self.stop_btn.grid(row=0, column=3, padx=8)
 
@@ -87,17 +84,13 @@ class LauncherTab(ttk.Frame):
 
         self.autoscroll_var = tk.BooleanVar(value=True)
         autoscroll_check = ttk.Checkbutton(
-            autoscroll_frame,
-            text="Auto-scroll",
-            variable=self.autoscroll_var
+            autoscroll_frame, text="Auto-scroll", variable=self.autoscroll_var
         )
         autoscroll_check.grid(row=0, column=0, sticky="w")
 
         # Clear button
         clear_btn = ttk.Button(
-            autoscroll_frame,
-            text="Clear Log",
-            command=self._clear_log
+            autoscroll_frame, text="Clear Log", command=self._clear_log
         )
         clear_btn.grid(row=0, column=1, padx=(8, 0))
 
@@ -124,6 +117,7 @@ class LauncherTab(ttk.Frame):
                 return
 
             from dualgpuopt import optimizer
+
             cmd = optimizer.llama_command(model_path, ctx, split)
 
             # Create runner (needs to be implemented)
@@ -139,6 +133,7 @@ class LauncherTab(ttk.Frame):
                 return
 
             from dualgpuopt import optimizer
+
             cmd = optimizer.vllm_command(model_path, tp_size)
 
             # Create runner
@@ -253,4 +248,5 @@ class LauncherTab(ttk.Frame):
             GPU split string
         """
         from dualgpuopt import optimizer
+
         return optimizer.split_string(self.gpus)

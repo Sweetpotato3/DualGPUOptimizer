@@ -217,4 +217,4 @@ To prevent the need for future large-scale refactoring, new code should follow t
 4. Maintain backward compatibility when modifying existing interfaces
 5. Write tests for individual components
 
-By following these principles, we'll continue to improve the maintainability, testability, and extensibility of the DualGPUOptimizer codebase. 
+By following these principles, we'll continue to improve the maintainability, testability, and extensibility of the DualGPUOptimizer codebase.

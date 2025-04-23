@@ -9,7 +9,9 @@ Key routine
 ``rebalance(model, gpu_info, warm_input)``  →  dict device_map
 """
 from __future__ import annotations
-import json, pathlib, time
+import json
+import pathlib
+import time
 from typing import Any, Dict, List
 from dualgpuopt.log import get as _log
 
@@ -18,10 +20,12 @@ _log = _log("layer_balance")
 # Check if torch is available
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
     _log.warning("PyTorch not available - layer balancing will be disabled")
+
 
 def _profile_pass(model, dummy) -> List[int]:
     if not TORCH_AVAILABLE:
@@ -44,7 +48,7 @@ def profile_layers(model, dummy) -> List[float]:
         return []
 
     t_short = _profile_pass(model, dummy[:, :64])
-    t_long  = _profile_pass(model, dummy[:, :1024])
+    t_long = _profile_pass(model, dummy[:, :1024])
     return [0.2 * s + 0.8 * l for s, l in zip(t_short, t_long)]
 
 

@@ -12,13 +12,25 @@ import inspect
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    List,
+    Optional,
+    Set,
+    Type,
+    TypeVar,
+    Union,
+)
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class EventPriority(enum.IntEnum):
     """Priority levels for event handlers."""
+
     LOW = 0
     NORMAL = 1
     HIGH = 2
@@ -28,6 +40,7 @@ class EventPriority(enum.IntEnum):
 @dataclasses.dataclass
 class Event:
     """Base class for all typed events."""
+
     timestamp: float = dataclasses.field(default_factory=time.time)
     source: str = "system"
 
@@ -35,12 +48,14 @@ class Event:
 @dataclasses.dataclass
 class GPUEvent(Event):
     """Base class for GPU-related events."""
+
     gpu_index: int = 0
 
 
 @dataclasses.dataclass
 class GPUMetricsEvent(GPUEvent):
     """Event fired when GPU metrics are updated."""
+
     utilization: float = 0.0
     memory_used: int = 0
     memory_total: int = 0
@@ -52,6 +67,7 @@ class GPUMetricsEvent(GPUEvent):
 @dataclasses.dataclass
 class ConfigChangedEvent(Event):
     """Event fired when configuration changes."""
+
     config_key: str = ""
     old_value: Any = None
     new_value: Any = None
@@ -60,6 +76,7 @@ class ConfigChangedEvent(Event):
 @dataclasses.dataclass
 class OptimizationEvent(Event):
     """Event for optimization-related notifications."""
+
     split_ratio: str = ""
     tensor_fractions: List[float] = dataclasses.field(default_factory=list)
     model_path: str = ""
@@ -72,7 +89,7 @@ class EventCallback(Generic[T]):
         self,
         callback: Callable[[T], Any],
         priority: EventPriority = EventPriority.NORMAL,
-        is_async: bool = False
+        is_async: bool = False,
     ):
         self.callback = callback
         self.priority = priority
@@ -120,7 +137,7 @@ class EnhancedEventBus:
         event_type: Type[T],
         callback: Callable[[T], Any],
         priority: EventPriority = EventPriority.NORMAL,
-        is_async: bool = False
+        is_async: bool = False,
     ) -> None:
         """
         Subscribe to a typed event.
@@ -135,7 +152,9 @@ class EnhancedEventBus:
             if event_type not in self._subscribers:
                 self._subscribers[event_type] = []
 
-            cb = EventCallback(callback, priority, is_async or inspect.iscoroutinefunction(callback))
+            cb = EventCallback(
+                callback, priority, is_async or inspect.iscoroutinefunction(callback)
+            )
             self._subscribers[event_type].append(cb)
             self._subscribers[event_type].sort()  # Sort by priority
 
@@ -149,7 +168,7 @@ class EnhancedEventBus:
         event_type: str,
         callback: Callable[[Any], Any],
         priority: EventPriority = EventPriority.NORMAL,
-        is_async: bool = False
+        is_async: bool = False,
     ) -> None:
         """
         Subscribe to a string-based event type (for backward compatibility).
@@ -164,7 +183,9 @@ class EnhancedEventBus:
             if event_type not in self._string_subscribers:
                 self._string_subscribers[event_type] = []
 
-            cb = EventCallback(callback, priority, is_async or inspect.iscoroutinefunction(callback))
+            cb = EventCallback(
+                callback, priority, is_async or inspect.iscoroutinefunction(callback)
+            )
             self._string_subscribers[event_type].append(cb)
             self._string_subscribers[event_type].sort()  # Sort by priority
 
@@ -207,17 +228,23 @@ class EnhancedEventBus:
             self.logger.debug(f"No subscribers for event '{event_type.__name__}'")
             return
 
-        self.logger.debug(f"Publishing event '{event_type.__name__}' to {len(handlers)} subscribers")
+        self.logger.debug(
+            f"Publishing event '{event_type.__name__}' to {len(handlers)} subscribers"
+        )
 
         for handler in handlers:
             try:
                 if handler.is_async:
                     # Schedule coroutine on the event loop
-                    self.get_event_loop().create_task(self._execute_async_handler(handler.callback, event))
+                    self.get_event_loop().create_task(
+                        self._execute_async_handler(handler.callback, event)
+                    )
                 else:
                     handler.callback(event)
             except Exception as e:
-                self.logger.error(f"Error in event handler for '{event_type.__name__}': {e}")
+                self.logger.error(
+                    f"Error in event handler for '{event_type.__name__}': {e}"
+                )
 
     async def _execute_async_handler(self, callback: Callable, event: Event) -> None:
         """Execute an async handler and log errors."""
@@ -229,7 +256,9 @@ class EnhancedEventBus:
         except Exception as e:
             self.logger.error(f"Error in async event handler: {e}")
 
-    def publish(self, event_type: Union[str, Type[Event], Event], data: Any = None) -> None:
+    def publish(
+        self, event_type: Union[str, Type[Event], Event], data: Any = None
+    ) -> None:
         """
         Universal publish method supporting typed events and string events.
 
@@ -256,12 +285,16 @@ class EnhancedEventBus:
             return
 
         handlers = self._string_subscribers[event_name]
-        self.logger.debug(f"Publishing event '{event_name}' to {len(handlers)} subscribers")
+        self.logger.debug(
+            f"Publishing event '{event_name}' to {len(handlers)} subscribers"
+        )
 
         for handler in handlers:
             try:
                 if handler.is_async:
-                    self.get_event_loop().create_task(self._execute_async_handler(handler.callback, data))
+                    self.get_event_loop().create_task(
+                        self._execute_async_handler(handler.callback, data)
+                    )
                 else:
                     handler.callback(data)
             except Exception as e:
@@ -281,12 +314,13 @@ class EnhancedEventBus:
 
             # Find and remove the matching callback
             self._subscribers[event_type] = [
-                h for h in self._subscribers[event_type]
-                if h.callback != callback
+                h for h in self._subscribers[event_type] if h.callback != callback
             ]
             self.logger.debug(f"Unsubscribed from event '{event_type.__name__}'")
 
-    def unsubscribe(self, event_type: Union[str, Type[Event]], callback: Callable) -> None:
+    def unsubscribe(
+        self, event_type: Union[str, Type[Event]], callback: Callable
+    ) -> None:
         """
         Universal unsubscribe method supporting both string and typed events.
 
@@ -303,7 +337,8 @@ class EnhancedEventBus:
                     return
 
                 self._string_subscribers[event_name] = [
-                    h for h in self._string_subscribers[event_name]
+                    h
+                    for h in self._string_subscribers[event_name]
                     if h.callback != callback
                 ]
                 self.logger.debug(f"Unsubscribed from event '{event_name}'")

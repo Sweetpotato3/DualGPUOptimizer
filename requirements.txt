@@ -1,19 +1,25 @@
 # Core dependencies
 pynvml>=11.0.0  # For NVIDIA GPU monitoring
-tk              # Core tkinter package for UI
 psutil>=5.9.0   # For system resource monitoring
 numpy>=1.24.0   # For optimization algorithms
+python_version >= "3.9,<3.12"  # Required for compatibility with PySide6 and PyQtDarkTheme
 
-# UI enhancements (optional but recommended)
+# GUI dependencies
+PySide6==6.5.3  # LTS line tested with PyQtDarkTheme
+PyQtDarkTheme==2.1.0  # provides qdarktheme module
+deepdiff>=6.0
+
+# UI enhancements (legacy - being phased out)
+tk
 ttkthemes>=3.2.0
 ttkwidgets>=0.13.0
 ttkbootstrap>=1.0.0
 
 # Model communication (for Chat functionality)
 requests>=2.25.0
-sseclient-py>=1.7.2 
+sseclient-py>=1.7.2
 
 # PyTorch (optional - used for advanced features)
 torch==2.5.1
 torchvision==0.20.1
-torchaudio==2.5.1 
+torchaudio==2.5.1

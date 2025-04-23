@@ -1,19 +1,16 @@
 """
 Error handling service for centralized error management.
 """
+
 from __future__ import annotations
 
 import logging
-import traceback
 import tkinter as tk
+import traceback
 from tkinter import messagebox
-from typing import Dict, Any, Callable, Optional, Type
+from typing import Any, Callable, Dict, Optional
 
-<<<<<<< HEAD
 from dualgpuopt.services.event_bus import event_bus
-=======
-from dualgpuopt.services.event_service import event_bus
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
 
 class ErrorService:
@@ -37,10 +34,7 @@ class ErrorService:
         self.logger = logging.getLogger("dualgpuopt.services.error")
         self.root = root
         self.error_handlers: Dict[str, Callable] = {}
-<<<<<<< HEAD
         self.general_handler: Optional[Callable] = None
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
 
     def set_root(self, root: tk.Tk) -> None:
         """
@@ -51,7 +45,6 @@ class ErrorService:
         """
         self.root = root
 
-<<<<<<< HEAD
     def register_handler(self, handler: Callable, error_type: str = None) -> None:
         """
         Register a custom handler for errors.
@@ -66,34 +59,24 @@ class ErrorService:
         else:
             self.general_handler = handler
             self.logger.debug("Registered general error handler")
-=======
-    def register_handler(self, error_type: str, handler: Callable) -> None:
-        """
-        Register a custom handler for a specific error type.
 
-        Args:
-            error_type: Name of the exception class
-            handler: Callback function that takes (error, context)
-        """
-        self.error_handlers[error_type] = handler
-        self.logger.debug(f"Registered custom handler for {error_type}")
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
-
-    def handle_error(self,
-                     error: Exception,
-                     level: str = "ERROR",
-                     title: str = "Error",
-                     show_dialog: bool = True,
-                     context: Optional[Dict[str, Any]] = None) -> None:
+    def handle_error(
+        self,
+        error: Exception,
+        level: str = "ERROR",
+        title: str = "Error",
+        show_dialog: bool = True,
+        context: Optional[Dict[str, Any]] = None,
+    ) -> None:
         """
         Handle an error with appropriate logging and user feedback.
 
         Args:
-            error: The exception to handle
-            level: Error severity level ('INFO', 'WARNING', 'ERROR', 'CRITICAL')
-            title: Dialog title
-            show_dialog: Whether to show a dialog to the user
-            context: Additional contextual information about the error
+            error: The exception to handle.
+            level: Error severity level ('INFO', 'WARNING', 'ERROR', 'CRITICAL').
+            title: Dialog title.
+            show_dialog: Whether to show a dialog to the user.
+            context: Additional contextual information about the error.
         """
         if context is None:
             context = {}
@@ -122,15 +105,11 @@ class ErrorService:
             "error_type": error_type,
             "level": level,
             "message": str(error),
-            "context": context
+            "context": context,
         }
         event_bus.publish("error_occurred", event_data)
 
-<<<<<<< HEAD
         # Check for custom handler for this error type
-=======
-        # Check for custom handler
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         if error_type in self.error_handlers:
             try:
                 self.error_handlers[error_type](error, context)
@@ -138,7 +117,6 @@ class ErrorService:
             except Exception as handler_error:
                 self.logger.error(f"Error in custom handler: {handler_error}")
 
-<<<<<<< HEAD
         # Try general handler if available
         if self.general_handler:
             try:
@@ -147,8 +125,6 @@ class ErrorService:
             except Exception as handler_error:
                 self.logger.error(f"Error in general handler: {handler_error}")
 
-=======
->>>>>>> 3565cbc (Update documentation for DualGPUOptimizer to provide a comprehensive overview of GPU management, model optimization, execution management, and configuration handling. Enhanced descriptions for clarity and organized content for better readability. Adjusted glob patterns for improved file matching, ensuring accurate documentation coverage for multi-GPU setups in machine learning workloads.)
         # Show dialog if requested
         if show_dialog and self.root is not None:
             message = str(error)
@@ -163,7 +139,9 @@ class ErrorService:
             else:
                 messagebox.showerror(title, message, parent=self.root)
 
-    def handle_gpu_error(self, error: Exception, context: Optional[Dict[str, Any]] = None) -> None:
+    def handle_gpu_error(
+        self, error: Exception, context: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
         Special handler for GPU-related errors.
 
@@ -181,14 +159,16 @@ class ErrorService:
         if self.root is not None:
             response = messagebox.askquestion(
                 "GPU Error",
-                f"GPU error detected: {error}\n\nWould you like to enable mock GPU mode?",
+                f"GPU error detected: {error}\n\n"
+                f"Would you like to enable mock GPU mode?",
                 icon="warning",
-                parent=self.root
+                parent=self.root,
             )
 
             if response == "yes":
                 # Publish event to enable mock mode
                 event_bus.publish("enable_mock_mode")
+
 
 # Create global error service
 error_service = ErrorService()

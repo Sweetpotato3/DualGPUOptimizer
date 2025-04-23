@@ -5,14 +5,13 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import ttk
-from typing import Callable, Dict, Any, Optional
+from typing import Any
 
 import ttkbootstrap as ttkb
 
 from dualgpuopt.gpu_info import probe_gpus, GPU
 from dualgpuopt.optimizer import split_string, tensor_fractions
 from dualgpuopt.services.state_service import state_service
-from dualgpuopt.gui.constants import COLORS
 
 
 class OptimizerWidget(ttk.Frame):
@@ -41,7 +40,7 @@ class OptimizerWidget(ttk.Frame):
             detect_frame,
             text="Detect GPUs",
             command=self._detect_gpus,
-            style="primary.TButton"
+            style="primary.TButton",
         )
         self.detect_btn.grid(row=0, column=0, padx=5, pady=5)
 
@@ -58,10 +57,7 @@ class OptimizerWidget(ttk.Frame):
         )
 
         split_entry = ttk.Entry(
-            results_frame,
-            textvariable=self.split_var,
-            width=40,
-            state="readonly"
+            results_frame, textvariable=self.split_var, width=40, state="readonly"
         )
         split_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
@@ -71,10 +67,7 @@ class OptimizerWidget(ttk.Frame):
         )
 
         tensor_entry = ttk.Entry(
-            results_frame,
-            textvariable=self.tensor_var,
-            width=40,
-            state="readonly"
+            results_frame, textvariable=self.tensor_var, width=40, state="readonly"
         )
         tensor_entry.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
@@ -83,15 +76,11 @@ class OptimizerWidget(ttk.Frame):
         button_frame.grid(row=2, column=0, padx=10, pady=10, sticky="ew")
 
         ttk.Button(
-            button_frame,
-            text="Apply to Commands",
-            command=self._apply_to_commands
+            button_frame, text="Apply to Commands", command=self._apply_to_commands
         ).pack(side=tk.RIGHT, padx=5)
 
         ttk.Button(
-            button_frame,
-            text="Save Configuration",
-            command=self._save_config
+            button_frame, text="Save Configuration", command=self._save_config
         ).pack(side=tk.RIGHT, padx=5)
 
     def _detect_gpus(self) -> None:
@@ -185,20 +174,20 @@ class OptimizerTab(ttk.Frame):
         model_frame = ttk.Frame(advanced_frame)
         model_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Label(model_frame, text="Model Path:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(model_frame, text="Model Path:").grid(
+            row=0, column=0, padx=5, pady=5, sticky="w"
+        )
         self.model_path = ttk.Entry(model_frame, width=50)
         self.model_path.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
         ttk.Button(model_frame, text="Browse...", command=self._browse_model).grid(
             row=0, column=2, padx=5, pady=5
         )
 
-        ttk.Label(model_frame, text="Context Size:").grid(row=1, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(model_frame, text="Context Size:").grid(
+            row=1, column=0, padx=5, pady=5, sticky="w"
+        )
         self.context_size = ttk.Spinbox(
-            model_frame,
-            from_=1024,
-            to=131072,
-            increment=1024,
-            width=10
+            model_frame, from_=1024, to=131072, increment=1024, width=10
         )
         self.context_size.set("65536")
         self.context_size.grid(row=1, column=1, padx=5, pady=5, sticky="w")
@@ -207,11 +196,11 @@ class OptimizerTab(ttk.Frame):
         cmd_frame = ttk.Frame(advanced_frame)
         cmd_frame.pack(fill=tk.X, padx=5, pady=5)
 
-        ttk.Label(cmd_frame, text="Framework:").grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ttk.Label(cmd_frame, text="Framework:").grid(
+            row=0, column=0, padx=5, pady=5, sticky="w"
+        )
         self.framework = ttk.Combobox(
-            cmd_frame,
-            values=["llama.cpp", "vLLM", "Text Generation WebUI"],
-            width=20
+            cmd_frame, values=["llama.cpp", "vLLM", "Text Generation WebUI"], width=20
         )
         self.framework.current(0)
         self.framework.grid(row=0, column=1, padx=5, pady=5, sticky="w")
@@ -221,7 +210,7 @@ class OptimizerTab(ttk.Frame):
             advanced_frame,
             text="Generate Commands",
             style="primary.TButton",
-            command=self._generate_commands
+            command=self._generate_commands,
         ).pack(pady=10)
 
         # Command output

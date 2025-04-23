@@ -3,13 +3,14 @@
 Build script with custom hooks to override built-in torch hook.
 """
 import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
-import shutil
 
 # Increase Python's recursion limit for analyzing deep modules
 sys.setrecursionlimit(5000)
+
 
 def create_custom_hook():
     """Create custom hooks directory with overridden torch hook."""
@@ -19,7 +20,8 @@ def create_custom_hook():
     # Create a simplified torch hook that doesn't try to collect all submodules
     torch_hook_path = hooks_dir / "hook-torch.py"
     with open(torch_hook_path, "w") as f:
-        f.write("""
+        f.write(
+            """
 # -*- coding: utf-8 -*-
 # Simplified hook-torch.py that includes necessary torch modules
 # while avoiding problematic ones that cause PyInstaller to crash
@@ -59,12 +61,14 @@ excludedimports = [
 
 # Collect all necessary data files including DLLs
 datas = collect_data_files('torch')
-""")
+"""
+        )
 
     # Create a prometheus_client hook
     prometheus_hook_path = hooks_dir / "hook-prometheus_client.py"
     with open(prometheus_hook_path, "w") as f:
-        f.write("""
+        f.write(
+            """
 # -*- coding: utf-8 -*-
 # Hook for prometheus_client
 
@@ -78,14 +82,17 @@ hiddenimports = [
     'prometheus_client.utils',
     'prometheus_client.registry',
 ]
-""")
+"""
+        )
 
     return hooks_dir
+
 
 def find_torch_dlls():
     """Find torch DLLs to include in the build."""
     try:
         import torch
+
         torch_path = Path(torch.__file__).parent
         dll_paths = []
 
@@ -104,6 +111,7 @@ def find_torch_dlls():
         print("Warning: torch not found in environment")
         return []
 
+
 def create_spec_file(hooks_dir, torch_dlls, nvml_path, assets_dir, presets_dir, icon_path, main_py):
     """Create a custom .spec file with proper configuration."""
     spec_path = Path("DualGPUOptimizer_full.spec")
@@ -113,10 +121,13 @@ def create_spec_file(hooks_dir, torch_dlls, nvml_path, assets_dir, presets_dir, 
     for dll_path, target_dir in torch_dlls:
         binaries_str = binaries_str[:-1] + f", (r'{dll_path}', '{target_dir}')]"
 
-    datas_str = f"[(r'{assets_dir}', 'dualgpuopt/assets'), (r'{presets_dir}', 'dualgpuopt/presets')]"
+    datas_str = (
+        f"[(r'{assets_dir}', 'dualgpuopt/assets'), (r'{presets_dir}', 'dualgpuopt/presets')]"
+    )
 
     with open(spec_path, "w") as f:
-        f.write(f"""# -*- mode: python ; coding: utf-8 -*-
+        f.write(
+            f"""# -*- mode: python ; coding: utf-8 -*-
 import sys
 sys.setrecursionlimit(5000)  # Increase recursion limit
 from PyInstaller.utils.hooks import collect_data_files
@@ -182,9 +193,11 @@ coll = COLLECT(
     upx_exclude=[],
     name='DualGPUOptimizer',
 )
-""")
+"""
+        )
 
     return spec_path
+
 
 def main():
     """
@@ -211,7 +224,13 @@ def main():
 
     # Create a spec file with the right configuration
     spec_path = create_spec_file(
-        hooks_dir, torch_dlls, nvml_path, assets_dir, presets_dir, icon_path, main_py
+        hooks_dir,
+        torch_dlls,
+        nvml_path,
+        assets_dir,
+        presets_dir,
+        icon_path,
+        main_py,
     )
 
     # Run PyInstaller with the spec file
@@ -219,7 +238,7 @@ def main():
         "pyinstaller",
         str(spec_path),
         "--noconfirm",
-        "--clean"
+        "--clean",
     ]
 
     print(f"Running command: {' '.join(cmd)}")
@@ -234,6 +253,7 @@ def main():
 
     # Clean up
     shutil.rmtree(hooks_dir)
+
 
 if __name__ == "__main__":
     main()

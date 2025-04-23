@@ -1,6 +1,7 @@
 """
 GPU discovery via NVML – no GUI, no optimisation math.
 """
+
 from __future__ import annotations
 
 import concurrent.futures as _fut
@@ -8,8 +9,7 @@ import dataclasses as _dc
 import logging
 import os
 import threading
-import time
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 try:
     import pynvml  # external, tiny
@@ -25,20 +25,21 @@ logger = logging.getLogger("dualgpuopt.gpu")
 @_dc.dataclass(slots=True, frozen=True)
 class GPU:
     """Enhanced GPU information container with comprehensive metrics."""
+
     index: int
     name: str
     mem_total: int  # MiB
-    mem_free: int   # MiB
+    mem_free: int  # MiB
 
     # Additional hardware info
     architecture: str = ""  # GPU architecture (e.g., "Ampere", "Ada Lovelace")
-    cuda_cores: int = 0     # Number of CUDA cores
+    cuda_cores: int = 0  # Number of CUDA cores
     compute_capability: str = ""  # CUDA compute capability
     driver_version: str = ""  # NVIDIA driver version
 
     # Performance metrics
-    temperature: int = 0     # Temperature in Celsius
-    fan_speed: int = 0       # Fan speed percentage
+    temperature: int = 0  # Temperature in Celsius
+    fan_speed: int = 0  # Fan speed percentage
     power_usage: float = 0.0  # Current power draw in Watts
     power_limit: float = 0.0  # Maximum power limit in Watts
     gpu_utilization: int = 0  # GPU utilization percentage
@@ -46,12 +47,12 @@ class GPU:
 
     # Clock speeds
     graphics_clock: int = 0  # Graphics clock in MHz
-    memory_clock: int = 0    # Memory clock in MHz
-    sm_clock: int = 0        # SM clock in MHz
+    memory_clock: int = 0  # Memory clock in MHz
+    sm_clock: int = 0  # SM clock in MHz
 
     # PCIe info
-    pcie_gen: str = ""      # PCIe generation
-    pcie_width: int = 0     # PCIe link width
+    pcie_gen: str = ""  # PCIe generation
+    pcie_width: int = 0  # PCIe link width
 
     @property
     def mem_used(self) -> int:
@@ -81,7 +82,9 @@ class GPU:
     @property
     def power_usage_percent(self) -> float:
         """Return power usage as a percentage of the limit."""
-        return (self.power_usage / self.power_limit) * 100 if self.power_limit > 0 else 0
+        return (
+            (self.power_usage / self.power_limit) * 100 if self.power_limit > 0 else 0
+        )
 
     @property
     def short_name(self) -> str:
@@ -90,7 +93,7 @@ class GPU:
         name = self.name
         for prefix in ["NVIDIA GeForce ", "NVIDIA ", "GeForce "]:
             if name.startswith(prefix):
-                name = name[len(prefix):]
+                name = name[len(prefix) :]
         return name
 
 
@@ -127,9 +130,7 @@ class GpuInfo:
         # Start background update thread
         self._stop_event = threading.Event()
         self._update_thread = threading.Thread(
-            target=self._update_loop,
-            daemon=True,
-            name="GpuInfoUpdateThread"
+            target=self._update_loop, daemon=True, name="GpuInfoUpdateThread"
         )
         self._update_thread.start()
 
@@ -139,9 +140,9 @@ class GpuInfo:
 
     def shutdown(self):
         """Stop the background update thread."""
-        if hasattr(self, '_stop_event'):
+        if hasattr(self, "_stop_event"):
             self._stop_event.set()
-            if hasattr(self, '_update_thread') and self._update_thread.is_alive():
+            if hasattr(self, "_update_thread") and self._update_thread.is_alive():
                 self._update_thread.join(timeout=1.0)
 
     def _update_loop(self):
@@ -274,21 +275,21 @@ class GpuInfo:
                             "total": gpu.mem_total,
                             "free": gpu.mem_free,
                             "used": gpu.mem_used,
-                            "used_percent": gpu.mem_used_percent
+                            "used_percent": gpu.mem_used_percent,
                         },
                         "utilization": {
                             "gpu": gpu.gpu_utilization,
-                            "memory": gpu.memory_utilization
+                            "memory": gpu.memory_utilization,
                         },
                         "temperature": gpu.temperature,
                         "power": {
                             "usage": gpu.power_usage,
                             "limit": gpu.power_limit,
-                            "percent": gpu.power_usage_percent
-                        }
+                            "percent": gpu.power_usage_percent,
+                        },
                     }
                     for gpu in self._gpus
-                ]
+                ],
             }
 
 
@@ -313,7 +314,9 @@ def _query_gpu(index: int) -> GPU:
 
     try:
         # Driver version
-        additional_info["driver_version"] = pynvml.nvmlSystemGetDriverVersion().decode("utf-8")
+        additional_info["driver_version"] = pynvml.nvmlSystemGetDriverVersion().decode(
+            "utf-8"
+        )
     except Exception as e:
         logger.debug(f"Could not get driver version: {e}")
 
@@ -335,14 +338,18 @@ def _query_gpu(index: int) -> GPU:
 
     try:
         # Power usage
-        power_usage = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # Convert from mW to W
+        power_usage = (
+            pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0
+        )  # Convert from mW to W
         additional_info["power_usage"] = power_usage
     except Exception as e:
         logger.debug(f"Could not get power usage for GPU {index}: {e}")
 
     try:
         # Power limit
-        power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0  # Convert from mW to W
+        power_limit = (
+            pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0
+        )  # Convert from mW to W
         additional_info["power_limit"] = power_limit
     except Exception as e:
         logger.debug(f"Could not get power limit for GPU {index}: {e}")
@@ -356,7 +363,9 @@ def _query_gpu(index: int) -> GPU:
 
     try:
         # Clock speeds
-        graphics_clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS)
+        graphics_clock = pynvml.nvmlDeviceGetClockInfo(
+            handle, pynvml.NVML_CLOCK_GRAPHICS
+        )
         additional_info["graphics_clock"] = graphics_clock
 
         memory_clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_MEM)
@@ -378,7 +387,7 @@ def _query_gpu(index: int) -> GPU:
             "6": "Pascal",
             "7": "Volta/Turing",
             "8": "Ampere",
-            "9": "Hopper/Ada Lovelace"
+            "9": "Hopper/Ada Lovelace",
         }
         additional_info["architecture"] = arch_map.get(str(major), "Unknown")
     except Exception as e:
@@ -393,21 +402,22 @@ def _query_gpu(index: int) -> GPU:
         additional_info["pcie_width"] = pcie_width
     except Exception as e:
         logger.debug(f"Could not get PCIe info for GPU {index}: {e}")
-
     try:
         # CUDA cores - this is an estimate based on compute capability and multiprocessor count
         multiprocessor_count = pynvml.nvmlDeviceGetNumGpuCores(handle)
         cuda_cores_per_mp = {
-            "5": 128,   # Maxwell
-            "6": 64,    # Pascal
-            "7": 64,    # Volta/Turing
-            "8": 64,    # Ampere
-            "9": 128    # Hopper/Ada Lovelace
+            "5": 128,  # Maxwell
+            "6": 64,  # Pascal
+            "7": 64,  # Volta/Turing
+            "8": 64,  # Ampere
+            "9": 128,  # Hopper/Ada Lovelace
         }
         if "compute_capability" in additional_info:
             major = additional_info["compute_capability"].split(".")[0]
             if major in cuda_cores_per_mp:
-                additional_info["cuda_cores"] = multiprocessor_count * cuda_cores_per_mp[major]
+                additional_info["cuda_cores"] = (
+                    multiprocessor_count * cuda_cores_per_mp[major]
+                )
     except Exception as e:
         logger.debug(f"Could not calculate CUDA cores for GPU {index}: {e}")
 
@@ -438,7 +448,7 @@ def _mock_gpus() -> List[GPU]:
             memory_clock=9000,
             sm_clock=1900,
             pcie_gen="Gen 4",
-            pcie_width=16
+            pcie_width=16,
         ),
         GPU(
             index=1,
@@ -459,8 +469,8 @@ def _mock_gpus() -> List[GPU]:
             memory_clock=8500,
             sm_clock=1800,
             pcie_gen="Gen 4",
-            pcie_width=8
-        )
+            pcie_width=8,
+        ),
     ]
 
 
@@ -507,7 +517,10 @@ def probe_gpus(max_workers: int = 4) -> List[GPU]:
 
             # Check if we have at least 2 GPUs for dual optimization
             if len(gpus) < 2:
-                logger.warning(f"Only {len(gpus)} GPU detected, at least 2 are recommended for optimal use")
+                logger.warning(
+                    f"Only {len(gpus)} GPU detected, at least 2 are recommended "
+                    f"for optimal use"
+                )
 
             return gpus
 
@@ -518,8 +531,9 @@ def probe_gpus(max_workers: int = 4) -> List[GPU]:
         error_msg = (
             "NVIDIA Management Library (NVML) not found.\n"
             "This usually means NVIDIA drivers are not installed or not detected.\n"
-            "Please install the latest NVIDIA drivers for your graphics card.\n\n"
-            "You can run in mock mode for testing by setting the DGPUOPT_MOCK_GPUS=1 environment variable."
+            "Please install the latest NVIDIA drivers for your graphics card.\n"
+            "You can run in mock mode for testing by setting the "
+            "DGPUOPT_MOCK_GPUS=1 environment variable."
         )
         logger.error(error_msg)
         raise RuntimeError(error_msg)

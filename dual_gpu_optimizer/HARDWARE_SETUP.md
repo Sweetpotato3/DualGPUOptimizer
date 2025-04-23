@@ -107,4 +107,4 @@ For optimal performance:
 - At least 2 NVIDIA GPUs (ideally same model family)
 - 8GB+ VRAM on each GPU for most LLMs
 - PCIe 3.0 x16 or better for optimal inter-GPU communication
-- Windows 10/11 or Linux (Ubuntu 20.04+) 
+- Windows 10/11 or Linux (Ubuntu 20.04+)

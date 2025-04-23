@@ -3,25 +3,24 @@ Direct launcher for DualGPUOptimizer
 
 Provides a simplified entry point with robust dependency handling
 """
-import os
-import sys
-import logging
-import tkinter as tk
-from pathlib import Path
 import importlib.util
-from typing import Dict, Any, Optional
+import logging
+import sys
+from pathlib import Path
+from typing import Any
 
 # Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.StreamHandler(),
-        logging.FileHandler(Path("logs") / "direct_launcher.log", mode='w'),
-    ]
+        logging.FileHandler(Path("logs") / "direct_launcher.log", mode="w"),
+    ],
 )
 
 logger = logging.getLogger("DualGPUOpt.DirectLauncher")
+
 
 def create_log_directory():
     """Create the logs directory if it doesn't exist"""
@@ -30,14 +29,18 @@ def create_log_directory():
         log_dir.mkdir(parents=True)
         logger.info(f"Created log directory: {log_dir.absolute()}")
 
+
 def import_or_mock(module_path: str, mock_obj: Any = None) -> Any:
-    """Import a module or return a mock object if it can't be imported
+    """
+    Import a module or return a mock object if it can't be imported
 
     Args:
+    ----
         module_path: The module path to import
         mock_obj: The mock object to return if import fails
 
     Returns:
+    -------
         The imported module or mock object
     """
     try:
@@ -46,10 +49,13 @@ def import_or_mock(module_path: str, mock_obj: Any = None) -> Any:
         logger.warning(f"Failed to import {module_path}: {e}")
         return mock_obj
 
-def is_direct_app_available() -> bool:
-    """Check if run_direct_app.py is available
 
-    Returns:
+def is_direct_app_available() -> bool:
+    """
+    Check if run_direct_app.py is available
+
+    Returns
+    -------
         True if run_direct_app.py is available, False otherwise
     """
     try:
@@ -59,13 +65,16 @@ def is_direct_app_available() -> bool:
         logger.warning(f"Error checking for run_direct_app.py: {e}")
         return False
 
+
 def run_direct_app(**kwargs):
-    """Run the direct application
+    """
+    Run the direct application
 
     This function tries to use the run_direct_app.py file if available,
     or falls back to a minimal UI with the most essential features.
 
     Args:
+    ----
         **kwargs: Additional arguments to pass to the application
     """
     logger.info("Starting DualGPUOptimizer via direct launcher")
@@ -107,8 +116,8 @@ def run_direct_app(**kwargs):
             "set_mock_mode": lambda enabled=True: None,
             "generate_mock_gpus": lambda count=2: [
                 {"id": 0, "name": "Mock GPU 0", "mem_total": 24576, "mem_used": 8192, "util": 45},
-                {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85}
-            ]
+                {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85},
+            ],
         }
         telemetry = {"available": False}
         dashboard = {"available": False}
@@ -142,10 +151,13 @@ def run_direct_app(**kwargs):
     logger.info("Using built-in minimal UI")
     run_minimal_ui(ttk, gpu_compat, telemetry, dashboard, optimizer)
 
+
 def show_dependency_error(missing_deps: list):
-    """Show an error dialog for missing dependencies
+    """
+    Show an error dialog for missing dependencies
 
     Args:
+    ----
         missing_deps: List of missing dependencies
     """
     try:
@@ -160,20 +172,23 @@ def show_dependency_error(missing_deps: list):
             "Missing Dependencies",
             f"The following required dependencies are missing:\n\n{missing_text}\n\n"
             f"Please install them and try again.\n\n"
-            f"Run 'python -m dualgpuopt --install-deps' to install."
+            f"Run 'python -m dualgpuopt --install-deps' to install.",
         )
 
         root.destroy()
     except Exception as e:
         # If we can't even show a GUI error, fall back to console
         logger.error(f"Missing dependencies: {missing_deps}")
-        logger.error(f"Please install them and try again: python -m dualgpuopt --install-deps")
+        logger.error("Please install them and try again: python -m dualgpuopt --install-deps")
         logger.error(f"Error showing GUI error: {e}")
 
+
 def run_minimal_ui(ttk, gpu_compat, telemetry, dashboard, optimizer):
-    """Run a minimal UI with available components
+    """
+    Run a minimal UI with available components
 
     Args:
+    ----
         ttk: The ttk module to use
         gpu_compat: The GPU compatibility module
         telemetry: The telemetry module
@@ -259,17 +274,20 @@ def run_minimal_ui(ttk, gpu_compat, telemetry, dashboard, optimizer):
         status_bar,
         text="Running in minimal UI mode - Limited functionality",
         anchor="w",
-        padding=(10, 5)
+        padding=(10, 5),
     )
     status_label.pack(side="left")
 
     # Start the main loop
     root.mainloop()
 
+
 def create_basic_dashboard(parent, gpu_compat):
-    """Create a basic dashboard with GPU information
+    """
+    Create a basic dashboard with GPU information
 
     Args:
+    ----
         parent: The parent widget
         gpu_compat: The GPU compatibility module
     """
@@ -286,7 +304,7 @@ def create_basic_dashboard(parent, gpu_compat):
         ttk.Label(
             gpu_frame,
             text=f"GPU {i}: {gpu['name']}",
-            font=("TkDefaultFont", 14, "bold")
+            font=("TkDefaultFont", 14, "bold"),
         ).pack(anchor="w", padx=10, pady=(10 if i == 0 else 20, 5))
 
         # Memory usage
@@ -296,7 +314,7 @@ def create_basic_dashboard(parent, gpu_compat):
 
         ttk.Label(
             gpu_frame,
-            text=f"Memory: {mem_used}MB / {mem_total}MB ({mem_percent}%)"
+            text=f"Memory: {mem_used}MB / {mem_total}MB ({mem_percent}%)",
         ).pack(anchor="w", padx=20, pady=2)
 
         # Create progress bar for memory
@@ -304,34 +322,34 @@ def create_basic_dashboard(parent, gpu_compat):
             gpu_frame,
             value=mem_percent,
             maximum=100,
-            length=300
+            length=300,
         )
         mem_bar.pack(anchor="w", padx=20, pady=(0, 5))
 
         # GPU utilization
         ttk.Label(
             gpu_frame,
-            text=f"Utilization: {gpu['util']}%"
+            text=f"Utilization: {gpu['util']}%",
         ).pack(anchor="w", padx=20, pady=2)
 
         # Create progress bar for utilization
         util_bar = ttk.Progressbar(
             gpu_frame,
-            value=gpu['util'],
+            value=gpu["util"],
             maximum=100,
-            length=300
+            length=300,
         )
         util_bar.pack(anchor="w", padx=20, pady=(0, 5))
 
         # Add mock temperature and power (not in the original mock data)
         ttk.Label(
             gpu_frame,
-            text=f"Temperature: 65°C"
+            text="Temperature: 65°C",
         ).pack(anchor="w", padx=20, pady=2)
 
         ttk.Label(
             gpu_frame,
-            text=f"Power: 150W / 300W"
+            text="Power: 150W / 300W",
         ).pack(anchor="w", padx=20, pady=2)
 
     # Add note about mock data
@@ -342,13 +360,16 @@ def create_basic_dashboard(parent, gpu_compat):
         note_frame,
         text="Note: Using mock GPU data. Install pynvml for real GPU monitoring.",
         font=("TkDefaultFont", 10, "italic"),
-        foreground="gray"
+        foreground="gray",
     ).pack(anchor="w")
 
+
 def create_basic_optimizer(parent):
-    """Create a basic optimizer UI
+    """
+    Create a basic optimizer UI
 
     Args:
+    ----
         parent: The parent widget
     """
     # Create a label frame for the optimizer
@@ -359,26 +380,32 @@ def create_basic_optimizer(parent):
     ttk.Label(
         optimizer_frame,
         text="The GPU Split Optimizer functionality is not available in minimal UI mode.",
-        font=("TkDefaultFont", 12)
+        font=("TkDefaultFont", 12),
     ).pack(pady=20)
 
     ttk.Label(
         optimizer_frame,
         text="This component would calculate optimal GPU split configurations\nfor running large language models across multiple GPUs.",
-        justify="center"
+        justify="center",
     ).pack(pady=10)
 
     # Sample configuration
     sample_frame = ttk.LabelFrame(optimizer_frame, text="Sample Split Configuration")
     sample_frame.pack(padx=20, pady=20, fill="x")
 
-    ttk.Label(sample_frame, text="Tensor Parallel Size:").grid(row=0, column=0, sticky="w", padx=10, pady=5)
+    ttk.Label(sample_frame, text="Tensor Parallel Size:").grid(
+        row=0, column=0, sticky="w", padx=10, pady=5
+    )
     ttk.Label(sample_frame, text="2 GPUs").grid(row=0, column=1, sticky="w", padx=10, pady=5)
 
-    ttk.Label(sample_frame, text="GPU Split Ratio:").grid(row=1, column=0, sticky="w", padx=10, pady=5)
+    ttk.Label(sample_frame, text="GPU Split Ratio:").grid(
+        row=1, column=0, sticky="w", padx=10, pady=5
+    )
     ttk.Label(sample_frame, text="0.67, 0.33").grid(row=1, column=1, sticky="w", padx=10, pady=5)
 
-    ttk.Label(sample_frame, text="Context Length:").grid(row=2, column=0, sticky="w", padx=10, pady=5)
+    ttk.Label(sample_frame, text="Context Length:").grid(
+        row=2, column=0, sticky="w", padx=10, pady=5
+    )
     ttk.Label(sample_frame, text="4096 tokens").grid(row=2, column=1, sticky="w", padx=10, pady=5)
 
     # Installation instructions
@@ -388,7 +415,7 @@ def create_basic_optimizer(parent):
     ttk.Label(
         install_frame,
         text="To enable this functionality, install the required dependencies:",
-        font=("TkDefaultFont", 10, "italic")
+        font=("TkDefaultFont", 10, "italic"),
     ).pack(anchor="w", padx=20)
 
     # Code frame with dependencies
@@ -399,13 +426,16 @@ def create_basic_optimizer(parent):
         code_frame,
         text="pip install numpy pynvml ttkbootstrap",
         font=("Courier", 10),
-        justify="left"
+        justify="left",
     ).pack(padx=10, pady=10, anchor="w")
 
+
 def create_info_tab(parent):
-    """Create an information tab with dependency status
+    """
+    Create an information tab with dependency status
 
     Args:
+    ----
         parent: The parent widget
     """
     # Create a frame for dependency info
@@ -416,23 +446,24 @@ def create_info_tab(parent):
     ttk.Label(
         info_frame,
         text="DualGPUOptimizer Information",
-        font=("TkDefaultFont", 16, "bold")
+        font=("TkDefaultFont", 16, "bold"),
     ).pack(anchor="w", pady=(0, 10))
 
     # Python version
     import platform
+
     py_version = platform.python_version()
     ttk.Label(
         info_frame,
         text=f"Python Version: {py_version}",
-        font=("TkDefaultFont", 12)
+        font=("TkDefaultFont", 12),
     ).pack(anchor="w", pady=5)
 
     # Dependency status
     ttk.Label(
         info_frame,
         text="Dependency Status:",
-        font=("TkDefaultFont", 12, "bold")
+        font=("TkDefaultFont", 12, "bold"),
     ).pack(anchor="w", pady=(10, 5))
 
     # Check common dependencies
@@ -451,12 +482,20 @@ def create_info_tab(parent):
     dep_frame.pack(fill="x", pady=5)
 
     # Add headers
-    ttk.Label(dep_frame, text="Dependency", font=("TkDefaultFont", 10, "bold")).grid(row=0, column=0, padx=10, pady=5, sticky="w")
-    ttk.Label(dep_frame, text="Description", font=("TkDefaultFont", 10, "bold")).grid(row=0, column=1, padx=10, pady=5, sticky="w")
-    ttk.Label(dep_frame, text="Status", font=("TkDefaultFont", 10, "bold")).grid(row=0, column=2, padx=10, pady=5, sticky="w")
+    ttk.Label(dep_frame, text="Dependency", font=("TkDefaultFont", 10, "bold")).grid(
+        row=0, column=0, padx=10, pady=5, sticky="w"
+    )
+    ttk.Label(dep_frame, text="Description", font=("TkDefaultFont", 10, "bold")).grid(
+        row=0, column=1, padx=10, pady=5, sticky="w"
+    )
+    ttk.Label(dep_frame, text="Status", font=("TkDefaultFont", 10, "bold")).grid(
+        row=0, column=2, padx=10, pady=5, sticky="w"
+    )
 
     # Add separator
-    ttk.Separator(dep_frame, orient="horizontal").grid(row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5)
+    ttk.Separator(dep_frame, orient="horizontal").grid(
+        row=1, column=0, columnspan=3, sticky="ew", padx=5, pady=5
+    )
 
     # Add each dependency
     for i, (name, desc, available) in enumerate(dependencies, 2):
@@ -473,13 +512,13 @@ def create_info_tab(parent):
     ttk.Label(
         info_frame,
         text="Installation Instructions:",
-        font=("TkDefaultFont", 12, "bold")
+        font=("TkDefaultFont", 12, "bold"),
     ).pack(anchor="w", pady=(20, 5))
 
     ttk.Label(
         info_frame,
         text="To install missing dependencies, run:",
-        font=("TkDefaultFont", 10)
+        font=("TkDefaultFont", 10),
     ).pack(anchor="w", pady=(0, 5))
 
     # Command label
@@ -490,19 +529,20 @@ def create_info_tab(parent):
         command_frame,
         text="python -m dualgpuopt --install-deps",
         font=("Courier", 10),
-        padding=(10, 5)
+        padding=(10, 5),
     ).pack(anchor="w")
 
     # Version information
     ttk.Label(
         info_frame,
         text="Version Information:",
-        font=("TkDefaultFont", 12, "bold")
+        font=("TkDefaultFont", 12, "bold"),
     ).pack(anchor="w", pady=(20, 5))
 
     # Try to get version
     try:
         from dualgpuopt import __version__
+
         version = __version__
     except (ImportError, AttributeError):
         version = "Unknown"
@@ -510,37 +550,44 @@ def create_info_tab(parent):
     ttk.Label(
         info_frame,
         text=f"DualGPUOptimizer Version: {version}",
-        font=("TkDefaultFont", 10)
+        font=("TkDefaultFont", 10),
     ).pack(anchor="w", pady=2)
 
     # Add run date
     from datetime import datetime
+
     run_date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     ttk.Label(
         info_frame,
         text=f"Run Date: {run_date}",
-        font=("TkDefaultFont", 10)
+        font=("TkDefaultFont", 10),
     ).pack(anchor="w", pady=2)
 
+
 def check_dependency(name: str) -> bool:
-    """Check if a dependency is installed
+    """
+    Check if a dependency is installed
 
     Args:
+    ----
         name: Name of the dependency
 
     Returns:
+    -------
         True if installed, False otherwise
     """
     if name == "tkinter":
         try:
             import tkinter
+
             return True
         except ImportError:
             return False
     else:
         spec = importlib.util.find_spec(name)
         return spec is not None
+
 
 if __name__ == "__main__":
     run_direct_app()

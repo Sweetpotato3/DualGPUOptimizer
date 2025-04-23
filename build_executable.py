@@ -165,7 +165,7 @@ def clean_build_files():
 
     for path in paths_to_remove:
         if "*" in path:
-            for file_path in Path(".").glob(path):
+            for file_path in Path().glob(path):
                 if file_path.is_file():
                     file_path.unlink()
                     print(f"Removed {file_path}")
@@ -187,7 +187,9 @@ def main():
     parser = argparse.ArgumentParser(description="Build DualGPUOptimizer executable")
 
     parser.add_argument(
-        "--direct", action="store_true", help="Build the direct app version (run_direct_app.py)"
+        "--direct",
+        action="store_true",
+        help="Build the direct app version (run_direct_app.py)",
     )
     parser.add_argument(
         "--onefile",
@@ -200,7 +202,9 @@ def main():
         help="Include console window for debugging (default is hidden)",
     )
     parser.add_argument(
-        "--clean", action="store_true", help="Clean build artifacts after successful build"
+        "--clean",
+        action="store_true",
+        help="Clean build artifacts after successful build",
     )
 
     args = parser.parse_args()

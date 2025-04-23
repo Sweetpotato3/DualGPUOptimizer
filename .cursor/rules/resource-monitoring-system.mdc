@@ -1,58 +1,52 @@
 ---
-description: Specification for implementing real-time GPU resource monitoring and telemetry systems with alerts
-globs: **/telemetry.py,**/monitor.py,**/metrics.py,**/alerts.py
+description: Resource monitoring, GPU metrics collection, utilization tracking, and alert mechanism implementation details
+globs: **/telemetry.py,**/tray.py,**/monitor.py,**/metrics.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core Telemetry System Components:
+## Core Monitoring Components
 
-1. GPU Metrics Collection (telemetry.py)
-- Real-time monitoring of critical GPU metrics:
-  * Memory utilization with percentage thresholds (75%, 90%)
-  * Temperature monitoring with warning levels (70°C, 80°C) 
-  * Power consumption relative to GPU power limits
-  * Clock speeds for SM and Memory
-  * PCIe bandwidth (TX/RX rates)
+1. GPU Telemetry Manager
+- Implements real-time monitoring of dual GPU systems tracking:
+  - GPU utilization, memory, temperature, power draw
+  - PCIe bandwidth (TX/RX metrics)
+  - Clock speeds (SM and memory clocks)
+  - Fan speed control
+  - Power limit management
 
-2. Alert System (telemetry.py)
-- Four-tier alert classification:
-  * NORMAL: Standard operating conditions
-  * WARNING: Approaching thresholds (75% memory, 70°C)
-  * CRITICAL: Threshold exceeded (90% memory, 80°C)
-  * EMERGENCY: Dangerous conditions (95% memory, 90°C)
-- Intelligent throttling of alerts:
-  * 3-second cooldown between notifications
-  * Alert priority queueing system
-  * Context-aware recommendations based on alert severity
+2. Alert Classification System
+- Custom alerting with thresholds:
+  - EMERGENCY: Memory ≥95% or temp ≥90°C
+  - CRITICAL: Memory ≥90% or temp ≥80°C or power ≥98%
+  - WARNING: Memory ≥75% or temp ≥70°C or power ≥90%
+  - NORMAL: Below threshold metrics
 
-3. History Management
-- Rolling 60-second history buffer for metrics tracking
-- Timeline markers for significant events:
-  * Out of memory conditions
-  * Temperature spikes
-  * Power limit throttling
-- Custom event classification system for tracking GPU state changes
+3. Metrics History Management
+- Maintains 60-second rolling history for key metrics:
+  - Per-GPU performance metrics
+  - Aggregate system metrics
+  - Moving averages (utilization, memory, temperature)
+  - Historical trending analysis
 
-4. Mock Data Generation
-- Simulated metrics for testing and development:
-  * Correlated power usage with GPU utilization (20-90%)
-  * Temperature scaling based on utilization
-  * Memory usage patterns following workload profiles
-  * Fan speed correlation with temperature readings
+4. GPU Recovery Protocol
+- Progressive recovery mechanism:
+  - Exponential backoff between attempts 
+  - Maximum 3 recovery attempts
+  - Fallback to mock data after failures
+  - Telemetry preservation during recovery
 
-Relevant Files:
-- dualgpuopt/telemetry.py: Core telemetry implementation
-- dualgpuopt/gpu/monitor.py: GPU state monitoring
-- dualgpuopt/memory/metrics.py: Memory-specific metrics
-- dualgpuopt/memory/alerts.py: Alert system implementation
+## Relevant File Paths
+- `dualgpuopt/telemetry.py`
+- `dualgpuopt/memory/monitor.py`
+- `dualgpuopt/telemetry_history.py`
 
-Business Impact Scores:
-- Telemetry System: 95 (Critical for GPU monitoring)
-- Alert System: 85 (Key for system stability)
-- History Management: 75 (Important for trend analysis)
-- Mock System: 45 (Supporting development functionality)
+## Importance Scores
+- GPU Telemetry Manager: 95
+- Alert Classification System: 90  
+- Metrics History Management: 85
+- GPU Recovery Protocol: 80
 
 $END$

@@ -3,14 +3,15 @@
 Direct launcher for our modern neon UI
 This launcher bypasses all import mechanisms and directly runs our gui.py module
 """
-import sys
-import logging
 import importlib.util
+import logging
+import sys
 from pathlib import Path
 
 # Set up logging
-logging.basicConfig(level=logging.INFO,
-                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger("ModernUILauncher")
 
 # Directly import our GUI module by file path
@@ -34,5 +35,6 @@ try:
 except Exception as e:
     logger.error(f"Error launching modern UI: {e}", exc_info=True)
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

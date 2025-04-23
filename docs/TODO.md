@@ -86,4 +86,4 @@ This document outlines specific tasks for improving the DualGPUOptimizer project
 - [ ] Create more intuitive workflow for new users
 - [ ] Add tooltips and help buttons
 - [ ] Improve status reporting during long operations
-- [ ] Create wizard for first-time setup 
+- [ ] Create wizard for first-time setup

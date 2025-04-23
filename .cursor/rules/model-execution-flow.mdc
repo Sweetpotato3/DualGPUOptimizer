@@ -1,60 +1,57 @@
 ---
-description: Defines how LLM models are loaded and executed, including command generation, batching, and GPU resource handling
-globs: **/services/*.py,**/batch/*.py,**/commands/*.py,**/launcher/*.py
+description: Specifies the model execution flow, command generation, and GPU resource allocation for LLM inference
+globs: **/engine/**,**/model/**,**/serve/**,**/commands/**,**/optimizer/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components (Importance: 95):
+The model execution flow comprises several key components:
 
-1. Framework-Specific Launch Orchestration
-- Specialized command generation for LLM frameworks:
-  * llama.cpp: GPU split optimization with memory fraction calculations
-  * vLLM: Tensor parallel size configuration and memory allocation
-- Model-specific parameter optimization:
-  * Context length based on model architecture
-  * Layer distribution for multi-GPU deployments
-  * Memory per token allocation tracking
-
-File paths:
-- dualgpuopt/commands/gpu_commands.py
-- dualgpuopt/gui/launcher/launch_controller.py
-
-2. Smart Batching System (Importance: 90):
-- Length-aware sequence batching for optimized throughput
-- Dynamic batch size calculation considering:
-  * Available GPU memory per device
-  * Model architecture requirements
-  * Token sequence lengths
-  * Safety margins for OOM prevention
-- Backpressure mechanism with configurable queue depths
+## Model Execution Logic
+- Framework-specific command generation for llama.cpp and vLLM backends
+- GPU memory split calculation based on model architecture and available VRAM
+- Context length optimization using KV cache requirements and safety margins
+- Dynamic batch size adjustment based on sequence lengths
+- Custom tensor parallel configuration for multi-GPU deployments
+- MoE (Mixture of Experts) model scaling with expert count adjustments
 
 File paths:
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/batch/heuristics.py
+- `dualgpuopt/optimizer.py`
+- `dualgpuopt/ctx_size.py`
 
-3. Model Loading Pipeline (Importance: 85):
-- Progressive loading states with validation
-- Memory prediction for model requirements
-- Resource allocation verification across GPUs
-- Layer distribution optimization for multi-GPU setups
-
-File paths:
-- dualgpuopt/services/event_service.py
-- dualgpuopt/gui/launcher/parameter_resolver.py
-
-4. Execution Monitoring (Importance: 80):
-- Real-time token processing rate tracking
-- GPU memory utilization monitoring
-- Framework-specific error handling
-- OOM detection and recovery strategies
+## Resource Allocation 
+- Optimal GPU split ratio calculations for memory distribution
+- Layer balancing algorithm for distributing model layers across GPUs
+- Per-GPU memory quotas with configurable reserve ratios
+- Profile-based memory requirements estimation
+- Automatic fallback to mock mode when hardware unavailable
+- Progressive recovery mechanisms for GPU monitoring failures
 
 File paths:
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/memory/monitor.py
+- `dualgpuopt/layer_balance.py`
+- `dualgpuopt/mpolicy.py`
 
-The system implements a comprehensive model execution pipeline optimized for dual-GPU configurations, with specialized handling for different ML frameworks and dynamic resource management based on model architectures and GPU capabilities.
+## Command Generation
+- Framework-specific parameter resolution:
+  - llama.cpp: GPU split configuration and context size
+  - vLLM: Tensor parallel size and memory limits
+  - Custom environment variable generation for CUDA optimization
+- Model preset configurations for common architectures (7B, 13B, 70B)
+- Validation rules for memory requirements and context sizes
+
+File paths:
+- `dualgpuopt/commands/gpu_commands.py`
+
+## Engine Pool Management
+- LRU caching system for loaded models with configurable size limits
+- Health monitoring with automatic model reloading
+- Smart eviction policies based on memory pressure
+- Fallback to mock engines for testing/development
+- Thread-safe metrics collection for model performance
+
+File paths:
+- `dualgpuopt/engine/pool/core.py`
 
 $END$

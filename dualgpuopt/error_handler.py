@@ -20,7 +20,7 @@ warnings.warn(
     "Importing directly from error_handler.py is deprecated. "
     "Please import from dualgpuopt.error_handler instead.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Re-export everything from the compatibility layer
@@ -33,50 +33,55 @@ import functools
 import sys
 import traceback
 from enum import Enum, auto
-from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 
 class ErrorSeverity(Enum):
     """Severity levels for errors"""
-    INFO = auto()        # Informational message, not an error
-    WARNING = auto()     # Warning, operation can continue
-    ERROR = auto()       # Error, operation failed but system can continue
-    CRITICAL = auto()    # Critical error, may require user intervention
-    FATAL = auto()       # Fatal error, system cannot continue
+
+    INFO = auto()  # Informational message, not an error
+    WARNING = auto()  # Warning, operation can continue
+    ERROR = auto()  # Error, operation failed but system can continue
+    CRITICAL = auto()  # Critical error, may require user intervention
+    FATAL = auto()  # Fatal error, system cannot continue
 
 
 class ErrorCategory(Enum):
     """Categories of errors for grouping and handling"""
-    GPU_ERROR = auto()           # GPU-related errors (driver, NVML, etc.)
-    MEMORY_ERROR = auto()        # Memory allocation or OOM errors
-    FILE_ERROR = auto()          # File I/O errors
-    NETWORK_ERROR = auto()       # Network-related errors
-    CONFIG_ERROR = auto()        # Configuration errors
-    PROCESS_ERROR = auto()       # Process management errors
-    GUI_ERROR = auto()           # GUI-related errors
-    API_ERROR = auto()           # External API errors
-    VALIDATION_ERROR = auto()    # Input validation errors
-    INTERNAL_ERROR = auto()      # Internal logic errors
-    UNKNOWN_ERROR = auto()       # Uncategorized errors
+
+    GPU_ERROR = auto()  # GPU-related errors (driver, NVML, etc.)
+    MEMORY_ERROR = auto()  # Memory allocation or OOM errors
+    FILE_ERROR = auto()  # File I/O errors
+    NETWORK_ERROR = auto()  # Network-related errors
+    CONFIG_ERROR = auto()  # Configuration errors
+    PROCESS_ERROR = auto()  # Process management errors
+    GUI_ERROR = auto()  # GUI-related errors
+    API_ERROR = auto()  # External API errors
+    VALIDATION_ERROR = auto()  # Input validation errors
+    INTERNAL_ERROR = auto()  # Internal logic errors
+    UNKNOWN_ERROR = auto()  # Uncategorized errors
 
 
 class ErrorDetails:
     """Container for detailed error information"""
 
-    def __init__(self,
-                exception: Optional[Exception] = None,
-                component: str = "unknown",
-                severity: ErrorSeverity = ErrorSeverity.ERROR,
-                category: Optional[ErrorCategory] = None,
-                message: str = "",
-                user_message: str = "",
-                traceback_str: str = "",
-                context: Dict[str, Any] = None,
-                timestamp: float = None):
+    def __init__(
+        self,
+        exception: Optional[Exception] = None,
+        component: str = "unknown",
+        severity: ErrorSeverity = ErrorSeverity.ERROR,
+        category: Optional[ErrorCategory] = None,
+        message: str = "",
+        user_message: str = "",
+        traceback_str: str = "",
+        context: Dict[str, Any] = None,
+        timestamp: float = None,
+    ):
         """
         Initialize error details
 
         Args:
+        ----
             exception: The original exception
             component: Component or module where the error occurred
             severity: Error severity level
@@ -96,9 +101,15 @@ class ErrorDetails:
         self.message = message or (str(exception) if exception else "Unknown error")
         self.user_message = user_message or self._generate_user_message()
         self.traceback_str = traceback_str or (
-            "".join(traceback.format_exception(
-                type(exception), exception, exception.__traceback__
-            )) if exception else ""
+            "".join(
+                traceback.format_exception(
+                    type(exception),
+                    exception,
+                    exception.__traceback__,
+                )
+            )
+            if exception
+            else ""
         )
         self.context = context or {}
         self.timestamp = timestamp or time.time()
@@ -115,11 +126,15 @@ class ErrorDetails:
             return ErrorCategory.GPU_ERROR
 
         # Memory errors
-        if any(kw in ex_type for kw in ["memory", "outofmemory", "oom"]) or isinstance(exception, MemoryError):
+        if any(kw in ex_type for kw in ["memory", "outofmemory", "oom"]) or isinstance(
+            exception, MemoryError
+        ):
             return ErrorCategory.MEMORY_ERROR
 
         # File errors
-        if any(kw in ex_type for kw in ["file", "io", "path", "notfound"]) or isinstance(exception, (IOError, FileNotFoundError)):
+        if any(kw in ex_type for kw in ["file", "io", "path", "notfound"]) or isinstance(
+            exception, (IOError, FileNotFoundError)
+        ):
             return ErrorCategory.FILE_ERROR
 
         # Network errors
@@ -143,7 +158,9 @@ class ErrorDetails:
             return ErrorCategory.API_ERROR
 
         # Validation errors
-        if any(kw in ex_type for kw in ["validation", "invalid", "typeerror", "valueerror"]) or isinstance(exception, (ValueError, TypeError)):
+        if any(
+            kw in ex_type for kw in ["validation", "invalid", "typeerror", "valueerror"]
+        ) or isinstance(exception, (ValueError, TypeError)):
             return ErrorCategory.VALIDATION_ERROR
 
         # Default to internal error for known Python exceptions
@@ -181,7 +198,7 @@ class ErrorDetails:
         lines = [
             f"[{timestamp_str}] {self.severity.name} in {self.component}",
             f"Category: {self.category.name}",
-            f"Message: {self.message}"
+            f"Message: {self.message}",
         ]
 
         # Add context if available
@@ -209,6 +226,7 @@ class ErrorHandler:
     Provides methods for handling, logging, and recovering from errors
     with support for custom callbacks and recovery strategies.
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -228,9 +246,7 @@ class ErrorHandler:
             severity: [] for severity in ErrorSeverity
         }
 
-        self._error_counts: Dict[ErrorCategory, int] = {
-            category: 0 for category in ErrorCategory
-        }
+        self._error_counts: Dict[ErrorCategory, int] = {category: 0 for category in ErrorCategory}
 
         self._recent_errors: List[ErrorDetails] = []
         self._max_recent_errors = 100
@@ -262,14 +278,15 @@ class ErrorHandler:
         Register a callback for a specific error severity
 
         Args:
+        ----
             severity: Error severity level to trigger callback
             callback: Function to call when error occurs
         """
         # Support wildcard '*' to register for all severity levels
-        if severity == '*':
+        if severity == "*":
             for sev in ErrorSeverity:
                 self._callbacks[sev].append(callback)
-            logger.debug(f"Registered error callback for all severity levels")
+            logger.debug("Registered error callback for all severity levels")
         else:
             self._callbacks[severity].append(callback)
             logger.debug(f"Registered error callback for severity {severity.name}")
@@ -279,21 +296,23 @@ class ErrorHandler:
         Unregister a callback
 
         Args:
+        ----
             severity: Error severity level of the callback
             callback: Callback function to remove
 
         Returns:
+        -------
             True if callback was removed, False if not found
         """
         # Support wildcard '*' to unregister from all severity levels
-        if severity == '*':
+        if severity == "*":
             removed = False
             for sev in ErrorSeverity:
                 if callback in self._callbacks[sev]:
                     self._callbacks[sev].remove(callback)
                     removed = True
             if removed:
-                logger.debug(f"Unregistered error callback from all severity levels")
+                logger.debug("Unregistered error callback from all severity levels")
             return removed
 
         if callback in self._callbacks[severity]:
@@ -302,18 +321,21 @@ class ErrorHandler:
             return True
         return False
 
-    def handle_error(self,
-                    exception: Optional[Exception] = None,
-                    component: str = "unknown",
-                    severity: ErrorSeverity = ErrorSeverity.ERROR,
-                    category: Optional[ErrorCategory] = None,
-                    message: str = "",
-                    user_message: str = "",
-                    context: Dict[str, Any] = None) -> ErrorDetails:
+    def handle_error(
+        self,
+        exception: Optional[Exception] = None,
+        component: str = "unknown",
+        severity: ErrorSeverity = ErrorSeverity.ERROR,
+        category: Optional[ErrorCategory] = None,
+        message: str = "",
+        user_message: str = "",
+        context: Dict[str, Any] = None,
+    ) -> ErrorDetails:
         """
         Handle an error
 
         Args:
+        ----
             exception: The original exception
             component: Component or module where the error occurred
             severity: Error severity level
@@ -323,6 +345,7 @@ class ErrorHandler:
             context: Additional context information
 
         Returns:
+        -------
             ErrorDetails object with complete error information
         """
         # Create error details
@@ -333,7 +356,7 @@ class ErrorHandler:
             category=category,
             message=message,
             user_message=user_message,
-            context=context or {}
+            context=context or {},
         )
 
         # Log the error
@@ -374,7 +397,11 @@ class ErrorHandler:
             logger.critical(f"FATAL: {log_message}")
 
         # For severe errors, log the full details to the debug log
-        if error_details.severity in [ErrorSeverity.ERROR, ErrorSeverity.CRITICAL, ErrorSeverity.FATAL]:
+        if error_details.severity in [
+            ErrorSeverity.ERROR,
+            ErrorSeverity.CRITICAL,
+            ErrorSeverity.FATAL,
+        ]:
             logger.debug(error_details.format_for_log())
 
     def _trigger_callbacks(self, error_details: ErrorDetails):
@@ -392,23 +419,29 @@ class ErrorHandler:
             "total_errors": sum(self._error_counts.values()),
             "by_category": {category.name: count for category, count in self._error_counts.items()},
             "recent_count": len(self._recent_errors),
-            "recent_severities": {severity.name: sum(1 for e in self._recent_errors if e.severity == severity)
-                                for severity in ErrorSeverity}
+            "recent_severities": {
+                severity.name: sum(1 for e in self._recent_errors if e.severity == severity)
+                for severity in ErrorSeverity
+            },
         }
 
-    def get_recent_errors(self,
-                         max_count: int = 10,
-                         severity_filter: Optional[List[ErrorSeverity]] = None,
-                         category_filter: Optional[List[ErrorCategory]] = None) -> List[ErrorDetails]:
+    def get_recent_errors(
+        self,
+        max_count: int = 10,
+        severity_filter: Optional[List[ErrorSeverity]] = None,
+        category_filter: Optional[List[ErrorCategory]] = None,
+    ) -> List[ErrorDetails]:
         """
         Get recent errors with optional filtering
 
         Args:
+        ----
             max_count: Maximum number of errors to return
             severity_filter: Only include errors with these severities
             category_filter: Only include errors in these categories
 
         Returns:
+        -------
             List of matching error details
         """
         filtered = self._recent_errors
@@ -435,6 +468,7 @@ class ErrorHandler:
         Global exception handler for unhandled exceptions
 
         Args:
+        ----
             exc_type: Exception type
             exc_value: Exception value
             exc_traceback: Exception traceback
@@ -453,26 +487,29 @@ class ErrorHandler:
             component="UnhandledExceptionHandler",
             severity=ErrorSeverity.CRITICAL,
             message=f"Unhandled exception: {exc_value}",
-            context={"traceback": tb_str}
+            context={"traceback": tb_str},
         )
 
 
-def handle_exceptions(component: str,
-                     severity: ErrorSeverity = ErrorSeverity.ERROR,
-                     reraise: bool = False):
+def handle_exceptions(
+    component: str, severity: ErrorSeverity = ErrorSeverity.ERROR, reraise: bool = False
+):
     """
     Decorator to handle exceptions in a function
 
     Args:
+    ----
         component: Component or module name for error tracking
         severity: Default severity level for caught exceptions
         reraise: Whether to reraise the exception after handling
 
     Example:
+    -------
         @handle_exceptions("GPUMonitor", ErrorSeverity.ERROR)
         def get_gpu_info():
             # Function body that might raise exceptions
     """
+
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
@@ -484,7 +521,7 @@ def handle_exceptions(component: str,
                     exception=e,
                     component=component,
                     severity=severity,
-                    message=f"Error in {func.__name__}: {e}"
+                    message=f"Error in {func.__name__}: {e}",
                 )
 
                 if reraise:
@@ -509,14 +546,19 @@ def handle_exceptions(component: str,
                         return 0.0
                     elif return_type is str:
                         return ""
-                    elif return_type is list or (hasattr(return_type, "__origin__") and return_type.__origin__ is list):
+                    elif return_type is list or (
+                        hasattr(return_type, "__origin__") and return_type.__origin__ is list
+                    ):
                         return []
-                    elif return_type is dict or (hasattr(return_type, "__origin__") and return_type.__origin__ is dict):
+                    elif return_type is dict or (
+                        hasattr(return_type, "__origin__") and return_type.__origin__ is dict
+                    ):
                         return {}
 
                 return None
 
         return wrapper
+
     return decorator
 
 
@@ -532,11 +574,14 @@ def get_error_handler() -> ErrorHandler:
     """Get or create singleton error handler instance"""
     return ErrorHandler()
 
+
 # Add missing function
 def show_error_dialog(title: str, message: str, details: Optional[str] = None) -> None:
-    """Show an error dialog to the user
+    """
+    Show an error dialog to the user
 
     Args:
+    ----
         title: Dialog title
         message: Main error message
         details: Optional technical details

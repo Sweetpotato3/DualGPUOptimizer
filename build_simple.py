@@ -8,6 +8,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     """
     Build the application with PyInstaller bypassing the torch hook.
@@ -65,7 +66,7 @@ def main():
         "--exclude-module=torch.distributed",
         "--exclude-module=torch.testing",
         "--exclude-module=torch.utils.tensorboard",
-        main_py
+        main_py,
     ]
 
     print(f"Running command: {' '.join(cmd)}")
@@ -77,6 +78,7 @@ def main():
 
     print("✅ Build completed successfully!")
     print(f"Application is available at: {os.path.abspath('dist/DualGPUOptimizer')}")
+
 
 if __name__ == "__main__":
     main()

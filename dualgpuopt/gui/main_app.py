@@ -49,7 +49,7 @@ def get_log_directory():
         user_dir = Path.home() / "DualGPUOptimizer" / "logs"
         user_dir.mkdir(parents=True, exist_ok=True)
         return user_dir
-    except Exception as e:
+    except Exception:
         # Use temp directory as last resort
         temp_dir = Path(tempfile.gettempdir()) / "DualGPUOptimizer"
         temp_dir.mkdir(exist_ok=True)
@@ -161,7 +161,7 @@ try:
     for dir_path in ["batch", "services"]:
         init_path = Path(__file__).parent.parent.joinpath(dir_path, "__init__.py")
         if not init_path.exists():
-            init_path.write_text('"""Package for {}."""'.format(dir_path))
+            init_path.write_text(f'"""Package for {dir_path}."""')
 
     HAS_ADVANCED_FEATURES = True
 except Exception as e:
@@ -173,9 +173,11 @@ class MainApplication(ttk.Frame):
     """Main application frame containing all UI components"""
 
     def __init__(self, parent):
-        """Initialize the main application
+        """
+        Initialize the main application
 
         Args:
+        ----
             parent: Parent widget
         """
         super().__init__(parent, padding=0)
@@ -250,14 +252,19 @@ class MainApplication(ttk.Frame):
 
         # Add theme toggle button to header - use create_widget for safe creation
         self.theme_toggle = create_widget(
-            "ThemeToggleButton", header_frame, module_name="theme", fallback_class=ttk.Button
+            "ThemeToggleButton",
+            header_frame,
+            module_name="theme",
+            fallback_class=ttk.Button,
         )
         if isinstance(self.theme_toggle, ttk.Button) and not hasattr(
-            self.theme_toggle, "toggle_theme"
+            self.theme_toggle,
+            "toggle_theme",
         ):
             # We got a fallback button, set up minimal functionality
             self.theme_toggle.configure(
-                text="Toggle Theme", command=lambda: theme.toggle_theme(self.parent)
+                text="Toggle Theme",
+                command=lambda: theme.toggle_theme(self.parent),
             )
         self.theme_toggle.grid(row=0, column=1, sticky="e", padx=10)
 
@@ -290,11 +297,14 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error creating dashboard tab: {e}")
             self.dashboard_tab = ttk.Frame(self.notebook)
             error_label = ttk.Label(
-                self.dashboard_tab, text=f"Dashboard unavailable: {str(e)[:100]}..."
+                self.dashboard_tab,
+                text=f"Dashboard unavailable: {str(e)[:100]}...",
             )
             error_label.pack(pady=20)
             retry_button = ttk.Button(
-                self.dashboard_tab, text="Retry", command=self._retry_dashboard_tab
+                self.dashboard_tab,
+                text="Retry",
+                command=self._retry_dashboard_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.add(self.dashboard_tab, text="Dashboard")
@@ -308,7 +318,8 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error creating optimizer tab: {e}")
             self.optimizer_tab = ttk.Frame(self.notebook)
             error_label = ttk.Label(
-                self.optimizer_tab, text=f"Optimizer unavailable: {str(e)[:100]}..."
+                self.optimizer_tab,
+                text=f"Optimizer unavailable: {str(e)[:100]}...",
             )
             error_label.pack(pady=20)
 
@@ -318,17 +329,21 @@ class MainApplication(ttk.Frame):
                 top.title("Error Details")
                 top.geometry("600x400")
                 text = tk.Text(top, wrap="word")
-                text.insert("1.0", f"Error creating optimizer tab:\n\n{str(e)}")
+                text.insert("1.0", f"Error creating optimizer tab:\n\n{e!s}")
                 text.pack(fill="both", expand=True, padx=10, pady=10)
                 ttk.Button(top, text="Close", command=top.destroy).pack(pady=10)
 
             details_button = ttk.Button(
-                self.optimizer_tab, text="Error Details", command=show_error_details
+                self.optimizer_tab,
+                text="Error Details",
+                command=show_error_details,
             )
             details_button.pack(pady=5)
 
             retry_button = ttk.Button(
-                self.optimizer_tab, text="Retry", command=self._retry_optimizer_tab
+                self.optimizer_tab,
+                text="Retry",
+                command=self._retry_optimizer_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.add(self.optimizer_tab, text="Optimizer")
@@ -342,11 +357,14 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error creating launcher tab: {e}")
             self.launcher_tab = ttk.Frame(self.notebook)
             error_label = ttk.Label(
-                self.launcher_tab, text=f"Launcher unavailable: {str(e)[:100]}..."
+                self.launcher_tab,
+                text=f"Launcher unavailable: {str(e)[:100]}...",
             )
             error_label.pack(pady=20)
             retry_button = ttk.Button(
-                self.launcher_tab, text="Retry", command=self._retry_launcher_tab
+                self.launcher_tab,
+                text="Retry",
+                command=self._retry_launcher_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.add(self.launcher_tab, text="Launcher")
@@ -363,7 +381,8 @@ class MainApplication(ttk.Frame):
 
             # Add instructions for installing chat dependencies
             ttk.Label(
-                self.chat_tab, text="To enable chat functionality, install these dependencies:"
+                self.chat_tab,
+                text="To enable chat functionality, install these dependencies:",
             ).pack(pady=10)
             ttk.Label(self.chat_tab, text="pip install requests sseclient-py").pack()
 
@@ -409,7 +428,7 @@ class MainApplication(ttk.Frame):
             self.tps_meter.grid(row=0, column=3, padx=10, sticky="e")
             # Add configure method for compatibility
             self.tps_meter.configure = lambda **kwargs: self.tps_var.set(
-                f"{kwargs.get('amountused', 0)} tok/s"
+                f"{kwargs.get('amountused', 0)} tok/s",
             )
 
         # Start GPU detection if not using event bus
@@ -445,10 +464,12 @@ class MainApplication(ttk.Frame):
             # Create a new error frame
             self.dashboard_tab = ttk.Frame(self.notebook)
             ttk.Label(self.dashboard_tab, text=f"Dashboard unavailable: {str(e)[:100]}...").pack(
-                pady=20
+                pady=20,
             )
             retry_button = ttk.Button(
-                self.dashboard_tab, text="Retry", command=self._retry_dashboard_tab
+                self.dashboard_tab,
+                text="Retry",
+                command=self._retry_dashboard_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.insert(0, self.dashboard_tab, text="Dashboard")
@@ -481,10 +502,12 @@ class MainApplication(ttk.Frame):
             # Create a new error frame
             self.optimizer_tab = ttk.Frame(self.notebook)
             ttk.Label(self.optimizer_tab, text=f"Optimizer unavailable: {str(e)[:100]}...").pack(
-                pady=20
+                pady=20,
             )
             retry_button = ttk.Button(
-                self.optimizer_tab, text="Retry", command=self._retry_optimizer_tab
+                self.optimizer_tab,
+                text="Retry",
+                command=self._retry_optimizer_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.insert(tab_index, self.optimizer_tab, text="Optimizer")
@@ -517,10 +540,12 @@ class MainApplication(ttk.Frame):
             # Create a new error frame
             self.launcher_tab = ttk.Frame(self.notebook)
             ttk.Label(self.launcher_tab, text=f"Launcher unavailable: {str(e)[:100]}...").pack(
-                pady=20
+                pady=20,
             )
             retry_button = ttk.Button(
-                self.launcher_tab, text="Retry", command=self._retry_launcher_tab
+                self.launcher_tab,
+                text="Retry",
+                command=self._retry_launcher_tab,
             )
             retry_button.pack(pady=10)
             self.notebook.insert(tab_index, self.launcher_tab, text="Launcher")
@@ -580,9 +605,11 @@ class MainApplication(ttk.Frame):
         self.after(5000, self.detect_gpus)
 
     def _handle_gpu_metrics(self, event):
-        """Handle GPU metrics events from the event bus
+        """
+        Handle GPU metrics events from the event bus
 
         Args:
+        ----
             event: GPUMetricsEvent object
         """
         # Update GPU count display if this is the first GPU (avoid duplicate updates)
@@ -602,9 +629,11 @@ class MainApplication(ttk.Frame):
                 self.gpu_count_var.set("GPUs: None detected")
 
     def _handle_config_change(self, event):
-        """Handle configuration change events
+        """
+        Handle configuration change events
 
         Args:
+        ----
             event: ConfigChangedEvent object
         """
         # Handle specific configuration changes
@@ -638,9 +667,11 @@ class MainApplication(ttk.Frame):
         super().destroy()
 
     def _on_window_resize(self, event=None):
-        """Handle window resize events
+        """
+        Handle window resize events
 
         Args:
+        ----
             event: The resize event (optional)
         """
         # Debounce resize events to avoid excessive processing
@@ -698,9 +729,11 @@ class MainApplication(ttk.Frame):
             logger.error(f"Error applying theme: {e}")
 
     def _handle_theme_change(self, theme_data):
-        """Handle theme change events from other components
+        """
+        Handle theme change events from other components
 
         Args:
+        ----
             theme_data: Theme data, either name or dictionary with theme information
         """
         try:
@@ -726,9 +759,11 @@ class MainApplication(ttk.Frame):
 
 
 def find_icon():
-    """Find the application icon in various locations
+    """
+    Find the application icon in various locations
 
-    Returns:
+    Returns
+    -------
         Path to the icon file, or None if not found
     """
     # Check multiple locations for the icon
@@ -752,7 +787,7 @@ def find_icon():
                 exe_dir / "resources" / "icon.ico",
                 exe_dir / "icon.png",
                 exe_dir / "icon.ico",
-            ]
+            ],
         )
     else:
         # Running in development mode
@@ -773,7 +808,7 @@ def find_icon():
                 Path("assets") / "icon.ico",
                 Path("icon.png"),
                 Path("icon.ico"),
-            ]
+            ],
         )
 
     # Check each path and return the first one that exists

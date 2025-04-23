@@ -5,7 +5,7 @@ This guide will help you quickly set up and start using the DualGPUOptimizer for
 ## Prerequisites
 
 - **Hardware**: Two NVIDIA GPUs (ideally with at least 8GB VRAM each)
-- **Software**: 
+- **Software**:
   - Windows 10/11 or Linux (Ubuntu 20.04+)
   - Python 3.12+ or Python 3.11 with compatible PyTorch
   - NVIDIA drivers 535.xx or newer
@@ -21,28 +21,34 @@ This guide will help you quickly set up and start using the DualGPUOptimizer for
 ### Method 2: From Source
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/DualGPUOptimizer.git
    cd DualGPUOptimizer
    ```
 
 2. Create a virtual environment:
+
    ```bash
    python -m venv .venv
-   
+
    # Windows
    .venv\Scripts\activate
-   
+
    # Linux/Mac
    source .venv/bin/activate
    ```
 
 3. Install dependencies:
+
    ```bash
    pip install -e .
-   
+
    # Install PyTorch with CUDA support
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+
+   # For Python 3.12 compatibility, install pre-release qdarktheme
+   pip install --pre qdarktheme
    ```
 
 4. Launch the application:
@@ -137,4 +143,4 @@ If you encounter memory issues or want to clear GPU memory:
 - **Import errors**: Make sure all dependencies are properly installed
 - **Black screen on startup**: Update your NVIDIA drivers
 
-For more detailed guidance, refer to the full documentation in the `docs` folder. 
+For more detailed guidance, refer to the full documentation in the `docs` folder.

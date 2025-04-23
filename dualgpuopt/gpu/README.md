@@ -81,4 +81,4 @@ from dualgpuopt import gpu_info
 
 # This will use the refactored code transparently
 gpus = gpu_info.query()
-``` 
+```

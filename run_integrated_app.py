@@ -2,12 +2,13 @@
 """
 Runner script for the integrated DualGPUOptimizer application.
 """
+import argparse
 import os
 import sys
-import argparse
 
 # Add the integrated_app directory to the Python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "integrated_app")))
+
 
 def main() -> int:
     """Main entry point."""
@@ -30,6 +31,7 @@ def main() -> int:
     # Import and run the application
     try:
         from dualgpuopt.__main__ import main as app_main
+
         return app_main()
     except ImportError as e:
         print(f"Error importing application: {e}")
@@ -38,6 +40,7 @@ def main() -> int:
     except Exception as e:
         print(f"Error running application: {e}")
         return 1
+
 
 if __name__ == "__main__":
     sys.exit(main())

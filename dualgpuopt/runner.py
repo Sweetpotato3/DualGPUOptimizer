@@ -2,25 +2,28 @@
 Non‑blocking subprocess wrapper + log streamer for llama.cpp / vLLM
 """
 from __future__ import annotations
+
+import pathlib
+import queue
+import shlex
 import subprocess
 import threading
-import queue
-import pathlib
-import shlex
-from typing import List, Optional
+from typing import Optional
+
 
 class Runner:
-    def __init__(self, cmd: str, workdir: str|pathlib.Path=".") -> None:
+    def __init__(self, cmd: str, workdir: str | pathlib.Path = ".") -> None:
         """
         Initialize a Runner for managing subprocess execution.
 
         Args:
+        ----
             cmd: Command string to execute
             workdir: Working directory for command execution
         """
         self.cmd = cmd
         self.proc: Optional[subprocess.Popen] = None
-        self.q: "queue.Queue[str]" = queue.Queue()
+        self.q: queue.Queue[str] = queue.Queue()
         self.cwd = pathlib.Path(workdir)
 
     def start(self) -> None:
@@ -62,7 +65,8 @@ class Runner:
         """
         Check if the subprocess is still running.
 
-        Returns:
+        Returns
+        -------
             bool: True if process is running, False otherwise
         """
         return self.proc is not None and self.proc.poll() is None

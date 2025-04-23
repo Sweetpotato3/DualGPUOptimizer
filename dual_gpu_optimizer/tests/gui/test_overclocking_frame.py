@@ -9,7 +9,7 @@ import tkinter as tk
 from tkinter import ttk
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
 
 # Import the components to test
 from dualgpuopt.gui.settings.overclocking import OverclockingFrame
@@ -33,12 +33,9 @@ class TestOverclockingFrame(unittest.TestCase):
         self.gpus = [self.mock_gpu1, self.mock_gpu2]
 
         # Create the overclocking frame with the callback
-        with patch('dualgpuopt.services.event_service.event_bus.subscribe'):
+        with patch("dualgpuopt.services.event_service.event_bus.subscribe"):
             self.oc_frame = OverclockingFrame(
-                self.parent,
-                self.gpus,
-                pad=10,
-                on_status_change=self.callback
+                self.parent, self.gpus, pad=10, on_status_change=self.callback
             )
 
     def tearDown(self):
@@ -90,7 +87,7 @@ class TestOverclockingFrame(unittest.TestCase):
         # Verify that the label text was updated
         self.assertEqual(test_label.cget("text"), test_text)
 
-    @patch('dualgpuopt.services.config_service.config_service.get')
+    @patch("dualgpuopt.services.config_service.config_service.get")
     def test_update_oc_controls(self, mock_get):
         """Test updating overclocking controls."""
         # Mock the config service get method to return GPU overclocking settings
@@ -100,7 +97,7 @@ class TestOverclockingFrame(unittest.TestCase):
                 "memory": 500,
                 "power": 110,
                 "fan": 75,
-                "auto_fan": False
+                "auto_fan": False,
             }
         }
 
@@ -120,8 +117,8 @@ class TestOverclockingFrame(unittest.TestCase):
         # Verify that the callback was called
         self.callback.assert_called_once_with("Loaded settings for GPU 0")
 
-    @patch('dualgpuopt.services.config_service.config_service.get')
-    @patch('dualgpuopt.commands.command_base.command_manager.execute')
+    @patch("dualgpuopt.services.config_service.config_service.get")
+    @patch("dualgpuopt.commands.command_base.command_manager.execute")
     def test_apply_overclock(self, mock_execute, mock_get):
         """Test applying overclock settings."""
         # Mock the config service get method to return empty overclock settings
@@ -144,9 +141,9 @@ class TestOverclockingFrame(unittest.TestCase):
         # Verify that the callback was called
         self.callback.assert_called_once_with("Applying overclock to GPU 0...")
 
-    @patch('dualgpuopt.services.config_service.config_service.config')
-    @patch('dualgpuopt.services.config_service.config_service.save')
-    @patch('dualgpuopt.services.event_service.event_bus.publish')
+    @patch("dualgpuopt.services.config_service.config_service.config")
+    @patch("dualgpuopt.services.config_service.config_service.save")
+    @patch("dualgpuopt.services.event_service.event_bus.publish")
     def test_reset_overclock(self, mock_publish, mock_save, mock_config):
         """Test resetting overclock settings."""
         # Set up mock config with GPU overclock settings
@@ -175,7 +172,7 @@ class TestOverclockingFrame(unittest.TestCase):
         # Verify that the callback was called
         self.callback.assert_called_once_with("Reset overclock for GPU 0")
 
-    @patch('dualgpuopt.commands.command_base.command_manager.undo')
+    @patch("dualgpuopt.commands.command_base.command_manager.undo")
     def test_undo_last_command_success(self, mock_undo):
         """Test undoing the last command successfully."""
         # Set up mock to return True, indicating success
@@ -190,8 +187,8 @@ class TestOverclockingFrame(unittest.TestCase):
         # Verify that the callback was called
         self.callback.assert_called_once_with("Last operation undone")
 
-    @patch('dualgpuopt.commands.command_base.command_manager.undo')
-    @patch('tkinter.messagebox.showerror')
+    @patch("dualgpuopt.commands.command_base.command_manager.undo")
+    @patch("tkinter.messagebox.showerror")
     def test_undo_last_command_failure(self, mock_showerror, mock_undo):
         """Test undoing the last command with failure."""
         # Set up mock to return False, indicating failure
@@ -223,15 +220,18 @@ class TestOverclockingFrame(unittest.TestCase):
         settings = self.oc_frame.get_current_settings()
 
         # Verify that the returned settings match the expected values
-        self.assertEqual(settings, {
-            "gpu_index": 1,
-            "core_offset": 50,
-            "memory_offset": 250,
-            "power_limit": 95,
-            "fan_speed": 60,
-            "auto_fan": True
-        })
+        self.assertEqual(
+            settings,
+            {
+                "gpu_index": 1,
+                "core_offset": 50,
+                "memory_offset": 250,
+                "power_limit": 95,
+                "fan_speed": 60,
+                "auto_fan": True,
+            },
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

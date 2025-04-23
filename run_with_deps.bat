@@ -51,7 +51,7 @@ python -m dualgpuopt --check-deps
 
 REM Ask if dependencies should be installed
 echo.
-set /p install_deps=Install missing dependencies? [y/N]: 
+set /p install_deps=Install missing dependencies? [y/N]:
 
 if /i "%install_deps%"=="y" (
     echo.
@@ -89,4 +89,4 @@ echo.
 REM Deactivate virtual environment
 call deactivate
 
-pause 
+pause

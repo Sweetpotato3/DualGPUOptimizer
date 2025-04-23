@@ -5,6 +5,7 @@ Test script to check if the constants module can be imported
 
 try:
     from dualgpuopt.gui.constants import *
+
     print("Constants loaded successfully!")
     print(f"APP_NAME: {APP_NAME}")
     print(f"THEME: {THEME}")

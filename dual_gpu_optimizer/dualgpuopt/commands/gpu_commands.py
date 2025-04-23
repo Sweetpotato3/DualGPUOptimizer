@@ -4,7 +4,7 @@ GPU-specific commands for operations like overclocking.
 from __future__ import annotations
 
 import os
-from typing import Dict, Any, Optional
+from typing import Dict, Any
 
 from dualgpuopt.commands.command_base import Command
 from dualgpuopt.services.config_service import config_service
@@ -14,13 +14,15 @@ from dualgpuopt.services.error_service import error_service
 class ApplyOverclockCommand(Command):
     """Command to apply overclocking settings to a GPU."""
 
-    def __init__(self,
-                gpu_index: int,
-                core_offset: int,
-                memory_offset: int,
-                power_limit: int,
-                fan_speed: int,
-                auto_fan: bool) -> None:
+    def __init__(
+        self,
+        gpu_index: int,
+        core_offset: int,
+        memory_offset: int,
+        power_limit: int,
+        fan_speed: int,
+        auto_fan: bool,
+    ) -> None:
         """
         Initialize the overclocking command.
 
@@ -62,27 +64,36 @@ class ApplyOverclockCommand(Command):
             self.logger.info(f"  Core offset: {self.core_offset} MHz")
             self.logger.info(f"  Memory offset: {self.memory_offset} MHz")
             self.logger.info(f"  Power limit: {self.power_limit}%")
-            self.logger.info(f"  Fan speed: {'Auto' if self.auto_fan else f'{self.fan_speed}%'}")
+            self.logger.info(
+                f"  Fan speed: {'Auto' if self.auto_fan else f'{self.fan_speed}%'}"
+            )
 
             # Save to config
             self._save_to_config()
 
             # Publish result
-            self._publish_result(True, {
-                "gpu_index": self.gpu_index,
-                "settings": {
-                    "core_offset": self.core_offset,
-                    "memory_offset": self.memory_offset,
-                    "power_limit": self.power_limit,
-                    "fan_speed": self.fan_speed,
-                    "auto_fan": self.auto_fan
-                }
-            })
+            self._publish_result(
+                True,
+                {
+                    "gpu_index": self.gpu_index,
+                    "settings": {
+                        "core_offset": self.core_offset,
+                        "memory_offset": self.memory_offset,
+                        "power_limit": self.power_limit,
+                        "fan_speed": self.fan_speed,
+                        "auto_fan": self.auto_fan,
+                    },
+                },
+            )
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Overclock Error",
-                                    context={"operation": "apply_overclock", "gpu_index": self.gpu_index})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Overclock Error",
+                context={"operation": "apply_overclock", "gpu_index": self.gpu_index},
+            )
             return False
 
     def undo(self) -> bool:
@@ -118,15 +129,19 @@ class ApplyOverclockCommand(Command):
                 config_service.set("gpu_overclock", gpu_oc)
 
             # Publish result
-            self._publish_result(True, {
-                "gpu_index": self.gpu_index,
-                "restored": True
-            })
+            self._publish_result(True, {"gpu_index": self.gpu_index, "restored": True})
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Restore Error",
-                                    context={"operation": "restore_gpu_settings", "gpu_index": self.gpu_index})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Restore Error",
+                context={
+                    "operation": "restore_gpu_settings",
+                    "gpu_index": self.gpu_index,
+                },
+            )
             return False
 
     def _get_current_values(self) -> Dict[str, Any]:
@@ -148,7 +163,7 @@ class ApplyOverclockCommand(Command):
                 "power": settings.get("power", 100),
                 "fan": settings.get("fan", 0),
                 "auto_fan": settings.get("auto_fan", True),
-                "saved": True
+                "saved": True,
             }
         return {
             "core": 0,
@@ -156,7 +171,7 @@ class ApplyOverclockCommand(Command):
             "power": 100,
             "fan": 0,
             "auto_fan": True,
-            "saved": False
+            "saved": False,
         }
 
     def _save_to_config(self) -> None:
@@ -170,7 +185,7 @@ class ApplyOverclockCommand(Command):
             "memory": self.memory_offset,
             "power": self.power_limit,
             "fan": self.fan_speed,
-            "auto_fan": self.auto_fan
+            "auto_fan": self.auto_fan,
         }
 
         # Save updated settings
@@ -202,8 +217,12 @@ class EnableMockGpuCommand(Command):
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Mock GPU Error",
-                                    context={"operation": "enable_mock_gpu"})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Mock GPU Error",
+                context={"operation": "enable_mock_gpu"},
+            )
             return False
 
     def undo(self) -> bool:
@@ -223,6 +242,10 @@ class EnableMockGpuCommand(Command):
 
             return True
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Mock GPU Error",
-                                    context={"operation": "disable_mock_gpu"})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Mock GPU Error",
+                context={"operation": "disable_mock_gpu"},
+            )
             return False

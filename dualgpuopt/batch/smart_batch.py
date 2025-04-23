@@ -1,11 +1,9 @@
 """
 Smart batching system for length-aware inference scheduling
 """
-from typing import List, Dict, Any, Optional, Tuple, Callable
 import logging
-import time
-import math
 from dataclasses import dataclass
+from typing import List, Tuple
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.SmartBatch")
@@ -14,16 +12,19 @@ logger = logging.getLogger("DualGPUOpt.SmartBatch")
 def optimize_batch_size(
     gpu_memory_gb: float,
     model_size_gb: float,
-    model_type: str = None
+    model_type: str = None,
 ) -> int:
-    """Calculate optimal batch size based on model-specific memory requirements
+    """
+    Calculate optimal batch size based on model-specific memory requirements
 
     Args:
+    ----
         gpu_memory_gb: Available GPU memory in GB
         model_size_gb: Model size in GB
         model_type: Optional model type for specific configurations
 
     Returns:
+    -------
         Optimal batch size
     """
     # Get model-specific parameters
@@ -62,14 +63,17 @@ def optimize_batch_size(
     # Apply reasonable bounds, allowing non-power-of-2 for flexibility
     batch_size = max(1, min(raw_batch_size, 64))
 
-    logger.info(f"Optimized batch size: {batch_size} for {model_type} model "
-               f"({gpu_memory_gb:.1f}GB GPU, {model_size_gb:.1f}GB model)")
+    logger.info(
+        f"Optimized batch size: {batch_size} for {model_type} model "
+        f"({gpu_memory_gb:.1f}GB GPU, {model_size_gb:.1f}GB model)"
+    )
     return batch_size
 
 
 @dataclass
 class BatchStats:
     """Statistics for a processed batch"""
+
     tokens_in: int
     tokens_out: int
     processing_time: float
@@ -84,7 +88,8 @@ class BatchStats:
 
 
 class SmartBatcher:
-    """Length-aware batch scheduler for optimized inference
+    """
+    Length-aware batch scheduler for optimized inference
 
     Groups similar-length sequences together to improve throughput
     while maintaining low latency
@@ -95,11 +100,13 @@ class SmartBatcher:
         max_batch_size: int = 32,
         length_threshold: int = 256,
         adaptive_sizing: bool = True,
-        oom_recovery: bool = True
+        oom_recovery: bool = True,
     ) -> None:
-        """Initialize the smart batcher
+        """
+        Initialize the smart batcher
 
         Args:
+        ----
             max_batch_size: Maximum number of sequences in a batch
             length_threshold: Threshold for considering sequences as "long"
             adaptive_sizing: Whether to dynamically adjust batch size based on performance
@@ -118,14 +125,17 @@ class SmartBatcher:
 
     def optimize_batches(
         self,
-        sequences: List[Tuple[str, int]]
+        sequences: List[Tuple[str, int]],
     ) -> List[List[int]]:
-        """Group sequences into optimized batches
+        """
+        Group sequences into optimized batches
 
         Args:
+        ----
             sequences: List of (text, sequence_id) tuples
 
         Returns:
+        -------
             List of batches, where each batch is a list of sequence IDs
         """
         if not sequences:
@@ -153,10 +163,13 @@ class SmartBatcher:
             # 1. Batch size limit
             # 2. Large length difference from current batch
             # 3. Total token count exceeds maximum
-            if (len(current_batch) >= effective_batch_size or
-                (length > self.length_threshold and current_batch and length > 2 * current_length) or
-                (current_token_sum + length > max_token_sum)):
-
+            if (
+                len(current_batch) >= effective_batch_size
+                or (
+                    length > self.length_threshold and current_batch and length > 2 * current_length
+                )
+                or (current_token_sum + length > max_token_sum)
+            ):
                 batches.append(current_batch)
                 current_batch = [seq_id]
                 current_length = length
@@ -174,9 +187,11 @@ class SmartBatcher:
         return batches
 
     def record_batch_stats(self, stats: BatchStats) -> None:
-        """Record statistics for a processed batch
+        """
+        Record statistics for a processed batch
 
         Args:
+        ----
             stats: Batch statistics
         """
         self.batch_stats.append(stats)
@@ -191,13 +206,21 @@ class SmartBatcher:
             self.backpressure_active = True
             # Reduce batch size by 25% after OOM
             self.current_scale_factor = max(0.25, self.current_scale_factor * 0.75)
-            logger.warning(f"OOM detected: activating backpressure, scale={self.current_scale_factor:.2f}")
+            logger.warning(
+                f"OOM detected: activating backpressure, scale={self.current_scale_factor:.2f}"
+            )
         else:
             # Gradually recover if we've processed 5 batches without OOM
-            if self.backpressure_active and len(self.batch_stats) >= 5 and all(s.oom_events == 0 for s in self.batch_stats[-5:]):
+            if (
+                self.backpressure_active
+                and len(self.batch_stats) >= 5
+                and all(s.oom_events == 0 for s in self.batch_stats[-5:])
+            ):
                 # Increase scale factor, but still keep some backpressure
                 self.current_scale_factor = min(0.95, self.current_scale_factor * 1.1)
-                logger.info(f"Gradually reducing backpressure, scale={self.current_scale_factor:.2f}")
+                logger.info(
+                    f"Gradually reducing backpressure, scale={self.current_scale_factor:.2f}"
+                )
 
                 # Deactivate backpressure if we're close to normal
                 if self.current_scale_factor > 0.9:
@@ -208,6 +231,7 @@ class SmartBatcher:
         """Reset CUDA cache to recover from OOM conditions"""
         try:
             import torch
+
             if torch.cuda.is_available():
                 # Clear CUDA cache
                 torch.cuda.empty_cache()

@@ -99,4 +99,4 @@ from dualgpuopt.services.event_service import event_bus
 
 # Subscribe to theme change events
 event_bus.subscribe("config_changed:theme", handle_theme_change)
-``` 
+```

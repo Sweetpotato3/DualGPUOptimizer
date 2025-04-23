@@ -144,4 +144,4 @@ MODEL_PROFILES["new-model-7b"] = ModelMemoryProfile(
         "24+8": (0.75, 0.25)
     }
 )
-``` 
+```

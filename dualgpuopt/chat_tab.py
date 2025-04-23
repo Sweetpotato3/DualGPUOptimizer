@@ -1,14 +1,18 @@
 from __future__ import annotations
-import queue, threading, time
+
 import logging
+import queue
+import threading
+import time
 import tkinter as tk
-from typing import Dict, Any, Optional, List, Tuple, Callable
+
+# Configure logger
+# Configure logger
+from dualgpuopt.engine.pool import EnginePool
+from dualgpuopt.ui.chat_compat import DEPENDENCIES as CHAT_DEPENDENCIES
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.ChatTab")
-
-# Import from UI compatibility layer instead of directly
-from dualgpuopt.ui.chat_compat import DEPENDENCIES as CHAT_DEPENDENCIES
 
 # Use dependencies from the compatibility layer
 if CHAT_DEPENDENCIES["requests"]["available"] and CHAT_DEPENDENCIES["sseclient"]["available"]:
@@ -18,17 +22,22 @@ if CHAT_DEPENDENCIES["requests"]["available"] and CHAT_DEPENDENCIES["sseclient"]
     logger.info("Chat dependencies available via compatibility layer")
 else:
     CHAT_DEPS_AVAILABLE = False
-    logger.warning("Chat dependencies (requests/sseclient) not available - chat functionality will be limited")
+    logger.warning(
+        "Chat dependencies (requests/sseclient) not available - chat functionality will be limited",
+    )
 
 # Try importing ttkbootstrap - fall back to standard ttk if not available
 try:
     import ttkbootstrap as ttk
-    from ttkbootstrap.widgets import Meter
     from ttkbootstrap.scrolled import ScrolledFrame
+    from ttkbootstrap.widgets import Meter
+
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
-    import tkinter.ttk as ttk
+    from tkinter import ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
+
     # Mock the missing classes
     class Meter:
         def __init__(self, *args, **kwargs):
@@ -51,26 +60,37 @@ except ImportError:
         def pack(self, *args, **kwargs):
             super().pack(*args, **kwargs)
 
+
 # Try to import the UI chat widgets
 try:
     from dualgpuopt.ui.chat_widgets import Bubble
+
     CHAT_WIDGETS_AVAILABLE = True
 except ImportError:
     CHAT_WIDGETS_AVAILABLE = False
+
     # Create a fallback Bubble implementation
     class Bubble(ttk.Frame):
         def __init__(self, parent, text, is_user=False):
             super().__init__(parent)
             bg_color = "#3D2A50" if not is_user else "#6A3EBD"
-            self.label = ttk.Label(self, text=text, wraplength=400,
-                                  background=bg_color, padding=10)
-            self.label.pack(side="right" if is_user else "left", anchor="e" if is_user else "w",
-                           pady=5, padx=5)
+            self.label = ttk.Label(self, text=text, wraplength=400, background=bg_color, padding=10)
+            self.label.pack(
+                side="right" if is_user else "left",
+                anchor="e" if is_user else "w",
+                pady=5,
+                padx=5,
+            )
+
 
 BACKENDS = [
-    {"name": "Dolphin 34B AWQ", "hf_id": "TheBloke/dolphin-2.2-yi-34b-200k-AWQ",
-     "template": "<|im_start|>system\n{system}\n<|im_end|>\n<|im_start|>user\n{prompt}\n<|im_end|>\n<|im_start|>assistant\n"},
+    {
+        "name": "Dolphin 34B AWQ",
+        "hf_id": "TheBloke/dolphin-2.2-yi-34b-200k-AWQ",
+        "template": "<|im_start|>system\n{system}\n<|im_end|>\n<|im_start|>user\n{prompt}\n<|im_end|>\n<|im_start|>assistant\n",
+    },
 ]
+
 
 class ChatTab(ttk.Frame):
     def __init__(self, master, out_q: queue.Queue):
@@ -122,8 +142,11 @@ class ChatTab(ttk.Frame):
         notice_frame = ttk.Frame(self, padding=20)
         notice_frame.grid(row=0, column=0, sticky="nsew")
 
-        title = ttk.Label(notice_frame, text="Chat Functionality Unavailable",
-                         font=("Segoe UI", 16, "bold"))
+        title = ttk.Label(
+            notice_frame,
+            text="Chat Functionality Unavailable",
+            font=("Segoe UI", 16, "bold"),
+        )
         title.pack(pady=(20, 10))
 
         msg = "The chat functionality requires additional dependencies that are not installed:"
@@ -135,20 +158,32 @@ class ChatTab(ttk.Frame):
         install_msg = "You can install these dependencies with:"
         ttk.Label(notice_frame, text=install_msg).pack(pady=5)
 
-        install_cmd = ttk.Label(notice_frame, text="pip install requests sseclient-py",
-                               font=("Courier New", 10), background="#241934", padding=10)
+        install_cmd = ttk.Label(
+            notice_frame,
+            text="pip install requests sseclient-py",
+            font=("Courier New", 10),
+            background="#241934",
+            padding=10,
+        )
         install_cmd.pack(pady=5)
 
         alt_msg = "Or run the dependency installer:"
         ttk.Label(notice_frame, text=alt_msg).pack(pady=5)
 
-        alt_cmd = ttk.Label(notice_frame, text="python -m dualgpuopt --install-deps",
-                           font=("Courier New", 10), background="#241934", padding=10)
+        alt_cmd = ttk.Label(
+            notice_frame,
+            text="python -m dualgpuopt --install-deps",
+            font=("Courier New", 10),
+            background="#241934",
+            padding=10,
+        )
         alt_cmd.pack(pady=5)
 
         # Add function availability info
-        functions = ttk.Label(notice_frame,
-                             text="This tab will remain available but chat functionality will be disabled.")
+        functions = ttk.Label(
+            notice_frame,
+            text="This tab will remain available but chat functionality will be disabled.",
+        )
         functions.pack(pady=20)
 
     # ------------ UI parts -------------
@@ -161,15 +196,25 @@ class ChatTab(ttk.Frame):
         # Model selector
         ttk.Label(top, text="Model").grid(row=0, column=0, sticky="w")
         self.model_var = tk.StringVar(value=BACKENDS[0]["name"])
-        model_menu = ttk.OptionMenu(top, self.model_var, BACKENDS[0]["name"],
-                       *[b["name"] for b in BACKENDS])
+        model_menu = ttk.OptionMenu(
+            top,
+            self.model_var,
+            BACKENDS[0]["name"],
+            *[b["name"] for b in BACKENDS],
+        )
         model_menu.grid(row=0, column=1, padx=(5, 15), sticky="w")
 
         # Temperature control with label
         ttk.Label(top, text="Temp").grid(row=0, column=2, sticky="w")
-        self.temp = tk.DoubleVar(value=.7)
-        temp_scale = ttk.Scale(top, variable=self.temp, from_=0.1, to=1.3, length=150,
-                  orient="horizontal")
+        self.temp = tk.DoubleVar(value=0.7)
+        temp_scale = ttk.Scale(
+            top,
+            variable=self.temp,
+            from_=0.1,
+            to=1.3,
+            length=150,
+            orient="horizontal",
+        )
         temp_scale.grid(row=0, column=3, padx=(5, 10), sticky="ew")
 
         # Temperature value display
@@ -179,6 +224,7 @@ class ChatTab(ttk.Frame):
         # Update temp value when slider moves
         def _update_temp_value(*args):
             temp_value.configure(text=f"{self.temp.get():.1f}")
+
         self.temp.trace_add("write", _update_temp_value)
 
         # Clear button
@@ -254,8 +300,14 @@ class ChatTab(ttk.Frame):
         # Status indicators on the right
         try:
             if TTKBOOTSTRAP_AVAILABLE:
-                self.meter = Meter(meter_frame, subtext="tok/s", bootstyle="success",
-                                  amounttotal=100, metersize=60, stripethickness=10)
+                self.meter = Meter(
+                    meter_frame,
+                    subtext="tok/s",
+                    bootstyle="success",
+                    amounttotal=100,
+                    metersize=60,
+                    stripethickness=10,
+                )
                 self.meter.pack(side="right")
             else:
                 # Fallback for when ttkbootstrap is not available
@@ -284,17 +336,32 @@ class ChatTab(ttk.Frame):
         # Token count display
         ttk.Label(metrics_frame, text="Total Tokens:").grid(row=0, column=0, sticky="w", pady=2)
         self.total_tokens_var = tk.StringVar(value="0")
-        ttk.Label(metrics_frame, textvariable=self.total_tokens_var).grid(row=0, column=1, sticky="e", pady=2)
+        ttk.Label(metrics_frame, textvariable=self.total_tokens_var).grid(
+            row=0,
+            column=1,
+            sticky="e",
+            pady=2,
+        )
 
         # Messages count
         ttk.Label(metrics_frame, text="Messages:").grid(row=1, column=0, sticky="w", pady=2)
         self.message_count_var = tk.StringVar(value="0")
-        ttk.Label(metrics_frame, textvariable=self.message_count_var).grid(row=1, column=1, sticky="e", pady=2)
+        ttk.Label(metrics_frame, textvariable=self.message_count_var).grid(
+            row=1,
+            column=1,
+            sticky="e",
+            pady=2,
+        )
 
         # Generation speed
         ttk.Label(metrics_frame, text="Speed:").grid(row=2, column=0, sticky="w", pady=2)
         self.speed_var = tk.StringVar(value="0 tok/s")
-        ttk.Label(metrics_frame, textvariable=self.speed_var).grid(row=2, column=1, sticky="e", pady=2)
+        ttk.Label(metrics_frame, textvariable=self.speed_var).grid(
+            row=2,
+            column=1,
+            sticky="e",
+            pady=2,
+        )
 
         # History section
         history_frame = ttk.LabelFrame(sidebar_frame, text="History", padding=5)
@@ -316,18 +383,24 @@ class ChatTab(ttk.Frame):
         btn_frame.pack(fill="x", pady=5)
 
         # Export button
-        ttk.Button(btn_frame, text="Export Chat",
-                  command=self._export_chat).pack(side="left", padx=2)
+        ttk.Button(btn_frame, text="Export Chat", command=self._export_chat).pack(
+            side="left",
+            padx=2,
+        )
 
         # Clear history button
-        ttk.Button(btn_frame, text="Clear History",
-                  command=self._clear_history).pack(side="right", padx=2)
+        ttk.Button(btn_frame, text="Clear History", command=self._clear_history).pack(
+            side="right",
+            padx=2,
+        )
 
     # ------------ actions --------------
     def _append(self, md: str, user=False):
-        """Append a new message bubble to the chat
+        """
+        Append a new message bubble to the chat
 
         Args:
+        ----
             md: Markdown/HTML formatted message content
             user: True if this is a user message
         """
@@ -358,7 +431,8 @@ class ChatTab(ttk.Frame):
             return
 
         prompt = self.entry.get("1.0", "end").strip()
-        if not prompt: return
+        if not prompt:
+            return
         self.last_prompt = prompt
         self.entry.delete("1.0", "end")
         self._append(f"<b>You:</b> {prompt}", user=True)
@@ -366,9 +440,18 @@ class ChatTab(ttk.Frame):
 
     def _show_dependency_error(self):
         """Show a message about missing dependencies"""
-        self._append("<b>System:</b> Chat functionality requires additional dependencies.", user=False)
-        self._append("<b>System:</b> Please install 'requests' and 'sseclient-py' to enable chat.", user=False)
-        self._append("<b>System:</b> Run: <code>pip install requests sseclient-py</code>", user=False)
+        self._append(
+            "<b>System:</b> Chat functionality requires additional dependencies.",
+            user=False,
+        )
+        self._append(
+            "<b>System:</b> Please install 'requests' and 'sseclient-py' to enable chat.",
+            user=False,
+        )
+        self._append(
+            "<b>System:</b> Run: <code>pip install requests sseclient-py</code>",
+            user=False,
+        )
 
     def _regen(self):
         # Check if chat dependencies are available
@@ -376,17 +459,18 @@ class ChatTab(ttk.Frame):
             self._show_dependency_error()
             return
 
-        if self.last_prompt: self._start_stream(self.last_prompt)
+        if self.last_prompt:
+            self._start_stream(self.last_prompt)
 
     def _start_stream(self, prompt: str):
-        if self.streaming: return
+        if self.streaming:
+            return
         cfg = next(b for b in BACKENDS if b["name"] == self.model_var.get())
         msg = cfg["template"].format(prompt=prompt, system="You are a helpful assistant.")
         self.streaming = True
         if self.meter is not None:
             self.meter.configure(amountused=0)
-        threading.Thread(target=self._worker,
-                         args=(cfg["hf_id"], msg), daemon=True).start()
+        threading.Thread(target=self._worker, args=(cfg["hf_id"], msg), daemon=True).start()
 
     def _worker(self, model_id: str, msg: str):
         if not CHAT_DEPS_AVAILABLE:
@@ -398,32 +482,30 @@ class ChatTab(ttk.Frame):
         t0 = time.perf_counter()
         tok = 0
         try:
-            resp = requests.post("http://127.0.0.1:8000/v1/chat/completions",
-                                 json={"model": model_id,
-                                       "stream": True,
-                                       "quantization": "awq",
-                                       "messages":[{"role":"user","content": msg}]},
-                                 stream=True, timeout=90)
-            buff = ""
-            for ev in sseclient.SSEClient(resp):
-                delta = ev.data and ev.data["choices"][0]["delta"].get("content","")
-                if delta:
-                    buff += delta; tok += 1
-                    self.out_q.put(("chat_chunk", delta))
+            # Get the engine from the pool, which will reuse if already loaded
+            engine = EnginePool.get(model_id, quant="awq")
+
+            # Stream from the engine directly, which handles backend communication
+            for token in engine.stream(msg):
+                self.out_q.put(("chat_chunk", token))
+                tok += 1
+
             self.out_q.put(("chat_end", ""))
         except Exception as e:
             logger.error(f"Chat error: {e}")
             self.out_q.put(("chat_chunk", f"<br><i>Error: {e}</i>"))
         finally:
             self.streaming = False
-            elapsed = max(time.perf_counter() - t0, .1)
-            self.out_q.put(("tps", tok/elapsed))
+            elapsed = max(time.perf_counter() - t0, 0.1)
+            self.out_q.put(("tps", tok / elapsed))
 
     # --- exposed to main GUI poller ---
     def handle_queue(self, kind, val):
-        """Handle messages from the queue
+        """
+        Handle messages from the queue
 
         Args:
+        ----
             kind: Message type
             val: Message value
         """
@@ -432,7 +514,7 @@ class ChatTab(ttk.Frame):
             self._append(val)
 
             # Update token counter if we have a label
-            if hasattr(self, 'token_label') and self.token_label:
+            if hasattr(self, "token_label") and self.token_label:
                 # Extract current count and update
                 try:
                     current_text = self.token_label.cget("text")
@@ -441,18 +523,18 @@ class ChatTab(ttk.Frame):
                     self.token_label.configure(text=f"{new_count} tokens")
 
                     # Update sidebar metrics
-                    if hasattr(self, 'total_tokens_var'):
+                    if hasattr(self, "total_tokens_var"):
                         self.total_tokens_var.set(str(new_count))
                 except (ValueError, IndexError):
                     # If parsing fails, reset counter
                     self.token_label.configure(text="1 tokens")
-                    if hasattr(self, 'total_tokens_var'):
+                    if hasattr(self, "total_tokens_var"):
                         self.total_tokens_var.set("1")
 
         elif kind == "chat_end":
             # Handle end of streaming
             # Update message count in sidebar
-            if hasattr(self, 'message_count_var'):
+            if hasattr(self, "message_count_var"):
                 try:
                     current = int(self.message_count_var.get())
                     self.message_count_var.set(str(current + 1))
@@ -464,17 +546,18 @@ class ChatTab(ttk.Frame):
             self.meter.configure(amountused=min(val, 100))
 
             # Update speed in sidebar
-            if hasattr(self, 'speed_var'):
+            if hasattr(self, "speed_var"):
                 self.speed_var.set(f"{int(val)} tok/s")
 
     def _clear(self):
-        if hasattr(self, 'msg_frame'):
-            for w in self.msg_frame.winfo_children(): w.destroy()
+        if hasattr(self, "msg_frame"):
+            for w in self.msg_frame.winfo_children():
+                w.destroy()
 
     def _load_history(self, event=None):
         """Load a previous chat from history"""
         # Get selected item
-        if hasattr(self, 'history_list') and self.history_list.curselection():
+        if hasattr(self, "history_list") and self.history_list.curselection():
             idx = self.history_list.curselection()[0]
             selected = self.history_list.get(idx)
             # In a real implementation, this would load the chat
@@ -489,7 +572,7 @@ class ChatTab(ttk.Frame):
 
     def _clear_history(self):
         """Clear the chat history"""
-        if hasattr(self, 'history_list'):
+        if hasattr(self, "history_list"):
             self.history_list.delete(0, tk.END)
 
     # ------------ responsive layout --------------
@@ -501,7 +584,7 @@ class ChatTab(ttk.Frame):
     def _update_layout(self):
         """Update layout based on current window size"""
         # Skip if this is the dependency notice version of the tab
-        if not hasattr(self, 'entry') or not hasattr(self, 'h_paned'):
+        if not hasattr(self, "entry") or not hasattr(self, "h_paned"):
             return
 
         width = self.winfo_width()
@@ -523,6 +606,6 @@ class ChatTab(ttk.Frame):
             else:
                 # For narrow windows, minimize the sidebar
                 self.h_paned.sashpos(0, int(width * 0.8))
-        except (tk.TclError, AttributeError) as e:
+        except (tk.TclError, AttributeError):
             # Handle case where sash may not be available yet
             pass

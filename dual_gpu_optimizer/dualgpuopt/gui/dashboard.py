@@ -16,24 +16,7 @@ except ImportError:
     TOOLTIP_AVAILABLE = False
 
 # Import constants from shared module
-<<<<<<< HEAD
-from dualgpuopt.gui.constants import (
-    PAD,
-    DEFAULT_CHART_BG,
-    DEFAULT_CHART_FG,
-    GPU_COLORS, # Use the dictionary mapping
-    GRID_LINE_COLOR,
-    LIGHT_FOREGROUND,
-    PURPLE_PRIMARY,
-    PURPLE_HIGHLIGHT,
-    BLUE_ACCENT,
-    PINK_ACCENT,
-    CYAN_ACCENT,
-    ORANGE_ACCENT
-)
-=======
 from dualgpuopt.gui.constants import PAD, DEFAULT_CHART_BG
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 from dualgpuopt.gpu_info import GPU
 from dualgpuopt.telemetry import GpuTelemetry # Use the specific type hint
 
@@ -56,12 +39,6 @@ class GpuDashboard(ttk.Frame):
         self.telemetry = telemetry_service
         self.gpus = self.gpu_info.get_gpus() # Get initial GPU list
         self.columnconfigure(0, weight=1)
-<<<<<<< HEAD
-
-        # Use the GPU_COLORS dictionary from constants
-        self.gpu_colors = GPU_COLORS
-=======
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
         # Canvas for GPU usage history
         history_frame = ttk.LabelFrame(self, text="GPU Usage History")
@@ -69,20 +46,13 @@ class GpuDashboard(ttk.Frame):
         history_frame.columnconfigure(0, weight=1)
         history_frame.rowconfigure(0, weight=1)
 
-<<<<<<< HEAD
-        # Use background color from constants
         self.chart_canvas = tk.Canvas(history_frame, height=150, bg=DEFAULT_CHART_BG)
-=======
-        self.chart_canvas = tk.Canvas(history_frame, height=150, bg=DEFAULT_CHART_BG)
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
         self.chart_canvas.grid(row=0, column=0, sticky="news", padx=PAD/2, pady=PAD/2)
 
         # GPU metrics grid
         metrics_frame = ttk.LabelFrame(self, text="Real-time GPU Metrics")
         metrics_frame.grid(row=1, column=0, sticky="news", padx=PAD, pady=(0, PAD))
         metrics_frame.columnconfigure(1, weight=1)  # Progress bar column takes weight
-        # metrics_frame.columnconfigure(0, weight=0) # Label column (default)
-        # metrics_frame.columnconfigure(2, weight=0) # Value column (default)
 
         # Create metric rows for each GPU
         self.gpu_frames = []
@@ -176,7 +146,6 @@ class GpuDashboard(ttk.Frame):
 
             # GPU utilization
             ttk.Label(gpu_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-<<<<<<< HEAD
             gpu_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100, style=primary_style)
             gpu_prog.grid(row=0, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
             gpu_label = ttk.Label(gpu_frame, text="0%", width=8)
@@ -190,23 +159,6 @@ class GpuDashboard(ttk.Frame):
             mem_label = ttk.Label(gpu_frame, text="0%", width=8)
             mem_label.grid(row=1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
             if TOOLTIP_AVAILABLE: ToolTip(mem_prog, f"GPU {gpu.index} Memory: {gpu.mem_total} MiB total")
-=======
-            gpu_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
-            gpu_prog.grid(row=0, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            gpu_label = ttk.Label(gpu_frame, text="0%", width=8)
-            gpu_label.grid(row=0, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
-
-            # Add tooltip to GPU utilization bar
-            if TOOLTIP_AVAILABLE:
-                ToolTip(gpu_prog, f"GPU {gpu.index} Utilization: {gpu.name}")
-
-            # Memory utilization
-            ttk.Label(gpu_frame, text="Memory:").grid(row=1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-            mem_prog = ttk.Progressbar(gpu_frame, mode="determinate", maximum=100)
-            mem_prog.grid(row=1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            mem_label = ttk.Label(gpu_frame, text="0%", width=8)
-            mem_label.grid(row=1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
             self.gpu_frames.append(gpu_frame)
             self.gpu_progress[f"gpu_{gpu.index}"] = gpu_prog
@@ -216,18 +168,12 @@ class GpuDashboard(ttk.Frame):
 
         # --- Setup PCIe throughput labels ---
         for i, gpu in enumerate(gpus):
-<<<<<<< HEAD
-=======
             # RX throughput
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
             ttk.Label(pcie_frame, text=f"GPU {gpu.index} RX:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
             rx_label = ttk.Label(pcie_frame, text="0 KB/s")
             rx_label.grid(row=i*2, column=1, sticky="w", padx=PAD/2, pady=PAD/4)
 
-<<<<<<< HEAD
-=======
             # TX throughput
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
             ttk.Label(pcie_frame, text=f"GPU {gpu.index} TX:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
             tx_label = ttk.Label(pcie_frame, text="0 KB/s")
             tx_label.grid(row=i*2+1, column=1, sticky="w", padx=PAD/2, pady=PAD/4)
@@ -246,7 +192,6 @@ class GpuDashboard(ttk.Frame):
         for i, gpu in enumerate(gpus):
             # Temperature
             ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Temp:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-<<<<<<< HEAD
             temp_prog = ttk.Progressbar(temp_power_frame, mode="determinate", maximum=100, style=temp_style)
             temp_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
             temp_label = ttk.Label(temp_power_frame, text="0°C")
@@ -262,23 +207,6 @@ class GpuDashboard(ttk.Frame):
             power_label = ttk.Label(temp_power_frame, text="0W")
             power_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
             if TOOLTIP_AVAILABLE: ToolTip(power_prog, f"GPU {gpu.index} Power Consumption (Watts)")
-=======
-            temp_prog = ttk.Progressbar(temp_power_frame, mode="determinate", maximum=100)
-            temp_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            temp_label = ttk.Label(temp_power_frame, text="0°C")
-            temp_label.grid(row=i*2, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
-
-            # Add tooltip to temperature bar
-            if TOOLTIP_AVAILABLE:
-                ToolTip(temp_prog, f"GPU {gpu.index} Temperature (°C)")
-
-            # Power usage
-            ttk.Label(temp_power_frame, text=f"GPU {gpu.index} Power:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-            power_prog = ttk.Progressbar(temp_power_frame, mode="determinate", maximum=100)
-            power_prog.grid(row=i*2+1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            power_label = ttk.Label(temp_power_frame, text="0W")
-            power_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
             self.temp_progress[f"temp_{gpu.index}"] = temp_prog
             self.temp_labels[f"temp_{gpu.index}"] = temp_label
@@ -296,7 +224,6 @@ class GpuDashboard(ttk.Frame):
 
             # Graphics clock
             ttk.Label(clock_frame, text=f"GPU {gpu.index} Graphics:").grid(row=i*2, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-<<<<<<< HEAD
             graphics_prog = ttk.Progressbar(clock_frame, mode="determinate", maximum=max_graphics_clock, style=clock_style)
             graphics_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
             graphics_label = ttk.Label(clock_frame, text="0 MHz")
@@ -310,23 +237,6 @@ class GpuDashboard(ttk.Frame):
             memory_label = ttk.Label(clock_frame, text="0 MHz")
             memory_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
             if TOOLTIP_AVAILABLE: ToolTip(memory_prog, f"GPU {gpu.index} Memory Clock Speed (MHz)")
-=======
-            graphics_prog = ttk.Progressbar(clock_frame, mode="determinate", maximum=2500)  # Max reasonable clock
-            graphics_prog.grid(row=i*2, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            graphics_label = ttk.Label(clock_frame, text="0 MHz")
-            graphics_label.grid(row=i*2, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
-
-            # Add tooltip
-            if TOOLTIP_AVAILABLE:
-                ToolTip(graphics_prog, f"GPU {gpu.index} Graphics Clock Speed (MHz)")
-
-            # Memory clock
-            ttk.Label(clock_frame, text=f"GPU {gpu.index} Memory:").grid(row=i*2+1, column=0, sticky="w", padx=PAD/2, pady=PAD/4)
-            memory_prog = ttk.Progressbar(clock_frame, mode="determinate", maximum=12000)  # Max reasonable memory clock
-            memory_prog.grid(row=i*2+1, column=1, sticky="ew", padx=PAD/2, pady=PAD/4)
-            memory_label = ttk.Label(clock_frame, text="0 MHz")
-            memory_label.grid(row=i*2+1, column=2, sticky="e", padx=PAD/2, pady=PAD/4)
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
             self.graphics_clock_progress[f"graphics_{gpu.index}"] = graphics_prog
             self.graphics_clock_labels[f"graphics_{gpu.index}"] = graphics_label
@@ -476,7 +386,6 @@ class GpuDashboard(ttk.Frame):
                     # smooth=True # Smoothing can sometimes look weird, optional
                 )
 
-<<<<<<< HEAD
                 # Add label at the end of the line
                 last_x, last_y = points[-1]
                 # Adjust label position slightly for clarity
@@ -489,26 +398,6 @@ class GpuDashboard(ttk.Frame):
                     anchor="w",
                     font=("Helvetica", 8, "bold")
                 )
-=======
-                # Draw line segment
-                canvas.create_line(
-                    smooth_points,
-                    fill=color,
-                    width=2,
-                    smooth=True
-                )
-
-                # Add a label for this GPU
-                if points:
-                    # Put the label at the right edge of the plot
-                    last_point = points[-1]
-                    canvas.create_text(
-                        last_point[0] + 15, last_point[1],
-                        text=f"GPU {gpu_idx}",
-                        fill=color,
-                        anchor="w"
-                    )
->>>>>>> 199829b (Update documentation for DualGPUOptimizer to provide a high-level overview of GPU optimization and model inference systems. Organized content into key components: Core GPU Management, Model Optimization Engine, Command System, Monitoring Dashboard, and State Management. Enhanced glob patterns for improved file matching and clarified key implementation files, ensuring comprehensive coverage of system functionalities and integration points.)
 
     @staticmethod
     def _format_bandwidth(kb_per_sec: int) -> str:

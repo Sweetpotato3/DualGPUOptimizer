@@ -3,38 +3,36 @@ GUI module for the DualGPUOptimizer.
 
 This is a legacy module that redirects to the new refactored structure.
 """
+
 from __future__ import annotations
 
-<<<<<<< HEAD
-from dualgpuopt.gui.app import DualGpuApp, run_app
-# Re-export for backward compatibility
-__all__ = ["DualGpuApp", "run_app"]
-=======
+import colorsys
 import json
+import logging
 import pathlib
 import queue
-import tkinter as tk
-from tkinter import ttk, filedialog, messagebox
-import colorsys
 import sys
-import logging
+import tkinter as tk
+from tkinter import filedialog, messagebox, ttk
 
-from dualgpuopt import gpu_info, optimizer, configio
-from dualgpuopt.telemetry import start_stream
+from dualgpuopt import configio, gpu_info, optimizer
 from dualgpuopt.runner import Runner
+from dualgpuopt.telemetry import start_stream
 from dualgpuopt.tray import init_tray
 
 # Import ttkthemes for better theme support
 try:
-    from ttkthemes import ThemedTk, ThemedStyle
+    from ttkthemes import ThemedStyle, ThemedTk
+
     TTKTHEMES_AVAILABLE = True
 except ImportError:
     TTKTHEMES_AVAILABLE = False
 
-# Import ttkwidgets for additional widgets if available
+# Check if ttkwidgets is available for additional widgets
 try:
-    import ttkwidgets
-    TTKWIDGETS_AVAILABLE = True
+    from importlib.util import find_spec
+
+    TTKWIDGETS_AVAILABLE = find_spec("ttkwidgets") is not None
 except ImportError:
     TTKWIDGETS_AVAILABLE = False
 
@@ -55,13 +53,13 @@ THEMES = {
     "dark": {
         "bg": "#263238",  # Material Blue Grey 900
         "text": "#eceff1",  # Material Blue Grey 50
-        "chart_bg": "#1a2327", # Darker shade for contrast
+        "chart_bg": "#1a2327",  # Darker shade for contrast
         "highlight": "#42a5f5",  # Material Blue 400
         "button": "#37474f",  # Material Blue Grey 800
         "entry": "#37474f",  # Material Blue Grey 800
         "border": "#546e7a",  # Material Blue Grey 600
         "accent": "#64ffda",  # Material Teal A200
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
     },
     "light": {
         "bg": "#eceff1",  # Material Blue Grey 50
@@ -72,7 +70,7 @@ THEMES = {
         "entry": "#ffffff",  # White
         "border": "#b0bec5",  # Material Blue Grey 200
         "accent": "#00bfa5",  # Material Teal A700
-        "ttk_theme": "arc" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "arc" if TTKTHEMES_AVAILABLE else "clam",
     },
     "system": {
         # Will use system default theme
@@ -87,7 +85,7 @@ THEMES = {
         "entry": "#2e7d32",  # Green 800
         "border": "#43a047",  # Green 600
         "accent": "#b9f6ca",  # Green A100
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
     },
     "blue": {
         "bg": "#0d47a1",  # Dark Blue
@@ -98,12 +96,14 @@ THEMES = {
         "entry": "#1565c0",  # Blue 800
         "border": "#1976d2",  # Blue 700
         "accent": "#80d8ff",  # Light Blue A100
-        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam"
-    }
+        "ttk_theme": "equilux" if TTKTHEMES_AVAILABLE else "clam",
+    },
 }
 
 # Available ttk themes from ttkthemes
-AVAILABLE_TTK_THEMES = ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+AVAILABLE_TTK_THEMES = (
+    ["arc", "equilux", "adapta", "yaru", "breeze"] if TTKTHEMES_AVAILABLE else []
+)
 
 
 def generate_colors(count: int) -> list[str]:
@@ -201,22 +201,23 @@ class DualGpuApp(ttk.Frame):
             frame = ttk.Frame(self)
             frame.pack(padx=20, pady=20, fill="both", expand=True)
 
-            ttk.Label(frame, text="GPU detection failed. Would you like to:").pack(pady=10)
+            ttk.Label(frame, text="GPU detection failed. Would you like to:").pack(
+                pady=10
+            )
 
             # Mock mode button
-            mock_btn = ttk.Button(frame, text="Launch in Mock Mode",
-                               command=self.enable_mock_mode)
+            mock_btn = ttk.Button(
+                frame, text="Launch in Mock Mode", command=self.enable_mock_mode
+            )
             mock_btn.pack(pady=10)
 
             # Exit button
-            exit_btn = ttk.Button(frame, text="Exit",
-                               command=self.master.destroy)
+            exit_btn = ttk.Button(frame, text="Exit", command=self.master.destroy)
             exit_btn.pack(pady=10)
 
     def enable_mock_mode(self):
         """Enable mock mode and restart the application."""
         import os
-        import sys
 
         # Set environment variable for mock mode
         os.environ["DGPUOPT_MOCK_GPUS"] = "1"
@@ -280,39 +281,63 @@ class DualGpuApp(ttk.Frame):
 
                 # Configure style for widgets
                 style.configure(".", background=theme["bg"], foreground=theme["text"])
-                style.configure("TButton",
-                                background=theme["button"],
-                                foreground=theme["text"],
-                                bordercolor=theme.get("border", theme["button"]))
+                style.configure(
+                    "TButton",
+                    background=theme["button"],
+                    foreground=theme["text"],
+                    bordercolor=theme.get("border", theme["button"]),
+                )
 
-                style.map("TButton",
-                         background=[('active', theme.get("highlight"))],
-                         relief=[('pressed', 'sunken')])
+                style.map(
+                    "TButton",
+                    background=[("active", theme.get("highlight"))],
+                    relief=[("pressed", "sunken")],
+                )
 
                 # Configure entry fields
-                style.configure("TEntry",
-                               fieldbackground=theme["entry"],
-                               foreground=theme["text"],
-                               bordercolor=theme.get("border", theme["entry"]))
+                style.configure(
+                    "TEntry",
+                    fieldbackground=theme["entry"],
+                    foreground=theme["text"],
+                    bordercolor=theme.get("border", theme["entry"]),
+                )
 
                 # Configure other widget types
                 style.configure("TFrame", background=theme["bg"])
-                style.configure("TLabelframe", background=theme["bg"], foreground=theme["text"])
-                style.configure("TLabelframe.Label", background=theme["bg"], foreground=theme["text"])
-                style.configure("TLabel", background=theme["bg"], foreground=theme["text"])
-                style.configure("TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0])
-                style.configure("TNotebook.Tab", background=theme["button"],
-                               foreground=theme["text"], padding=[10, 2])
+                style.configure(
+                    "TLabelframe", background=theme["bg"], foreground=theme["text"]
+                )
+                style.configure(
+                    "TLabelframe.Label",
+                    background=theme["bg"],
+                    foreground=theme["text"],
+                )
+                style.configure(
+                    "TLabel", background=theme["bg"], foreground=theme["text"]
+                )
+                style.configure(
+                    "TNotebook", background=theme["bg"], tabmargins=[2, 5, 2, 0]
+                )
+                style.configure(
+                    "TNotebook.Tab",
+                    background=theme["button"],
+                    foreground=theme["text"],
+                    padding=[10, 2],
+                )
 
                 # Map states for notebook tabs
-                style.map("TNotebook.Tab",
-                         background=[("selected", theme.get("highlight"))],
-                         foreground=[("selected", theme["bg"])])
+                style.map(
+                    "TNotebook.Tab",
+                    background=[("selected", theme.get("highlight"))],
+                    foreground=[("selected", theme["bg"])],
+                )
 
                 # Set progressbar colors
-                style.configure("Horizontal.TProgressbar",
-                               background=theme.get("accent", theme.get("highlight")),
-                               troughcolor=theme.get("chart_bg", "#202020"))
+                style.configure(
+                    "Horizontal.TProgressbar",
+                    background=theme.get("accent", theme.get("highlight")),
+                    troughcolor=theme.get("chart_bg", "#202020"),
+                )
 
                 # Set canvas colors
                 self.chart_bg = theme.get("chart_bg", "#202020")
@@ -324,29 +349,43 @@ class DualGpuApp(ttk.Frame):
                 root.option_add("*Text.selectForeground", theme.get("bg"))
 
                 # Set combobox colors
-                style.map('TCombobox',
-                         fieldbackground=[('readonly', theme["entry"])],
-                         selectbackground=[('readonly', theme.get("highlight"))])
+                style.map(
+                    "TCombobox",
+                    fieldbackground=[("readonly", theme["entry"])],
+                    selectbackground=[("readonly", theme.get("highlight"))],
+                )
 
                 # Update notebook styling for better appearance
                 notebook_style = ttk.Style()
-                notebook_style.layout("TNotebook", [
-                    ("TNotebook.client", {"sticky": "nswe"})
-                ])
-                notebook_style.layout("TNotebook.Tab", [
-                    ("TNotebook.tab", {
-                        "sticky": "nswe",
-                        "children": [
-                            ("TNotebook.padding", {
-                                "side": "top",
+                notebook_style.layout(
+                    "TNotebook", [("TNotebook.client", {"sticky": "nswe"})]
+                )
+                notebook_style.layout(
+                    "TNotebook.Tab",
+                    [
+                        (
+                            "TNotebook.tab",
+                            {
                                 "sticky": "nswe",
                                 "children": [
-                                    ("TNotebook.label", {"side": "top", "sticky": ""})
-                                ]
-                            })
-                        ]
-                    })
-                ])
+                                    (
+                                        "TNotebook.padding",
+                                        {
+                                            "side": "top",
+                                            "sticky": "nswe",
+                                            "children": [
+                                                (
+                                                    "TNotebook.label",
+                                                    {"side": "top", "sticky": ""},
+                                                )
+                                            ],
+                                        },
+                                    )
+                                ],
+                            },
+                        )
+                    ],
+                )
 
         # Apply ttk theme if specified
         if ttk_theme and not TTKTHEMES_AVAILABLE:
@@ -358,7 +397,14 @@ class DualGpuApp(ttk.Frame):
 
         # Apply font for better readability
         default_font = ("Segoe UI", 9) if sys.platform == "win32" else ("Helvetica", 10)
-        for widget in ["TLabel", "TButton", "TCheckbutton", "TRadiobutton", "TEntry", "TCombobox"]:
+        for widget in [
+            "TLabel",
+            "TButton",
+            "TCheckbutton",
+            "TRadiobutton",
+            "TEntry",
+            "TCombobox",
+        ]:
             try:
                 style = ttk.Style()
                 style.configure(widget, font=default_font)
@@ -403,8 +449,7 @@ class DualGpuApp(ttk.Frame):
         scrollable_frame = ttk.Frame(canvas)
 
         scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
         canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
@@ -422,43 +467,51 @@ class DualGpuApp(ttk.Frame):
         appearance_frame.columnconfigure(1, weight=1)
 
         # Theme selection
-        ttk.Label(appearance_frame, text="Color Theme:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(appearance_frame, text="Color Theme:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         theme_combo = ttk.Combobox(
             appearance_frame,
             textvariable=self.theme_var,
             values=list(THEMES.keys()),
             width=10,
-            state="readonly"
+            state="readonly",
         )
         theme_combo.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
         theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
 
         # Add TTK theme selection if ttkthemes is available
         if TTKTHEMES_AVAILABLE and AVAILABLE_TTK_THEMES:
-            ttk.Label(appearance_frame, text="Widget Style:").grid(row=1, column=0, sticky="w", padx=self.PAD, pady=5)
+            ttk.Label(appearance_frame, text="Widget Style:").grid(
+                row=1, column=0, sticky="w", padx=self.PAD, pady=5
+            )
             ttk_theme_combo = ttk.Combobox(
                 appearance_frame,
                 textvariable=self.ttk_theme_var,
                 values=AVAILABLE_TTK_THEMES,
                 width=10,
-                state="readonly"
+                state="readonly",
             )
             ttk_theme_combo.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
             ttk_theme_combo.bind("<<ComboboxSelected>>", self._theme_changed)
 
         ttk.Button(
-            appearance_frame,
-            text="Apply",
-            command=self._apply_theme_change
+            appearance_frame, text="Apply", command=self._apply_theme_change
         ).grid(row=0, column=2, padx=self.PAD, pady=5)
 
         # ------ Overclocking Section ------
-        self.overclocking_frame = ttk.LabelFrame(scrollable_frame, text="GPU Overclocking")
-        self.overclocking_frame.grid(sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1)
+        self.overclocking_frame = ttk.LabelFrame(
+            scrollable_frame, text="GPU Overclocking"
+        )
+        self.overclocking_frame.grid(
+            sticky="ew", pady=(0, self.PAD), padx=self.PAD, row=1
+        )
         self.overclocking_frame.columnconfigure(1, weight=1)
 
         # GPU selection for overclocking
-        ttk.Label(self.overclocking_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=5)
+        ttk.Label(self.overclocking_frame, text="GPU:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=5
+        )
         self.oc_gpu_var = tk.StringVar()
         gpu_values = [f"GPU {i}: {gpu.short_name}" for i, gpu in enumerate(self.gpus)]
         self.oc_gpu_combo = ttk.Combobox(
@@ -466,7 +519,7 @@ class DualGpuApp(ttk.Frame):
             textvariable=self.oc_gpu_var,
             values=gpu_values,
             width=20,
-            state="readonly"
+            state="readonly",
         )
         if gpu_values:
             self.oc_gpu_combo.current(0)
@@ -475,11 +528,15 @@ class DualGpuApp(ttk.Frame):
 
         # Create overclocking sliders frame
         oc_sliders_frame = ttk.Frame(self.overclocking_frame)
-        oc_sliders_frame.grid(row=1, column=0, columnspan=3, sticky="ew", padx=self.PAD, pady=5)
+        oc_sliders_frame.grid(
+            row=1, column=0, columnspan=3, sticky="ew", padx=self.PAD, pady=5
+        )
         oc_sliders_frame.columnconfigure(1, weight=1)
 
         # Core Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Core Clock Offset:").grid(
+            row=0, column=0, sticky="w", pady=2
+        )
         self.core_clock_var = tk.IntVar(value=0)
         self.core_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -487,14 +544,18 @@ class DualGpuApp(ttk.Frame):
             to=200,
             orient="horizontal",
             variable=self.core_clock_var,
-            command=lambda v: self._update_oc_label(self.core_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_oc_label(
+                self.core_clock_label, f"{int(float(v))} MHz"
+            ),
         )
         self.core_clock_scale.grid(row=0, column=1, sticky="ew", padx=5, pady=2)
         self.core_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.core_clock_label.grid(row=0, column=2, padx=5, pady=2)
 
         # Memory Clock Offset slider
-        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Memory Clock Offset:").grid(
+            row=1, column=0, sticky="w", pady=2
+        )
         self.memory_clock_var = tk.IntVar(value=0)
         self.memory_clock_scale = ttk.Scale(
             oc_sliders_frame,
@@ -502,14 +563,18 @@ class DualGpuApp(ttk.Frame):
             to=1500,
             orient="horizontal",
             variable=self.memory_clock_var,
-            command=lambda v: self._update_oc_label(self.memory_clock_label, f"{int(float(v))} MHz")
+            command=lambda v: self._update_oc_label(
+                self.memory_clock_label, f"{int(float(v))} MHz"
+            ),
         )
         self.memory_clock_scale.grid(row=1, column=1, sticky="ew", padx=5, pady=2)
         self.memory_clock_label = ttk.Label(oc_sliders_frame, text="0 MHz", width=8)
         self.memory_clock_label.grid(row=1, column=2, padx=5, pady=2)
 
         # Power Limit slider
-        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Power Limit:").grid(
+            row=2, column=0, sticky="w", pady=2
+        )
         self.power_limit_var = tk.IntVar(value=100)
         self.power_limit_scale = ttk.Scale(
             oc_sliders_frame,
@@ -517,14 +582,18 @@ class DualGpuApp(ttk.Frame):
             to=120,
             orient="horizontal",
             variable=self.power_limit_var,
-            command=lambda v: self._update_oc_label(self.power_limit_label, f"{int(float(v))}%")
+            command=lambda v: self._update_oc_label(
+                self.power_limit_label, f"{int(float(v))}%"
+            ),
         )
         self.power_limit_scale.grid(row=2, column=1, sticky="ew", padx=5, pady=2)
         self.power_limit_label = ttk.Label(oc_sliders_frame, text="100%", width=8)
         self.power_limit_label.grid(row=2, column=2, padx=5, pady=2)
 
         # Fan Speed slider
-        ttk.Label(oc_sliders_frame, text="Fan Speed:").grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Label(oc_sliders_frame, text="Fan Speed:").grid(
+            row=3, column=0, sticky="w", pady=2
+        )
         self.fan_speed_var = tk.IntVar(value=0)  # 0 for auto
         self.fan_speed_scale = ttk.Scale(
             oc_sliders_frame,
@@ -532,7 +601,7 @@ class DualGpuApp(ttk.Frame):
             to=100,
             orient="horizontal",
             variable=self.fan_speed_var,
-            command=self._update_fan_label
+            command=self._update_fan_label,
         )
         self.fan_speed_scale.grid(row=3, column=1, sticky="ew", padx=5, pady=2)
         self.fan_speed_label = ttk.Label(oc_sliders_frame, text="Auto", width=8)
@@ -543,22 +612,18 @@ class DualGpuApp(ttk.Frame):
         oc_button_frame.grid(row=2, column=0, columnspan=3, sticky="ew", pady=10)
         oc_button_frame.columnconfigure((0, 1, 2), weight=1)
 
-        ttk.Button(
-            oc_button_frame,
-            text="Apply",
-            command=self._apply_overclock
-        ).grid(row=0, column=0, padx=5)
+        ttk.Button(oc_button_frame, text="Apply", command=self._apply_overclock).grid(
+            row=0, column=0, padx=5
+        )
 
-        ttk.Button(
-            oc_button_frame,
-            text="Reset",
-            command=self._reset_overclock
-        ).grid(row=0, column=1, padx=5)
+        ttk.Button(oc_button_frame, text="Reset", command=self._reset_overclock).grid(
+            row=0, column=1, padx=5
+        )
 
         ttk.Checkbutton(
             oc_button_frame,
             text="Apply at Startup",
-            variable=tk.BooleanVar(value=False)
+            variable=tk.BooleanVar(value=False),
         ).grid(row=0, column=2, padx=5)
 
         # ------ Monitoring Settings Section ------
@@ -567,38 +632,44 @@ class DualGpuApp(ttk.Frame):
         monitor_frame.columnconfigure(1, weight=1)
 
         self.interval_var = tk.DoubleVar(value=self.cfg["monitor_interval"])
-        ttk.Label(monitor_frame, text="Update interval (sec):").grid(row=0, column=0, padx=self.PAD, pady=5, sticky="w")
+        ttk.Label(monitor_frame, text="Update interval (sec):").grid(
+            row=0, column=0, padx=self.PAD, pady=5, sticky="w"
+        )
         interval_spin = ttk.Spinbox(
             monitor_frame,
             from_=0.5,
             to=10.0,
             increment=0.5,
             textvariable=self.interval_var,
-            width=5
+            width=5,
         )
         interval_spin.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=5)
 
         self.alert_threshold_var = tk.IntVar(value=self.cfg["alert_threshold"])
-        ttk.Label(monitor_frame, text="Alert threshold (%):").grid(row=1, column=0, padx=self.PAD, pady=5, sticky="w")
+        ttk.Label(monitor_frame, text="Alert threshold (%):").grid(
+            row=1, column=0, padx=self.PAD, pady=5, sticky="w"
+        )
         threshold_spin = ttk.Spinbox(
             monitor_frame,
             from_=5,
             to=80,
             increment=5,
             textvariable=self.alert_threshold_var,
-            width=5
+            width=5,
         )
         threshold_spin.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=5)
 
         self.alert_duration_var = tk.IntVar(value=self.cfg["alert_duration"])
-        ttk.Label(monitor_frame, text="Alert after (sec):").grid(row=2, column=0, padx=self.PAD, pady=5, sticky="w")
+        ttk.Label(monitor_frame, text="Alert after (sec):").grid(
+            row=2, column=0, padx=self.PAD, pady=5, sticky="w"
+        )
         duration_spin = ttk.Spinbox(
             monitor_frame,
             from_=60,
             to=900,
             increment=60,
             textvariable=self.alert_duration_var,
-            width=5
+            width=5,
         )
         duration_spin.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=5)
 
@@ -608,7 +679,9 @@ class DualGpuApp(ttk.Frame):
         advanced_frame.columnconfigure(0, weight=1)
 
         # GPU Memory Override
-        ttk.Label(advanced_frame, text="GPU Memory Overrides:").grid(row=0, column=0, sticky="w", padx=self.PAD, pady=(5,0))
+        ttk.Label(advanced_frame, text="GPU Memory Overrides:").grid(
+            row=0, column=0, sticky="w", padx=self.PAD, pady=(5, 0)
+        )
 
         # Create a frame for GPU memory overrides with a scrollbar
         override_frame = ttk.Frame(advanced_frame)
@@ -619,21 +692,33 @@ class DualGpuApp(ttk.Frame):
         self.memory_override_vars = {}
         for i, gpu in enumerate(self.gpus):
             gpu_name = f"{gpu.name} (GPU {gpu.index})"
-            ttk.Label(override_frame, text=gpu_name).grid(row=i, column=0, sticky="w", pady=2)
+            ttk.Label(override_frame, text=gpu_name).grid(
+                row=i, column=0, sticky="w", pady=2
+            )
 
             # Create variable and entry for memory override
-            override_var = tk.StringVar(value=self.cfg.get("env_overrides", {}).get(f"DGPUOPT_MEM_{gpu.index}", ""))
+            override_var = tk.StringVar(
+                value=self.cfg.get("env_overrides", {}).get(
+                    f"DGPUOPT_MEM_{gpu.index}", ""
+                )
+            )
             self.memory_override_vars[f"DGPUOPT_MEM_{gpu.index}"] = override_var
 
-            ttk.Entry(override_frame, textvariable=override_var, width=8).grid(row=i, column=1, sticky="w", padx=(5,0), pady=2)
-            ttk.Label(override_frame, text="MiB").grid(row=i, column=2, sticky="w", pady=2)
+            ttk.Entry(override_frame, textvariable=override_var, width=8).grid(
+                row=i, column=1, sticky="w", padx=(5, 0), pady=2
+            )
+            ttk.Label(override_frame, text="MiB").grid(
+                row=i, column=2, sticky="w", pady=2
+            )
 
         # Startup options
-        self.auto_check_updates = tk.BooleanVar(value=self.cfg.get("check_updates", True))
+        self.auto_check_updates = tk.BooleanVar(
+            value=self.cfg.get("check_updates", True)
+        )
         ttk.Checkbutton(
             advanced_frame,
             text="Check for updates on startup",
-            variable=self.auto_check_updates
+            variable=self.auto_check_updates,
         ).grid(row=2, column=0, sticky="w", padx=self.PAD, pady=5)
 
         # ------ Save Settings Button ------
@@ -641,16 +726,14 @@ class DualGpuApp(ttk.Frame):
         save_frame.grid(row=5, column=0, sticky="ew", pady=self.PAD, padx=self.PAD)
 
         ttk.Button(
-            save_frame,
-            text="Save All Settings",
-            command=self._save_all_settings
+            save_frame, text="Save All Settings", command=self._save_all_settings
         ).pack(side="right")
 
         # Explanation text
         ttk.Label(
             save_frame,
             text="Some settings require restart. Overclocking is applied immediately.",
-            font=("", 8, "italic")
+            font=("", 8, "italic"),
         ).pack(side="left")
 
     def _theme_changed(self, event=None) -> None:
@@ -664,7 +747,7 @@ class DualGpuApp(ttk.Frame):
         self.cfg["theme"] = new_theme
 
         # Save TTK theme if available
-        if TTKTHEMES_AVAILABLE and hasattr(self, 'ttk_theme_var'):
+        if TTKTHEMES_AVAILABLE and hasattr(self, "ttk_theme_var"):
             self.cfg["ttk_theme"] = self.ttk_theme_var.get()
 
         configio.save_cfg(self.cfg)
@@ -675,10 +758,7 @@ class DualGpuApp(ttk.Frame):
         # Force all widgets to update with new theme
         self._update_widgets_theme(self)
 
-        messagebox.showinfo(
-            "Theme Changed",
-            "Theme has been applied successfully."
-        )
+        messagebox.showinfo("Theme Changed", "Theme has been applied successfully.")
 
     def _update_widgets_theme(self, parent):
         """Recursively update theme for all widgets."""
@@ -696,7 +776,7 @@ class DualGpuApp(ttk.Frame):
                 widget.configure(style="TButton")
             elif isinstance(widget, ttk.Entry):
                 widget.configure(style="TEntry")
-            elif isinstance(widget, tk.Canvas) and hasattr(self, 'chart_bg'):
+            elif isinstance(widget, tk.Canvas) and hasattr(self, "chart_bg"):
                 widget.configure(bg=self.chart_bg)
 
             # Recursively process child widgets
@@ -709,8 +789,9 @@ class DualGpuApp(ttk.Frame):
 
         # GPU Treeview
         tv = ttk.Treeview(parent, columns=("name", "total", "free"), show="headings")
-        for col, hdr in zip(("name", "total", "free"),
-                            ("Name", "Total (MiB)", "Free (MiB)")):
+        for col, hdr in zip(
+            ("name", "total", "free"), ("Name", "Total (MiB)", "Free (MiB)")
+        ):
             tv.heading(col, text=hdr)
             tv.column(col, anchor="center")
         for g in self.gpus:
@@ -720,11 +801,15 @@ class DualGpuApp(ttk.Frame):
         # Model path frame with preset selection
         path_frame = ttk.Frame(parent)
         ttk.Label(path_frame, text="Model path / repo:").pack(side="left")
-        ttk.Entry(path_frame, textvariable=self.model_var, width=60).pack(side="left", expand=1, fill="x")
+        ttk.Entry(path_frame, textvariable=self.model_var, width=60).pack(
+            side="left", expand=1, fill="x"
+        )
         ttk.Button(path_frame, text="Browse…", command=self._browse).pack(side="right")
 
         # Add preset selection
-        self.preset_cmb = ttk.Combobox(path_frame, width=18, values=list(self.presets.keys()))
+        self.preset_cmb = ttk.Combobox(
+            path_frame, width=18, values=list(self.presets.keys())
+        )
         self.preset_cmb.set("choose‑preset")
         self.preset_cmb.bind("<<ComboboxSelected>>", self._preset_selected)
         self.preset_cmb.pack(side="right")
@@ -735,19 +820,27 @@ class DualGpuApp(ttk.Frame):
         # Ctx + buttons
         ctl = ttk.Frame(parent)
         ttk.Label(ctl, text="Context size:").pack(side="left")
-        ttk.Spinbox(ctl, from_=2048, to=131072, textvariable=self.ctx_var, width=8).pack(side="left")
-        ttk.Button(ctl, text="Generate", command=self._refresh_outputs).pack(side="right")
+        ttk.Spinbox(
+            ctl, from_=2048, to=131072, textvariable=self.ctx_var, width=8
+        ).pack(side="left")
+        ttk.Button(ctl, text="Generate", command=self._refresh_outputs).pack(
+            side="right"
+        )
         ctl.grid(sticky="ew", pady=(0, self.PAD))
 
         # Output text
         self.text = tk.Text(parent, height=10, wrap="word")
         self.text.grid(sticky="nsew")
-        parent.rowconfigure(parent.grid_size()[1]-1, weight=1)
+        parent.rowconfigure(parent.grid_size()[1] - 1, weight=1)
 
         # Copy + save env
         btm = ttk.Frame(parent)
-        ttk.Button(btm, text="Copy llama.cpp", command=lambda: self._copy("llama")).pack(side="left")
-        ttk.Button(btm, text="Copy vLLM", command=lambda: self._copy("vllm")).pack(side="left")
+        ttk.Button(
+            btm, text="Copy llama.cpp", command=lambda: self._copy("llama")
+        ).pack(side="left")
+        ttk.Button(btm, text="Copy vLLM", command=lambda: self._copy("vllm")).pack(
+            side="left"
+        )
         ttk.Button(btm, text="Save env file", command=self._save_env).pack(side="right")
         btm.grid(sticky="ew", pady=(self.PAD, 0))
 
@@ -757,9 +850,17 @@ class DualGpuApp(ttk.Frame):
 
         # Control buttons
         btn_frame = ttk.Frame(parent)
-        ttk.Button(btn_frame, text="Launch llama.cpp", command=lambda: self._start_runner("llama")).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Launch vLLM", command=lambda: self._start_runner("vllm")).pack(side="left", padx=5)
-        ttk.Button(btn_frame, text="Stop", command=self._stop_runner).pack(side="left", padx=5)
+        ttk.Button(
+            btn_frame,
+            text="Launch llama.cpp",
+            command=lambda: self._start_runner("llama"),
+        ).pack(side="left", padx=5)
+        ttk.Button(
+            btn_frame, text="Launch vLLM", command=lambda: self._start_runner("vllm")
+        ).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Stop", command=self._stop_runner).pack(
+            side="left", padx=5
+        )
         btn_frame.grid(row=0, column=0, sticky="ew", pady=(0, self.PAD))
 
         # Log output
@@ -791,32 +892,46 @@ class DualGpuApp(ttk.Frame):
         # Create GPU detail frames
         self.gpu_detail_frames = []
         for i, gpu in enumerate(self.gpus):
-            gpu_frame = ttk.LabelFrame(parent, text=f"GPU {gpu.index}: {gpu.short_name}")
-            gpu_frame.grid(row=i+1, column=0, sticky="ew", pady=(0, self.PAD))
+            gpu_frame = ttk.LabelFrame(
+                parent, text=f"GPU {gpu.index}: {gpu.short_name}"
+            )
+            gpu_frame.grid(row=i + 1, column=0, sticky="ew", pady=(0, self.PAD))
             gpu_frame.columnconfigure(1, weight=1)
 
             # Add hardware info section
             hw_frame = ttk.Frame(gpu_frame)
-            hw_frame.grid(row=0, column=0, rowspan=4, sticky="ns", padx=self.PAD, pady=self.PAD)
+            hw_frame.grid(
+                row=0, column=0, rowspan=4, sticky="ns", padx=self.PAD, pady=self.PAD
+            )
 
-            ttk.Label(hw_frame, text="Architecture:").grid(row=0, column=0, sticky="w", pady=2)
+            ttk.Label(hw_frame, text="Architecture:").grid(
+                row=0, column=0, sticky="w", pady=2
+            )
             self.arch_label = ttk.Label(hw_frame, text=gpu.architecture)
             self.arch_label.grid(row=0, column=1, sticky="w", padx=self.PAD, pady=2)
 
-            ttk.Label(hw_frame, text="CUDA Cores:").grid(row=1, column=0, sticky="w", pady=2)
+            ttk.Label(hw_frame, text="CUDA Cores:").grid(
+                row=1, column=0, sticky="w", pady=2
+            )
             self.cores_label = ttk.Label(hw_frame, text=str(gpu.cuda_cores))
             self.cores_label.grid(row=1, column=1, sticky="w", padx=self.PAD, pady=2)
 
-            ttk.Label(hw_frame, text="Compute:").grid(row=2, column=0, sticky="w", pady=2)
+            ttk.Label(hw_frame, text="Compute:").grid(
+                row=2, column=0, sticky="w", pady=2
+            )
             self.compute_label = ttk.Label(hw_frame, text=gpu.compute_capability)
             self.compute_label.grid(row=2, column=1, sticky="w", padx=self.PAD, pady=2)
 
             ttk.Label(hw_frame, text="PCIe:").grid(row=3, column=0, sticky="w", pady=2)
-            self.pcie_label = ttk.Label(hw_frame, text=f"{gpu.pcie_gen} x{gpu.pcie_width}")
+            self.pcie_label = ttk.Label(
+                hw_frame, text=f"{gpu.pcie_gen} x{gpu.pcie_width}"
+            )
             self.pcie_label.grid(row=3, column=1, sticky="w", padx=self.PAD, pady=2)
 
             # Memory usage bar
-            ttk.Label(gpu_frame, text="Memory:").grid(row=0, column=1, sticky="w", pady=2)
+            ttk.Label(gpu_frame, text="Memory:").grid(
+                row=0, column=1, sticky="w", pady=2
+            )
             mem_frame = ttk.Frame(gpu_frame)
             mem_frame.grid(row=0, column=2, sticky="ew", pady=2)
             mem_frame.columnconfigure(0, weight=1)
@@ -827,7 +942,10 @@ class DualGpuApp(ttk.Frame):
 
             self.mem_text = ttk.Label(
                 mem_frame,
-                text=f"{gpu.mem_used_gb:.1f} GB / {gpu.mem_total_gb:.1f} GB ({gpu.mem_used_percent:.1f}%)"
+                text=(
+                    f"{gpu.mem_used_gb:.1f} GB / {gpu.mem_total_gb:.1f} GB "
+                    f"({gpu.mem_used_percent:.1f}%)"
+                ),
             )
             self.mem_text.grid(row=1, column=0, sticky="e")
 
@@ -838,15 +956,21 @@ class DualGpuApp(ttk.Frame):
             perf_frame.columnconfigure(3, weight=1)
 
             # GPU Utilization
-            ttk.Label(perf_frame, text="GPU:").grid(row=0, column=0, sticky="w", padx=(0, 5))
-            self.gpu_util_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
+            ttk.Label(perf_frame, text="GPU:").grid(
+                row=0, column=0, sticky="w", padx=(0, 5)
+            )
+            self.gpu_util_bar = ttk.Progressbar(
+                perf_frame, length=100, mode="determinate"
+            )
             self.gpu_util_bar["value"] = gpu.gpu_utilization
             self.gpu_util_bar.grid(row=0, column=1, sticky="ew", padx=5)
             self.gpu_util_text = ttk.Label(perf_frame, text=f"{gpu.gpu_utilization}%")
             self.gpu_util_text.grid(row=0, column=2, sticky="w", padx=5)
 
             # Temperature
-            ttk.Label(perf_frame, text="Temp:").grid(row=0, column=3, sticky="w", padx=(10, 5))
+            ttk.Label(perf_frame, text="Temp:").grid(
+                row=0, column=3, sticky="w", padx=(10, 5)
+            )
             self.temp_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
             self.temp_bar["maximum"] = 100  # Max reasonable temperature
             self.temp_bar["value"] = gpu.temperature
@@ -858,7 +982,9 @@ class DualGpuApp(ttk.Frame):
                 self.temp_bar.configure(style="temp_cool.Horizontal.TProgressbar")
             elif gpu.temperature < 80:
                 style = ttk.Style()
-                style.configure("temp_warm.Horizontal.TProgressbar", background="orange")
+                style.configure(
+                    "temp_warm.Horizontal.TProgressbar", background="orange"
+                )
                 self.temp_bar.configure(style="temp_warm.Horizontal.TProgressbar")
             else:
                 style = ttk.Style()
@@ -870,17 +996,20 @@ class DualGpuApp(ttk.Frame):
             self.temp_text.grid(row=0, column=5, sticky="w", padx=5)
 
             # Power and Fan
-            ttk.Label(perf_frame, text="Power:").grid(row=1, column=0, sticky="w", padx=(0, 5))
+            ttk.Label(perf_frame, text="Power:").grid(
+                row=1, column=0, sticky="w", padx=(0, 5)
+            )
             self.power_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
             self.power_bar["value"] = gpu.power_usage_percent
             self.power_bar.grid(row=1, column=1, sticky="ew", padx=5)
             self.power_text = ttk.Label(
-                perf_frame,
-                text=f"{gpu.power_usage:.1f}W / {gpu.power_limit:.1f}W"
+                perf_frame, text=f"{gpu.power_usage:.1f}W / {gpu.power_limit:.1f}W"
             )
             self.power_text.grid(row=1, column=2, sticky="w", padx=5)
 
-            ttk.Label(perf_frame, text="Fan:").grid(row=1, column=3, sticky="w", padx=(10, 5))
+            ttk.Label(perf_frame, text="Fan:").grid(
+                row=1, column=3, sticky="w", padx=(10, 5)
+            )
             self.fan_bar = ttk.Progressbar(perf_frame, length=100, mode="determinate")
             self.fan_bar["value"] = gpu.fan_speed
             self.fan_bar.grid(row=1, column=4, sticky="ew", padx=5)
@@ -895,40 +1024,50 @@ class DualGpuApp(ttk.Frame):
             self.gpu_clock = ttk.Label(clock_frame, text=f"{gpu.graphics_clock} MHz")
             self.gpu_clock.grid(row=0, column=1, sticky="w", padx=self.PAD)
 
-            ttk.Label(clock_frame, text="Memory Clock:").grid(row=0, column=2, sticky="w", padx=(20, 0))
+            ttk.Label(clock_frame, text="Memory Clock:").grid(
+                row=0, column=2, sticky="w", padx=(20, 0)
+            )
             self.mem_clock = ttk.Label(clock_frame, text=f"{gpu.memory_clock} MHz")
             self.mem_clock.grid(row=0, column=3, sticky="w", padx=self.PAD)
 
-            ttk.Label(clock_frame, text="Driver:").grid(row=0, column=4, sticky="w", padx=(20, 0))
+            ttk.Label(clock_frame, text="Driver:").grid(
+                row=0, column=4, sticky="w", padx=(20, 0)
+            )
             self.driver_text = ttk.Label(clock_frame, text=gpu.driver_version)
             self.driver_text.grid(row=0, column=5, sticky="w", padx=self.PAD)
 
             # Store references for updates
-            self.gpu_detail_frames.append({
-                "gpu_index": gpu.index,
-                "mem_bar": self.mem_bar,
-                "mem_text": self.mem_text,
-                "gpu_util_bar": self.gpu_util_bar,
-                "gpu_util_text": self.gpu_util_text,
-                "temp_bar": self.temp_bar,
-                "temp_text": self.temp_text,
-                "power_bar": self.power_bar,
-                "power_text": self.power_text,
-                "fan_bar": self.fan_bar,
-                "fan_text": self.fan_text,
-                "gpu_clock": self.gpu_clock,
-                "mem_clock": self.mem_clock
-            })
+            self.gpu_detail_frames.append(
+                {
+                    "gpu_index": gpu.index,
+                    "mem_bar": self.mem_bar,
+                    "mem_text": self.mem_text,
+                    "gpu_util_bar": self.gpu_util_bar,
+                    "gpu_util_text": self.gpu_util_text,
+                    "temp_bar": self.temp_bar,
+                    "temp_text": self.temp_text,
+                    "power_bar": self.power_bar,
+                    "power_text": self.power_text,
+                    "fan_bar": self.fan_bar,
+                    "fan_text": self.fan_text,
+                    "gpu_clock": self.gpu_clock,
+                    "mem_clock": self.mem_clock,
+                }
+            )
 
         # History graph frame
         history_frame = ttk.LabelFrame(parent, text="Performance History")
-        history_frame.grid(row=len(self.gpus)+1, column=0, sticky="ew", pady=(0, self.PAD))
+        history_frame.grid(
+            row=len(self.gpus) + 1, column=0, sticky="ew", pady=(0, self.PAD)
+        )
         history_frame.columnconfigure(0, weight=1)
         history_frame.rowconfigure(0, weight=1)
 
         # Create canvas for history graphs
         self.history_canvas = tk.Canvas(history_frame, height=150, bg=self.chart_bg)
-        self.history_canvas.grid(row=0, column=0, sticky="nsew", padx=self.PAD, pady=self.PAD)
+        self.history_canvas.grid(
+            row=0, column=0, sticky="nsew", padx=self.PAD, pady=self.PAD
+        )
 
         # Start dashboard updating
         self.after(1000, self._update_dashboard)
@@ -958,7 +1097,10 @@ class DualGpuApp(ttk.Frame):
 
                         frame["mem_bar"]["value"] = mem_percent
                         frame["mem_text"].config(
-                            text=f"{mem_used/1024:.1f} GB / {mem_total/1024:.1f} GB ({mem_percent:.1f}%)"
+                            text=(
+                                f"{mem_used/1024:.1f} GB / {mem_total/1024:.1f} GB "
+                                f"({mem_percent:.1f}%)"
+                            )
                         )
 
                         # Update GPU utilization
@@ -974,14 +1116,28 @@ class DualGpuApp(ttk.Frame):
                             # Update color based on temperature
                             style = ttk.Style()
                             if temp < 60:
-                                style.configure("temp_cool.Horizontal.TProgressbar", background="green")
-                                frame["temp_bar"].configure(style="temp_cool.Horizontal.TProgressbar")
+                                style.configure(
+                                    "temp_cool.Horizontal.TProgressbar",
+                                    background="green",
+                                )
+                                frame["temp_bar"].configure(
+                                    style="temp_cool.Horizontal.TProgressbar"
+                                )
                             elif temp < 80:
-                                style.configure("temp_warm.Horizontal.TProgressbar", background="orange")
-                                frame["temp_bar"].configure(style="temp_warm.Horizontal.TProgressbar")
+                                style.configure(
+                                    "temp_warm.Horizontal.TProgressbar",
+                                    background="orange",
+                                )
+                                frame["temp_bar"].configure(
+                                    style="temp_warm.Horizontal.TProgressbar"
+                                )
                             else:
-                                style.configure("temp_hot.Horizontal.TProgressbar", background="red")
-                                frame["temp_bar"].configure(style="temp_hot.Horizontal.TProgressbar")
+                                style.configure(
+                                    "temp_hot.Horizontal.TProgressbar", background="red"
+                                )
+                                frame["temp_bar"].configure(
+                                    style="temp_hot.Horizontal.TProgressbar"
+                                )
 
                         # Update power usage if available
                         if idx < len(tele.power_usage):
@@ -989,7 +1145,9 @@ class DualGpuApp(ttk.Frame):
                             if gpu.power_limit > 0:
                                 power_percent = (power / gpu.power_limit) * 100
                                 frame["power_bar"]["value"] = power_percent
-                            frame["power_text"].config(text=f"{power:.1f}W / {gpu.power_limit:.1f}W")
+                            frame["power_text"].config(
+                                text=f"{power:.1f}W / {gpu.power_limit:.1f}W"
+                            )
 
                         # Update fan speed if available
                         if idx < len(tele.fan_speed):
@@ -999,10 +1157,14 @@ class DualGpuApp(ttk.Frame):
 
                         # Update clock speeds if available
                         if idx < len(tele.graphics_clock):
-                            frame["gpu_clock"].config(text=f"{tele.graphics_clock[idx]} MHz")
+                            frame["gpu_clock"].config(
+                                text=f"{tele.graphics_clock[idx]} MHz"
+                            )
 
                         if idx < len(tele.memory_clock):
-                            frame["mem_clock"].config(text=f"{tele.memory_clock[idx]} MHz")
+                            frame["mem_clock"].config(
+                                text=f"{tele.memory_clock[idx]} MHz"
+                            )
 
             # Render history graph
             self._render_history_graph()
@@ -1017,13 +1179,13 @@ class DualGpuApp(ttk.Frame):
     def _render_history_graph(self) -> None:
         """Render the performance history graph on the history canvas."""
         # Store telemetry history
-        if not hasattr(self, 'dashboard_history'):
+        if not hasattr(self, "dashboard_history"):
             # Initialize history if it doesn't exist
             self.dashboard_history = {
-                'timestamps': [],
-                'gpu_util': [[] for _ in range(len(self.gpus))],
-                'mem_util': [[] for _ in range(len(self.gpus))],
-                'temp': [[] for _ in range(len(self.gpus))]
+                "timestamps": [],
+                "gpu_util": [[] for _ in range(len(self.gpus))],
+                "mem_util": [[] for _ in range(len(self.gpus))],
+                "temp": [[] for _ in range(len(self.gpus))],
             }
 
         # Add latest telemetry to history
@@ -1031,33 +1193,41 @@ class DualGpuApp(ttk.Frame):
             tele = self.tele_q.get_nowait()
 
             # Add timestamp
-            self.dashboard_history['timestamps'].append(tele.ts)
+            self.dashboard_history["timestamps"].append(tele.ts)
 
             # Limit history to 60 seconds (assuming 1 second interval)
             max_history = 60
-            if len(self.dashboard_history['timestamps']) > max_history:
-                self.dashboard_history['timestamps'] = self.dashboard_history['timestamps'][-max_history:]
+            if len(self.dashboard_history["timestamps"]) > max_history:
+                self.dashboard_history["timestamps"] = self.dashboard_history[
+                    "timestamps"
+                ][-max_history:]
 
             # Add GPU utilization
             for i, load in enumerate(tele.load):
-                if i < len(self.dashboard_history['gpu_util']):
-                    self.dashboard_history['gpu_util'][i].append(load)
-                    if len(self.dashboard_history['gpu_util'][i]) > max_history:
-                        self.dashboard_history['gpu_util'][i] = self.dashboard_history['gpu_util'][i][-max_history:]
+                if i < len(self.dashboard_history["gpu_util"]):
+                    self.dashboard_history["gpu_util"][i].append(load)
+                    if len(self.dashboard_history["gpu_util"][i]) > max_history:
+                        self.dashboard_history["gpu_util"][i] = self.dashboard_history[
+                            "gpu_util"
+                        ][i][-max_history:]
 
             # Add memory utilization
             for i, util in enumerate(tele.memory_util):
-                if i < len(self.dashboard_history['mem_util']):
-                    self.dashboard_history['mem_util'][i].append(util)
-                    if len(self.dashboard_history['mem_util'][i]) > max_history:
-                        self.dashboard_history['mem_util'][i] = self.dashboard_history['mem_util'][i][-max_history:]
+                if i < len(self.dashboard_history["mem_util"]):
+                    self.dashboard_history["mem_util"][i].append(util)
+                    if len(self.dashboard_history["mem_util"][i]) > max_history:
+                        self.dashboard_history["mem_util"][i] = self.dashboard_history[
+                            "mem_util"
+                        ][i][-max_history:]
 
             # Add temperature
             for i, temp in enumerate(tele.temperature):
-                if i < len(self.dashboard_history['temp']):
-                    self.dashboard_history['temp'][i].append(temp)
-                    if len(self.dashboard_history['temp'][i]) > max_history:
-                        self.dashboard_history['temp'][i] = self.dashboard_history['temp'][i][-max_history:]
+                if i < len(self.dashboard_history["temp"]):
+                    self.dashboard_history["temp"][i].append(temp)
+                    if len(self.dashboard_history["temp"][i]) > max_history:
+                        self.dashboard_history["temp"][i] = self.dashboard_history[
+                            "temp"
+                        ][i][-max_history:]
 
         except queue.Empty:
             pass
@@ -1077,58 +1247,92 @@ class DualGpuApp(ttk.Frame):
         for i in range(0, 101, 20):
             y = h - (i * h / 100)
             self.history_canvas.create_line(0, y, w, y, fill="#444444", dash=(1, 2))
-            self.history_canvas.create_text(5, y, text=f"{i}%", anchor="w", fill="#bbbbbb", font=("", 8))
+            self.history_canvas.create_text(
+                5, y, text=f"{i}%", anchor="w", fill="#bbbbbb", font=("", 8)
+            )
 
         # Draw temperature scale on right side
         for i in range(0, 101, 20):
             y = h - (i * h / 100)
-            self.history_canvas.create_text(w-5, y, text=f"{i}°C", anchor="e", fill="#ff6600", font=("", 8))
+            self.history_canvas.create_text(
+                w - 5, y, text=f"{i}°C", anchor="e", fill="#ff6600", font=("", 8)
+            )
 
         # Draw metrics
-        if len(self.dashboard_history['timestamps']) > 1:
-            time_span = self.dashboard_history['timestamps'][-1] - self.dashboard_history['timestamps'][0]
+        if len(self.dashboard_history["timestamps"]) > 1:
+            time_span = (
+                self.dashboard_history["timestamps"][-1]
+                - self.dashboard_history["timestamps"][0]
+            )
             if time_span > 0:
                 # Draw GPU utilization
-                for i, gpu_util in enumerate(self.dashboard_history['gpu_util']):
+                for i, gpu_util in enumerate(self.dashboard_history["gpu_util"]):
                     if len(gpu_util) > 1:
                         points = []
                         for j, util in enumerate(gpu_util):
-                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            x = (
+                                (
+                                    self.dashboard_history["timestamps"][j]
+                                    - self.dashboard_history["timestamps"][0]
+                                )
+                                / time_span
+                                * w
+                            )
                             y = h - (util * h / 100)
                             points.extend([x, y])
 
                         if points:
-                            self.history_canvas.create_line(points, fill=self.gpu_colors[i], width=2, smooth=True)
+                            self.history_canvas.create_line(
+                                points, fill=self.gpu_colors[i], width=2, smooth=True
+                            )
 
                 # Draw memory utilization as dashed lines
-                for i, mem_util in enumerate(self.dashboard_history['mem_util']):
+                for i, mem_util in enumerate(self.dashboard_history["mem_util"]):
                     if len(mem_util) > 1:
                         points = []
                         for j, util in enumerate(mem_util):
-                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            x = (
+                                (
+                                    self.dashboard_history["timestamps"][j]
+                                    - self.dashboard_history["timestamps"][0]
+                                )
+                                / time_span
+                                * w
+                            )
                             y = h - (util * h / 100)
                             points.extend([x, y])
 
                         if points:
-                            self.history_canvas.create_line(points, fill=self.gpu_colors[i], width=1, dash=(4, 2))
+                            self.history_canvas.create_line(
+                                points, fill=self.gpu_colors[i], width=1, dash=(4, 2)
+                            )
 
                 # Draw temperature as dotted lines
-                for i, temp in enumerate(self.dashboard_history['temp']):
+                for i, temp in enumerate(self.dashboard_history["temp"]):
                     if len(temp) > 1:
                         points = []
                         for j, t in enumerate(temp):
-                            x = (self.dashboard_history['timestamps'][j] - self.dashboard_history['timestamps'][0]) / time_span * w
+                            x = (
+                                (
+                                    self.dashboard_history["timestamps"][j]
+                                    - self.dashboard_history["timestamps"][0]
+                                )
+                                / time_span
+                                * w
+                            )
                             y = h - (t * h / 100)
                             points.extend([x, y])
 
                         if points:
-                            self.history_canvas.create_line(points, fill="#ff6600", width=1, dash=(2, 4))
+                            self.history_canvas.create_line(
+                                points, fill="#ff6600", width=1, dash=(2, 4)
+                            )
 
         # Draw legend
         legend_items = [
             {"name": "GPU Util", "color": self.gpu_colors[0], "style": "solid"},
             {"name": "Mem Util", "color": self.gpu_colors[0], "style": "dashed"},
-            {"name": "Temperature", "color": "#ff6600", "style": "dotted"}
+            {"name": "Temperature", "color": "#ff6600", "style": "dotted"},
         ]
 
         legend_x = 10
@@ -1136,14 +1340,39 @@ class DualGpuApp(ttk.Frame):
         for item in legend_items:
             # Draw color sample
             if item["style"] == "solid":
-                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=2)
+                self.history_canvas.create_line(
+                    legend_x,
+                    legend_y,
+                    legend_x + 20,
+                    legend_y,
+                    fill=item["color"],
+                    width=2,
+                )
             elif item["style"] == "dashed":
-                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=1, dash=(4, 2))
+                self.history_canvas.create_line(
+                    legend_x,
+                    legend_y,
+                    legend_x + 20,
+                    legend_y,
+                    fill=item["color"],
+                    width=1,
+                    dash=(4, 2),
+                )
             else:  # dotted
-                self.history_canvas.create_line(legend_x, legend_y, legend_x+20, legend_y, fill=item["color"], width=1, dash=(2, 4))
+                self.history_canvas.create_line(
+                    legend_x,
+                    legend_y,
+                    legend_x + 20,
+                    legend_y,
+                    fill=item["color"],
+                    width=1,
+                    dash=(2, 4),
+                )
 
             # Draw label
-            self.history_canvas.create_text(legend_x+25, legend_y, text=item["name"], fill="#ffffff", anchor="w")
+            self.history_canvas.create_text(
+                legend_x + 25, legend_y, text=item["name"], fill="#ffffff", anchor="w"
+            )
             legend_x += 100
 
     # ---------- callbacks ----------
@@ -1157,7 +1386,9 @@ class DualGpuApp(ttk.Frame):
 
     def _refresh_outputs(self) -> None:
         split = optimizer.split_string(self.gpus)
-        llama_cmd = optimizer.llama_command(self.model_var.get(), self.ctx_var.get(), split)
+        llama_cmd = optimizer.llama_command(
+            self.model_var.get(), self.ctx_var.get(), split
+        )
         vllm_cmd = optimizer.vllm_command(self.model_var.get(), len(self.gpus))
         out = (
             f"# gpu‑split suggestion\n{split}\n\n"
@@ -1172,7 +1403,9 @@ class DualGpuApp(ttk.Frame):
         if which == "llama":
             snippet = "\n".join(line for line in content if line.startswith("./main"))
         else:
-            snippet = "\n".join(line for line in content if line.startswith("python -m vllm"))
+            snippet = "\n".join(
+                line for line in content if line.startswith("python -m vllm")
+            )
         self.clipboard_clear()
         self.clipboard_append(snippet)
         messagebox.showinfo("Copied", f"{which} command copied to clipboard!")
@@ -1181,7 +1414,11 @@ class DualGpuApp(ttk.Frame):
         filename = filedialog.asksaveasfilename(
             title="Save env file",
             defaultextension=".sh" if not tk.sys.platform.startswith("win") else ".ps1",
-            filetypes=[("Shell script", "*.sh"), ("PowerShell", "*.ps1"), ("All", "*.*")]
+            filetypes=[
+                ("Shell script", "*.sh"),
+                ("PowerShell", "*.ps1"),
+                ("All", "*.*"),
+            ],
         )
         if filename:
             optimizer.make_env_file(self.gpus, pathlib.Path(filename))
@@ -1197,8 +1434,11 @@ class DualGpuApp(ttk.Frame):
         if self.runner:
             self.runner.stop()
         split = optimizer.split_string(self.gpus)
-        cmd = optimizer.llama_command(self.model_var.get(), self.ctx_var.get(), split) if which=="llama" \
+        cmd = (
+            optimizer.llama_command(self.model_var.get(), self.ctx_var.get(), split)
+            if which == "llama"
             else optimizer.vllm_command(self.model_var.get(), len(self.gpus))
+        )
         self.runner = Runner(cmd)
         self.runner.start()
         self.log_box.delete("1.0", "end")
@@ -1214,7 +1454,7 @@ class DualGpuApp(ttk.Frame):
             try:
                 while True:
                     line = self.runner.q.get_nowait()
-                    self.log_box.insert("end", line+"\n")
+                    self.log_box.insert("end", line + "\n")
                     self.log_box.see("end")
             except queue.Empty:
                 pass
@@ -1244,9 +1484,12 @@ class DualGpuApp(ttk.Frame):
                     # Draw stacked bars for each GPU
                     for g_idx, load in enumerate(loads):
                         if g_idx < len(self.gpus):  # Ensure we have data for this GPU
-                            y_top = y_bottom - (load * h / 100)  # Scale load to chart height
-                            self.chart.create_line(x, y_bottom, x, y_top,
-                                                  fill=self.gpu_colors[g_idx])
+                            y_top = y_bottom - (
+                                load * h / 100
+                            )  # Scale load to chart height
+                            self.chart.create_line(
+                                x, y_bottom, x, y_top, fill=self.gpu_colors[g_idx]
+                            )
                             y_bottom = y_top
 
                 # Draw legend
@@ -1255,13 +1498,22 @@ class DualGpuApp(ttk.Frame):
                 for i, gpu in enumerate(self.gpus):
                     if i < len(self.gpu_colors):
                         # Draw color sample
-                        self.chart.create_rectangle(legend_x, legend_y,
-                                                   legend_x + 10, legend_y + 10,
-                                                   fill=self.gpu_colors[i], outline="")
+                        self.chart.create_rectangle(
+                            legend_x,
+                            legend_y,
+                            legend_x + 10,
+                            legend_y + 10,
+                            fill=self.gpu_colors[i],
+                            outline="",
+                        )
                         # Draw GPU name
-                        self.chart.create_text(legend_x + 15, legend_y + 5,
-                                              text=f"GPU {gpu.index}",
-                                              fill="white", anchor="w")
+                        self.chart.create_text(
+                            legend_x + 15,
+                            legend_y + 5,
+                            text=f"GPU {gpu.index}",
+                            fill="white",
+                            anchor="w",
+                        )
                         legend_y += 15
 
         except queue.Empty:
@@ -1294,7 +1546,7 @@ class DualGpuApp(ttk.Frame):
         if selected < 0 or selected >= len(self.gpus):
             return
 
-        gpu = self.gpus[selected]
+        self.gpus[selected]
 
         # Reset controls to defaults or current settings
         # This is where you could load saved overclocking profiles in the future
@@ -1330,6 +1582,7 @@ class DualGpuApp(ttk.Frame):
         try:
             # Import NVML for direct access
             import pynvml as nv
+
             nv.nvmlInit()
 
             # Get the GPU handle
@@ -1344,7 +1597,9 @@ class DualGpuApp(ttk.Frame):
                     new_pl = int(default_pl * power_limit / 100)
                     # Set the power limit
                     nv.nvmlDeviceSetPowerManagementLimit(handle, new_pl)
-                    self.logger.info(f"Set power limit to {power_limit}% for GPU {gpu.index}")
+                    self.logger.info(
+                        f"Set power limit to {power_limit}% for GPU {gpu.index}"
+                    )
                 except Exception as e:
                     self.logger.error(f"Failed to set power limit: {e}")
                     messagebox.showerror("Error", f"Failed to set power limit: {e}")
@@ -1354,9 +1609,13 @@ class DualGpuApp(ttk.Frame):
                 try:
                     # Check if GPU supports fan control
                     nv.nvmlDeviceSetFanSpeed(handle, fan_speed)
-                    self.logger.info(f"Set fan speed to {fan_speed}% for GPU {gpu.index}")
+                    self.logger.info(
+                        f"Set fan speed to {fan_speed}% for GPU {gpu.index}"
+                    )
                 except Exception as e:
-                    self.logger.error(f"Failed to set fan speed (may not be supported): {e}")
+                    self.logger.error(
+                        f"Failed to set fan speed (may not be supported): {e}"
+                    )
                     messagebox.showerror("Error", f"Failed to set fan speed: {e}")
 
             # Clock offsets require NVIDIA Settings or similar tools
@@ -1367,7 +1626,7 @@ class DualGpuApp(ttk.Frame):
                     "Clock Offset Limitation",
                     "Setting clock offsets requires nvidia-settings or MSI Afterburner.\n\n"
                     "NVML API doesn't support direct overclocking through Python.\n\n"
-                    "Use the values shown as guidance for external overclocking tools."
+                    "Use the values shown as guidance for external overclocking tools.",
                 )
 
             nv.nvmlShutdown()
@@ -1405,6 +1664,7 @@ class DualGpuApp(ttk.Frame):
         try:
             # Import NVML for direct access
             import pynvml as nv
+
             nv.nvmlInit()
 
             # Get the GPU handle
@@ -1458,7 +1718,10 @@ class DualGpuApp(ttk.Frame):
                     self.cfg["env_overrides"][key] = str(int_value)
                 except ValueError:
                     # Skip invalid values
-                    messagebox.showwarning("Invalid Value", f"Memory override for {key} must be a number. Ignoring.")
+                    messagebox.showwarning(
+                        "Invalid Value",
+                        f"Memory override for {key} must be a number. Ignoring.",
+                    )
             else:
                 # Remove empty overrides
                 if key in self.cfg["env_overrides"]:
@@ -1466,7 +1729,11 @@ class DualGpuApp(ttk.Frame):
 
         # Save the updated configuration
         configio.save_cfg(self.cfg)
-        messagebox.showinfo("Settings Saved", "All settings have been saved successfully.\nSome changes may require a restart to take effect.")
+        messagebox.showinfo(
+            "Settings Saved",
+            "All settings have been saved successfully.\n"
+            "Some changes may require a restart to take effect.",
+        )
 
         # Update monitoring settings immediately if possible
         # (This would require modifications to the telemetry system)
@@ -1507,4 +1774,3 @@ def run_app() -> None:
     root.protocol("WM_DELETE_WINDOW", root.destroy)
 
     root.mainloop()
->>>>>>> 0727adb (Update documentation for Dual GPU Optimizer, enhancing descriptions of core components and workflows related to machine learning workload distribution and GPU resource management. Refined glob patterns for improved file matching and organized content for better readability, ensuring clarity on system functionalities and integration points.)

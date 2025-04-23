@@ -3,10 +3,9 @@ GUI package for DualGPUOptimizer
 Handles UI components, dashboard, and visualization
 """
 import importlib.util
+import logging
 import sys
 from pathlib import Path
-import logging
-from typing import Optional, Dict, Any
 
 logger = logging.getLogger("DualGPUOpt.GUI")
 
@@ -15,7 +14,7 @@ try:
     from . import constants
 except ImportError:
     # If running from bundle, make sure constants.py is in the path
-    if getattr(sys, 'frozen', False):
+    if getattr(sys, "frozen", False):
         module_path = Path(sys._MEIPASS) / "dualgpuopt" / "gui" / "constants.py"
         if module_path.exists():
             spec = importlib.util.spec_from_file_location("dualgpuopt.gui.constants", module_path)
@@ -25,13 +24,13 @@ except ImportError:
 
 # We'll import the components lazily as needed to avoid circular imports
 __all__ = [
-    'DashboardView',
-    'OptimizerTab',
-    'LauncherTab',
-    'MainApplication',
-    'ModernApp',
-    'run',
-    'run_modern_app'
+    "DashboardView",
+    "OptimizerTab",
+    "LauncherTab",
+    "MainApplication",
+    "ModernApp",
+    "run",
+    "run_modern_app",
 ]
 
 # Forward declarations of classes to avoid circular imports
@@ -43,6 +42,7 @@ ModernApp = None
 run = None
 run_modern_app = None
 
+
 def _import_component(name):
     """Import a component on demand to avoid circular dependencies"""
     try:
@@ -50,6 +50,7 @@ def _import_component(name):
     except ImportError as e:
         logger.warning(f"Could not import {name}: {e}")
         return None
+
 
 def get_dashboard_view():
     """Get the DashboardView class, importing it if necessary"""
@@ -60,6 +61,7 @@ def get_dashboard_view():
             DashboardView = module.DashboardView
     return DashboardView
 
+
 def get_optimizer_tab():
     """Get the OptimizerTab class, importing it if necessary"""
     global OptimizerTab
@@ -69,6 +71,7 @@ def get_optimizer_tab():
             OptimizerTab = module.OptimizerTab
     return OptimizerTab
 
+
 def get_launcher_tab():
     """Get the LauncherTab class, importing it if necessary"""
     global LauncherTab
@@ -77,6 +80,7 @@ def get_launcher_tab():
         if module:
             LauncherTab = module.LauncherTab
     return LauncherTab
+
 
 def get_main_application():
     """Get the MainApplication class, importing it if necessary"""
@@ -88,6 +92,7 @@ def get_main_application():
             run = module.run
     return MainApplication
 
+
 def get_modern_app():
     """Get the ModernApp class, importing it if necessary"""
     global ModernApp, run_modern_app
@@ -98,12 +103,14 @@ def get_modern_app():
             run_modern_app = module.run_modern_app
     return ModernApp
 
+
 # Check for required modules to provide better error messages
 try:
-    import dualgpuopt.vram_reset
     import dualgpuopt.ctx_size
-    import dualgpuopt.mpolicy
     import dualgpuopt.layer_balance
+    import dualgpuopt.mpolicy
+    import dualgpuopt.vram_reset
+
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logger.warning(f"Advanced optimization features not available: {e}")
@@ -112,11 +119,13 @@ except ImportError as e:
 # Check for optional advanced features
 try:
     import torch
+
     TORCH_AVAILABLE = True
     logger.info("PyTorch detected")
 except ImportError:
     logger.warning("PyTorch not found - some features will be limited")
     TORCH_AVAILABLE = False
+
 
 def run_app() -> None:
     """

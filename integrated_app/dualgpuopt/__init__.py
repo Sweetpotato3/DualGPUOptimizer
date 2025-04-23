@@ -5,8 +5,8 @@ DualGPUOptimizer - A utility for optimizing dual GPU setups for ML model inferen
 
 __version__ = "0.1.0"
 
-import os
 import logging
+import os
 
 # Early setup of environment variables
 if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":

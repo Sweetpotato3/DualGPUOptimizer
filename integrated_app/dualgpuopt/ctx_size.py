@@ -5,15 +5,16 @@ ctx_size.py
 Heuristic for maximum safe context length.
 """
 from __future__ import annotations
-from typing import List
+
 import logging
 
 from dualgpuopt.gpu_info import GPU
 
 logger = logging.getLogger("dualgpuopt.ctx_size")
 
+
 def calc_max_ctx(
-    gpus: List[GPU],
+    gpus: list[GPU],
     *,
     n_layers: int,
     n_kv_heads: int,
@@ -47,9 +48,7 @@ def calc_max_ctx(
     int
         Maximum safe context size
     """
-    bytes_per_tok = (
-        n_layers * n_kv_heads * head_dim * (precision_bits // 8) * 2 * moe_factor
-    )
+    bytes_per_tok = n_layers * n_kv_heads * head_dim * (precision_bits // 8) * 2 * moe_factor
     free_mib = sum(g.mem_free for g in gpus) - reserve_gb * 1024
 
     if free_mib <= 0:
@@ -64,9 +63,11 @@ def model_params_from_name(model_name: str) -> tuple[int, int, int, float]:
     Estimate model parameters from a model name.
 
     Args:
+    ----
         model_name: Name of the model file
 
     Returns:
+    -------
         Tuple of (n_layers, n_kv_heads, head_dim, moe_factor)
     """
     model_name = model_name.lower()

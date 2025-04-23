@@ -35,12 +35,10 @@ Level 6 (Application):
 RECOMMENDED_IMPORT_ORDER = [
     # Level 1
     "gui_constants",
-
     # Level 2
     "logconfig",
     "gpu_info",
     "configio",
-
     # Level 3
     "metrics",
     "telemetry",
@@ -48,45 +46,42 @@ RECOMMENDED_IMPORT_ORDER = [
     "layer_balance",
     "ctx_size",
     "mpolicy",
-
     # Level 4
     "services.state_service",
     "services.event_bus",
     "commands.gpu_commands",
-
     # Level 5
     "gui.dashboard",
     "gui.launcher",
     "gui.optimizer_tab",
-
     # Level 6
-    "__main__"
+    "__main__",
 ]
 
 # Integration phases
 INTEGRATION_PHASES = [
     {
         "name": "Phase 1: Core GPU Information",
-        "modules": ["gui_constants", "logconfig", "gpu_info"]
+        "modules": ["gui_constants", "logconfig", "gpu_info"],
     },
     {
         "name": "Phase 2: Telemetry and Metrics",
-        "modules": ["metrics", "telemetry"]
+        "modules": ["metrics", "telemetry"],
     },
     {
         "name": "Phase 3: Optimization Logic",
-        "modules": ["optimizer", "layer_balance", "ctx_size", "mpolicy"]
+        "modules": ["optimizer", "layer_balance", "ctx_size", "mpolicy"],
     },
     {
         "name": "Phase 4: Services and Commands",
-        "modules": ["services.state_service", "services.event_bus", "commands.gpu_commands"]
+        "modules": ["services.state_service", "services.event_bus", "commands.gpu_commands"],
     },
     {
         "name": "Phase 5: UI Components",
-        "modules": ["gui.dashboard", "gui.launcher", "gui.optimizer_tab"]
+        "modules": ["gui.dashboard", "gui.launcher", "gui.optimizer_tab"],
     },
     {
         "name": "Phase 6: Main Application",
-        "modules": ["__main__"]
-    }
+        "modules": ["__main__"],
+    },
 ]

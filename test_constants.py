@@ -3,8 +3,8 @@
 Test script to check if the constants module can be imported
 """
 
-import sys
 import os
+import sys
 
 # Print Python path for debugging
 print("Python Path:")
@@ -20,8 +20,10 @@ else:
 # Try importing directly from the file
 try:
     import importlib.util
+
     spec = importlib.util.spec_from_file_location(
-        "constants", "dualgpuopt/gui/constants.py"
+        "constants",
+        "dualgpuopt/gui/constants.py",
     )
     constants = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(constants)
@@ -35,6 +37,7 @@ except Exception as e:
 # Try normal import
 try:
     from dualgpuopt.gui import constants
+
     print("\nModule import successful!")
     print(f"APP_NAME: {constants.APP_NAME}")
     print(f"THEME: {constants.THEME}")

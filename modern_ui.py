@@ -11,11 +11,10 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 try:
     # Import our modules directly without going through package imports
-    import dualgpuopt.ui.neon  # needed for NeonButton and GradientBar
 
     # Directly load the GUI module and extract the class
-    from pathlib import Path
     import importlib.util
+    from pathlib import Path
 
     # Path to gui.py
     gui_path = Path(__file__).parent / "dualgpuopt" / "gui.py"
@@ -33,5 +32,6 @@ try:
 except Exception as e:
     print(f"Error starting modern UI: {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)

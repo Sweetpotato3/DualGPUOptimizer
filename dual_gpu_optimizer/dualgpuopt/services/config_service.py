@@ -23,7 +23,7 @@ class ConfigService:
         "idle_time": 5,
         "last_model": "",
         "context_size": 65536,
-        "gpu_overclock": {}
+        "gpu_overclock": {},
     }
 
     def __init__(self, config_path: Optional[pathlib.Path] = None) -> None:
@@ -55,7 +55,9 @@ class ConfigService:
             Configuration dictionary
         """
         if not self.config_path.exists():
-            self.logger.info(f"Config file not found, creating default at {self.config_path}")
+            self.logger.info(
+                f"Config file not found, creating default at {self.config_path}"
+            )
             return self.DEFAULT_CONFIG.copy()
 
         try:
@@ -143,12 +145,17 @@ class ConfigService:
 
         # Notify of changes
         if changed_keys:
-            self.logger.debug(f"Multiple configurations changed: {', '.join(changed_keys)}")
-            event_bus.publish("config_updated", {"keys": changed_keys, "config": self.config})
+            self.logger.debug(
+                f"Multiple configurations changed: {', '.join(changed_keys)}"
+            )
+            event_bus.publish(
+                "config_updated", {"keys": changed_keys, "config": self.config}
+            )
 
         # Save if requested
         if save_immediately and changed_keys:
             self.save()
+
 
 # Create a global config instance
 config_service = ConfigService()

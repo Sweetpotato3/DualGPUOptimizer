@@ -1,32 +1,40 @@
 """
 Appearance settings component for the DualGPUOptimizer.
 """
+
 from __future__ import annotations
 
-import tkinter as tk
-from tkinter import ttk, messagebox
 import logging
-from typing import Callable, Dict, Any, Optional
+import tkinter as tk
+from tkinter import messagebox, ttk
+from typing import Callable, Optional
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.constants import *
+
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
 
-from dualgpuopt.services.event_service import event_bus
-from dualgpuopt.services.config_service import config_service
-from dualgpuopt.gui.theme import THEMES, AVAILABLE_TTK_THEMES, AVAILABLE_THEMES
+from dualgpuopt.gui.theme import AVAILABLE_THEMES, AVAILABLE_TTK_THEMES
 from dualgpuopt.gui.theme_selector import ThemeSelector
+from dualgpuopt.services.config_service import config_service
+from dualgpuopt.services.event_service import event_bus
 
 
 class AppearanceFrame(ttk.LabelFrame):
     """Frame containing appearance settings."""
 
-    def __init__(self, parent: ttk.Frame, pad: int = 16, on_theme_change: Optional[Callable[[str], None]] = None) -> None:
+    def __init__(
+        self,
+        parent: ttk.Frame,
+        pad: int = 16,
+        on_theme_change: Optional[Callable[[str], None]] = None,
+    ) -> None:
         """
         Initialize the appearance settings frame.
 
@@ -58,7 +66,7 @@ class AppearanceFrame(ttk.LabelFrame):
             label_text="Color Theme:",
             callback=self._on_theme_applied,
             padx=self.pad,
-            pady=5
+            pady=5,
         )
         self.theme_selector.grid(row=0, column=0, sticky="w", pady=5)
 
@@ -68,20 +76,20 @@ class AppearanceFrame(ttk.LabelFrame):
             ttk_theme_frame = ttk.Frame(self)
             ttk_theme_frame.grid(row=1, column=0, sticky="ew", padx=self.pad, pady=5)
 
-            ttk.Label(ttk_theme_frame, text="Widget Style:").pack(side="left", padx=self.pad, pady=5)
+            ttk.Label(ttk_theme_frame, text="Widget Style:").pack(
+                side="left", padx=self.pad, pady=5
+            )
             ttk_theme_combo = ttk.Combobox(
                 ttk_theme_frame,
                 textvariable=self.ttk_theme_var,
                 values=AVAILABLE_TTK_THEMES,
                 width=12,
-                state="readonly"
+                state="readonly",
             )
             ttk_theme_combo.pack(side="left", padx=self.pad, pady=5)
 
             ttk.Button(
-                ttk_theme_frame,
-                text="Apply",
-                command=self._apply_ttk_theme
+                ttk_theme_frame, text="Apply", command=self._apply_ttk_theme
             ).pack(side="left", padx=self.pad, pady=5)
 
         # Theme previews section
@@ -90,7 +98,9 @@ class AppearanceFrame(ttk.LabelFrame):
         preview_frame.columnconfigure(0, weight=1)
 
         # Add theme preview thumbnails
-        ttk.Label(preview_frame, text="Available Themes:").grid(row=0, column=0, sticky="w", pady=(10, 5))
+        ttk.Label(preview_frame, text="Available Themes:").grid(
+            row=0, column=0, sticky="w", pady=(10, 5)
+        )
 
         # Create preview grid
         preview_grid = ttk.Frame(preview_frame)
@@ -98,7 +108,9 @@ class AppearanceFrame(ttk.LabelFrame):
 
         # Create a preview tile for each theme
         for i, (theme_name, theme_colors) in enumerate(AVAILABLE_THEMES.items()):
-            preview_tile = self._create_theme_preview(preview_grid, theme_name, theme_colors)
+            preview_tile = self._create_theme_preview(
+                preview_grid, theme_name, theme_colors
+            )
             col = i % 3
             row = i // 3
             preview_tile.grid(row=row, column=col, padx=10, pady=10)
@@ -118,19 +130,30 @@ class AppearanceFrame(ttk.LabelFrame):
         frame = ttk.Frame(parent)
 
         # Create the preview canvas
-        canvas = tk.Canvas(frame, width=80, height=60, highlightthickness=1, highlightbackground=theme_colors["border"])
+        canvas = tk.Canvas(
+            frame,
+            width=80,
+            height=60,
+            highlightthickness=1,
+            highlightbackground=theme_colors["border"],
+        )
         canvas.pack(pady=5)
 
         # Draw theme preview with primary, secondary and accent colors
         canvas.create_rectangle(0, 0, 80, 60, fill=theme_colors["bg"], outline="")
-        canvas.create_rectangle(10, 10, 70, 50, fill=theme_colors["secondary_bg"], outline="")
+        canvas.create_rectangle(
+            10, 10, 70, 50, fill=theme_colors["secondary_bg"], outline=""
+        )
         canvas.create_rectangle(30, 25, 50, 35, fill=theme_colors["accent"], outline="")
 
         # Add theme name label
         ttk.Label(frame, text=theme_name).pack()
 
         # Add click handler to apply this theme
-        canvas.bind("<Button-1>", lambda e, name=theme_name: self._apply_theme_from_preview(name))
+        canvas.bind(
+            "<Button-1>",
+            lambda e, name=theme_name: self._apply_theme_from_preview(name),
+        )
 
         return frame
 
@@ -147,6 +170,7 @@ class AppearanceFrame(ttk.LabelFrame):
         # Apply the theme
         root_window = self.winfo_toplevel()
         from dualgpuopt.gui.theme import set_theme
+
         set_theme(root_window, theme_name)
 
         # Call the theme change callback if provided
@@ -175,9 +199,11 @@ class AppearanceFrame(ttk.LabelFrame):
         event_bus.publish("config_changed:ttk_theme", ttk_theme)
 
         # Show message that restart is required
-        messagebox.showinfo("Theme Changed",
-                          "TTK theme will be applied on next application restart",
-                          parent=self.winfo_toplevel())
+        messagebox.showinfo(
+            "Theme Changed",
+            "TTK theme will be applied on next application restart",
+            parent=self.winfo_toplevel(),
+        )
 
         # Call the theme change callback if provided
         if self.on_theme_change:
@@ -199,6 +225,6 @@ class AppearanceFrame(ttk.LabelFrame):
         Returns:
             Name of the current TTK theme or empty string if not available
         """
-        if hasattr(self, 'ttk_theme_var'):
+        if hasattr(self, "ttk_theme_var"):
             return self.ttk_theme_var.get()
         return ""

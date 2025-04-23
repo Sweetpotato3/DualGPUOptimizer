@@ -18,10 +18,12 @@ _log = _log("mpolicy")
 # Check if torch is available
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
     _log.warning("PyTorch not available - mixed precision operations will be disabled")
+
 
 @contextlib.contextmanager
 def autocast(dtype=None):
