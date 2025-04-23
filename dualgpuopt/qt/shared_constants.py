@@ -25,3 +25,6 @@ GPU_COLORS = {
     "temp": "#ff9800",  # Orange for temperature
     "power": "#26a69a",  # Teal for power
 }
+
+# Component styling
+CARD_STYLE = "QGroupBox{border:1px solid #3b3b3b;border-radius:4px;margin-top:6px;padding:4px;}"

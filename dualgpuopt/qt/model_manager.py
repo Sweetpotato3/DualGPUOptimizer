@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 # Import shared constants
+from dualgpuopt.qt.shared_constants import CARD_STYLE
 
 from dualgpuopt.engine.pool import EnginePool
 from dualgpuopt.gpu.info import query as gpu_query
@@ -126,6 +127,7 @@ class ModelManager(QWidget):
 
         # Progress area
         progress_group = QGroupBox("Download Progress")
+        progress_group.setStyleSheet(CARD_STYLE)
         progress_layout = QVBoxLayout(progress_group)
         self.progress_label = QLabel("No download in progress")
         self.progress_bar = QProgressBar()
@@ -136,6 +138,7 @@ class ModelManager(QWidget):
 
         # Local models
         local_group = QGroupBox("Local Models")
+        local_group.setStyleSheet(CARD_STYLE)
         local_layout = QVBoxLayout(local_group)
 
         # Local controls
