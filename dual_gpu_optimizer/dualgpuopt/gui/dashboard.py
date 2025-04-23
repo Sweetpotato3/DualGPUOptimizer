@@ -6,7 +6,7 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 import time
-from typing import Dict, List, Tuple, Any, Optional
+from typing import Dict, List, Any
 
 # Try to import ttkbootstrap Tooltip
 try:

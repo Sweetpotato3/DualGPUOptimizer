@@ -1,8 +1,10 @@
 from __future__ import annotations
-import re
+
 import html
-import bs4
+import re
 from pathlib import Path
+
+import bs4
 
 SCRIPT_STYLE = ("script", "style", "noscript")
 
@@ -20,8 +22,8 @@ def clean_file(path: Path) -> str:
     return clean_html(path.read_text(encoding="utf-8", errors="ignore"))
 
 if __name__ == "__main__":
-    import sys
     import json
+    import sys
     root = Path(sys.argv[1])
     out  = Path(sys.argv[2])
     out.open("w").write(

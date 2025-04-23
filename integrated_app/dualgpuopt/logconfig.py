@@ -23,6 +23,7 @@ def setup_logging(verbose: bool = False, log_file: Optional[pathlib.Path] = None
     Returns:
     -------
         Root logger for the application
+
     """
     log_level = logging.DEBUG if verbose else logging.INFO
 
@@ -73,6 +74,7 @@ def configure_module_log_levels(verbose: bool = False) -> None:
     Args:
     ----
         verbose: Whether debug mode is enabled globally
+
     """
     # Default level based on verbose flag
     default_level = logging.DEBUG if verbose else logging.INFO

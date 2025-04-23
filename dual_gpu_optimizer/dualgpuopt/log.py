@@ -5,7 +5,8 @@ Logging bootstrap used by every module.
 * Richer formatting in dev environment
 """
 from __future__ import annotations
-import logging, os
+import logging
+import os
 
 FMT = "%(asctime)s | %(name)-20s | %(levelname)-7s | %(message)s"
 logging.basicConfig(

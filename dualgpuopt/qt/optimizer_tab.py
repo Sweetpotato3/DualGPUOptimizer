@@ -37,6 +37,7 @@ class OptimizerTab(QWidget):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent)
 
@@ -168,15 +169,14 @@ class OptimizerTab(QWidget):
         Args:
         ----
             index: New index
+
         """
         model_name = self.model_combo.currentText()
 
         # Set reasonable defaults based on model
         if "70B" in model_name:
             self.context_size.setValue(2048)
-        elif "13B" in model_name:
-            self.context_size.setValue(4096)
-        elif "Mixtral" in model_name:
+        elif "13B" in model_name or "Mixtral" in model_name:
             self.context_size.setValue(4096)
         else:
             self.context_size.setValue(8192)
@@ -263,6 +263,7 @@ class OptimizerTab(QWidget):
         Args:
         ----
             preset_data: Dictionary containing preset configuration
+
         """
         try:
             # Extract settings from preset

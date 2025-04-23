@@ -37,6 +37,7 @@ def stream_jsonl(path):
     Yields:
     ------
         Parsed JSON objects
+
     """
     with open(path, encoding="utf-8") as fh:
         for line in fh:
@@ -57,6 +58,7 @@ def count_lines(file_path):
     Returns:
     -------
         Number of lines
+
     """
     count = 0
     with open(file_path, encoding="utf-8") as f:
@@ -82,6 +84,7 @@ def build_faiss_index(
         model_name: Name of the sentence-transformer model to use
         chunk_size: Number of texts to process at once
         max_texts: Maximum number of texts to include (for testing)
+
     """
     logger.info(f"Loading embedding model: {model_name}")
     model = SentenceTransformer(model_name)

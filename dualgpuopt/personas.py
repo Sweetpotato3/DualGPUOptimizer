@@ -48,6 +48,7 @@ def get_personas_path():
     Returns
     -------
         Path: Path to the personas file
+
     """
     # Try to use home directory for configuration
     home_dir = Path.home() / ".dualgpuopt"
@@ -70,6 +71,7 @@ def list_personas() -> Dict:
     Returns
     -------
         dict: Dictionary of persona configurations
+
     """
     personas_path = get_personas_path()
     personas = DEFAULT_PERSONAS.copy()
@@ -97,6 +99,7 @@ def get_persona(name: str) -> Optional[Dict]:
     Returns:
     -------
         dict: Persona configuration or None if not found
+
     """
     personas = list_personas()
     return personas.get(name)
@@ -114,6 +117,7 @@ def add_persona(name: str, config: Dict) -> bool:
     Returns:
     -------
         bool: True if successful, False otherwise
+
     """
     personas_path = get_personas_path()
 
@@ -154,6 +158,7 @@ def delete_persona(name: str) -> bool:
     Returns:
     -------
         bool: True if successful, False otherwise
+
     """
     personas_path = get_personas_path()
 
@@ -196,6 +201,7 @@ def reset_to_defaults() -> bool:
     Returns
     -------
         bool: True if successful, False otherwise
+
     """
     personas_path = get_personas_path()
 

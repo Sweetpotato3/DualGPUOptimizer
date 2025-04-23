@@ -18,10 +18,10 @@ try:
 
     # Export for direct import
     __all__ = [
-        "get_themed_tk",
-        "get_meter_widget",
         "ScrolledFrame",
         "get_chat_tab",
+        "get_meter_widget",
+        "get_themed_tk",
     ]
 
     # Log available UI dependencies
@@ -64,10 +64,10 @@ except ImportError as e:
 
     # Export for direct import
     __all__ = [
-        "get_themed_tk",
-        "get_meter_widget",
         "ScrolledFrame",
         "get_chat_tab",
+        "get_meter_widget",
+        "get_themed_tk",
     ]
 
     logger.warning("Using minimal UI compatibility layer due to import errors")

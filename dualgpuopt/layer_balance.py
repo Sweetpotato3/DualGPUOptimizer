@@ -29,6 +29,7 @@ class LayerProfiler:
             use_cache: Whether to use cached profiling results
             cache_dir: Directory to store profiling cache
             profile_runs: Number of profiling runs to average (more runs = more stability)
+
         """
         self.use_cache = use_cache
         self.cache_dir = cache_dir or os.path.join(os.path.expanduser("~"), ".dualgpuopt")
@@ -69,6 +70,7 @@ class LayerProfiler:
         Returns:
         -------
             Average execution time in seconds
+
         """
         try:
             import torch
@@ -121,6 +123,7 @@ class LayerProfiler:
         Returns:
         -------
             List of layer execution times
+
         """
         try:
             import torch
@@ -196,6 +199,7 @@ class LayerProfiler:
         Returns:
         -------
             Dictionary mapping sequence length to list of execution times per layer
+
         """
         if seq_lengths is None:
             seq_lengths = [64, 1024]
@@ -319,6 +323,7 @@ def balance_layers(
     Returns:
     -------
         Dictionary mapping layer names to device IDs
+
     """
     try:
         import torch
@@ -514,6 +519,7 @@ def optimize_contiguous_blocks(mapping: dict[str, int], n_layers: int) -> dict[s
     Returns:
     -------
         Optimized mapping with more contiguous blocks
+
     """
     # Extract the original device assignments
     devices = [mapping.get(f"model.layers.{i}", 0) for i in range(n_layers)]
@@ -579,23 +585,22 @@ def optimize_contiguous_blocks(mapping: dict[str, int], n_layers: int) -> dict[s
                         devices[j] = prev_device
                     changes_made = True
                     break
-            else:
-                # Middle block, determine which neighbor to merge with
-                if block_size < MIN_BLOCK_SIZE:
-                    prev_size = blocks[i - 1][1] - blocks[i - 1][0] + 1
-                    next_size = blocks[i + 1][1] - blocks[i + 1][0] + 1
+            # Middle block, determine which neighbor to merge with
+            elif block_size < MIN_BLOCK_SIZE:
+                prev_size = blocks[i - 1][1] - blocks[i - 1][0] + 1
+                next_size = blocks[i + 1][1] - blocks[i + 1][0] + 1
 
-                    # Prefer merging with the larger neighbor for stability
-                    if prev_size >= next_size:
-                        target_device = blocks[i - 1][2]
-                    else:
-                        target_device = blocks[i + 1][2]
+                # Prefer merging with the larger neighbor for stability
+                if prev_size >= next_size:
+                    target_device = blocks[i - 1][2]
+                else:
+                    target_device = blocks[i + 1][2]
 
-                    # Update device assignments
-                    for j in range(start, end + 1):
-                        devices[j] = target_device
-                    changes_made = True
-                    break
+                # Update device assignments
+                for j in range(start, end + 1):
+                    devices[j] = target_device
+                changes_made = True
+                break
 
         # Rebuild blocks if changes were made
         if changes_made:
@@ -634,6 +639,7 @@ def get_device_map(
     Returns:
     -------
         Dictionary mapping layer names to device IDs
+
     """
     # Simple heuristic - split layers based on ratios or evenly
     n_layers = 32  # Assume 32 layers for a typical model like LLaMA-2 7B

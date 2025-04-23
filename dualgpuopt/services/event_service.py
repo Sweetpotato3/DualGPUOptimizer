@@ -30,6 +30,7 @@ class EventBus:
         ----
             event_type: Event type identifier
             handler: Function to call when event is published
+
         """
         if event_type not in self._handlers:
             self._handlers[event_type] = []
@@ -50,6 +51,7 @@ class EventBus:
         Returns:
         -------
             True if handler was removed, False if not found
+
         """
         if event_type in self._handlers and handler in self._handlers[event_type]:
             self._handlers[event_type].remove(handler)
@@ -65,6 +67,7 @@ class EventBus:
         ----
             event_type: Event type identifier
             event_data: Data to pass to handlers
+
         """
         if event_type in self._handlers:
             for handler in self._handlers[event_type]:
@@ -81,6 +84,7 @@ class EventBus:
         ----
             event_class: Event class to subscribe to
             handler: Function to call when event is published
+
         """
         if event_class not in self._typed_handlers:
             self._typed_handlers[event_class] = []
@@ -101,6 +105,7 @@ class EventBus:
         Returns:
         -------
             True if handler was removed, False if not found
+
         """
         if event_class in self._typed_handlers and handler in self._typed_handlers[event_class]:
             self._typed_handlers[event_class].remove(handler)
@@ -115,6 +120,7 @@ class EventBus:
         Args:
         ----
             event: Event object to publish
+
         """
         event_class = event.__class__
 
@@ -162,6 +168,7 @@ class GPUMetricsEvent:
             temperature: Temperature in Celsius
             power_draw: Power usage in watts
             fan_speed: Fan speed percentage
+
         """
         self.gpu_index = gpu_index
         self.utilization = utilization
@@ -179,6 +186,7 @@ class GPUMetricsEvent:
         Returns
         -------
             Memory usage percentage
+
         """
         if self.memory_total == 0:
             return 0.0

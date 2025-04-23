@@ -21,6 +21,7 @@ def show_error_dialog(title: str, message: str, details: Optional[str] = None) -
         title: Dialog title
         message: Main error message
         details: Optional technical details
+
     """
     # Import here to avoid circular imports
     try:
@@ -67,6 +68,7 @@ def show_warning_dialog(title: str, message: str) -> None:
     ----
         title: Dialog title
         message: Warning message
+
     """
     try:
         import tkinter as tk
@@ -110,6 +112,7 @@ def create_error_status_widget(parent, width: int = 20, height: int = 5) -> tupl
     Returns:
     -------
         Tuple containing (widget, update_function)
+
     """
     try:
         import tkinter as tk
@@ -157,6 +160,7 @@ def register_ui_callbacks(error_callback: Callable) -> None:
     Args:
     ----
         error_callback: Function to call when an error occurs
+
     """
     from dualgpuopt.error_handler.base import ErrorSeverity
     from dualgpuopt.error_handler.handler import get_error_handler

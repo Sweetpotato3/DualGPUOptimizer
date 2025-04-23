@@ -202,12 +202,11 @@ class SimpleMeter(ttk.Frame):
         """Get color based on bootstyle"""
         if self.bootstyle == "success":
             return "#4CAF50"  # Green
-        elif self.bootstyle == "warning":
+        if self.bootstyle == "warning":
             return "#FF9800"  # Orange
-        elif self.bootstyle == "danger":
+        if self.bootstyle == "danger":
             return "#F44336"  # Red
-        else:
-            return "#9C27B0"  # Purple
+        return "#9C27B0"  # Purple
 
     def _draw_meter(self):
         """Draw the initial meter"""

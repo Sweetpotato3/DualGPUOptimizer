@@ -41,6 +41,7 @@ class GPUMonitorFrame(ttk.Frame):
             parent: Parent widget
             gpu_id: GPU identifier
             gpu_name: GPU name to display
+
         """
         super().__init__(parent, padding=10, relief="ridge", borderwidth=1, style="Inner.TFrame")
         self.gpu_id = gpu_id
@@ -110,6 +111,7 @@ class GPUMonitorFrame(ttk.Frame):
         Args:
         ----
             metrics: New GPU metrics to display
+
         """
         # Update utilization
         self.progress_bars["utilization"]["value"] = metrics.utilization
@@ -162,6 +164,7 @@ class MetricsView(ttk.Frame):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent, padding=10)
 
@@ -227,6 +230,7 @@ class MetricsView(ttk.Frame):
         Args:
         ----
             metrics: Dictionary of GPU ID to metrics
+
         """
         # Update no more than once every 100ms to avoid overwhelming the UI
         current_time = time.time()
@@ -292,6 +296,7 @@ class DashboardView(ttk.Frame):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent, padding=10)
 

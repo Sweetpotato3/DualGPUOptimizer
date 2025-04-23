@@ -40,6 +40,7 @@ def _profile_pass(model: Any, dummy: Any) -> list[int]:
     Returns:
     -------
         List of execution times in nanoseconds for each layer
+
     """
     if not TORCH_AVAILABLE:
         logger.error("profile_pass called but PyTorch is not available")
@@ -66,6 +67,7 @@ def profile_layers(model: Any, dummy: Any) -> list[float]:
     Returns:
     -------
         List of weighted execution times
+
     """
     if not TORCH_AVAILABLE:
         logger.error("profile_layers called but PyTorch is not available")
@@ -99,6 +101,7 @@ def rebalance(
         Dictionary mapping layer names to GPU indices
 
     Note: No-op if PyTorch is not available.
+
     """
     if not TORCH_AVAILABLE:
         logger.error("rebalance called but PyTorch is not available")
@@ -145,5 +148,6 @@ def convert_gpu_format(gpus: list[Any]) -> list[dict[str, Any]]:
     Returns:
     -------
         List of dictionaries with 'idx' and 'mem_total' keys
+
     """
     return [{"idx": gpu.index, "mem_total": gpu.mem_total} for gpu in gpus]

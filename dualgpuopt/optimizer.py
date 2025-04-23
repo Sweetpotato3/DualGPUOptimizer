@@ -197,6 +197,7 @@ class Optimizer:
         Returns
         -------
             List of GPUMemoryInfo objects for available GPUs
+
         """
         # Check if we have a recent cache
         current_time = time.time()
@@ -263,6 +264,7 @@ class Optimizer:
         Returns:
         -------
             Memory required per token in MB
+
         """
         # Check cache first
         cache_key = hash(model)
@@ -314,6 +316,7 @@ class Optimizer:
         Returns:
         -------
             Tuple of (max_context_length, recommended_context_length)
+
         """
         # Check cache first
         cache_key = (hash(model), available_memory, tensor_parallel_size)
@@ -349,8 +352,7 @@ class Optimizer:
 
             # Round to nearest 128
             recommended_context = (recommended_context // 128) * 128
-            if recommended_context < ENV_MIN_CONTEXT:
-                recommended_context = ENV_MIN_CONTEXT
+            recommended_context = max(recommended_context, ENV_MIN_CONTEXT)
 
             # Final sanity check - ensure max_context is valid
             max_context = max(recommended_context, max_context)
@@ -378,6 +380,7 @@ class Optimizer:
         Returns:
         -------
             SplitConfiguration with optimal settings
+
         """
         try:
             if gpus is None:
@@ -498,6 +501,7 @@ class Optimizer:
         Returns:
         -------
             Command line arguments for llama.cpp
+
         """
         try:
             # Format the split configuration for llama.cpp
@@ -528,6 +532,7 @@ class Optimizer:
         Returns:
         -------
             Command line arguments for vLLM
+
         """
         try:
             return generate_vllm_cmd(
@@ -550,20 +555,19 @@ def _apply_error_handler(
     def decorator(func):
         if error_handler_available:
             return handle_exceptions(component=component, severity=severity, reraise=False)(func)
-        else:
-            # Simple error handling if dedicated error handler isn't available
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    logger.error(f"Error in {func.__name__}: {e}")
-                    # Return appropriate default values
-                    if func.__name__ == "calculate_gpu_split":
-                        return {"error": str(e), "success": False}
-                    return None
+        # Simple error handling if dedicated error handler isn't available
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error in {func.__name__}: {e}")
+                # Return appropriate default values
+                if func.__name__ == "calculate_gpu_split":
+                    return {"error": str(e), "success": False}
+                return None
 
-            return wrapper
+        return wrapper
 
     return decorator
 
@@ -579,6 +583,7 @@ def get_optimizer() -> Optimizer:
     Returns
     -------
         The global optimizer instance, creating it if needed
+
     """
     global _optimizer
     if _optimizer is None:
@@ -605,6 +610,7 @@ def calculate_gpu_split(model_params: Optional[ModelParameters] = None) -> Dict[
     Returns:
     -------
         Dictionary with split configuration
+
     """
     optimizer = get_optimizer()
 
@@ -645,6 +651,7 @@ def validate_params(params: ModelParameters) -> Tuple[bool, str]:
     Returns:
     -------
         Tuple of (is_valid, error_message)
+
     """
     # Check basic parameters
     if params.hidden_size <= 0:

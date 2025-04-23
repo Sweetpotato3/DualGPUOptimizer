@@ -28,6 +28,7 @@ class OptimizerTab(ttk.Frame):
         ----
             parent: Parent frame
             gpus: List of GPU objects
+
         """
         super().__init__(parent, padding=8)
         self.parent = parent
@@ -218,6 +219,7 @@ class OptimizerTab(ttk.Frame):
         Args:
         ----
             which: Type of value to copy ('split', 'llama', or 'vllm')
+
         """
         value = ""
         if which == "split":
@@ -265,6 +267,7 @@ class OptimizerTab(ttk.Frame):
         Returns
         -------
             Dictionary of preset configurations
+
         """
         try:
             preset_path = pathlib.Path(__file__).parent.parent / "presets" / "mixtral.json"

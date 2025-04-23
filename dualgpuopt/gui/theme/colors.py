@@ -74,6 +74,7 @@ def get_theme_by_name(theme_name):
     Returns:
     -------
         The theme dict or the default theme if not found
+
     """
     return AVAILABLE_THEMES.get(theme_name, THEME_DARK_PURPLE)
 
@@ -89,6 +90,7 @@ def update_current_theme(theme_name):
     Returns:
     -------
         The theme dict that was set
+
     """
     global current_theme
     theme = get_theme_by_name(theme_name)

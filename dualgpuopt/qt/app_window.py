@@ -21,8 +21,8 @@ from PySide6.QtWidgets import (
 )
 
 from dualgpuopt.engine.pool import EnginePool
-from dualgpuopt.gui.cache_monitor import CacheMonitorWidget
 from dualgpuopt.gpu_info import reprobe
+from dualgpuopt.gui.cache_monitor import CacheMonitorWidget
 
 # Import refactored components
 from dualgpuopt.services.alerts import AlertService
@@ -46,13 +46,17 @@ class DualGPUOptimizerApp(QMainWindow):
         ----
             mock_mode: Whether to use mock GPU data
             parent: Parent widget
+
         """
         super().__init__(parent)
 
         # Check Python version compatibility
         if sys.version_info >= (3, 12):
-            logger.warning("GUI stack officially supports Python <3.12. "
-                          "You're on %s. Proceeding, but wheels may be missing.", sys.version.split()[0])
+            logger.warning(
+                "GUI stack officially supports Python <3.12. "
+                "You're on %s. Proceeding, but wheels may be missing.",
+                sys.version.split()[0],
+            )
 
         # Set up main window properties
         self.setWindowTitle("DualGPUOptimizer")
@@ -61,7 +65,7 @@ class DualGPUOptimizerApp(QMainWindow):
 
         # Track mock mode
         self.mock_mode = mock_mode
-        
+
         # Clear mock GPU environment variable unless explicitly enabled
         if not self.mock_mode:
             os.environ.pop("DUALGPUOPT_MOCK_GPU", None)
@@ -76,7 +80,7 @@ class DualGPUOptimizerApp(QMainWindow):
         # Set up status bar
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        
+
         # Update status with GPU info
         self._update_gpu_status()
 
@@ -307,7 +311,7 @@ class DualGPUOptimizerApp(QMainWindow):
         redetect_action = QAction("Re-detect &GPUs", self)
         redetect_action.triggered.connect(self._redetect_gpus)
         view_menu.addAction(redetect_action)
-        
+
         view_menu.addSeparator()
 
         # Toggle Advanced Tools action
@@ -358,19 +362,19 @@ class DualGPUOptimizerApp(QMainWindow):
         try:
             # Use reprobe to get current GPU count and driver version
             gpu_count, driver_info = reprobe()
-            
+
             # Format the status message
             mock_status = "(Mock Mode)" if self.mock_mode else ""
             status_msg = f"Ready • {gpu_count} GPUs, {driver_info} {mock_status}"
-            
+
             # Update the status bar
             self.status_bar.showMessage(status_msg)
-            
+
             # Update the config service with current information
             config_service = get_config_service()
             config_service.set("gpu_count", gpu_count)
             config_service.set("driver_version", driver_info.replace("Driver ", ""))
-            
+
         except Exception as e:
             logger.error(f"Failed to update GPU status: {e}")
             self.status_bar.showMessage(f"Ready • GPU status error: {e}")
@@ -380,12 +384,12 @@ class DualGPUOptimizerApp(QMainWindow):
         try:
             # Re-probe GPU information
             gpu_count, driver_info = reprobe()
-            
+
             # Update status bar with new information
             mock_status = "(Mock Mode)" if self.mock_mode else ""
             status_msg = f"Ready • {gpu_count} GPUs, {driver_info} {mock_status}"
             self.status_bar.showMessage(status_msg)
-            
+
             # Refresh dashboard if available
             if hasattr(self, "dashboard_tab") and self.dashboard_tab:
                 try:
@@ -393,21 +397,15 @@ class DualGPUOptimizerApp(QMainWindow):
                     logger.info("Dashboard refreshed after GPU re-detection")
                 except Exception as e:
                     logger.error(f"Failed to refresh dashboard: {e}")
-            
+
             # Show success message
             QMessageBox.information(
-                self,
-                "GPU Detection",
-                f"Successfully detected {gpu_count} GPUs.\n{driver_info}"
+                self, "GPU Detection", f"Successfully detected {gpu_count} GPUs.\n{driver_info}"
             )
-            
+
         except Exception as e:
             logger.error(f"Error re-detecting GPUs: {e}")
-            QMessageBox.warning(
-                self,
-                "GPU Detection Error",
-                f"Failed to re-detect GPUs: {e}"
-            )
+            QMessageBox.warning(self, "GPU Detection Error", f"Failed to re-detect GPUs: {e}")
 
     def _handle_show_app(self):
         """Handle show application request from system tray"""

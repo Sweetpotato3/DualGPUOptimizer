@@ -43,6 +43,7 @@ class AppState:
         Returns:
         -------
             The state value or default
+
         """
         return self._state.get(key, default)
 
@@ -54,6 +55,7 @@ class AppState:
         ----
             key: The state key to set
             value: The value to set
+
         """
         old_value = self._state.get(key)
         self._state[key] = value
@@ -73,6 +75,7 @@ class AppState:
         Args:
         ----
             new_state: Dictionary of state updates
+
         """
         for key, value in new_state.items():
             self.set(key, value)
@@ -84,6 +87,7 @@ class AppState:
         Args:
         ----
             filepath: Optional custom filepath
+
         """
         if filepath is None:
             filepath = pathlib.Path.home() / ".dualgpuopt" / "app_state.json"
@@ -106,6 +110,7 @@ class AppState:
         Args:
         ----
             filepath: Optional custom filepath
+
         """
         if filepath is None:
             filepath = pathlib.Path.home() / ".dualgpuopt" / "app_state.json"

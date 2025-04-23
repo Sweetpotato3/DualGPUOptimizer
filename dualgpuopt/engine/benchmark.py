@@ -87,6 +87,7 @@ class BenchmarkDB:
         Args:
         ----
             db_path: Path to the database file (defaults to ~/.dualgpuopt/benchmarks.db)
+
         """
         self.db_path = db_path or DEFAULT_DB_PATH
         self._ensure_db_exists()
@@ -175,6 +176,7 @@ class BenchmarkDB:
         Returns:
         -------
             The ID of the newly created benchmark record
+
         """
         # Serialize config to JSON if provided
         config_json = json.dumps(config) if config else None
@@ -243,6 +245,7 @@ class BenchmarkDB:
         Returns:
         -------
             List of benchmark records
+
         """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -296,6 +299,7 @@ class BenchmarkDB:
         Returns:
         -------
             Most recent benchmark record or None if not found
+
         """
         benchmarks = self.get_model_benchmarks(model_path, backend, limit=1)
         return benchmarks[0] if benchmarks else None
@@ -311,6 +315,7 @@ class BenchmarkDB:
         Returns:
         -------
             List of model records with average performance metrics
+
         """
         with sqlite3.connect(self.db_path) as conn:
             conn.row_factory = sqlite3.Row
@@ -363,6 +368,7 @@ class BenchmarkDB:
         Returns:
         -------
             Number of benchmark records deleted
+
         """
         with sqlite3.connect(self.db_path) as conn:
             query = "DELETE FROM benchmarks"
@@ -406,6 +412,7 @@ def record_benchmark(model_path: str, backend: str, tokens_per_second: float, **
     Returns:
     -------
         The ID of the newly created benchmark record
+
     """
     return benchmark_db.add_benchmark(model_path, backend, tokens_per_second, **kwargs)
 
@@ -427,6 +434,7 @@ def get_model_performance(
     Returns:
     -------
         The most recent benchmark for the model, or None if not found
+
     """
     return benchmark_db.get_latest_benchmark(model_path, backend)
 
@@ -444,5 +452,6 @@ def get_fastest_models(limit: int = 5) -> list[dict[str, Any]]:
     Returns:
     -------
         List of model records with average performance metrics
+
     """
     return benchmark_db.get_fastest_models(limit)

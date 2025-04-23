@@ -70,6 +70,7 @@ def simulate_chat_session(model_path: str, backend: TokenGeneratorBackend, num_m
         model_path: Path to the model (for EnginePool)
         backend: The mock backend to use
         num_messages: Number of messages to simulate
+
     """
     # Path the engine._select_backend to return our mock backend
     with patch.object(Engine, "_select_backend", return_value=backend):

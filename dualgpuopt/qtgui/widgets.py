@@ -47,6 +47,7 @@ class HistoryPlot(pg.PlotWidget):
         ----
             metric: The metric key to plot from history (e.g., 'vram_0')
             parent: Optional parent widget
+
         """
         # Create plot with DateAxisItem for time-based x-axis
         super().__init__(parent=parent, axisItems={"bottom": pg.DateAxisItem()})
@@ -91,6 +92,7 @@ class HistoryPlot(pg.PlotWidget):
         Args:
         ----
             samples: List of TelemetrySample objects
+
         """
         if not samples:
             return
@@ -149,6 +151,7 @@ class HistoryPlot(pg.PlotWidget):
         Args:
         ----
             filename: The filename to save the PNG to
+
         """
         exporter = pg.exporters.ImageExporter(self.plotItem)
         exporter.export(filename)
@@ -160,6 +163,7 @@ class HistoryPlot(pg.PlotWidget):
         Args:
         ----
             filename: The filename to save the CSV to
+
         """
         exporter = pg.exporters.CSVExporter(self.plotItem)
         exporter.export(filename)
@@ -187,6 +191,7 @@ class AlertBadge(QtW.QLabel):
         Args:
         ----
             parent: Optional parent widget
+
         """
         super().__init__(parent)
 
@@ -205,6 +210,7 @@ class AlertBadge(QtW.QLabel):
             level: Alert level (EMERGENCY, CRITICAL, WARNING, NORMAL)
             message: Alert message to display
             duration: Time in ms to show the alert (0 for no auto-hide)
+
         """
         # Set text and styling based on alert level
         self.setText(message)
@@ -241,6 +247,7 @@ class CompareDock(QtW.QDockWidget):
         Args:
         ----
             parent: Optional parent widget
+
         """
         super().__init__("GPU Comparison", parent)
 
@@ -338,6 +345,7 @@ class CompareDock(QtW.QDockWidget):
         ----
             metric: Metric key that was updated
             value: New value for the metric
+
         """
         # Check if either plot is showing this metric
         if self.top_plot.metric == metric:
@@ -363,6 +371,7 @@ class PresetListWidget(QtW.QListWidget):
         Args:
         ----
             parent: Optional parent widget
+
         """
         super().__init__(parent)
 
@@ -389,6 +398,7 @@ class PresetDock(QtW.QDockWidget):
         Args:
         ----
             parent: Optional parent widget
+
         """
         super().__init__("Configuration Presets", parent)
 

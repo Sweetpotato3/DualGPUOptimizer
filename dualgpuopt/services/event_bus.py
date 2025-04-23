@@ -128,6 +128,7 @@ class EventBus:
             event_type: The type of event to subscribe to
             callback: Function to call when event is published
             priority: Priority level for this handler
+
         """
         with self._lock:
             if event_type not in self._subscribers:
@@ -155,6 +156,7 @@ class EventBus:
             event_type: String event name or event type class
             callback: Function to call when event is published
             priority: Priority level for this handler
+
         """
         # Handle class types
         if isinstance(event_type, type) and issubclass(event_type, Event):
@@ -182,6 +184,7 @@ class EventBus:
         Args:
         ----
             event: The event instance to publish
+
         """
         event_type = type(event)
         handlers: list[EventCallback] = []
@@ -214,6 +217,7 @@ class EventBus:
         ----
             event_type: Either an event type, event instance, or string event name
             data: Optional data for string events
+
         """
         # Case 1: It's an Event instance
         if isinstance(event_type, Event):
@@ -250,6 +254,7 @@ class EventBus:
         ----
             event_type: Event type to unsubscribe from
             callback: Callback function to remove
+
         """
         with self._lock:
             if event_type not in self._subscribers:
@@ -269,6 +274,7 @@ class EventBus:
         ----
             event_type: String event name or event type class
             callback: Callback to unsubscribe
+
         """
         if isinstance(event_type, type) and issubclass(event_type, Event):
             self.unsubscribe_typed(event_type, callback)
@@ -290,6 +296,7 @@ class EventBus:
         Args:
         ----
             event: The event instance to publish
+
         """
         threading.Thread(
             target=self.publish_typed,

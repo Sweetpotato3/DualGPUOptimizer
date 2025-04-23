@@ -1,11 +1,21 @@
 from __future__ import annotations
-import json, argparse, math, os, time
-from pathlib import Path
-import torch, transformers, datasets, peft, bitsandbytes as bnb
 
-from dualgpuopt.model.vram_fit import fit_plan
-from dualgpuopt.engine.metrics import record_model_load_time
+import argparse
+import json
+import math
+import os
+import time
+from pathlib import Path
+
+import bitsandbytes as bnb
+import datasets
+import peft
+import torch
+import transformers
 from prometheus_client import Gauge
+
+from dualgpuopt.engine.metrics import record_model_load_time
+from dualgpuopt.model.vram_fit import fit_plan
 
 TOK_S = Gauge("train_tokens_sec", "...")
 
@@ -51,14 +61,14 @@ def main():
             epoch = logs.get("epoch", 0)
             total_epochs = args.epochs
             pct = min(99, int(epoch * 100 / total_epochs)) if total_epochs > 0 else 0
-            
+
             tok_s = logs["train_runtime"] and logs["train_tokens_processed"]/logs["train_runtime"]
             loss = logs.get("loss", 0.0)
-            
-            if tok_s: 
+
+            if tok_s:
                 TOK_S.set(tok_s)
                 print(f"Epoch {math.floor(epoch)}/{total_epochs} | Step {step} {pct}% | tok/s:{tok_s:.1f} loss:{loss:.4f}")
-    
+
     trainer = transformers.Trainer(model, train_args, train_dataset=ds, callbacks=[tok_sec_callback])
     start = time.time(); trainer.train(); dur = time.time()-start
 
@@ -67,4 +77,4 @@ def main():
     print("Training complete")
 
 if __name__ == "__main__":
-    main() 
+    main()

@@ -25,14 +25,14 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-# Import shared constants
-from dualgpuopt.qt.shared_constants import CARD_STYLE
-
 from dualgpuopt.engine.pool import EnginePool
 from dualgpuopt.gpu.info import query as gpu_query
 from dualgpuopt.model.hf_client import download, search
 from dualgpuopt.model.quantise import to_awq, to_gguf
 from dualgpuopt.model.vram_fit import fit_plan
+
+# Import shared constants
+from dualgpuopt.qt.shared_constants import CARD_STYLE
 
 logger = logging.getLogger(__name__)
 

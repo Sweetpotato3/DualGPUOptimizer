@@ -50,6 +50,7 @@ def check_dependency(name: str) -> bool:
     Returns:
     -------
         True if installed, False otherwise
+
     """
     if name == "tkinter":
         try:
@@ -69,6 +70,7 @@ def get_missing_dependencies() -> Dict[str, List[str]]:
     Returns
     -------
         Dictionary with categories as keys and lists of missing dependencies as values
+
     """
     missing = {}
 
@@ -106,6 +108,7 @@ def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
     Returns:
     -------
         List of pip install commands
+
     """
     commands = []
 
@@ -152,13 +155,12 @@ def print_dependency_status() -> None:
     for name, info in CORE_DEPS.items():
         if check_dependency(name):
             print(f"  ✅ {name}: {info['description']}")
+        elif name == "tkinter":
+            print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
         else:
-            if name == "tkinter":
-                print(f"  ❌ {name}: {info['description']} - REQUIRED, application will not run")
-            else:
-                print(
-                    f"  ❌ {name}: {info['description']} - FALLBACK available but features limited"
-                )
+            print(
+                f"  ❌ {name}: {info['description']} - FALLBACK available but features limited"
+            )
 
     print("\nUI Dependencies:")
     for name, info in UI_DEPS.items():

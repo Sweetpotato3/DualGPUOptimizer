@@ -10,7 +10,8 @@ Public helpers
 * ``scaler``   – returns GradScaler (training only)
 """
 from __future__ import annotations
-import contextlib, typing as _t
+import contextlib
+import typing as _t
 from dualgpuopt.log import get as _log
 
 _log = _log("mpolicy")

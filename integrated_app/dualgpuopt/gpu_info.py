@@ -283,6 +283,7 @@ def probe_gpus(max_workers: int = 4) -> list[GPU]:
     Raises:
     ------
         RuntimeError: If GPU detection fails
+
     """
     # Check if mock mode is enabled
     if os.environ.get("DGPUOPT_MOCK_GPUS") == "1":

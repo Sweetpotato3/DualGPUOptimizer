@@ -23,6 +23,7 @@ class ConfigHandler:
         Args:
         ----
             config_dir: Directory to store configurations (defaults to user config dir)
+
         """
         self.logger = logging.getLogger("dualgpuopt.gui.launcher.config")
 
@@ -43,6 +44,7 @@ class ConfigHandler:
         Returns
         -------
             Dictionary of configurations
+
         """
         if not os.path.exists(self.config_file):
             return {}
@@ -61,6 +63,7 @@ class ConfigHandler:
         Returns
         -------
             True if saved successfully, False otherwise
+
         """
         try:
             with open(self.config_file, "w") as f:
@@ -81,6 +84,7 @@ class ConfigHandler:
         Returns:
         -------
             Configuration dictionary or None if not found
+
         """
         return self.configs.get(name)
 
@@ -96,6 +100,7 @@ class ConfigHandler:
         Returns:
         -------
             True if saved successfully, False otherwise
+
         """
         self.configs[name] = config
         return self._save_configs()
@@ -111,6 +116,7 @@ class ConfigHandler:
         Returns:
         -------
             True if deleted successfully, False otherwise
+
         """
         if name in self.configs:
             del self.configs[name]
@@ -124,6 +130,7 @@ class ConfigHandler:
         Returns
         -------
             List of configuration names
+
         """
         return list(self.configs.keys())
 
@@ -138,6 +145,7 @@ class ConfigHandler:
         Returns:
         -------
             Default configuration dictionary
+
         """
         if framework == "llama.cpp":
             return {
@@ -146,11 +154,10 @@ class ConfigHandler:
                 "threads": 4,
                 "gpu_split": "auto",
             }
-        elif framework == "vllm":
+        if framework == "vllm":
             return {
                 "tensor_parallel_size": "auto",
                 "max_memory": "auto",
                 "max_model_len": 8192,
             }
-        else:
-            return {}
+        return {}

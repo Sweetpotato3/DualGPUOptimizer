@@ -93,6 +93,7 @@ class ModelMemoryProfile:
         Returns:
         -------
             Estimated memory requirement in GB
+
         """
         # Base model memory (weights)
         total_memory = self.base_memory
@@ -131,6 +132,7 @@ class ModelMemoryProfile:
         Returns:
         -------
             Maximum batch size
+
         """
         # Reserve memory for model weights and some overhead
         remaining_memory = available_memory - self.base_memory - 0.5  # 0.5GB for overhead
@@ -173,6 +175,7 @@ class ModelMemoryProfile:
         Returns:
         -------
             Tuple of (primary_gpu_percentage, secondary_gpu_percentage)
+
         """
         vram_key = f"{int(vram_gb_primary)}+{int(vram_gb_secondary)}"
 
@@ -312,6 +315,7 @@ def get_model_profile(model_name: str, quantization: Optional[str] = None) -> Mo
     Returns:
     -------
         ModelMemoryProfile with adjusted memory requirements based on quantization
+
     """
     # Standardize model name format
     model_name = model_name.lower().replace(" ", "").replace("_", "").replace("-", "")
@@ -399,6 +403,7 @@ def apply_profile(
         - max_batch_size: Recommended maximum batch size
         - split_ratio: Recommended GPU split ratio for tensor parallelism
         - device_map: Suggested device map for model layers
+
     """
     profile = get_model_profile(model_name, quantization)
 
@@ -459,45 +464,44 @@ def apply_profile(
             "split_ratio": (1.0, 0.0),
             "device_map": {f"layer.{i}": 0 for i in range(profile.num_layers)},
         }
-    else:
-        # More than two GPUs - create a multi-GPU distribution
-        # This is a simplified version for >2 GPUs
-        gpu_count = len(sorted_gpus)
-        total_layers = profile.num_layers
+    # More than two GPUs - create a multi-GPU distribution
+    # This is a simplified version for >2 GPUs
+    gpu_count = len(sorted_gpus)
+    total_layers = profile.num_layers
 
-        # Calculate layers per GPU (distribute evenly for simplicity)
-        layers_per_gpu = total_layers // gpu_count
-        extra_layers = total_layers % gpu_count
+    # Calculate layers per GPU (distribute evenly for simplicity)
+    layers_per_gpu = total_layers // gpu_count
+    extra_layers = total_layers % gpu_count
 
-        # Create device map
-        device_map = {}
-        current_layer = 0
+    # Create device map
+    device_map = {}
+    current_layer = 0
 
-        for i, (gpu_id, vram) in enumerate(sorted_gpus):
-            # Assign extra layers to the GPUs with more VRAM
-            layer_count = layers_per_gpu + (1 if i < extra_layers else 0)
+    for i, (gpu_id, vram) in enumerate(sorted_gpus):
+        # Assign extra layers to the GPUs with more VRAM
+        layer_count = layers_per_gpu + (1 if i < extra_layers else 0)
 
-            for j in range(layer_count):
-                if current_layer < total_layers:
-                    device_map[f"layer.{current_layer}"] = int(gpu_id)
-                    current_layer += 1
+        for j in range(layer_count):
+            if current_layer < total_layers:
+                device_map[f"layer.{current_layer}"] = int(gpu_id)
+                current_layer += 1
 
-        # Calculate maximum batch size based on minimum VRAM
-        min_vram = min(vram for _, vram in sorted_gpus)
-        max_batch = profile.calculate_max_batch_size(min_vram, 1024)
+    # Calculate maximum batch size based on minimum VRAM
+    min_vram = min(vram for _, vram in sorted_gpus)
+    max_batch = profile.calculate_max_batch_size(min_vram, 1024)
 
-        # Calculate distribution percentages
-        gpu_percentages = tuple(
-            count / total_layers
-            for count in [
-                sum(1 for gpu in device_map.values() if int(gpu) == int(gpu_id))
-                for gpu_id, _ in sorted_gpus
-            ]
-        )
+    # Calculate distribution percentages
+    gpu_percentages = tuple(
+        count / total_layers
+        for count in [
+            sum(1 for gpu in device_map.values() if int(gpu) == int(gpu_id))
+            for gpu_id, _ in sorted_gpus
+        ]
+    )
 
-        return {
-            "memory_required": memory_required,
-            "max_batch_size": max_batch,
-            "split_ratio": gpu_percentages,
-            "device_map": device_map,
-        }
+    return {
+        "memory_required": memory_required,
+        "max_batch_size": max_batch,
+        "split_ratio": gpu_percentages,
+        "device_map": device_map,
+    }

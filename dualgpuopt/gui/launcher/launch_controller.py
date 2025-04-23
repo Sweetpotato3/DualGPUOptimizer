@@ -50,6 +50,7 @@ class LaunchController:
         Args:
         ----
             gpus: List of GPU objects to use for launching models
+
         """
         self.gpus = gpus or []
         self.logger = logging.getLogger("dualgpuopt.gui.launcher.controller")
@@ -82,6 +83,7 @@ class LaunchController:
         Args:
         ----
             data: Event data containing updated GPU list
+
         """
         if "gpus" in data:
             self.gpus = data["gpus"]
@@ -113,6 +115,7 @@ class LaunchController:
         Returns:
         -------
             Tuple of (success, process_id, error_message)
+
         """
         # Validate parameters
         valid, error_msg = self.model_validator.validate_launch_parameters(
@@ -226,6 +229,7 @@ class LaunchController:
         Returns:
         -------
             True if stop successful, False otherwise
+
         """
         if process_id not in self.active_processes:
             self.logger.warning(f"Process not found: {process_id}")
@@ -256,6 +260,7 @@ class LaunchController:
         Returns
         -------
             Dictionary of active processes
+
         """
         return self.active_processes.copy()
 
@@ -269,6 +274,7 @@ class LaunchController:
         ----
             process: Subprocess Popen object
             callback: Callback function for output lines
+
         """
         if not process or not process.stdout:
             return
@@ -300,6 +306,7 @@ class LaunchController:
         Args:
         ----
             error_line: Error line from process output
+
         """
         self.logger.error(f"OOM error detected: {error_line}")
 
@@ -337,6 +344,7 @@ class LaunchController:
         Returns:
         -------
             Dictionary with memory requirement estimates
+
         """
         if not ADVANCED_FEATURES_AVAILABLE:
             return {"error": "Advanced features not available"}
@@ -389,22 +397,22 @@ class LaunchController:
         Returns:
         -------
             Model size in billions of parameters
+
         """
         # Estimate model size based on filename patterns
         if "70b" in model_name:
             return 70.0
-        elif "13b" in model_name:
+        if "13b" in model_name:
             return 13.0
-        elif "7b" in model_name:
+        if "7b" in model_name:
             return 7.0
-        elif "mixtral" in model_name:
+        if "mixtral" in model_name:
             return 46.7  # Mixtral 8x7B
-        elif "mistral" in model_name:
+        if "mistral" in model_name:
             return 7.0  # Mistral 7B
-        elif "llama" in model_name:
+        if "llama" in model_name:
             return 7.0  # Default for LLaMA if no size specified
-        else:
-            return 7.0  # Default fallback
+        return 7.0  # Default fallback
 
     def optimize_gpu_split(self) -> str:
         """
@@ -413,6 +421,7 @@ class LaunchController:
         Returns
         -------
             GPU split as a comma-separated string of percentages
+
         """
         if not self.gpus:
             return "100"

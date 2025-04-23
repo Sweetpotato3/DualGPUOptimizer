@@ -4,10 +4,10 @@ GPU info module with platform-independent GPU detection
 """
 from __future__ import annotations
 
+import ctypes.util
 import logging
 import os
 from typing import Any
-import ctypes.util
 
 # Set up the logger
 logger = logging.getLogger("DualGPUOpt.GPUInfo")
@@ -124,24 +124,25 @@ def check_nvml_availability() -> tuple[bool, str]:
     Returns:
         tuple[bool, str]: (success, message) where success indicates if NVML is available
                           and message contains diagnostic information.
+
     """
     try:
         # Try to find nvidia-ml library
         nvml_path = ctypes.util.find_library("nvidia-ml")
-        
+
         if not nvml_path:
             return False, "NVIDIA Management Library (NVML) not found on system path"
-            
+
         # Try to import pynvml and initialize it
         import pynvml
         pynvml.nvmlInit()
-        
+
         # If we got here, it's successfully initialized
         driver_version = pynvml.nvmlSystemGetDriverVersion().decode()
         device_count = pynvml.nvmlDeviceGetCount()
-        
+
         return True, f"NVML initialized successfully: Driver {driver_version}, {device_count} GPUs found"
-        
+
     except ImportError:
         return False, "pynvml module not installed or not importable"
     except Exception as e:
@@ -149,10 +150,9 @@ def check_nvml_availability() -> tuple[bool, str]:
         error_msg = str(e)
         if "library not found" in error_msg.lower():
             return False, f"NVML library found at {nvml_path} but could not be loaded (CUDA missing?)"
-        elif "function not found" in error_msg.lower():
+        if "function not found" in error_msg.lower():
             return False, "NVML found but required functions missing (outdated driver?)"
-        else:
-            return False, f"NVML initialization failed: {error_msg}"
+        return False, f"NVML initialization failed: {error_msg}"
 
 # Add a function to re-probe for GPUs
 def reprobe() -> tuple[int, str]:
@@ -162,43 +162,44 @@ def reprobe() -> tuple[int, str]:
     Returns:
         tuple[int, str]: (gpu_count, message) where gpu_count is the number of GPUs detected
                          and message contains driver version or error information.
+
     """
     global NVML_INITIALIZED
-    
+
     try:
         # Clear any mock mode flag unless explicitly set
         env_mock = os.environ.get("DUALGPUOPT_MOCK_GPU", "").lower() in ("1", "true", "yes", "on")
         if not env_mock:
             set_mock_mode(False)
-            
+
         # Try to initialize NVML if not already
         if not NVML_INITIALIZED:
             success, message = check_nvml_availability()
             if success:
                 # Update the global flag if we're running in the original module
-                if 'dualgpuopt.gpu.common' in globals():
+                if "dualgpuopt.gpu.common" in globals():
                     import dualgpuopt.gpu.common
                     dualgpuopt.gpu.common.NVML_INITIALIZED = True
                 NVML_INITIALIZED = True
             else:
                 logger.warning(f"GPU re-probe failed: {message}")
                 return 0, message
-        
+
         # Get updated GPU information
         count = get_gpu_count()
-        
+
         # Get driver version
         try:
             import pynvml
             driver_version = pynvml.nvmlSystemGetDriverVersion().decode()
         except Exception:
             driver_version = "Unknown"
-            
+
         return count, f"Driver {driver_version}"
-        
+
     except Exception as e:
         logger.error(f"Error during GPU re-probe: {e}")
-        return 0, f"Error: {str(e)}"
+        return 0, f"Error: {e!s}"
 
 # Import error handling
 try:
@@ -219,26 +220,25 @@ def _apply_error_handler(component="GPUInfo", category=ErrorCategory.GPU_ERROR):
             return handle_exceptions(
                 component=component, severity=ErrorSeverity.ERROR, reraise=False
             )(func)
-        else:
-            # Simple error handling if dedicated error handler isn't available
-            @functools.wraps(func)
-            def wrapper(*args, **kwargs):
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    logger.error(f"Error in {func.__name__}: {e}")
-                    # Return appropriate default values based on function name
-                    if "count" in func.__name__:
-                        return 0
-                    elif "names" in func.__name__:
-                        return []
-                    elif "memory" in func.__name__:
-                        return {"total": 8192, "used": 0, "free": 8192}
-                    elif any(x in func.__name__ for x in ["temperature", "power", "util"]):
-                        return 0
-                    return None
+        # Simple error handling if dedicated error handler isn't available
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"Error in {func.__name__}: {e}")
+                # Return appropriate default values based on function name
+                if "count" in func.__name__:
+                    return 0
+                if "names" in func.__name__:
+                    return []
+                if "memory" in func.__name__:
+                    return {"total": 8192, "used": 0, "free": 8192}
+                if any(x in func.__name__ for x in ["temperature", "power", "util"]):
+                    return 0
+                return None
 
-            return wrapper
+        return wrapper
 
     return decorator
 
@@ -262,6 +262,7 @@ def _generate_mock_gpus(count: int = 2) -> list[dict[str, Any]]:
     Returns:
     -------
         List of GPU dictionaries with mock data
+
     """
     import random
 

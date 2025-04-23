@@ -1,13 +1,24 @@
 from __future__ import annotations
+
 from pathlib import Path
+
+from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QFileDialog,
-    QComboBox, QSpinBox, QPlainTextEdit, QProgressBar
+    QComboBox,
+    QFileDialog,
+    QHBoxLayout,
+    QLabel,
+    QPlainTextEdit,
+    QProgressBar,
+    QPushButton,
+    QSpinBox,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Signal, Slot, Qt
 
 from dualgpuopt.qt.shared_constants import PAD
 from dualgpuopt.qt.workers.trainer_worker import TrainerWorker
+
 
 class TrainingTab(QWidget):
     train_started = Signal()
@@ -85,7 +96,7 @@ class TrainingTab(QWidget):
         self.worker.start()
         self.start_btn.setEnabled(False); self.stop_btn.setEnabled(True)
 
-    def _stop(self): 
+    def _stop(self):
         if self.worker: self.worker.request_stop()
         self.stop_btn.setEnabled(False)
 
@@ -98,4 +109,4 @@ class TrainingTab(QWidget):
     @Slot(bool)
     def _on_done(self, ok: bool):
         self.start_btn.setEnabled(True); self.stop_btn.setEnabled(False)
-        self.train_finished.emit(ok) 
+        self.train_finished.emit(ok)

@@ -42,6 +42,7 @@ class ParameterResolver:
         Returns:
         -------
             Dictionary of resolved parameters
+
         """
         # This is a placeholder for the actual implementation
         self.logger.debug(f"Resolving llama parameters for {model_path}")
@@ -78,6 +79,7 @@ class ParameterResolver:
         Returns:
         -------
             Dictionary of resolved parameters
+
         """
         # This is a placeholder for the actual implementation
         self.logger.debug(f"Resolving vLLM parameters for {model_path}")
@@ -103,6 +105,7 @@ class ParameterResolver:
         Returns:
         -------
             Formatted command string
+
         """
         model_path = parameters["model_path"]
         ctx_size = parameters.get("ctx_size", 2048)
@@ -129,6 +132,7 @@ class ParameterResolver:
         Returns:
         -------
             Formatted command string
+
         """
         model_path = parameters["model_path"]
         tensor_parallel_size = parameters.get("tensor_parallel_size", 1)

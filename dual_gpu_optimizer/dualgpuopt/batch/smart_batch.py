@@ -21,7 +21,9 @@ Example
 """
 from __future__ import annotations
 
-import asyncio, time, typing as _t
+import asyncio
+import time
+import typing as _t
 from collections import defaultdict
 
 from dualgpuopt.log import get as _log

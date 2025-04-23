@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
 )
 
 # Import shared constants
-
 from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.presets import PresetManager
 

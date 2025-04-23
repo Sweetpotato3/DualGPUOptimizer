@@ -29,6 +29,7 @@ def configure_logging(
         file_level: Logging level for file output
         max_size: Maximum size of log file before rotation (bytes)
         backup_count: Number of backup log files to keep
+
     """
     # Create log directory if it doesn't exist
     os.makedirs(log_dir, exist_ok=True)
@@ -88,6 +89,7 @@ def get_error_logger(component: str) -> logging.Logger:
     Returns:
     -------
         Configured logger
+
     """
     logger_name = f"DualGPUOpt.{component}"
     return logging.getLogger(logger_name)
@@ -122,6 +124,7 @@ def log_exception(e: Exception, component: str, additional_info: Optional[str] =
         e: The exception to log
         component: Component name where the exception occurred
         additional_info: Additional information to include in the log
+
     """
     logger = get_error_logger(component)
 

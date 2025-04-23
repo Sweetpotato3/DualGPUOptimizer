@@ -17,14 +17,14 @@ from dualgpuopt.gpu.monitor import (
 
 # Public API
 __all__ = [
-    "query",
+    "generate_mock_gpus",
     "get_gpu_count",
     "get_gpu_names",
-    "set_mock_mode",
-    "get_mock_mode",
-    "generate_mock_gpus",
     "get_memory_info",
-    "get_utilization",
-    "get_temperature",
+    "get_mock_mode",
     "get_power_usage",
+    "get_temperature",
+    "get_utilization",
+    "query",
+    "set_mock_mode",
 ]

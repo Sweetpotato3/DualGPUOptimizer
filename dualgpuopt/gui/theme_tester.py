@@ -241,6 +241,7 @@ class ThemeTester(tk.Tk):
         Args:
         ----
             theme_name: Name of the new theme
+
         """
         self.status_var.set(f"Theme changed to {theme_name}")
 
@@ -251,6 +252,7 @@ class ThemeTester(tk.Tk):
         Args:
         ----
             theme_name: Name of the new theme
+
         """
         # Increment theme change count
         self._theme_change_count += 1

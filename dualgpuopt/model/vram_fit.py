@@ -68,6 +68,7 @@ def calculate_gpu_split(
         Tuple containing:
         - List of split ratios (e.g. [0.6, 0.4] for 60%/40% split)
         - Dictionary with additional information (total memory, etc.)
+
     """
     if not gpu_info:
         raise ValueError("No GPU information provided")
@@ -131,6 +132,7 @@ def calculate_max_context_size(
     Returns:
     -------
         Maximum context size in tokens
+
     """
     # First calculate split ratios
     split_ratios, info = calculate_gpu_split(model_bytes, gpu_info, safety_margin)
@@ -182,6 +184,7 @@ def fit_plan(
     Returns:
     -------
         Dictionary with the complete fitting plan
+
     """
     # If GPUs not provided, use auto-detection
     if gpus is None:

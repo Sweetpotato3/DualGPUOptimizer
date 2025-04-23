@@ -91,6 +91,7 @@ class ErrorDetails:
             traceback_str: String representation of the traceback
             context: Additional context information
             timestamp: Error timestamp (if None, will be set when logged)
+
         """
         import time
 
@@ -246,7 +247,7 @@ class ErrorHandler:
             severity: [] for severity in ErrorSeverity
         }
 
-        self._error_counts: Dict[ErrorCategory, int] = {category: 0 for category in ErrorCategory}
+        self._error_counts: Dict[ErrorCategory, int] = dict.fromkeys(ErrorCategory, 0)
 
         self._recent_errors: List[ErrorDetails] = []
         self._max_recent_errors = 100
@@ -281,6 +282,7 @@ class ErrorHandler:
         ----
             severity: Error severity level to trigger callback
             callback: Function to call when error occurs
+
         """
         # Support wildcard '*' to register for all severity levels
         if severity == "*":
@@ -303,6 +305,7 @@ class ErrorHandler:
         Returns:
         -------
             True if callback was removed, False if not found
+
         """
         # Support wildcard '*' to unregister from all severity levels
         if severity == "*":
@@ -347,6 +350,7 @@ class ErrorHandler:
         Returns:
         -------
             ErrorDetails object with complete error information
+
         """
         # Create error details
         error_details = ErrorDetails(
@@ -443,6 +447,7 @@ class ErrorHandler:
         Returns:
         -------
             List of matching error details
+
         """
         filtered = self._recent_errors
 
@@ -472,6 +477,7 @@ class ErrorHandler:
             exc_type: Exception type
             exc_value: Exception value
             exc_traceback: Exception traceback
+
         """
         if issubclass(exc_type, KeyboardInterrupt):
             # Don't handle keyboard interrupt
@@ -508,6 +514,7 @@ def handle_exceptions(
         @handle_exceptions("GPUMonitor", ErrorSeverity.ERROR)
         def get_gpu_info():
             # Function body that might raise exceptions
+
     """
 
     def decorator(func):
@@ -540,17 +547,17 @@ def handle_exceptions(
                     # Handle basic types
                     if return_type is bool:
                         return False
-                    elif return_type is int:
+                    if return_type is int:
                         return 0
-                    elif return_type is float:
+                    if return_type is float:
                         return 0.0
-                    elif return_type is str:
+                    if return_type is str:
                         return ""
-                    elif return_type is list or (
+                    if return_type is list or (
                         hasattr(return_type, "__origin__") and return_type.__origin__ is list
                     ):
                         return []
-                    elif return_type is dict or (
+                    if return_type is dict or (
                         hasattr(return_type, "__origin__") and return_type.__origin__ is dict
                     ):
                         return {}
@@ -585,6 +592,7 @@ def show_error_dialog(title: str, message: str, details: Optional[str] = None) -
         title: Dialog title
         message: Main error message
         details: Optional technical details
+
     """
     # Import here to avoid circular imports
     try:

@@ -28,6 +28,7 @@ class MemoryProfileTab(ttk.Frame):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent, padding=10)
 
@@ -220,6 +221,7 @@ class MemoryProfileTab(ttk.Frame):
         Args:
         ----
             event_data: Event data dictionary
+
         """
         # Throttle updates to avoid overwhelming the UI
         current_time = time.time()

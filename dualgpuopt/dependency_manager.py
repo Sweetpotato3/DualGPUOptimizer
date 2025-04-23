@@ -59,7 +59,7 @@ ALL_DEPENDENCIES = {
 }
 
 # Dependency state tracking
-dependency_status = {name: False for name in ALL_DEPENDENCIES}
+dependency_status = dict.fromkeys(ALL_DEPENDENCIES, False)
 dependency_import_errors = {}
 
 
@@ -89,6 +89,7 @@ def is_available(dependency_name: str) -> bool:
     Returns:
     -------
         True if dependency is available
+
     """
     return dependency_status.get(dependency_name, False)
 
@@ -105,6 +106,7 @@ def get_module(module_name: str, silent: bool = False) -> ImportedModule:
     Returns:
     -------
         ImportedModule object with module and availability information
+
     """
     result = ImportedModule(name=module_name)
 
@@ -137,6 +139,7 @@ def get_with_fallback(
     Returns:
     -------
         ImportedModule with either the primary or fallback module
+
     """
     primary = get_module(primary_module, silent=True)
 
@@ -170,6 +173,7 @@ def check_dependency(name: str) -> bool:
     Returns:
     -------
         True if installed, False otherwise
+
     """
     if name == "tkinter":
         try:
@@ -213,6 +217,7 @@ def get_missing_dependencies() -> Dict[str, List[str]]:
     Returns
     -------
         Dictionary with categories as keys and lists of missing dependencies as values
+
     """
     missing = {}
 
@@ -255,6 +260,7 @@ def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
     Returns:
     -------
         List of pip install commands
+
     """
     commands = []
 
@@ -307,6 +313,7 @@ def install_dependencies(missing_deps: Dict[str, List[str]], interactive: bool =
     Returns:
     -------
         True if all installations were successful, False otherwise
+
     """
     if not missing_deps:
         logger.info("No missing dependencies to install")
@@ -397,6 +404,7 @@ def verify_core_dependencies() -> Tuple[bool, List[str]]:
     Returns
     -------
         Tuple of (all_core_available, list of critical missing dependencies)
+
     """
     check_tkinter = check_dependency("tkinter")
     if not check_tkinter:
@@ -420,6 +428,7 @@ def print_dependency_status(include_errors: bool = False) -> None:
     Args:
     ----
         include_errors: If True, include error messages for failed imports
+
     """
     print("\nDualGPUOptimizer Dependency Check")
     print("===============================\n")
@@ -525,6 +534,7 @@ def get_import_wrapper(module_name: str, default_value=None) -> Any:
     Returns:
     -------
         Module if available, else default_value
+
     """
     try:
         return importlib.import_module(module_name)
@@ -544,11 +554,10 @@ class DynamicImporter:
 
             logger.debug("Using ttkbootstrap for UI")
             return ttk
-        else:
-            from tkinter import ttk
+        from tkinter import ttk
 
-            logger.debug("Using standard ttk for UI")
-            return ttk
+        logger.debug("Using standard ttk for UI")
+        return ttk
 
     @staticmethod
     def import_gpu_compat():

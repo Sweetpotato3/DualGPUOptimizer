@@ -101,6 +101,7 @@ class TeleWorker(QObject):
         Args:
         ----
             interval: Polling interval in seconds
+
         """
         super().__init__()
         self.interval = interval
@@ -227,6 +228,7 @@ def create_telemetry_thread() -> tuple[QThread, TeleWorker]:
     Returns
     -------
         Tuple containing (QThread, TeleWorker)
+
     """
     # Create thread and worker
     thread = QThread()

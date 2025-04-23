@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 import logging
 import pathlib
-from typing import Dict, Any, Callable, List, Optional
+from typing import Dict, Any, Optional
 
 from dualgpuopt.services.event_service import event_bus
 

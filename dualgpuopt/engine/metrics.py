@@ -174,6 +174,7 @@ def update_pool_metrics(stats: dict) -> None:
     Args:
     ----
         stats: Dictionary of stats from EnginePool.get_stats()
+
     """
     if not PROMETHEUS_AVAILABLE:
         return
@@ -236,6 +237,7 @@ def record_model_load_time(model_name: str, backend: str, load_time: float) -> N
         model_name: The name or path of the model
         backend: The backend used (e.g., "vllm", "llama.cpp", "hf")
         load_time: Time in seconds taken to load the model
+
     """
     if not PROMETHEUS_AVAILABLE:
         return
@@ -265,6 +267,7 @@ def update_model_metrics(
         tokens_per_second: Tokens per second for the model
         memory_mb: Optional memory usage in MB
         gpu_util: Optional GPU utilization percentage
+
     """
     if not PROMETHEUS_AVAILABLE:
         return

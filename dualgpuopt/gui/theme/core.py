@@ -37,6 +37,7 @@ def toggle_theme(root):
     Returns:
     -------
         The name of the new theme
+
     """
     # Determine which theme to switch to
     if (
@@ -64,6 +65,7 @@ def set_theme(root, theme_name):
         theme_name: Name of the theme to set
     Returns:
         The name of the theme that was set
+
     """
     # Set the theme based on the name
     if theme_name in AVAILABLE_THEMES:
@@ -109,6 +111,7 @@ def load_theme_from_config(root):
     Returns:
     -------
         The name of the loaded theme
+
     """
     try:
         from dualgpuopt.services.config_service import config_service
@@ -128,6 +131,7 @@ def apply_theme(root):
     Args:
     ----
         root: The root Tk window
+
     """
     apply_theme_with_compatibility(root)
 
@@ -144,6 +148,7 @@ class ThemeToggleButton(ttk.Button):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for the button
+
         """
         # Determine initial icon based on current theme
         is_light = current_theme == AVAILABLE_THEMES["light"]

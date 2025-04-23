@@ -19,7 +19,7 @@ def test_split_layers():
     assert p["quant"] in ("awq", "gguf") and not p["disk"]
     # If gguf with gpu_layers, verify layers are reasonable
     if p["quant"] == "gguf" and "gpu_layers" in p:
-        assert 0 < p["gpu_layers"] < int(33 * 32)
+        assert 0 < p["gpu_layers"] < (33 * 32)
 
 
 def test_ram_offload():

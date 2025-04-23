@@ -232,6 +232,7 @@ def start_stream(interval: float = 1.0) -> queue.Queue[Telemetry]:
     Returns:
     -------
         Queue of telemetry objects
+
     """
     q: queue.Queue[Telemetry] = queue.Queue()
 

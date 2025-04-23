@@ -2,7 +2,9 @@
 Tiny helper to load / save user config to ~/.dualgpuopt/config.toml
 """
 from __future__ import annotations
-import tomllib, tomli_w, pathlib
+import tomllib
+import tomli_w
+import pathlib
 import logging
 from typing import Dict, Any
 

@@ -20,6 +20,7 @@ def fix_dpi_scaling(root):
     Args:
     ----
         root: The root Tk window
+
     """
     try:
         # Try to set DPI awareness programmatically
@@ -50,6 +51,7 @@ def scale_font_size(size):
     Returns:
     -------
         Scaled font size (integer)
+
     """
     return int(size * FONT_SCALE)
 
@@ -61,6 +63,7 @@ def configure_fonts(root):
     Args:
     ----
         root: The root Tk window
+
     """
     try:
         # Get available font families
@@ -101,6 +104,7 @@ def setup_high_dpi(root):
     Args:
     ----
         root: The root Tk window
+
     """
     # Fix DPI scaling first
     fix_dpi_scaling(root)

@@ -21,6 +21,7 @@ def get_memory_info(gpu_id: Optional[int] = None) -> Union[dict[str, int], list[
     Returns:
     -------
         Dictionary with memory info or list of dictionaries for all GPUs
+
     """
     gpus = query()
 
@@ -46,12 +47,11 @@ def get_memory_info(gpu_id: Optional[int] = None) -> Union[dict[str, int], list[
                     "used": 5000,
                     "free": 19576,
                 }
-            else:
-                return {
-                    "total": 16384,
-                    "used": 3000,
-                    "free": 13384,
-                }
+            return {
+                "total": 16384,
+                "used": 3000,
+                "free": 13384,
+            }
 
         # Normal case for non-test environments
         return {
@@ -99,6 +99,7 @@ def get_utilization(gpu_id: Optional[int] = None) -> Union[int, list[int]]:
     Returns:
     -------
         Utilization percentage or list of percentages for all GPUs
+
     """
     gpus = query()
 
@@ -122,6 +123,7 @@ def get_temperature(gpu_id: Optional[int] = None) -> Union[float, list[float]]:
     Returns:
     -------
         Temperature in Celsius or list of temperatures for all GPUs
+
     """
     gpus = query()
 
@@ -145,6 +147,7 @@ def get_power_usage(gpu_id: Optional[int] = None) -> Union[float, list[float]]:
     Returns:
     -------
         Power usage in Watts or list of power usages for all GPUs
+
     """
     gpus = query()
 

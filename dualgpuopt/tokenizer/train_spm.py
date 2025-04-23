@@ -14,6 +14,7 @@ def train_tokenizer(corpus_path, model_prefix, vocab_size=48000):
         corpus_path: Path to the JSONL corpus file
         model_prefix: Output model name prefix
         vocab_size: Size of the vocabulary
+
     """
     # Extract text from JSONL and write to a temporary file
     texts = pathlib.Path("tmp_corpus.txt")

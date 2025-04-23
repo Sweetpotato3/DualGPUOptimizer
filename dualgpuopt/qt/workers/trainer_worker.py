@@ -1,6 +1,15 @@
 from __future__ import annotations
+
+import json
+import os
+import re
+import shlex
+import signal
+import subprocess
+import sys
+import time
+
 from PySide6.QtCore import QThread, Signal
-import subprocess, re, json, time, shlex, os, sys, signal
 
 TOK_RE = re.compile(r"tok/s:(\d+\.\d+).*?loss:(\d+\.\d+)")
 PCT_RE = re.compile(r"Epoch (\d+)/(\d+) \| .*? (\d+)%")
@@ -39,4 +48,4 @@ class TrainerWorker(QThread):
             if self._stop:
                 proc.send_signal(signal.SIGINT)
         ok = proc.wait() == 0
-        self.finished.emit(ok) 
+        self.finished.emit(ok)

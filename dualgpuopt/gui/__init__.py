@@ -25,10 +25,10 @@ except ImportError:
 # We'll import the components lazily as needed to avoid circular imports
 __all__ = [
     "DashboardView",
-    "OptimizerTab",
     "LauncherTab",
     "MainApplication",
     "ModernApp",
+    "OptimizerTab",
     "run",
     "run_modern_app",
 ]
@@ -141,8 +141,7 @@ def run_app() -> None:
             if modern_app and run_modern_app:
                 run_modern_app()
                 return
-            else:
-                logger.warning("Modern UI classes not found, falling back to legacy UI")
+            logger.warning("Modern UI classes not found, falling back to legacy UI")
         else:
             logger.warning("Modern UI module not found, falling back to legacy UI")
     except ImportError as e:

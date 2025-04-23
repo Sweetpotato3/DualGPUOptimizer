@@ -43,9 +43,8 @@ def load_config(preset_path: str) -> dict[str, Any]:
         with open(path) as f:
             config = yaml.safe_load(f)
         return config[section]
-    else:
-        with open(preset_path) as f:
-            return yaml.safe_load(f)
+    with open(preset_path) as f:
+        return yaml.safe_load(f)
 
 
 def prepare_dataset(config: dict[str, Any], tokenizer):

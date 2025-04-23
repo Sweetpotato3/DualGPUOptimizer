@@ -52,6 +52,7 @@ def generate_mock_gpus(count: int = 2) -> list[dict[str, Any]]:
     Returns:
     -------
         List of dictionaries with mock GPU data
+
     """
     mock_gpus = []
 
@@ -116,6 +117,7 @@ class GpuMetric:
         Returns
         -------
             List of metric names
+
         """
         return [
             cls.UTILIZATION,
@@ -138,6 +140,7 @@ def is_mock_mode() -> bool:
     Returns
     -------
         True if mock mode is active
+
     """
     return MOCK_MODE
 
@@ -150,6 +153,7 @@ def set_mock_mode(enabled: bool = True) -> None:
     Args:
     ----
         enabled: Whether to enable mock mode
+
     """
     global MOCK_MODE
     MOCK_MODE = enabled
@@ -164,6 +168,7 @@ def reinit_nvml() -> bool:
     Returns
     -------
         True if initialization was successful
+
     """
     global NVML_INITIALIZED
 

@@ -32,6 +32,7 @@ def generate_llama_cpp_cmd(
     Returns:
     -------
         Command string for llama.cpp
+
     """
     cmd = f"./llama.cpp -m {model_path} -c {ctx_size} -t {threads}"
 
@@ -72,6 +73,7 @@ def generate_vllm_cmd(
     Returns:
     -------
         Command string for vLLM
+
     """
     cmd = f"python -m vllm.entrypoints.openai.api_server --model {model_path}"
 
@@ -104,6 +106,7 @@ def generate_env_vars(use_tensor_parallel: bool = True) -> dict[str, str]:
     Returns:
     -------
         Dictionary of environment variables
+
     """
     env_vars = {
         "CUDA_DEVICE_MAX_CONNECTIONS": "1",  # Limit connections for better tensor parallel perf

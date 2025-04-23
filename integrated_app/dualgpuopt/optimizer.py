@@ -33,6 +33,7 @@ def make_env_file(gpus: list[GPU], filename: Path) -> Path:
     Returns:
     -------
         Path to the created file
+
     """
     env = textwrap.dedent(
         f"""
@@ -62,6 +63,7 @@ def llama_command(model_path: str, ctx: int, split: str) -> str:
     Returns:
     -------
         Formatted command string
+
     """
     return f"./main -m {model_path} " f"--gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}"
 
@@ -78,6 +80,7 @@ def vllm_command(model_path: str, tp: int) -> str:
     Returns:
     -------
         Formatted command string
+
     """
     return (
         "python -m vllm.entrypoints.openai.api_server "

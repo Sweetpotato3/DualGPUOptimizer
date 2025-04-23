@@ -101,6 +101,7 @@ class EventBus:
         ----
             event_type: Type of event to subscribe to (class)
             callback: Function to call when event is published
+
         """
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
@@ -116,6 +117,7 @@ class EventBus:
         Args:
         ----
             event: Event instance to publish
+
         """
         for event_type, subscribers in self._subscribers.items():
             if isinstance(event, event_type):
@@ -302,6 +304,7 @@ class GPUInfoFrame(ttk.LabelFrame):
         Args:
         ----
             metrics: Dictionary of GPU ID to GPUMetrics objects
+
         """
         # Update display
         self.update_metrics(metrics)
@@ -341,6 +344,7 @@ class GPUInfoFrame(ttk.LabelFrame):
         Args:
         ----
             metrics: Dictionary of GPU ID to GPUMetrics objects
+
         """
         # Clear existing frames if the GPUs changed
         current_gpus = set(metrics.keys())
@@ -632,15 +636,15 @@ def create_monitoring_component(parent):
     Returns:
     -------
         The created monitoring component
+
     """
     if DASHBOARD_AVAILABLE:
         # Use the full dashboard if available, wrapped to connect to event system
         logger.info("Using comprehensive dashboard view with event system")
         return EventDrivenDashboardWrapper(parent)
-    else:
-        # Fall back to the basic GPU info frame
-        logger.info("Using basic GPU info frame")
-        return GPUInfoFrame(parent)
+    # Fall back to the basic GPU info frame
+    logger.info("Using basic GPU info frame")
+    return GPUInfoFrame(parent)
 
 
 def create_optimizer_component(parent):
@@ -654,15 +658,15 @@ def create_optimizer_component(parent):
     Returns:
     -------
         The created optimizer component
+
     """
     if OPTIMIZER_AVAILABLE:
         # Use the full optimizer if available, wrapped to connect to event system
         logger.info("Using comprehensive optimizer view with event system")
         return EventDrivenOptimizerWrapper(parent)
-    else:
-        # Fall back to the basic optimizer info frame
-        logger.info("Using basic optimizer information frame")
-        return BasicOptimizerFrame(parent)
+    # Fall back to the basic optimizer info frame
+    logger.info("Using basic optimizer information frame")
+    return BasicOptimizerFrame(parent)
 
 
 class StatusBar(ttk.Frame):

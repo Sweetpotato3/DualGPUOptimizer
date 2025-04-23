@@ -32,6 +32,7 @@ class LegalRetriever:
         self,
         index_path: str,
         model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+        device: str = None,  # None = auto, 'cpu', or 'cuda:0' etc.
     ):
         """
         Initialize the retriever.
@@ -40,13 +41,16 @@ class LegalRetriever:
         ----
             index_path: Path to the FAISS index file
             model_name: Name of the sentence-transformer model for embeddings
+            device: Device to use for model inference ('cpu', 'cuda:0', etc.)
+
         """
         self.index_path = index_path
         self.model_name = model_name
+        self.device = device
 
         # Load sentence transformer model
         logger.info(f"Loading embedding model: {model_name}")
-        self.model = SentenceTransformer(model_name)
+        self.model = SentenceTransformer(model_name, device=device)
 
         # Load FAISS index
         logger.info(f"Loading FAISS index from {index_path}")
@@ -55,8 +59,12 @@ class LegalRetriever:
         # Load metadata
         metadata_path = f"{index_path}.meta.json"
         logger.info(f"Loading metadata from {metadata_path}")
+        self.metadata = []
         with open(metadata_path, encoding="utf-8") as f:
-            self.metadata = json.load(f)
+            for line in f:
+                line = line.strip()
+                if line:  # Skip empty lines
+                    self.metadata.append(json.loads(line))
 
         logger.info(f"Retriever initialized with {self.index.ntotal} documents")
 
@@ -64,7 +72,7 @@ class LegalRetriever:
         self,
         query: str,
         k: int = 5,
-        threshold: float = 0.6,
+        threshold: float = 0.1,  # Minimal threshold to filter truly unrelated results
     ) -> List[Dict[str, Any]]:
         """
         Retrieve relevant documents for a query.
@@ -78,6 +86,7 @@ class LegalRetriever:
         Returns:
         -------
             List of retrieved documents with metadata and citations
+
         """
         # Encode query to embedding
         query_embedding = self.model.encode(query)
@@ -106,7 +115,7 @@ class LegalRetriever:
                 metadata["citation"] = self._generate_citation(metadata)
 
             results.append(metadata)
-
+            
         return results
 
     def _generate_citation(self, metadata: Dict[str, Any]) -> str:
@@ -120,6 +129,7 @@ class LegalRetriever:
         Returns:
         -------
             Citation string
+
         """
         # Try to extract information from metadata
         doc_id = metadata.get("id", "Unknown")
@@ -141,6 +151,7 @@ def top_k(
     index_path: str = "rag/qc.faiss",
     model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
     format_citations: bool = True,
+    device: str = None,
 ) -> List[str]:
     """
     Convenience function to retrieve top-k documents for a query.
@@ -152,10 +163,12 @@ def top_k(
         index_path: Path to the FAISS index
         model_name: Name of the sentence transformer model
         format_citations: Whether to add citation formatting
+        device: Device to use for model inference ('cpu', 'cuda:0', etc.)
 
     Returns:
     -------
         List of document texts with citations
+
     """
     try:
         # Check if files exist
@@ -167,7 +180,7 @@ def top_k(
             return [f"Error: Index not found at {index_path}"]
 
         # Initialize retriever
-        retriever = LegalRetriever(index_path, model_name)
+        retriever = LegalRetriever(index_path, model_name, device=device)
 
         # Get results
         results = retriever.retrieve(query, k=k)
@@ -217,4 +230,4 @@ if __name__ == "__main__":
     for i, doc in enumerate(docs):
         print(f"\n--- Document {i+1} ---")
         print(doc)
-        print("")
+        print()

@@ -47,6 +47,7 @@ def calc_max_ctx(
     -------
     int
         Maximum safe context size
+
     """
     bytes_per_tok = n_layers * n_kv_heads * head_dim * (precision_bits // 8) * 2 * moe_factor
     free_mib = sum(g.mem_free for g in gpus) - reserve_gb * 1024
@@ -69,6 +70,7 @@ def model_params_from_name(model_name: str) -> tuple[int, int, int, float]:
     Returns:
     -------
         Tuple of (n_layers, n_kv_heads, head_dim, moe_factor)
+
     """
     model_name = model_name.lower()
 

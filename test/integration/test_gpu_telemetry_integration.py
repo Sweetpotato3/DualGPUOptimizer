@@ -42,12 +42,12 @@ class SignalRecorder(QObject):
 class TestGPUTelemetryIntegration:
     """Integration tests for GPU telemetry and monitoring components."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def signal_recorder(self):
         """Create a signal recorder for testing."""
         return SignalRecorder()
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_gpu_data(self):
         """Create mock GPU data for testing."""
         # Initial state

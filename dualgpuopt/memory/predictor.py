@@ -79,6 +79,7 @@ class MemoryProfile:
             per_token_usage: Memory per token in bytes
             growth_rate: Memory growth rate factor for projections
             recovery_buffer: Target usage percentage after OOM recovery
+
         """
         self.name = name
         self.base_usage = base_usage
@@ -120,6 +121,7 @@ class MemoryProfile:
         Returns:
         -------
             Estimated memory usage in bytes
+
         """
         # Create cache key
         cache_key = (batch_size, token_count, kv_cache_factor)
@@ -158,6 +160,7 @@ class MemoryProfile:
         Returns:
         -------
             Estimated memory usage in bytes
+
         """
         # Convert to positive integers
         batch_size = max(1, int(batch_size))
@@ -180,6 +183,7 @@ class MemoryProfile:
         Returns:
         -------
             Maximum batch size
+
         """
         # Create cache key
         cache_key = (available_memory, token_count)
@@ -231,6 +235,7 @@ class MemoryProfile:
         Returns:
         -------
             Maximum sequence length
+
         """
         # Create cache key
         cache_key = (available_memory, batch_size)
@@ -277,6 +282,7 @@ class MemoryProfile:
         ----
             memory_usage: Current memory usage in bytes
             max_history: Maximum history points to keep
+
         """
         timestamp = time.time()
         self.usage_history.append((timestamp, memory_usage))
@@ -296,6 +302,7 @@ class MemoryProfile:
         Returns:
         -------
             Projected memory usage in bytes, or None if projection not possible
+
         """
         if len(self.usage_history) < 5:
             return None  # Not enough data
@@ -400,6 +407,7 @@ class MemoryProfile:
         Returns:
         -------
             List of estimated memory usage in bytes
+
         """
         if NUMPY_AVAILABLE and len(batch_configs) > 1:
             # Convert to arrays for vectorized calculation
@@ -412,9 +420,8 @@ class MemoryProfile:
             total_memory = self.base_usage + batch_memory + token_memory
 
             return total_memory.tolist()
-        else:
-            # Standard loop-based calculation
-            return [self.estimate_usage(bs, tc, kv_cache_factor) for bs, tc in batch_configs]
+        # Standard loop-based calculation
+        return [self.estimate_usage(bs, tc, kv_cache_factor) for bs, tc in batch_configs]
 
 
 # Default memory profiles for common models
@@ -464,6 +471,7 @@ def get_available_profiles() -> Set[str]:
     Returns
     -------
         Set of profile names
+
     """
     return set(DEFAULT_PROFILES.keys())
 
@@ -480,6 +488,7 @@ def get_profile(name: str) -> Optional[MemoryProfile]:
     Returns:
     -------
         MemoryProfile or None if not found
+
     """
     return DEFAULT_PROFILES.get(name)
 
@@ -527,6 +536,7 @@ def find_optimal_batch(
     Returns:
     -------
         Tuple of (batch_size, sequence_length)
+
     """
     # Apply safety buffer
     effective_memory = int(available_memory * memory_buffer)

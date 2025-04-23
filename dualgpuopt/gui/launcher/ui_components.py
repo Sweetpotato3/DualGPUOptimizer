@@ -36,6 +36,7 @@ class LauncherTab(ttk.Frame):
         ----
             parent: Parent frame
             gpus: List of GPU objects
+
         """
         super().__init__(parent)
         self.parent = parent
@@ -70,6 +71,7 @@ class LauncherTab(ttk.Frame):
         Args:
         ----
             data: Event data containing updated GPU list
+
         """
         if "gpus" in data:
             self.gpus = data["gpus"]
@@ -84,6 +86,7 @@ class LauncherTab(ttk.Frame):
         Args:
         ----
             data: Event data containing process exit information
+
         """
         process_id = data.get("process_id", "")
         return_code = data.get("return_code", -1)
@@ -204,6 +207,7 @@ class LauncherTab(ttk.Frame):
         Returns:
         -------
             Parameters frame
+
         """
         frame = ttk.Frame(parent)
         frame.columnconfigure(1, weight=1)
@@ -257,6 +261,7 @@ class LauncherTab(ttk.Frame):
         Returns:
         -------
             Parameters frame
+
         """
         frame = ttk.Frame(parent)
         frame.columnconfigure(1, weight=1)
@@ -357,11 +362,7 @@ class LauncherTab(ttk.Frame):
         self.logger.debug(f"Selected preset: {preset}")
 
         # Update parameters based on preset
-        if preset == "Llama-2-7B":
-            self.ctx_size_var.set(4096)
-        elif preset == "Llama-2-13B":
-            self.ctx_size_var.set(4096)
-        elif preset == "Llama-2-70B":
+        if preset == "Llama-2-7B" or preset == "Llama-2-13B" or preset == "Llama-2-70B":
             self.ctx_size_var.set(4096)
         elif preset == "Mistral-7B":
             self.ctx_size_var.set(8192)
@@ -467,6 +468,7 @@ class LauncherTab(ttk.Frame):
         ----
             process_id: ID of the process
             return_code: Process return code
+
         """
         if return_code == 0:
             self.status_var.set(f"Process {process_id} completed successfully")

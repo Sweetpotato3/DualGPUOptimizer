@@ -17,6 +17,7 @@ def apply_minimal_styling(root):
     Args:
     ----
         root: The root Tk window
+
     """
     style = ttk.Style(root)
 
@@ -34,6 +35,7 @@ def apply_custom_styling(root):
     Args:
     ----
         root: The root Tk window
+
     """
     style = ttk.Style(root)
 
@@ -272,6 +274,7 @@ def adjust_equilux_colors(root):
     Args:
     ----
         root: The root Tk window
+
     """
     style = ttk.Style(root)
 

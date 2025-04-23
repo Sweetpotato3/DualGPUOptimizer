@@ -35,6 +35,7 @@ class Bubble(ttk.Frame):
             content: Message content (potentially with HTML formatting)
             is_user: Whether this is a user message (affects styling)
             **kwargs: Additional arguments to pass to ttk.Frame
+
         """
         super().__init__(master, **kwargs)
 
@@ -88,6 +89,7 @@ class Bubble(ttk.Frame):
         ----
             text_widget: The text widget to render content in
             content: Text content with optional HTML formatting
+
         """
         # For simplicity, we'll just display the text without HTML parsing
         # In a more advanced implementation, we would convert HTML to Tk text tags
@@ -145,6 +147,7 @@ class Bubble(ttk.Frame):
         Args:
         ----
             text_widget: The text widget to adjust
+
         """
         # Calculate required height - add extra line for safety
         line_count = int(text_widget.index("end-1c").split(".")[0])
@@ -176,6 +179,7 @@ class MessageContainer(ttk.Frame):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for the frame
+
         """
         super().__init__(master, **kwargs)
 
@@ -200,6 +204,7 @@ class MessageContainer(ttk.Frame):
         Returns:
         -------
             The created message bubble
+
         """
         # Create a new row for the message
         row = self.grid_size()[1]

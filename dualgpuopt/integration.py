@@ -31,6 +31,7 @@ class OptimizerIntegration:
         Args:
         ----
             path: Path to the model file
+
         """
         self.model_path = path
         logger.info(f"Model path updated: {path}")
@@ -44,6 +45,7 @@ class OptimizerIntegration:
         ----
             llama_cmd: llama.cpp command
             vllm_cmd: vLLM command
+
         """
         self.llama_cmd = llama_cmd
         self.vllm_cmd = vllm_cmd
@@ -67,6 +69,7 @@ class OptimizerIntegration:
         Returns
         -------
             Command string for llama.cpp
+
         """
         return self.llama_cmd
 
@@ -77,6 +80,7 @@ class OptimizerIntegration:
         Returns
         -------
             Command string for vLLM
+
         """
         return self.vllm_cmd
 
@@ -87,6 +91,7 @@ class OptimizerIntegration:
         Returns
         -------
             True if the configuration is valid
+
         """
         return self.has_valid_config
 
@@ -102,6 +107,7 @@ def get_optimizer_integration() -> OptimizerIntegration:
     Returns
     -------
         OptimizerIntegration instance
+
     """
     global _optimizer_integration
     if _optimizer_integration is None:

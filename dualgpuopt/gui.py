@@ -62,14 +62,13 @@ class SimpleMeter(ttk.Canvas):
     def _get_color(self):
         if self.bootstyle == "success":
             return "#4CAF50"  # Green
-        elif self.bootstyle == "info":
+        if self.bootstyle == "info":
             return "#2196F3"  # Blue
-        elif self.bootstyle == "warning":
+        if self.bootstyle == "warning":
             return "#FF9800"  # Orange
-        elif self.bootstyle == "danger":
+        if self.bootstyle == "danger":
             return "#F44336"  # Red
-        else:
-            return "#9C27B0"  # Purple (default)
+        return "#9C27B0"  # Purple (default)
 
     def configure(self, **kwargs):
         if "amountused" in kwargs:

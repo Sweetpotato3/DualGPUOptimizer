@@ -12,7 +12,7 @@ from dualgpuopt.optimizer import GPUMemoryInfo, Optimizer
 class TestGpuSplit:
     """Test cases for the GPU split calculation functionality."""
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_gpu_list(self):
         """Create mock GPU list for testing."""
         gpu1 = GPUMemoryInfo(
@@ -33,7 +33,7 @@ class TestGpuSplit:
 
         return [gpu1, gpu2]
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_gpu_info(self):
         """Create a single mock GPU for testing."""
         return GPUMemoryInfo(

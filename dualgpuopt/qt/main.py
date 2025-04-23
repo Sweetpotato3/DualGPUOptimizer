@@ -57,7 +57,7 @@ def main():
     app = QApplication(sys.argv)
     app.setApplicationName("DualGPUOptimizer")
     app.setStyle("Fusion")  # Provides a consistent look across platforms
-    
+
     # Apply dark theme styling with graceful fallback
     try:
         import qdarktheme
@@ -65,7 +65,7 @@ def main():
         logger.info("Dark theme applied successfully")
     except (ImportError, AttributeError):
         logger.warning("Could not apply dark theme - continuing without theming")
-        pass  # run without theme
+        # run without theme
 
     # Import here to avoid circular imports
     from dualgpuopt.qt.app_window import DualGPUOptimizerApp

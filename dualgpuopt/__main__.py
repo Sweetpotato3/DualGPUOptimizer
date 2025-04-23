@@ -45,6 +45,7 @@ def check_module_availability(module_name):
     Returns:
     -------
         True if the module is available, False otherwise
+
     """
     return importlib.util.find_spec(module_name) is not None
 
@@ -77,6 +78,7 @@ def setup_mock_mode(args):
     Returns:
     -------
         True if mock mode was successfully enabled, False otherwise
+
     """
     if not args.mock:
         return False
@@ -130,6 +132,7 @@ def check_and_warn_missing_modules():
     Returns
     -------
         Dictionary mapping module names to their availability status
+
     """
     modules = {
         "pynvml": {"available": False, "message": "GPU monitoring will be limited"},
@@ -320,7 +323,7 @@ def main():
                     else:
                         run_direct_app.main()
                     return
-                elif args.mock:
+                if args.mock:
                     # Set the module-level mock flag if it exists
                     if hasattr(run_direct_app, "MOCK_MODE"):
                         run_direct_app.MOCK_MODE = True

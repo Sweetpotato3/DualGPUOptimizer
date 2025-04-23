@@ -41,6 +41,7 @@ class ThemeSelector(ttk.Frame):
             callback: Optional callback when theme changes
             padx: Horizontal padding
             pady: Vertical padding
+
         """
         super().__init__(parent)
         self.parent = parent

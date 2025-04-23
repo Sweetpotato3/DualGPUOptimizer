@@ -181,6 +181,7 @@ class EnginePool:
         Returns:
         -------
             A ready-to-use Engine instance
+
         """
         with _pool_lock:
             # Try to get from cache
@@ -244,6 +245,7 @@ class EnginePool:
         Returns:
         -------
             True if the model was found and evicted, False otherwise
+
         """
         with _pool_lock:
             return cls._cache.remove(model_path)
@@ -273,6 +275,7 @@ class EnginePool:
             - health_checks: Number of health checks performed
             - health_failures: Number of health check failures
             - auto_restarts: Number of automatic restarts
+
         """
         with _pool_lock:
             # Calculate hit rate
@@ -299,6 +302,7 @@ class EnginePool:
         Args:
         ----
             size: New maximum size (must be at least 1)
+
         """
         with _pool_lock:
             cls._cache.max_size = size
@@ -313,6 +317,7 @@ class EnginePool:
             model_path: Path to the model
             tokens_per_second: Tokens per second for the model
             **kwargs: Additional benchmark metrics
+
         """
         if not BENCHMARK_AVAILABLE:
             return

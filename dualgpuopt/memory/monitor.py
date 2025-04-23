@@ -63,6 +63,7 @@ class MemoryMonitor:
             warning_threshold: Memory usage percentage for WARNING level
             critical_threshold: Memory usage percentage for CRITICAL level
             emergency_threshold: Memory usage percentage for EMERGENCY level
+
         """
         if self._initialized:
             return
@@ -132,9 +133,8 @@ class MemoryMonitor:
             self._active_profile = self._profiles[profile_name]
             logger.info(f"Set active memory profile to {profile_name}")
             return True
-        else:
-            logger.warning(f"Memory profile not found: {profile_name}")
-            return False
+        logger.warning(f"Memory profile not found: {profile_name}")
+        return False
 
     def register_alert_callback(self, level: MemoryAlertLevel, callback: MemoryAlertCallback):
         """Register callback for memory alerts"""
@@ -371,6 +371,7 @@ class MemoryMonitor:
         Returns:
         -------
             Dictionary of memory stats or dictionary of GPU ID to memory stats
+
         """
         # Update stats if stale (> 2x update interval)
         if time.time() - self._last_update_time > self._update_interval * 2:
@@ -406,6 +407,7 @@ class MemoryMonitor:
         Returns:
         -------
             Maximum batch size estimation
+
         """
         # Use specified profile or active profile
         profile = None
@@ -443,6 +445,7 @@ class MemoryMonitor:
         Returns:
         -------
             Projected memory usage in percent or None if projection failed
+
         """
         # Need an active profile with history
         if not self._active_profile:
@@ -478,6 +481,7 @@ class MemoryMonitor:
         Returns:
         -------
             Safe context size in tokens
+
         """
         # Need a profile for estimation
         if not self._active_profile:

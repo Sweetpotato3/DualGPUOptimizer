@@ -48,7 +48,7 @@ class ChildEvent(TestEvent):
 
 
 # ---------------- fixtures ----------------
-@pytest.fixture()
+@pytest.fixture
 def bus() -> EventBus:
     bus = EventBus()
     if hasattr(bus, "clear_all_subscribers"):
@@ -56,7 +56,7 @@ def bus() -> EventBus:
     return bus
 
 
-@pytest.fixture()
+@pytest.fixture
 def collector():
     data = []
     return data, lambda v: data.append(v)

@@ -1,6 +1,11 @@
 from __future__ import annotations
-import sentencepiece as spm, json, itertools, uuid
+
+import itertools
+import json
+import uuid
 from pathlib import Path
+
+import sentencepiece as spm
 
 RAW_DIR   = Path("datasets/raw_qc")
 TOK_DIR   = Path("datasets/tokenizer_qc"); TOK_DIR.mkdir(parents=True, exist_ok=True)
@@ -25,4 +30,4 @@ def train():
 
 if __name__ == "__main__":
     train()
-    print("Trained tokenizer at", SPM_MODEL) 
+    print("Trained tokenizer at", SPM_MODEL)

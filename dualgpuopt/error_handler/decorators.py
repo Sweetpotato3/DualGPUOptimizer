@@ -33,6 +33,7 @@ def handle_exceptions(
         @handle_exceptions("GPUMonitor", ErrorSeverity.ERROR)
         def get_gpu_info():
             # Function body that might raise exceptions
+
     """
 
     def decorator(func):
@@ -65,17 +66,17 @@ def handle_exceptions(
                     # Handle basic types
                     if return_type is bool:
                         return False
-                    elif return_type is int:
+                    if return_type is int:
                         return 0
-                    elif return_type is float:
+                    if return_type is float:
                         return 0.0
-                    elif return_type is str:
+                    if return_type is str:
                         return ""
-                    elif return_type is list or (
+                    if return_type is list or (
                         hasattr(return_type, "__origin__") and return_type.__origin__ is list
                     ):
                         return []
-                    elif return_type is dict or (
+                    if return_type is dict or (
                         hasattr(return_type, "__origin__") and return_type.__origin__ is dict
                     ):
                         return {}
@@ -142,6 +143,7 @@ def category_exceptions(category: ErrorCategory):
         @category_exceptions(ErrorCategory.GPU_ERROR)
         def get_gpu_memory():
             # This function's exceptions will be categorized as GPU_ERROR
+
     """
 
     def decorator(func):

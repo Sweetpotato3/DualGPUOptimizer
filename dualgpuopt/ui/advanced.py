@@ -197,7 +197,7 @@ class AdvancedDock(QtW.QDockWidget):
 
 class AdvancedToolsDock(AdvancedDock):
     """Compatibility alias for AdvancedDock"""
-    
+
     def set_memory_timeline(self, timeline):
         """Set memory timeline object"""
         self.memory_timeline = timeline

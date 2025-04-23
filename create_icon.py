@@ -21,6 +21,7 @@ def create_gpu_icon(size=256, bg_color="#2D1E40", fg_color="#8A54FD", save_to=No
     Returns:
     -------
         Path to the saved icon
+
     """
     # Create a blank image with transparent background
     img = Image.new("RGBA", (size, size), (0, 0, 0, 0))

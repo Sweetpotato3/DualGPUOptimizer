@@ -32,6 +32,7 @@ class ConfigService:
         ----
             config_dir: Directory for config files (defaults to ~/.dualgpuopt)
             config_file: Configuration file name
+
         """
         # Default to user home directory if not specified
         if config_dir is None:
@@ -57,6 +58,7 @@ class ConfigService:
         Returns
         -------
             True if loaded successfully, False otherwise
+
         """
         try:
             if self.config_file.exists():
@@ -64,10 +66,9 @@ class ConfigService:
                     self.config = json.load(f)
                 logger.info(f"Loaded configuration from {self.config_file}")
                 return True
-            else:
-                logger.info(f"Config file {self.config_file} not found, using defaults")
-                self.config = {}
-                return False
+            logger.info(f"Config file {self.config_file} not found, using defaults")
+            self.config = {}
+            return False
         except Exception as e:
             logger.error(f"Error loading config: {e}")
             self.config = {}
@@ -80,6 +81,7 @@ class ConfigService:
         Returns
         -------
             True if saved successfully, False otherwise
+
         """
         try:
             with open(self.config_file, "w") as f:
@@ -102,6 +104,7 @@ class ConfigService:
         Returns:
         -------
             Configuration value or default
+
         """
         return self.config.get(key, default)
 
@@ -113,6 +116,7 @@ class ConfigService:
         ----
             key: Configuration key
             value: Value to set
+
         """
         self.config[key] = value
 
@@ -127,6 +131,7 @@ class ConfigService:
         Returns:
         -------
             True if key was deleted, False if not found
+
         """
         if key in self.config:
             del self.config[key]
@@ -142,6 +147,7 @@ class ConfigService:
             key: Configuration key that changed
             new_value: New configuration value
             old_value: Previous configuration value
+
         """
         if not event_bus_available:
             return
@@ -190,6 +196,7 @@ def get_config_service() -> ConfigService:
     Returns
     -------
         Config service instance
+
     """
     global _config_service
     if _config_service is None:

@@ -17,10 +17,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dualgpuopt.services.telemetry import GPUMetrics
-
 # Import telemetry
-from dualgpuopt.services.telemetry import TelemetryWorker
+from dualgpuopt.services.telemetry import GPUMetrics, TelemetryWorker
 
 logger = logging.getLogger("DualGPUOptimizer.Dashboard")
 
@@ -36,6 +34,7 @@ class GPUMetricsWidget(QWidget):
         ----
             gpu_index: GPU index (0-based)
             parent: Parent widget
+
         """
         super().__init__(parent)
 
@@ -107,6 +106,7 @@ class GPUMetricsWidget(QWidget):
         Args:
         ----
             metrics: GPU metrics
+
         """
         # Update name
         self.name_label.setText(metrics.name)
@@ -146,6 +146,7 @@ class GPUMetricsWidget(QWidget):
             value: Current value
             warning_threshold: Threshold for warning color
             critical_threshold: Threshold for critical color
+
         """
         # Set color based on value
         if value < warning_threshold:
@@ -170,6 +171,7 @@ class DashboardTab(QWidget):
         ----
             mock_mode: Whether to use mock GPU data
             parent: Parent widget
+
         """
         super().__init__(parent)
 
@@ -192,6 +194,7 @@ class DashboardTab(QWidget):
         Args:
         ----
             worker: The telemetry worker
+
         """
         if not worker:
             self.status_label.setText("No telemetry worker available")
@@ -257,6 +260,7 @@ class DashboardTab(QWidget):
         Args:
         ----
             gpu_count: Number of GPUs
+
         """
         # Clear existing widgets
         for _ in range(self.metrics_layout.count()):
@@ -284,6 +288,7 @@ class DashboardTab(QWidget):
         ----
             gpu_id: GPU ID
             util_percent: Utilization percentage
+
         """
         if gpu_id < len(self.gpu_widgets):
             self.gpu_widgets[gpu_id].util_bar.setValue(util_percent)
@@ -302,6 +307,7 @@ class DashboardTab(QWidget):
             used_mb: Used memory in MB
             total_mb: Total memory in MB
             percent: Usage percentage
+
         """
         if gpu_id < len(self.gpu_widgets):
             widget = self.gpu_widgets[gpu_id]
@@ -323,6 +329,7 @@ class DashboardTab(QWidget):
         ----
             gpu_id: GPU ID
             temp_c: Temperature in Celsius
+
         """
         if gpu_id < len(self.gpu_widgets):
             widget = self.gpu_widgets[gpu_id]
@@ -340,6 +347,7 @@ class DashboardTab(QWidget):
             power_w: Power consumption in watts
             power_limit: Power limit in watts
             percent: Usage percentage
+
         """
         if gpu_id < len(self.gpu_widgets):
             widget = self.gpu_widgets[gpu_id]
@@ -356,6 +364,7 @@ class DashboardTab(QWidget):
             gpu_id: GPU ID
             sm_clock: SM clock in MHz
             mem_clock: Memory clock in MHz
+
         """
         if gpu_id < len(self.gpu_widgets):
             widget = self.gpu_widgets[gpu_id]
@@ -376,6 +385,7 @@ class DashboardTab(QWidget):
             gpu_id: GPU ID
             tx_kb_s: TX bandwidth in KB/s
             rx_kb_s: RX bandwidth in KB/s
+
         """
         if gpu_id < len(self.gpu_widgets):
             widget = self.gpu_widgets[gpu_id]

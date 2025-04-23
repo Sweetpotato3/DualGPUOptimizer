@@ -79,6 +79,7 @@ def check_dependency(name: str) -> bool:
     Returns:
     -------
         True if available, False otherwise
+
     """
     if name == "tkinter":
         try:
@@ -98,6 +99,7 @@ def get_missing_dependencies() -> Dict[str, List[str]]:
     Returns
     -------
         Dictionary with categories as keys and lists of missing dependencies as values
+
     """
     missing = {}
 
@@ -143,6 +145,7 @@ def get_installation_commands(
     Returns:
     -------
         List of pip install commands
+
     """
     commands = []
 
@@ -252,6 +255,7 @@ def install_dependencies(args: argparse.Namespace) -> int:
     Returns:
     -------
         Exit code (0 for success, 1 for failure)
+
     """
     # Check for missing dependencies
     missing = get_missing_dependencies()
@@ -342,9 +346,8 @@ def install_dependencies(args: argparse.Namespace) -> int:
                 )
             return 1
         return 0
-    else:
-        logger.error("Installation failed!")
-        return 1
+    logger.error("Installation failed!")
+    return 1
 
 
 def check_package(package_name):
@@ -376,10 +379,9 @@ def install_package(package_name, description, verbose=False):
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed {package_name}{Colors.ENDC}")
             return True
-        else:
-            error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
-            print(f"{Colors.RED}✗ Failed to install {package_name}: {error_msg}{Colors.ENDC}")
-            return False
+        error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
+        print(f"{Colors.RED}✗ Failed to install {package_name}: {error_msg}{Colors.ENDC}")
+        return False
     except Exception as e:
         print(f"{Colors.RED}✗ Error installing {package_name}: {e!s}{Colors.ENDC}")
         return False
@@ -415,38 +417,36 @@ def install_pytorch(verbose=False):
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed PyTorch with CUDA support{Colors.ENDC}")
             return True
+        error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
+        print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
+
+        # Try without CUDA
+        print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Colors.ENDC}")
+        cmd = [
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "torch==2.5.1",
+            "torchvision==0.20.1",
+            "torchaudio==2.5.1",
+        ]
+
+        if verbose:
+            result = subprocess.run(cmd, check=False)
         else:
-            error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
-            print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
+            result = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+            )
 
-            # Try without CUDA
-            print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Colors.ENDC}")
-            cmd = [
-                sys.executable,
-                "-m",
-                "pip",
-                "install",
-                "torch==2.5.1",
-                "torchvision==0.20.1",
-                "torchaudio==2.5.1",
-            ]
-
-            if verbose:
-                result = subprocess.run(cmd, check=False)
-            else:
-                result = subprocess.run(
-                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
-                )
-
-            if result.returncode == 0:
-                print(
-                    f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}"
-                )
-                return True
-            else:
-                error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
-                print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
-                return False
+        if result.returncode == 0:
+            print(
+                f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}"
+            )
+            return True
+        error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
+        print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
+        return False
     except Exception as e:
         print(f"{Colors.RED}✗ Error installing PyTorch: {e!s}{Colors.ENDC}")
         return False
@@ -479,10 +479,10 @@ def check_dependencies(deps_dict, check_only=False, verbose=False):
             failed[package] = description
 
     # If pytorch is missing, install it specially
-    if any(p.startswith("torch") for p in missing.keys()):
+    if any(p.startswith("torch") for p in missing):
         pytorch_success = install_pytorch(verbose)
         if not pytorch_success:
-            for p in [p for p in missing.keys() if p.startswith("torch")]:
+            for p in [p for p in missing if p.startswith("torch")]:
                 failed[p] = missing[p]
 
     return installed, failed
@@ -495,6 +495,7 @@ def main() -> int:
     Returns
     -------
         Exit code
+
     """
     parser = argparse.ArgumentParser(description="DualGPUOptimizer Dependency Installer")
 

@@ -1,4 +1,11 @@
-import datasets, json, pathlib, torch, transformers, statistics
+import json
+import pathlib
+import statistics
+
+import datasets
+import torch
+import transformers
+
 from dualgpuopt.engine.pool.core import EnginePool
 
 DEV_CSV = pathlib.Path("datasets/lexglue_fr_dev.csv")
@@ -18,4 +25,4 @@ def test_macro_f1(tmp_path):
     assert f1 >= 0.25, f"F1 too low: {f1:.2f}"
 
 def _macro_f1(y, ŷ):
-    from sklearn.metrics import f1_score; return f1_score(y, ŷ, average="macro") 
+    from sklearn.metrics import f1_score; return f1_score(y, ŷ, average="macro")

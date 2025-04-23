@@ -42,6 +42,7 @@ def import_or_mock(module_path: str, mock_obj: Any = None) -> Any:
     Returns:
     -------
         The imported module or mock object
+
     """
     try:
         return importlib.import_module(module_path)
@@ -57,6 +58,7 @@ def is_direct_app_available() -> bool:
     Returns
     -------
         True if run_direct_app.py is available, False otherwise
+
     """
     try:
         run_direct_app_path = Path("run_direct_app.py")
@@ -76,6 +78,7 @@ def run_direct_app(**kwargs):
     Args:
     ----
         **kwargs: Additional arguments to pass to the application
+
     """
     logger.info("Starting DualGPUOptimizer via direct launcher")
     create_log_directory()
@@ -159,6 +162,7 @@ def show_dependency_error(missing_deps: list):
     Args:
     ----
         missing_deps: List of missing dependencies
+
     """
     try:
         import tkinter as tk
@@ -194,6 +198,7 @@ def run_minimal_ui(ttk, gpu_compat, telemetry, dashboard, optimizer):
         telemetry: The telemetry module
         dashboard: The dashboard module
         optimizer: The optimizer module
+
     """
     # Import required tkinter modules
     import tkinter as tk
@@ -290,6 +295,7 @@ def create_basic_dashboard(parent, gpu_compat):
     ----
         parent: The parent widget
         gpu_compat: The GPU compatibility module
+
     """
     # Create a label frame for GPU info
     gpu_frame = ttk.LabelFrame(parent, text="GPU Information")
@@ -371,6 +377,7 @@ def create_basic_optimizer(parent):
     Args:
     ----
         parent: The parent widget
+
     """
     # Create a label frame for the optimizer
     optimizer_frame = ttk.LabelFrame(parent, text="GPU Split Optimizer")
@@ -437,6 +444,7 @@ def create_info_tab(parent):
     Args:
     ----
         parent: The parent widget
+
     """
     # Create a frame for dependency info
     info_frame = ttk.Frame(parent)
@@ -576,6 +584,7 @@ def check_dependency(name: str) -> bool:
     Returns:
     -------
         True if installed, False otherwise
+
     """
     if name == "tkinter":
         try:

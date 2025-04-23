@@ -50,6 +50,7 @@ class MockChatTab(ttk.Frame):
         ----
             master: Parent widget
             out_q: Output queue for messages
+
         """
         super().__init__(master, padding=10)
         self.out_q = out_q
@@ -111,6 +112,7 @@ Note: You can continue to use other features of the application without these de
         ----
             kind: Message type
             val: Message value
+
         """
         # Nothing to do in mock implementation
 
@@ -127,6 +129,7 @@ def get_chat_tab(master, out_q: queue.Queue) -> ttk.Frame:
     Returns:
     -------
         ttk.Frame: A chat tab with the best available implementation
+
     """
     # Check if we have the required dependencies
     if DEPENDENCIES["requests"]["available"] and DEPENDENCIES["sseclient"]["available"]:

@@ -19,6 +19,7 @@ def get_sessions_dir():
     Returns
     -------
         Path: Path to the sessions directory
+
     """
     # Try to use home directory for sessions
     home_dir = Path.home() / ".dualgpuopt" / "sessions"
@@ -47,6 +48,7 @@ def create(title: str = None) -> Dict:
     Returns:
     -------
         dict: New session object
+
     """
     session_id = str(uuid.uuid4())
     timestamp = int(time.time())
@@ -73,6 +75,7 @@ def list_sessions() -> List[Dict]:
     Returns
     -------
         list: List of session summaries (without messages)
+
     """
     sessions_dir = get_sessions_dir()
     sessions = []
@@ -112,6 +115,7 @@ def get_session(session_id: str) -> Optional[Dict]:
     Returns:
     -------
         dict: Session object or None if not found
+
     """
     sessions_dir = get_sessions_dir()
     session_path = sessions_dir / f"{session_id}.json"
@@ -137,6 +141,7 @@ def save_session(session: Dict) -> bool:
     Returns:
     -------
         bool: True if successful, False otherwise
+
     """
     sessions_dir = get_sessions_dir()
     session_path = sessions_dir / f"{session['id']}.json"
@@ -163,6 +168,7 @@ def append(session_id: str, content: str, role: str = "assistant") -> bool:
     Returns:
     -------
         bool: True if successful, False otherwise
+
     """
     session = get_session(session_id)
 
@@ -195,6 +201,7 @@ def delete_session(session_id: str) -> bool:
     Returns:
     -------
         bool: True if successful, False otherwise
+
     """
     sessions_dir = get_sessions_dir()
     session_path = sessions_dir / f"{session_id}.json"

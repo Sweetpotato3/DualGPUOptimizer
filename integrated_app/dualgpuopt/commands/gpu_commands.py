@@ -23,6 +23,7 @@ class CommandGenerator:
         Args:
         ----
             gpus: List of GPU objects
+
         """
         self.gpus = gpus
         self.gpu_split = optimizer.split_string(gpus)
@@ -40,6 +41,7 @@ class CommandGenerator:
         Returns:
         -------
             Command string for llama.cpp
+
         """
         return optimizer.llama_command(model_path, ctx_size, self.gpu_split)
 
@@ -54,6 +56,7 @@ class CommandGenerator:
         Returns:
         -------
             Command string for vLLM
+
         """
         return optimizer.vllm_command(model_path, self.tensor_parallel)
 
@@ -68,6 +71,7 @@ class CommandGenerator:
         Returns:
         -------
             Path to the created file
+
         """
         if output_path is None:
             output_path = pathlib.Path.home() / ".env"
@@ -85,6 +89,7 @@ class CommandGenerator:
         Returns:
         -------
             Dictionary with all generated commands and paths
+
         """
         llama_cmd = self.generate_llama_cpp_command(model_path, ctx_size)
         vllm_cmd = self.generate_vllm_command(model_path)
@@ -111,6 +116,7 @@ def generate_commands(gpus: list[GPU], model_path: str, ctx_size: int) -> dict[s
     Returns:
     -------
         Dictionary with all generated commands and paths
+
     """
     generator = CommandGenerator(gpus)
     return generator.generate_all(model_path, ctx_size)

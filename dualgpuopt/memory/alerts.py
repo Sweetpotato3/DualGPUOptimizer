@@ -46,6 +46,7 @@ class MemoryAlert:
             timestamp: Alert timestamp
             recommendations: List of recommended actions
             context: Additional context information
+
         """
         self.level = level
         self.gpu_id = gpu_id

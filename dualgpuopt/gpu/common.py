@@ -254,6 +254,7 @@ def format_memory(bytes_or_mb: int, use_mb: bool = True) -> str:
     Returns:
     -------
         Formatted memory string
+
     """
     if use_mb:
         # Input is already in MB
@@ -264,6 +265,5 @@ def format_memory(bytes_or_mb: int, use_mb: bool = True) -> str:
 
     if mb < 1024:
         return f"{mb:.0f} MB"
-    else:
-        gb = mb / 1024
-        return f"{gb:.1f} GB"
+    gb = mb / 1024
+    return f"{gb:.1f} GB"

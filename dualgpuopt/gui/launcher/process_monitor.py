@@ -44,6 +44,7 @@ class ProcessMonitor:
         Returns:
         -------
             True if monitoring started, False otherwise
+
         """
         if process_id in self.active_monitors:
             self.logger.warning(f"Already monitoring process: {process_id}")
@@ -81,6 +82,7 @@ class ProcessMonitor:
         Returns:
         -------
             True if stopped, False if not found
+
         """
         if process_id not in self.stop_events:
             self.logger.warning(f"Process not found for monitoring: {process_id}")
@@ -112,6 +114,7 @@ class ProcessMonitor:
         Returns:
         -------
             True if terminated, False if not found
+
         """
         if process_id not in self.processes:
             self.logger.warning(f"Process not found for termination: {process_id}")
@@ -162,6 +165,7 @@ class ProcessMonitor:
             stop_event: Event to signal monitoring should stop
             on_exit: Callback to execute when process exits
             interval: Monitoring interval in seconds
+
         """
         self.logger.debug(f"Starting monitor thread for process: {process_id}")
 
@@ -208,6 +212,7 @@ class ProcessMonitor:
         Args:
         ----
             process: Subprocess Popen object
+
         """
         # Only try to read if stdout/stderr are pipes
         if process.stdout and hasattr(process.stdout, "readline"):

@@ -28,6 +28,8 @@ class FastMockBackend:
     def health(self):
         return self._healthy
 
+# Create an instance of FastMockBackend to use in tests
+FAST = FastMockBackend()
 
 @pytest.fixture(autouse=True)
 def patch_backend(monkeypatch):

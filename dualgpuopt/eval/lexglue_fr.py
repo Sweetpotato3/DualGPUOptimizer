@@ -31,6 +31,7 @@ def evaluate_lexglue_fr(
     Returns:
     -------
         Dictionary with accuracy metrics
+
     """
     logger.info(f"Loading model from {model_path}")
 

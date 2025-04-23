@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 
 # Mock GPU fixtures
-@pytest.fixture()
+@pytest.fixture
 def mock_gpu_info():
     """Create a mock GPU info object with standard testing properties."""
     mock_gpu = MagicMock()
@@ -26,7 +26,7 @@ def mock_gpu_info():
     return mock_gpu
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_gpu_list():
     """Create a list of mock GPUs for testing multi-GPU scenarios."""
     gpu1 = MagicMock()
@@ -43,7 +43,7 @@ def mock_gpu_list():
 
 
 # Event bus fixture
-@pytest.fixture()
+@pytest.fixture
 def mock_event_bus():
     """Create a mock event bus for testing event-driven components."""
     event_bus = MagicMock()
@@ -53,7 +53,7 @@ def mock_event_bus():
 
 
 # Mock telemetry fixture
-@pytest.fixture()
+@pytest.fixture
 def mock_telemetry():
     """Create a mock telemetry service for testing."""
     telemetry = MagicMock()
@@ -72,7 +72,7 @@ def mock_telemetry():
 
 
 # Environment variable fixture
-@pytest.fixture()
+@pytest.fixture
 def clean_env():
     """Provide a clean environment by temporarily clearing relevant env vars."""
     preserved = {}

@@ -37,7 +37,7 @@ except (ImportError, AttributeError):
 
 
 # Test event classes
-@pytest.fixture()
+@pytest.fixture
 def event_classes():
     """Fixture providing test event classes."""
 
@@ -80,7 +80,7 @@ def event_classes():
     }
 
 
-@pytest.fixture()
+@pytest.fixture
 def event_bus():
     """Create a fresh event bus for each test."""
     bus = EventBus()

@@ -72,6 +72,7 @@ def get_cache_stats(name: str) -> CacheStats:
     Returns:
     -------
         CacheStats object for the named cache
+
     """
     with _stats_lock:
         if name not in _cache_stats:
@@ -96,6 +97,7 @@ def thread_safe_cache(
     Returns:
     -------
         Decorator function
+
     """
 
     def _make_key(*args: Any, **kwargs: Any) -> Tuple[Any, ...]:
@@ -155,7 +157,7 @@ def thread_safe_cache(
         wrapper.clear_cache = clear_cache  # type: ignore
         wrapper.cache_info = cache_info  # type: ignore
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator
 
@@ -178,6 +180,7 @@ def method_cache(
     Returns:
     -------
         Decorator function for methods
+
     """
 
     def decorator(method: F) -> F:
@@ -221,8 +224,7 @@ def method_cache(
             """Remove the cache for a specific instance"""
             instance_id = id(instance)
             with instance_lock:
-                if instance_id in instance_caches:
-                    del instance_caches[instance_id]
+                instance_caches.pop(instance_id, None)
 
         # Add cache info method similar to thread_safe_cache
         def cache_info() -> Dict[str, Any]:
@@ -244,6 +246,6 @@ def method_cache(
         wrapper.cache_cleanup = cache_cleanup  # type: ignore
         wrapper.cache_info = cache_info  # type: ignore
 
-        return cast(F, wrapper)
+        return cast("F", wrapper)
 
     return decorator

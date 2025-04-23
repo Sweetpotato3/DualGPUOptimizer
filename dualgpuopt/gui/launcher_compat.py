@@ -56,6 +56,7 @@ class ModelRunner:
         Args:
         ----
             log_queue: Queue for log messages
+
         """
         self.log_queue = log_queue
         self.process_monitor = ProcessMonitor()
@@ -81,6 +82,7 @@ class ModelRunner:
         Returns:
         -------
             True if started successfully, False otherwise
+
         """
         if self.process and self.process.poll() is None:
             self.log_queue.put("Error: Model already running")
@@ -216,6 +218,7 @@ class ModelRunner:
         Args:
         ----
             error_line: Error line from process
+
         """
         self.log_queue.put("CRITICAL: GPU out of memory detected!")
 
@@ -276,6 +279,7 @@ class ModelRunner:
         Returns
         -------
             True if running, False otherwise
+
         """
         if not self.process:
             return False

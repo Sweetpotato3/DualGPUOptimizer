@@ -403,6 +403,7 @@ class ChatTab(ttk.Frame):
         ----
             md: Markdown/HTML formatted message content
             user: True if this is a user message
+
         """
         # Create and add the bubble
         bubble = Bubble(self.msg_frame, md, user)
@@ -508,6 +509,7 @@ class ChatTab(ttk.Frame):
         ----
             kind: Message type
             val: Message value
+
         """
         if kind == "chat_chunk":
             # Add the new chunk of text to the chat

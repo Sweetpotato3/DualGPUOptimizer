@@ -110,6 +110,7 @@ class UpdateInfo:
             release_date: Release date string
             release_notes: Release notes markdown
             download_url: URL to download the update
+
         """
         self.version = Version(version)
         self.release_date = release_date
@@ -123,6 +124,7 @@ class UpdateInfo:
         Returns
         -------
             Dictionary representation
+
         """
         return {
             "version": str(self.version),
@@ -143,6 +145,7 @@ class UpdateInfo:
         Returns:
         -------
             UpdateInfo object
+
         """
         return cls(
             version=data.get("version", "0.0.0"),
@@ -182,6 +185,7 @@ class UpdateChecker:
             repo_url: URL to check for updates
             current_version: Current version string
             auto_check: Whether to automatically check for updates
+
         """
         # Skip initialization if already initialized
         if self._initialized:
@@ -284,6 +288,7 @@ class UpdateChecker:
         Returns
         -------
             True if should check now, False otherwise
+
         """
         # If never checked, check now
         if self._last_check_time is None:
@@ -309,6 +314,7 @@ class UpdateChecker:
         Returns
         -------
             Tuple of (update_available, update_info)
+
         """
         # Record check time
         self._last_check_time = datetime.now()
@@ -374,6 +380,7 @@ class UpdateChecker:
         Returns
         -------
             True if an update is available, False otherwise
+
         """
         return self._update_available
 
@@ -384,6 +391,7 @@ class UpdateChecker:
         Returns
         -------
             UpdateInfo object or None if no update is available
+
         """
         return self._update_info
 
@@ -394,6 +402,7 @@ class UpdateChecker:
         Args:
         ----
             listener: Function to call when an update is available
+
         """
         if listener not in self._listeners:
             self._listeners.append(listener)
@@ -409,6 +418,7 @@ class UpdateChecker:
         Returns:
         -------
             True if removed, False if not found
+
         """
         if listener in self._listeners:
             self._listeners.remove(listener)
@@ -438,6 +448,7 @@ def get_update_checker() -> UpdateChecker:
     Returns
     -------
         UpdateChecker instance
+
     """
     global _update_checker
     if _update_checker is None:
@@ -452,6 +463,7 @@ def check_for_updates() -> Tuple[bool, Optional[UpdateInfo]]:
     Returns
     -------
         Tuple of (update_available, update_info)
+
     """
     return get_update_checker().check_for_updates()
 
@@ -463,6 +475,7 @@ def is_update_available() -> bool:
     Returns
     -------
         True if an update is available, False otherwise
+
     """
     return get_update_checker().is_update_available()
 
@@ -474,6 +487,7 @@ def get_update_info() -> Optional[UpdateInfo]:
     Returns
     -------
         UpdateInfo object or None if no update is available
+
     """
     return get_update_checker().get_update_info()
 

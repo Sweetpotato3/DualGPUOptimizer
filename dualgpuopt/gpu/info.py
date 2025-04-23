@@ -16,6 +16,7 @@ def query() -> list[dict[str, Any]]:
     Returns
     -------
         List of dictionaries with GPU information
+
     """
     if MOCK_MODE:
         print("Query: Using MOCK_MODE")
@@ -35,6 +36,7 @@ def get_gpu_count() -> int:
     Returns
     -------
         Number of available GPUs
+
     """
     return len(query())
 
@@ -46,6 +48,7 @@ def get_gpu_names() -> list[str]:
     Returns
     -------
         List of GPU names
+
     """
     return [gpu["name"] for gpu in query()]
 
@@ -57,6 +60,7 @@ def _query_nvidia() -> list[dict[str, Any]]:
     Returns
     -------
         List of dictionaries with NVIDIA GPU information
+
     """
     if MOCK_MODE or not NVML_INITIALIZED:
         return generate_mock_gpus()
@@ -105,6 +109,7 @@ def _query_mac() -> list[dict[str, Any]]:
     Returns
     -------
         List of dictionaries with Apple GPU information
+
     """
     if MOCK_MODE:
         return generate_mock_gpus()

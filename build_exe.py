@@ -168,12 +168,10 @@ def build_executable():
                 print(f"Error copying icon: {e}")
 
             return True
-        else:
-            print(f"\n❌ Build failed: Executable not found at {exe_path}")
-            return False
-    else:
-        print("\n❌ Build failed: PyInstaller returned an error")
+        print(f"\n❌ Build failed: Executable not found at {exe_path}")
         return False
+    print("\n❌ Build failed: PyInstaller returned an error")
+    return False
 
 
 if __name__ == "__main__":

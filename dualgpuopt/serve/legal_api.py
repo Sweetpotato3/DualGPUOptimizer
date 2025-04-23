@@ -3,15 +3,15 @@ FastAPI server for legal LLM model with RAG integration.
 """
 
 import asyncio
+import json
 import logging
 import os
 import secrets
 import time
-import json
-import faiss
 from functools import lru_cache
 from typing import Any, Dict, Generator, List, Optional
 
+import faiss
 from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -165,24 +165,27 @@ def check_rate_limit(token: str = Depends(verify_token)) -> str:
 # Helper functions
 # -----------------------------------------------------------------------------
 
+
 def rag(prompt: str, k=3) -> str:
     """
     Perform RAG (Retrieval-Augmented Generation) using FAISS index.
-    
+
     Args:
         prompt: The user query to find relevant documents for
         k: Number of documents to retrieve
-        
+
     Returns:
         Formatted context with citations
+
     """
     # Skip if RAG is disabled or index not loaded
     if not ENABLE_RAG or IDX is None or DOCS is None:
         return None
-        
+
     try:
         # very simple cosine search
         import sentence_transformers
+
         embedder = sentence_transformers.SentenceTransformer("all-MiniLM-L6-v2")
         v = embedder.encode([prompt])
         D, I = IDX.search(v, k)
@@ -237,7 +240,9 @@ def format_prompt(query: str, context: List[str] = None) -> str:
     return template.format(prompt=query, context=context_text)
 
 
-async def stream_generator(prompt: str, max_tokens: int, temperature: float = 0.7) -> Generator[str, None, None]:
+async def stream_generator(
+    prompt: str, max_tokens: int, temperature: float = 0.7
+) -> Generator[str, None, None]:
     """Generate streaming response tokens."""
     if not engine:
         yield "Erreur: Le modèle n'est pas disponible. Veuillez réessayer plus tard."
@@ -282,12 +287,13 @@ async def create_token(request: TokenRequest) -> TokenResponse:
 async def chat(request: ChatRequest):
     """
     Chat endpoint with RAG support and streaming response.
-    
+
     Args:
         request: Chat request with prompt and parameters
-        
+
     Returns:
         Streaming response with generated text in Server-Sent Events format
+
     """
     # Check if model is available
     if not engine:
@@ -303,20 +309,21 @@ async def chat(request: ChatRequest):
             context = rag(request.prompt)
             if context:
                 logger.info("Retrieved context from FAISS")
-        
+
         # Format the prompt with context
         prompt = format_prompt(request.prompt, context and [context])
-        
+
         # Set max tokens
         max_tokens = min(request.max_tokens or MAX_TOKENS, MAX_TOKENS)
-        
+
         # Create streaming response with SSE format
         async def _gen():
-            for tok in engine.stream(prompt, max_tokens=max_tokens, 
-                                    temperature=request.temperature or 0.7):
+            for tok in engine.stream(
+                prompt, max_tokens=max_tokens, temperature=request.temperature or 0.7
+            ):
                 yield f"data: {tok}\n\n"
                 await asyncio.sleep(0.005)
-                
+
         return StreamingResponse(_gen(), media_type="text/event-stream")
 
     except Exception as e:

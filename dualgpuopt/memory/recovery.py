@@ -42,6 +42,7 @@ class RecoveryManager:
         ----
             strategy: Recovery strategy to register
             func: Function to call when strategy is executed
+
         """
         self._recovery_functions[strategy] = func
         logger.debug(f"Registered recovery function for strategy {strategy.name}")
@@ -59,6 +60,7 @@ class RecoveryManager:
         Returns:
         -------
             True if recovery was successful, False otherwise
+
         """
         if strategy not in self._recovery_functions:
             logger.warning(f"No recovery function registered for strategy {strategy.name}")
@@ -70,9 +72,8 @@ class RecoveryManager:
             if result:
                 logger.info(f"Recovery strategy {strategy.name} successful")
                 return True
-            else:
-                logger.warning(f"Recovery strategy {strategy.name} failed")
-                return False
+            logger.warning(f"Recovery strategy {strategy.name} failed")
+            return False
         except Exception as e:
             logger.error(f"Error executing recovery strategy {strategy.name}: {e}")
             return False
@@ -92,6 +93,7 @@ class RecoveryManager:
         Returns:
         -------
             True if any recovery strategy succeeded, False otherwise
+
         """
         if strategies is None:
             # Default strategy order from least to most disruptive

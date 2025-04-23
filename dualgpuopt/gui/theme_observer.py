@@ -32,6 +32,7 @@ def register_themed_widget(widget: tk.Widget) -> None:
     Args:
     ----
         widget: Widget to register
+
     """
     _themed_widgets.add(widget)
     logger.debug(f"Registered themed widget: {widget}")
@@ -44,6 +45,7 @@ def register_theme_callback(callback: Callable[[str], None]) -> None:
     Args:
     ----
         callback: Function to call when theme changes
+
     """
     if callback not in _themed_callbacks:
         _themed_callbacks.append(callback)
@@ -57,6 +59,7 @@ def unregister_themed_widget(widget: tk.Widget) -> None:
     Args:
     ----
         widget: Widget to unregister
+
     """
     if widget in _themed_widgets:
         _themed_widgets.remove(widget)
@@ -70,6 +73,7 @@ def unregister_theme_callback(callback: Callable[[str], None]) -> None:
     Args:
     ----
         callback: Function to unregister
+
     """
     if callback in _themed_callbacks:
         _themed_callbacks.remove(callback)
@@ -83,6 +87,7 @@ def update_themed_widgets(theme_name: str) -> None:
     Args:
     ----
         theme_name: Name of the new theme
+
     """
     # Remove destroyed widgets
     destroyed = set()
@@ -119,6 +124,7 @@ def update_widget_theme(widget: tk.Widget, theme_name: str) -> None:
     ----
         widget: Widget to update
         theme_name: Name of the new theme
+
     """
     theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -127,9 +133,7 @@ def update_widget_theme(widget: tk.Widget, theme_name: str) -> None:
         if isinstance(widget, ttk.Widget):
             # TTK widgets are handled by the style system
             pass
-        elif isinstance(widget, tk.Canvas):
-            widget.configure(bg=theme_colors["bg"])
-        elif isinstance(widget, (tk.Frame, tk.LabelFrame)):
+        elif isinstance(widget, tk.Canvas) or isinstance(widget, (tk.Frame, tk.LabelFrame)):
             widget.configure(bg=theme_colors["bg"])
         elif isinstance(widget, tk.Label):
             widget.configure(bg=theme_colors["bg"], fg=theme_colors["fg"])
@@ -201,6 +205,7 @@ class ThemedWidget:
         Args:
         ----
             theme_name: Name of the new theme
+
         """
         self.apply_theme(theme_name)
 
@@ -211,6 +216,7 @@ class ThemedWidget:
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         # Override in subclasses to apply specific theme styling
         update_widget_theme(self, theme_name)
@@ -232,6 +238,7 @@ if HAS_EVENT_BUS:
         Args:
         ----
             theme_name: Name of the new theme
+
         """
         logger.info(f"Theme changed to: {theme_name}")
         update_themed_widgets(theme_name)

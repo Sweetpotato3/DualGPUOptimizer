@@ -24,13 +24,13 @@ logger = logging.getLogger("DualGPUOpt.Launcher")
 
 # Re-export classes for backward compatibility
 __all__ = [
+    "ConfigHandler",
+    "LaunchController",
     "LauncherTab",
     "ModelRunner",
-    "LaunchController",
-    "ParameterResolver",
     "ModelValidator",
+    "ParameterResolver",
     "ProcessMonitor",
-    "ConfigHandler",
 ]
 
 
@@ -46,6 +46,7 @@ def model_name_to_params(model_name: str) -> float:
     Returns:
     -------
         Model size in billions of parameters
+
     """
     controller = LaunchController()
     return controller._estimate_model_size(model_name)

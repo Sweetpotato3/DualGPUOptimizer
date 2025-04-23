@@ -75,6 +75,7 @@ class OptimizerTab(ttk.Frame):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent, padding=15)
 
@@ -422,6 +423,7 @@ class OptimizerTab(ttk.Frame):
         ----
             model: Model parameters used
             config: Resulting split configuration
+
         """
         # Enable text widget for update
         self.results_text.config(state=tk.NORMAL)
@@ -461,6 +463,7 @@ class OptimizerTab(ttk.Frame):
         Args:
         ----
             text: Text to copy
+
         """
         self.clipboard_clear()
         self.clipboard_append(text)

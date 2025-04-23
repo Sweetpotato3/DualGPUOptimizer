@@ -33,6 +33,7 @@ def autocast(dtype: Optional[Any] = None):
         - LayerNorm, softmax, residual adds remain in FP32 automatically
         - Works with PyTorch 2.0+ for best performance
         - No-op if PyTorch is not available
+
     """
     if not TORCH_AVAILABLE:
         logger.warning("autocast called but PyTorch is not available")
@@ -83,6 +84,7 @@ def scaler(enabled: bool = True) -> Any:
     -----
         - Used during training to prevent underflow in FP16
         - No-op if PyTorch is not available
+
     """
     if not TORCH_AVAILABLE:
         logger.warning("scaler called but PyTorch is not available")

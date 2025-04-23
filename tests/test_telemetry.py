@@ -515,7 +515,7 @@ class TestGPUMetrics:
 class TestTelemetryService:
     """Test the TelemetryService class"""
 
-    @pytest.fixture()
+    @pytest.fixture
     def mock_nvml(self):
         """Mock the pynvml module"""
         mock = MagicMock()
@@ -544,7 +544,7 @@ class TestTelemetryService:
 
         return mock
 
-    @pytest.fixture()
+    @pytest.fixture
     def telemetry_service(self):
         """Create a telemetry service for testing"""
         # Create service with higher poll interval for testing

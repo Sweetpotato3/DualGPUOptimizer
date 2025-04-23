@@ -26,6 +26,7 @@ def optimize_batch_size(
     Returns:
     -------
         Optimal batch size
+
     """
     # Get model-specific parameters
     try:
@@ -111,6 +112,7 @@ class SmartBatcher:
             length_threshold: Threshold for considering sequences as "long"
             adaptive_sizing: Whether to dynamically adjust batch size based on performance
             oom_recovery: Whether to enable automatic OOM recovery
+
         """
         self.max_batch_size = max_batch_size
         self.length_threshold = length_threshold
@@ -137,6 +139,7 @@ class SmartBatcher:
         Returns:
         -------
             List of batches, where each batch is a list of sequence IDs
+
         """
         if not sequences:
             return []
@@ -193,6 +196,7 @@ class SmartBatcher:
         Args:
         ----
             stats: Batch statistics
+
         """
         self.batch_stats.append(stats)
 
@@ -209,23 +213,22 @@ class SmartBatcher:
             logger.warning(
                 f"OOM detected: activating backpressure, scale={self.current_scale_factor:.2f}"
             )
-        else:
-            # Gradually recover if we've processed 5 batches without OOM
-            if (
-                self.backpressure_active
-                and len(self.batch_stats) >= 5
-                and all(s.oom_events == 0 for s in self.batch_stats[-5:])
-            ):
-                # Increase scale factor, but still keep some backpressure
-                self.current_scale_factor = min(0.95, self.current_scale_factor * 1.1)
-                logger.info(
-                    f"Gradually reducing backpressure, scale={self.current_scale_factor:.2f}"
-                )
+        # Gradually recover if we've processed 5 batches without OOM
+        elif (
+            self.backpressure_active
+            and len(self.batch_stats) >= 5
+            and all(s.oom_events == 0 for s in self.batch_stats[-5:])
+        ):
+            # Increase scale factor, but still keep some backpressure
+            self.current_scale_factor = min(0.95, self.current_scale_factor * 1.1)
+            logger.info(
+                f"Gradually reducing backpressure, scale={self.current_scale_factor:.2f}"
+            )
 
-                # Deactivate backpressure if we're close to normal
-                if self.current_scale_factor > 0.9:
-                    self.backpressure_active = False
-                    logger.info("Backpressure deactivated")
+            # Deactivate backpressure if we're close to normal
+            if self.current_scale_factor > 0.9:
+                self.backpressure_active = False
+                logger.info("Backpressure deactivated")
 
     def reset_cache(self) -> None:
         """Reset CUDA cache to recover from OOM conditions"""

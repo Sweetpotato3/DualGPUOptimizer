@@ -70,6 +70,7 @@ class ConfigKey:
         Returns:
         -------
             True if valid, False otherwise
+
         """
         if self.validator is None:
             return True
@@ -207,6 +208,7 @@ class ConfigChangeListener:
         Args:
         ----
             event: Configuration change event
+
         """
 
 
@@ -231,6 +233,7 @@ class ConfigurationSystem:
         Args:
         ----
             config_dir: Directory for configuration files
+
         """
         # Skip initialization if already initialized
         if self._initialized:
@@ -291,6 +294,7 @@ class ConfigurationSystem:
         Returns
         -------
             True if successful, False otherwise
+
         """
         try:
             with open(self.config_file, "w") as f:
@@ -313,6 +317,7 @@ class ConfigurationSystem:
         Returns:
         -------
             Configuration value or default if not found
+
         """
         # Convert string key to ConfigKey object if needed
         config_key = key if isinstance(key, ConfigKey) else CONFIG_KEYS_DICT.get(key)
@@ -344,6 +349,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if successful, False otherwise
+
         """
         # Convert string key to ConfigKey object if needed
         config_key = key if isinstance(key, ConfigKey) else CONFIG_KEYS_DICT.get(key)
@@ -386,6 +392,7 @@ class ConfigurationSystem:
         ----
             key: Configuration key to listen for changes to, or None for all changes
             listener: Listener to register
+
         """
         key_str = str(key) if key is not None else "*"
 
@@ -408,6 +415,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if the listener was found and removed, False otherwise
+
         """
         key_str = str(key) if key is not None else "*"
 
@@ -429,6 +437,7 @@ class ConfigurationSystem:
             key: Key that changed
             old_value: Old value
             new_value: New value
+
         """
         event = ConfigChangeEvent(key, old_value, new_value)
 
@@ -459,6 +468,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if successful, False otherwise
+
         """
         if category is None:
             # Reset all categories
@@ -490,6 +500,7 @@ class ConfigurationSystem:
         Returns
         -------
             Dictionary of all settings
+
         """
         result = {}
 
@@ -509,6 +520,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if successful, False otherwise
+
         """
         success = True
 
@@ -530,6 +542,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if successful, False otherwise
+
         """
         try:
             with open(file_path, "w") as f:
@@ -550,6 +563,7 @@ class ConfigurationSystem:
         Returns:
         -------
             True if successful, False otherwise
+
         """
         try:
             with open(file_path) as f:
@@ -588,6 +602,7 @@ def get_config_system() -> ConfigurationSystem:
     Returns
     -------
         ConfigurationSystem instance
+
     """
     return ConfigurationSystem()
 
@@ -605,6 +620,7 @@ def get_config(key: Union[ConfigKey, str], default: Any = None) -> Any:
     Returns:
     -------
         Configuration value or default if not found
+
     """
     return get_config_system().get(key, default)
 
@@ -622,5 +638,6 @@ def set_config(key: Union[ConfigKey, str], value: Any) -> bool:
     Returns:
     -------
         True if successful, False otherwise
+
     """
     return get_config_system().set(key, value)

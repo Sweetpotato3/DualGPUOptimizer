@@ -76,11 +76,11 @@ def get_system_tray_manager():
 __all__ = [
     "DashboardTab",
     "LauncherTab",
-    "main",
     "MemoryProfilerTab",
     "OptimizerTab",
     "SettingsManager",
     "SettingsTab",
+    "main",
 ]
 # Import components
 from dualgpuopt.qt.dashboard_tab import DashboardTab

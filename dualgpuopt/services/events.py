@@ -34,12 +34,12 @@ class GPUMetricsEvent(GPUEvent):
 
 # Export all for easier imports
 __all__ = [
+    "BaseGPUMetricsEvent",
+    "ConfigChangedEvent",
     "Event",
     "EventPriority",
     "GPUEvent",
     "GPUMetricsEvent",
-    "BaseGPUMetricsEvent",
     "ModelSelectedEvent",
     "SplitCalculatedEvent",
-    "ConfigChangedEvent",
 ]

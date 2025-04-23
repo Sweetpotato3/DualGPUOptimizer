@@ -30,6 +30,7 @@ def get_config_path():
     Returns
     -------
         Path: Path to the config file
+
     """
     # Try to use home directory for configuration
     home_dir = Path.home() / ".dualgpuopt"
@@ -52,6 +53,7 @@ def load_cfg():
     Returns
     -------
         dict: Configuration settings
+
     """
     config_path = get_config_path()
     config = DEFAULT_CONFIG.copy()
@@ -75,6 +77,7 @@ def save_cfg(config_updates):
     Args:
     ----
         config_updates (dict): Configuration settings to update
+
     """
     config_path = get_config_path()
 
@@ -106,6 +109,7 @@ def get_value(key, default=None):
     Returns:
     -------
         Value for the specified key
+
     """
     config = load_cfg()
     return config.get(key, default)
@@ -119,5 +123,6 @@ def set_value(key, value):
     ----
         key (str): Configuration key
         value: Value to set
+
     """
     save_cfg({key: value})

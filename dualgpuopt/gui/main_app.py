@@ -179,6 +179,7 @@ class MainApplication(ttk.Frame):
         Args:
         ----
             parent: Parent widget
+
         """
         super().__init__(parent, padding=0)
 
@@ -611,6 +612,7 @@ class MainApplication(ttk.Frame):
         Args:
         ----
             event: GPUMetricsEvent object
+
         """
         # Update GPU count display if this is the first GPU (avoid duplicate updates)
         if event.gpu_index == 0:
@@ -635,6 +637,7 @@ class MainApplication(ttk.Frame):
         Args:
         ----
             event: ConfigChangedEvent object
+
         """
         # Handle specific configuration changes
         if event.config_key == "theme":
@@ -673,6 +676,7 @@ class MainApplication(ttk.Frame):
         Args:
         ----
             event: The resize event (optional)
+
         """
         # Debounce resize events to avoid excessive processing
         if hasattr(self, "_resize_timer"):
@@ -735,6 +739,7 @@ class MainApplication(ttk.Frame):
         Args:
         ----
             theme_data: Theme data, either name or dictionary with theme information
+
         """
         try:
             # Extract theme name based on data type
@@ -765,6 +770,7 @@ def find_icon():
     Returns
     -------
         Path to the icon file, or None if not found
+
     """
     # Check multiple locations for the icon
     potential_paths = []

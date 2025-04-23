@@ -60,6 +60,7 @@ class RecoveryStrategy:
             max_attempts: Maximum retry attempts
             backoff_factor: Exponential backoff factor between retries
             actions: List of RecoveryAction values to try in order
+
         """
         self.category = category
         self.component = component
@@ -151,6 +152,7 @@ class RecoveryManager:
         Returns:
         -------
             Next action to try, or None if no more actions available
+
         """
         # Initialize if this is a new error
         if error_id not in self.attempt_counts:
@@ -204,6 +206,7 @@ class RecoveryManager:
         Returns:
         -------
             Tuple of (success, action_taken)
+
         """
         # Find appropriate strategy
         strategy = self.find_strategy(category, component, error_type)
@@ -384,6 +387,7 @@ def verify_config(
     Returns:
     -------
         Verified configuration with defaults applied
+
     """
     if not isinstance(config, dict):
         logger.warning(f"Invalid configuration type: {type(config)}, using defaults")
@@ -413,6 +417,7 @@ def ensure_directory(directory_path: str) -> bool:
     Returns:
     -------
         True if directory exists or was created, False on error
+
     """
     if not directory_path:
         return False
@@ -437,6 +442,7 @@ def safe_import(module_name: str) -> Tuple[bool, Any]:
     Returns:
     -------
         Tuple of (success, module) where module is None on failure
+
     """
     try:
         __import__(module_name)

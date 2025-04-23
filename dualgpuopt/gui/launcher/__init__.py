@@ -17,10 +17,10 @@ from dualgpuopt.gui.launcher.ui_components import LauncherTab
 
 # For backward compatibility, make the primary classes available at the module level
 __all__ = [
-    "LauncherTab",
-    "LaunchController",
-    "ParameterResolver",
-    "ModelValidator",
-    "ProcessMonitor",
     "ConfigHandler",
+    "LaunchController",
+    "LauncherTab",
+    "ModelValidator",
+    "ParameterResolver",
+    "ProcessMonitor",
 ]

@@ -136,8 +136,7 @@ class MockEngine(Engine):
         # Simple mock generation
         if "legal" in self.model_path.lower():
             return f"Réponse juridique au sujet de: {prompt[:20]}..."
-        else:
-            return f"Response to: {prompt[:20]}..."
+        return f"Response to: {prompt[:20]}..."
 
     def stream(self, prompt: str, max_tokens: int = 100, **kwargs) -> Generator[str, None, None]:
         """Stream mock completion tokens."""
@@ -199,6 +198,7 @@ class EnginePool:
         Returns:
         -------
             Engine instance for the specified model
+
         """
         # Create the singleton instance if it doesn't exist
         if cls._instance is None:
@@ -274,6 +274,7 @@ class EnginePool:
         Returns:
         -------
             Engine instance for the specified model
+
         """
         # Here we would implement autodetection of model type and create
         # the appropriate engine based on file extension or HF model type
@@ -445,6 +446,7 @@ class EnginePool:
         Returns
         -------
             Dictionary with cache statistics and model information
+
         """
         with cls._lock:
             models = []

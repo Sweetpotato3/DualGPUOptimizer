@@ -82,30 +82,30 @@ def get_themed_tk() -> tk.Tk:
     Returns
     -------
         tk.Tk: A Tk window with the best available theming
+
     """
     if DEPENDENCIES["ttkbootstrap"]["available"]:
         # Use ttkbootstrap if available (best option)
         return DEPENDENCIES["ttkbootstrap"]["module"].Window(themename="darkly")
-    elif DEPENDENCIES["ttkthemes"]["available"]:
+    if DEPENDENCIES["ttkthemes"]["available"]:
         # Otherwise try ttkthemes
         return DEPENDENCIES["ttkthemes"]["module"].ThemedTk(theme="equilux")
-    else:
-        # Fall back to standard Tk
-        root = tk.Tk()
-        # Apply basic dark theme styling
-        root.configure(bg=DEFAULT_THEME["bg"])
-        style = ttk.Style(root)
-        style.configure(".", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
-        style.configure("TLabel", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
-        style.configure(
-            "TButton", background=DEFAULT_THEME["primary"], foreground=DEFAULT_THEME["fg"]
-        )
-        style.configure("TFrame", background=DEFAULT_THEME["bg"])
-        style.configure("TNotebook", background=DEFAULT_THEME["bg"])
-        style.configure(
-            "TNotebook.Tab", background=DEFAULT_THEME["secondary"], foreground=DEFAULT_THEME["fg"]
-        )
-        return root
+    # Fall back to standard Tk
+    root = tk.Tk()
+    # Apply basic dark theme styling
+    root.configure(bg=DEFAULT_THEME["bg"])
+    style = ttk.Style(root)
+    style.configure(".", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
+    style.configure("TLabel", background=DEFAULT_THEME["bg"], foreground=DEFAULT_THEME["fg"])
+    style.configure(
+        "TButton", background=DEFAULT_THEME["primary"], foreground=DEFAULT_THEME["fg"]
+    )
+    style.configure("TFrame", background=DEFAULT_THEME["bg"])
+    style.configure("TNotebook", background=DEFAULT_THEME["bg"])
+    style.configure(
+        "TNotebook.Tab", background=DEFAULT_THEME["secondary"], foreground=DEFAULT_THEME["fg"]
+    )
+    return root
 
 
 def get_meter_widget(parent: tk.Widget, **kwargs) -> ttk.Frame:
@@ -120,42 +120,42 @@ def get_meter_widget(parent: tk.Widget, **kwargs) -> ttk.Frame:
     Returns:
     -------
         Widget that mimics a meter with the best available implementation
+
     """
     if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
         DEPENDENCIES["ttkbootstrap"]["module"], "Meter"
     ):
         return DEPENDENCIES["ttkbootstrap"]["module"].Meter(parent, **kwargs)
-    elif fallback_widgets_available:
+    if fallback_widgets_available:
         # Use our enhanced fallback
         return FallbackMeter(parent, **kwargs)
-    else:
-        # Create a simple fallback frame with a progress bar
-        frame = ttk.Frame(parent)
+    # Create a simple fallback frame with a progress bar
+    frame = ttk.Frame(parent)
 
-        # Extract relevant arguments
-        amounttotal = kwargs.get("amounttotal", 100)
-        amountused = kwargs.get("amountused", 0)
-        subtext = kwargs.get("subtext", "")
+    # Extract relevant arguments
+    amounttotal = kwargs.get("amounttotal", 100)
+    amountused = kwargs.get("amountused", 0)
+    subtext = kwargs.get("subtext", "")
 
-        # Create a progress bar
-        bar = ttk.Progressbar(frame, orient="horizontal", length=100, mode="determinate")
-        bar.configure(maximum=amounttotal, value=amountused)
-        bar.pack(side="top", padx=5, pady=5, fill="x")
+    # Create a progress bar
+    bar = ttk.Progressbar(frame, orient="horizontal", length=100, mode="determinate")
+    bar.configure(maximum=amounttotal, value=amountused)
+    bar.pack(side="top", padx=5, pady=5, fill="x")
 
-        # Create a label for the subtext
-        label = ttk.Label(frame, text=f"{amountused} {subtext}")
-        label.pack(side="top")
+    # Create a label for the subtext
+    label = ttk.Label(frame, text=f"{amountused} {subtext}")
+    label.pack(side="top")
 
-        # Add a method to update the progress bar
-        def configure(**cfg):
-            if "amountused" in cfg:
-                bar.configure(value=cfg["amountused"])
-                label.configure(text=f"{cfg['amountused']} {subtext}")
+    # Add a method to update the progress bar
+    def configure(**cfg):
+        if "amountused" in cfg:
+            bar.configure(value=cfg["amountused"])
+            label.configure(text=f"{cfg['amountused']} {subtext}")
 
-        # Attach the configure method to the frame
-        frame.configure = configure
+    # Attach the configure method to the frame
+    frame.configure = configure
 
-        return frame
+    return frame
 
 
 def get_scrolled_frame(parent: tk.Widget, **kwargs) -> ttk.Frame:
@@ -170,17 +170,17 @@ def get_scrolled_frame(parent: tk.Widget, **kwargs) -> ttk.Frame:
     Returns:
     -------
         Widget that provides a scrollable frame
+
     """
     if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
         DEPENDENCIES["ttkbootstrap"]["module"], "ScrolledFrame"
     ):
         return DEPENDENCIES["ttkbootstrap"]["module"].scrolled.ScrolledFrame(parent, **kwargs)
-    elif fallback_widgets_available:
+    if fallback_widgets_available:
         # Use our enhanced fallback
         return FallbackScrolledFrame(parent, **kwargs)
-    else:
-        # Use simple fallback
-        return ScrolledFrame(parent, **kwargs)
+    # Use simple fallback
+    return ScrolledFrame(parent, **kwargs)
 
 
 def get_floodgauge_widget(parent: tk.Widget, **kwargs) -> ttk.Progressbar:
@@ -195,17 +195,17 @@ def get_floodgauge_widget(parent: tk.Widget, **kwargs) -> ttk.Progressbar:
     Returns:
     -------
         Widget that mimics a floodgauge
+
     """
     if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
         DEPENDENCIES["ttkbootstrap"]["module"], "Floodgauge"
     ):
         return DEPENDENCIES["ttkbootstrap"]["module"].Floodgauge(parent, **kwargs)
-    elif fallback_widgets_available:
+    if fallback_widgets_available:
         # Use our enhanced fallback
         return FallbackFloodgauge(parent, **kwargs)
-    else:
-        # Just return a standard progressbar
-        return ttk.Progressbar(parent, **kwargs)
+    # Just return a standard progressbar
+    return ttk.Progressbar(parent, **kwargs)
 
 
 def get_date_entry_widget(parent: tk.Widget, **kwargs) -> ttk.Entry:
@@ -220,21 +220,21 @@ def get_date_entry_widget(parent: tk.Widget, **kwargs) -> ttk.Entry:
     Returns:
     -------
         Widget that provides date entry functionality
+
     """
     if DEPENDENCIES["ttkbootstrap"]["available"] and hasattr(
         DEPENDENCIES["ttkbootstrap"]["module"], "DateEntry"
     ):
         return DEPENDENCIES["ttkbootstrap"]["module"].DateEntry(parent, **kwargs)
-    elif fallback_widgets_available:
+    if fallback_widgets_available:
         # Use our enhanced fallback
         return FallbackDateEntry(parent, **kwargs)
-    else:
-        # Just return a standard entry
-        entry = ttk.Entry(parent, **kwargs)
-        # Set default date if provided
-        if "startdate" in kwargs:
-            entry.insert(0, kwargs["startdate"])
-        return entry
+    # Just return a standard entry
+    entry = ttk.Entry(parent, **kwargs)
+    # Set default date if provided
+    if "startdate" in kwargs:
+        entry.insert(0, kwargs["startdate"])
+    return entry
 
 
 # Enhanced widget creation function that uses our fallback system
@@ -254,6 +254,7 @@ def create_widget(
     Returns:
     -------
         Created widget with fallbacks if necessary
+
     """
     # Try to get the module
     module = None
@@ -267,11 +268,11 @@ def create_widget(
     # Manual fallbacks for common widgets
     if widget_name == "ScrolledFrame":
         return get_scrolled_frame(parent, **kwargs)
-    elif widget_name == "Meter":
+    if widget_name == "Meter":
         return get_meter_widget(parent, **kwargs)
-    elif widget_name == "Floodgauge":
+    if widget_name == "Floodgauge":
         return get_floodgauge_widget(parent, **kwargs)
-    elif widget_name == "DateEntry":
+    if widget_name == "DateEntry":
         return get_date_entry_widget(parent, **kwargs)
 
     # Try the original module
@@ -306,6 +307,7 @@ class ScrolledFrame(ttk.Frame):
         ----
             parent: Parent widget
             autohide: Whether to hide the scrollbar when not needed
+
         """
         super().__init__(parent)
 

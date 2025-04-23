@@ -66,6 +66,7 @@ class ErrorDetails:
             traceback_str: String representation of the traceback
             context: Additional context information
             timestamp: Error timestamp (if None, will be set when logged)
+
         """
         self.exception = exception
         self.component = component

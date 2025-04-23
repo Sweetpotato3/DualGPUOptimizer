@@ -118,6 +118,7 @@ class MemoryProfiler:
             history_size: Maximum number of snapshots to keep in history
             leak_detection_threshold: Minimum steady growth rate to trigger leak alert
             spike_detection_threshold: Minimum growth rate to trigger spike alert
+
         """
         if self._initialized:
             return
@@ -178,6 +179,7 @@ class MemoryProfiler:
         Returns:
         -------
             Session identifier
+
         """
         if self._profiling_active:
             # End existing session before starting a new one
@@ -225,6 +227,7 @@ class MemoryProfiler:
         Returns
         -------
             Completed session ID or None if no active session
+
         """
         if not self._profiling_active or not self._active_session:
             return None
@@ -267,6 +270,7 @@ class MemoryProfiler:
         Returns:
         -------
             True if successfully started, False if no active session
+
         """
         if not self._profiling_active or not self._active_session:
             logger.warning("Cannot start inference - no active profiling session")
@@ -310,6 +314,7 @@ class MemoryProfiler:
         Returns:
         -------
             True if successfully ended, False if no active session or not in inference mode
+
         """
         if not self._profiling_active or not self._active_session or not self._inference_mode:
             logger.warning("Cannot end inference - no active inference or profiling session")
@@ -386,6 +391,7 @@ class MemoryProfiler:
         ----
             event_type: Type of event to trigger callback
             callback: Function to call with event details
+
         """
         self._callbacks[event_type].append(callback)
         logger.debug(f"Registered callback for {event_type.name} events")
@@ -402,6 +408,7 @@ class MemoryProfiler:
         Returns:
         -------
             True if callback was found and removed, False otherwise
+
         """
         if callback in self._callbacks[event_type]:
             self._callbacks[event_type].remove(callback)
@@ -422,12 +429,12 @@ class MemoryProfiler:
         Returns:
         -------
             Matplotlib canvas widget or text widget if matplotlib is not available
+
         """
         # Return different visualization depending on matplotlib availability
         if MATPLOTLIB_AVAILABLE:
             return self._create_matplotlib_visualization(parent_widget, width, height)
-        else:
-            return self._create_text_visualization(parent_widget, width, height)
+        return self._create_text_visualization(parent_widget, width, height)
 
     def _create_matplotlib_visualization(self, parent_widget, width=600, height=400):
         """Create matplotlib-based visualization"""
@@ -601,7 +608,7 @@ class MemoryProfiler:
 
             # Find closest memory value
             memory_value = 0
-            if event.gpu_id in self._memory_timeline and self._memory_timeline[event.gpu_id]:
+            if self._memory_timeline.get(event.gpu_id):
                 # Get closest memory value by time
                 timeline = self._memory_timeline[event.gpu_id]
                 for i, (t, m) in enumerate(timeline):
@@ -649,6 +656,7 @@ class MemoryProfiler:
         Returns:
         -------
             Dictionary with report data
+
         """
         # Determine which session to report on
         session = None
@@ -741,6 +749,7 @@ class MemoryProfiler:
         Returns:
         -------
             True if export successful, False otherwise
+
         """
         import csv
 
@@ -1017,6 +1026,7 @@ class MemoryProfiler:
         Returns:
         -------
             Created event object
+
         """
         if context is None:
             context = {}

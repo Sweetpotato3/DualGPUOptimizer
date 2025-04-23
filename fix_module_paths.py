@@ -84,9 +84,8 @@ def main():
     if fix_module_paths():
         print("Module paths fixed successfully")
         return 0
-    else:
-        print("Failed to fix module paths")
-        return 1
+    print("Failed to fix module paths")
+    return 1
 
 
 if __name__ == "__main__":

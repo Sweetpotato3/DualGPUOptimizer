@@ -38,6 +38,7 @@ def apply_theme_with_compatibility(window: Any, theme_data: Dict[str, Any]) -> N
     ----
         window: The window or root widget to apply the theme to
         theme_data: Theme data with colors and other settings
+
     """
     # Check if we have ttkbootstrap window
     if TTKBOOTSTRAP_AVAILABLE and hasattr(window, "style") and hasattr(window.style, "theme_use"):
@@ -100,6 +101,7 @@ def try_apply_ttkthemes(root: tk.Tk, theme_name: str = "equilux") -> bool:
     Returns:
     -------
         True if successful, False otherwise
+
     """
     if not TTKTHEMES_AVAILABLE:
         return False
@@ -126,6 +128,7 @@ def ensure_status_var(app_instance):
     Args:
     ----
         app_instance: The application instance to check/update
+
     """
     if not hasattr(app_instance, "status_var"):
         logger.debug("Adding missing status_var to application instance")

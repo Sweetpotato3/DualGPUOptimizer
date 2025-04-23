@@ -42,6 +42,7 @@ def calc_max_ctx(
     Returns:
     -------
         Maximum context size
+
     """
     try:
         # Convert GPU VRAM to bytes
@@ -124,6 +125,7 @@ def model_params_from_name(
     Returns:
     -------
         Tuple of (layers, heads, kv_heads, hidden_size, moe_factor)
+
     """
     # Default values
     layers = None
@@ -162,12 +164,12 @@ def model_params_from_name(
         if size_marker in basename:
             if "70b" in basename:
                 return 80, 64, 8, 8192, 1.0  # Large model with GQA
-            elif "13b" in basename:
+            if "13b" in basename:
                 return 40, 40, 40, 5120, 1.0  # Medium model
-            elif "8x7b" in basename or "mixtral" in basename:
+            if "8x7b" in basename or "mixtral" in basename:
                 return 32, 32, 8, 4096, 1.5  # MoE model
-            else:  # 7b or 8b
-                return 32, 32, 8, 4096, 1.0  # Small model with GQA
+            # 7b or 8b
+            return 32, 32, 8, 4096, 1.0  # Small model with GQA
 
     # If no match found, log warning and return None values
     logger.warning(f"Unable to determine model parameters from name: {model_name}")
@@ -191,6 +193,7 @@ def estimate_vram_usage(
     Returns:
     -------
         Estimated VRAM usage in MB
+
     """
     try:
         # Base model memory (simplified estimation)

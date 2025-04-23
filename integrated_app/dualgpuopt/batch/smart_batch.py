@@ -28,6 +28,7 @@ class SmartBatcher:
         ----
             max_batch_size: Maximum number of sequences in a batch
             length_threshold: Threshold for considering sequences as "long"
+
         """
         self.max_batch_size = max_batch_size
         self.length_threshold = length_threshold
@@ -47,6 +48,7 @@ class SmartBatcher:
         Returns:
         -------
             List of batches, where each batch is a list of sequence IDs
+
         """
         if not sequences:
             return []
@@ -98,6 +100,7 @@ def optimize_batch_size(
     Returns:
     -------
         Optimal batch size
+
     """
     # Simple heuristic: leave 20% for overhead, use rest for batching
     available_memory = gpu_memory_gb * 0.8 - model_size_gb

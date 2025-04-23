@@ -36,6 +36,7 @@ class ThemedFrame(tk.Frame, ThemedWidget):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Frame
+
         """
         # Set theme-related properties from current theme
         theme_props = self._get_theme_props()
@@ -57,6 +58,7 @@ class ThemedFrame(tk.Frame, ThemedWidget):
         Returns
         -------
             Dictionary of properties from current theme
+
         """
         return {
             "bg": current_theme["bg"],
@@ -71,6 +73,7 @@ class ThemedFrame(tk.Frame, ThemedWidget):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -97,6 +100,7 @@ class ThemedLabel(tk.Label, ThemedWidget):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Label
+
         """
         # Set theme-related properties from current theme
         theme_props = self._get_theme_props()
@@ -118,6 +122,7 @@ class ThemedLabel(tk.Label, ThemedWidget):
         Returns
         -------
             Dictionary of properties from current theme
+
         """
         return {
             "bg": current_theme["bg"],
@@ -132,6 +137,7 @@ class ThemedLabel(tk.Label, ThemedWidget):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -158,6 +164,7 @@ class ThemedButton(tk.Button, ThemedWidget):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Button
+
         """
         # Set theme-related properties from current theme
         theme_props = self._get_theme_props()
@@ -179,6 +186,7 @@ class ThemedButton(tk.Button, ThemedWidget):
         Returns
         -------
             Dictionary of properties from current theme
+
         """
         return {
             "bg": current_theme["accent"],
@@ -197,6 +205,7 @@ class ThemedButton(tk.Button, ThemedWidget):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -225,6 +234,7 @@ class ThemedEntry(tk.Entry, ThemedWidget):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Entry
+
         """
         # Set theme-related properties from current theme
         theme_props = self._get_theme_props()
@@ -246,6 +256,7 @@ class ThemedEntry(tk.Entry, ThemedWidget):
         Returns
         -------
             Dictionary of properties from current theme
+
         """
         return {
             "bg": current_theme["input_bg"],
@@ -265,6 +276,7 @@ class ThemedEntry(tk.Entry, ThemedWidget):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -294,6 +306,7 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
         ----
             master: Parent widget
             **kwargs: Additional keyword arguments for tk.Listbox
+
         """
         # Set theme-related properties from current theme
         theme_props = self._get_theme_props()
@@ -315,6 +328,7 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
         Returns
         -------
             Dictionary of properties from current theme
+
         """
         return {
             "bg": current_theme["input_bg"],
@@ -333,6 +347,7 @@ class ThemedListbox(tk.Listbox, ThemedWidget):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])
 
@@ -366,6 +381,7 @@ class ColorSwatch(ThemedFrame):
             width: Width of the swatch
             height: Height of the swatch
             **kwargs: Additional keyword arguments for ThemedFrame
+
         """
         super().__init__(master, width=width, height=height, **kwargs)
 
@@ -390,6 +406,7 @@ class ColorSwatch(ThemedFrame):
         Args:
         ----
             color: New color to display
+
         """
         self.color = color
         self.canvas.configure(bg=color)
@@ -401,6 +418,7 @@ class ColorSwatch(ThemedFrame):
         Args:
         ----
             theme_name: Name of the theme to apply
+
         """
         super().apply_theme(theme_name)
         theme_colors = AVAILABLE_THEMES.get(theme_name, AVAILABLE_THEMES["dark_purple"])

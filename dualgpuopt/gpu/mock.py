@@ -45,6 +45,7 @@ def update_mock_memory_usage(gpu_id: int, delta: int) -> bool:
     Returns:
     -------
         True if the update was successful, False otherwise
+
     """
     global _last_mock_gpus
 
@@ -82,6 +83,7 @@ def generate_mock_gpus(gpu_count: int = 2) -> list[dict[str, Any]]:
     Returns:
     -------
         List of dictionaries with mock GPU data
+
     """
     global _last_mock_gpus
 

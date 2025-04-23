@@ -45,7 +45,7 @@ class ErrorHandler:
             severity: [] for severity in ErrorSeverity
         }
 
-        self._error_counts: Dict[ErrorCategory, int] = {category: 0 for category in ErrorCategory}
+        self._error_counts: Dict[ErrorCategory, int] = dict.fromkeys(ErrorCategory, 0)
 
         self._recent_errors: List[ErrorDetails] = []
         self._max_recent_errors = 100
@@ -80,6 +80,7 @@ class ErrorHandler:
         ----
             severity: Error severity level to trigger callback
             callback: Function to call when error occurs
+
         """
         # Support wildcard '*' to register for all severity levels
         if severity == "*":
@@ -102,6 +103,7 @@ class ErrorHandler:
         Returns:
         -------
             True if callback was removed, False if not found
+
         """
         # Support wildcard '*' to unregister from all severity levels
         if severity == "*":
@@ -146,6 +148,7 @@ class ErrorHandler:
         Returns:
         -------
             ErrorDetails object with complete error information
+
         """
         # Create error details
         error_details = ErrorDetails(
@@ -242,6 +245,7 @@ class ErrorHandler:
         Returns:
         -------
             List of matching error details
+
         """
         filtered = self._recent_errors
 
@@ -271,6 +275,7 @@ class ErrorHandler:
             exc_type: Exception type
             exc_value: Exception value
             exc_traceback: Exception traceback
+
         """
         if issubclass(exc_type, KeyboardInterrupt):
             # Don't handle keyboard interrupt

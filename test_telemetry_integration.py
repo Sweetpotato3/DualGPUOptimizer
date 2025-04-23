@@ -82,7 +82,7 @@ def test_telemetry_service_with_history():
             success = False
 
     # Also check per-GPU metrics
-    for gpu_id in latest_metrics.keys():
+    for gpu_id in latest_metrics:
         for metric in ["util", "vram", "temp", "power"]:
             per_gpu_metric = f"{metric}_{gpu_id}"
             history = hist.snapshot(per_gpu_metric)

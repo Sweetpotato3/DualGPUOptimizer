@@ -17,15 +17,15 @@ logger = logging.getLogger("DualGPUOpt.MemoryMonitor")
 
 # Re-export all public classes and functions from the original module
 __all__ = [
-    "MemoryUnit",
-    "MemoryAlertLevel",
+    "DEFAULT_PROFILES",
     "GPUMemoryStats",
     "MemoryAlert",
     "MemoryAlertCallback",
+    "MemoryAlertLevel",
+    "MemoryMonitor",
     "MemoryProfile",
     "MemoryRecoveryStrategy",
-    "MemoryMonitor",
+    "MemoryUnit",
     "get_memory_monitor",
-    "DEFAULT_PROFILES",
     "initialize_memory_profiles",
 ]

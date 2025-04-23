@@ -56,10 +56,9 @@ class ResetResult:
         """Get formatted message with reclaimed memory"""
         if self.success and self.memory_reclaimed > 0:
             return f"Success: Reclaimed {self.memory_reclaimed} MB from GPUs {', '.join(map(str, self.gpu_ids))}"
-        elif self.success:
+        if self.success:
             return f"Success: No memory reclaimed from GPUs {', '.join(map(str, self.gpu_ids))}"
-        else:
-            return f"Failed: {self.message}"
+        return f"Failed: {self.message}"
 
 
 def reset_vram(
@@ -76,6 +75,7 @@ def reset_vram(
     Returns:
     -------
         ResetResult object with details of the reset operation
+
     """
     if not DEPENDENCIES_AVAILABLE:
         logger.warning("Cannot reset VRAM - dependencies not available")
@@ -155,6 +155,7 @@ def _reset_cache() -> bool:
     Returns
     -------
         True if successful, False otherwise
+
     """
     if not TORCH_AVAILABLE:
         return False
@@ -190,6 +191,7 @@ def _reset_clocks(device_ids: Optional[List[int]] = None) -> bool:
     Returns:
     -------
         True if successful, False otherwise
+
     """
     if not NVML_AVAILABLE:
         return False
@@ -253,6 +255,7 @@ def _reset_tensors() -> bool:
     Returns
     -------
         True if successful, False otherwise
+
     """
     if not TORCH_AVAILABLE:
         return False
@@ -291,6 +294,7 @@ def _reset_system_cmd() -> bool:
     Returns
     -------
         True if successful, False otherwise
+
     """
     try:
         system = platform.system()
@@ -352,6 +356,7 @@ def get_free_memory(device_ids: Optional[List[int]] = None) -> Dict[int, int]:
     Returns:
     -------
         Dictionary mapping GPU ID to free memory in MB
+
     """
     result = {}
 
@@ -432,6 +437,7 @@ def calculate_reclaimed(before: Dict[int, int], after: Dict[int, int]) -> Dict[i
     Returns:
     -------
         Dictionary mapping GPU ID to reclaimed memory in MB
+
     """
     result = {}
 

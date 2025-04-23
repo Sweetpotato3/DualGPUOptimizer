@@ -20,6 +20,7 @@ class Runner:
         ----
             cmd: Command string to execute
             workdir: Working directory for command execution
+
         """
         self.cmd = cmd
         self.proc: Optional[subprocess.Popen] = None
@@ -68,5 +69,6 @@ class Runner:
         Returns
         -------
             bool: True if process is running, False otherwise
+
         """
         return self.proc is not None and self.proc.poll() is None

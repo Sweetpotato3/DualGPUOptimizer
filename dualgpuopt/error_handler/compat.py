@@ -15,10 +15,10 @@ from dualgpuopt.error_handler.ui import show_error_dialog
 __all__ = [
     "ErrorCategory",
     "ErrorDetails",
-    "ErrorSeverity",
     "ErrorHandler",
-    "handle_exceptions",
+    "ErrorSeverity",
     "get_error_handler",
+    "handle_exceptions",
     "install_global_handler",
     "show_error_dialog",
 ]

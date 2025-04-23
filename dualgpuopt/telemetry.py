@@ -139,6 +139,7 @@ class GPUMetrics:
         Returns
         -------
             AlertLevel enum indicating the severity of the current GPU state
+
         """
         # Start with NORMAL alert level
         level = AlertLevel.NORMAL
@@ -187,6 +188,7 @@ class TelemetryService:
             use_mock: Force using mock data even if NVML is available
             gpu_provider: Optional custom GPU provider for testing
             event_bus: Optional event bus to use instead of the global one
+
         """
         self.poll_interval = poll_interval
         self.force_mock = use_mock
@@ -229,6 +231,7 @@ class TelemetryService:
         Returns
         -------
             True if initialization was successful, False otherwise
+
         """
         if self.force_mock:
             self.use_mock = True
@@ -270,6 +273,7 @@ class TelemetryService:
         Returns
         -------
             True if reinitialization was successful, False otherwise
+
         """
         # Don't try to recover if we're using mock data by choice
         if self.force_mock:
@@ -329,6 +333,7 @@ class TelemetryService:
         Args:
         ----
             poll_interval: Optional override for the polling interval set during initialization
+
         """
         if self.running:
             return
@@ -373,6 +378,7 @@ class TelemetryService:
         Args:
         ----
             callback: Function to call with new metrics
+
         """
         with self._callback_lock:
             self.callbacks.append(callback)
@@ -403,6 +409,7 @@ class TelemetryService:
         Returns:
         -------
             True if the callback was found and removed, False otherwise
+
         """
         with self._callback_lock:
             if callback in self.callbacks:
@@ -417,6 +424,7 @@ class TelemetryService:
         Returns
         -------
             Dictionary of GPU ID to metrics
+
         """
         with self._metrics_lock:
             return self.metrics.copy()
@@ -438,6 +446,7 @@ class TelemetryService:
         -------
             If gpu_id is None: Dictionary mapping GPU IDs to lists of metrics
             If gpu_id is provided: List of metrics for the specified GPU
+
         """
         with self._metrics_lock:
             if gpu_id is not None:
@@ -449,23 +458,20 @@ class TelemetryService:
                     # Filter by time window
                     cutoff_time = time.time() - seconds
                     return [m for m in self._metrics_history[gpu_id] if m.timestamp >= cutoff_time]
-                else:
-                    # Return all history for this GPU
-                    return self._metrics_history[gpu_id].copy()
-            else:
-                # Return history for all GPUs
-                if seconds is not None:
-                    # Filter by time window
-                    cutoff_time = time.time() - seconds
-                    return {
-                        gpu_id: [m for m in history if m.timestamp >= cutoff_time]
-                        for gpu_id, history in self._metrics_history.items()
-                    }
-                else:
-                    # Return all history
-                    return {
-                        gpu_id: history.copy() for gpu_id, history in self._metrics_history.items()
-                    }
+                # Return all history for this GPU
+                return self._metrics_history[gpu_id].copy()
+            # Return history for all GPUs
+            if seconds is not None:
+                # Filter by time window
+                cutoff_time = time.time() - seconds
+                return {
+                    gpu_id: [m for m in history if m.timestamp >= cutoff_time]
+                    for gpu_id, history in self._metrics_history.items()
+                }
+            # Return all history
+            return {
+                gpu_id: history.copy() for gpu_id, history in self._metrics_history.items()
+            }
 
     def _telemetry_loop(self) -> None:
         """Main telemetry collection loop"""
@@ -616,6 +622,7 @@ class TelemetryService:
         Args:
         ----
             metrics: The current metrics to distribute
+
         """
         # Notify all registered callbacks with thread safety
         with self._callback_lock:
@@ -704,6 +711,7 @@ class TelemetryService:
         Returns:
         -------
             GPU name as a string
+
         """
         # Use a module-level function for caching instead of a method
         return _cached_gpu_name_lookup(
@@ -725,6 +733,7 @@ class TelemetryService:
         Returns:
         -------
             GPUMetrics object with current values
+
         """
         try:
             # Get cached handle or create a new one
@@ -852,6 +861,7 @@ class TelemetryService:
         Returns:
         -------
             GPUMetrics object with mock values
+
         """
         import random
 
@@ -925,6 +935,7 @@ class TelemetryService:
         Returns
         -------
             True if reset was successful, False otherwise
+
         """
         was_running = self.running
 
@@ -963,6 +974,7 @@ def get_telemetry_service() -> TelemetryService:
     Returns
     -------
         The global telemetry service instance, creating it if needed
+
     """
     global _telemetry_service
     if _telemetry_service is None:
@@ -977,6 +989,7 @@ def reset_telemetry_service() -> bool:
     Returns
     -------
         True if reset was successful, False otherwise
+
     """
     service = get_telemetry_service()
     return service.reset()
@@ -1003,6 +1016,7 @@ def _cached_gpu_name_lookup(
     Returns:
     -------
         GPU name as a string
+
     """
     if not nvml_initialized or use_mock:
         return f"NVIDIA GPU {gpu_id} (MOCK)"
@@ -1013,9 +1027,8 @@ def _cached_gpu_name_lookup(
         # Handle different return types from various pynvml versions
         if isinstance(name_bytes, bytes):
             return name_bytes.decode("utf-8", errors="replace")
-        else:
-            # Already a string in newer pynvml versions
-            return name_bytes
+        # Already a string in newer pynvml versions
+        return name_bytes
     except Exception:
         return f"NVIDIA GPU {gpu_id}"
 
@@ -1039,6 +1052,7 @@ class TelemetryThread(threading.Thread):
             poll_interval: How frequently to poll for GPU data (seconds)
             stop_event: Event to signal thread to stop
             use_mock: Whether to use mock GPU data
+
         """
         super().__init__(daemon=True, name="TelemetryThread")
         self.service = service
@@ -1131,6 +1145,7 @@ class TelemetryThread(threading.Thread):
         Args:
         ----
             metrics: The current metrics to distribute
+
         """
         # Process callbacks
         callbacks = list(self.service.callbacks)
