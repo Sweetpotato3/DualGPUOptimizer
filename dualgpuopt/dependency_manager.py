@@ -12,13 +12,12 @@ The dependency system follows these priorities:
 - Core: Application works with fallbacks if missing
 - Optional: Enhanced functionality when available
 """
-import sys
 import importlib.util
 import logging
 import subprocess
-from typing import Dict, List, Tuple, Optional, Any, Set, Callable
+import sys
 from dataclasses import dataclass
-from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 logger = logging.getLogger("DualGPUOpt.Dependencies")
 
@@ -56,16 +55,18 @@ ALL_DEPENDENCIES = {
     **CORE_DEPENDENCIES,
     **UI_DEPENDENCIES,
     **CHAT_DEPENDENCIES,
-    **ML_DEPENDENCIES
+    **ML_DEPENDENCIES,
 }
 
 # Dependency state tracking
 dependency_status = {name: False for name in ALL_DEPENDENCIES}
 dependency_import_errors = {}
 
+
 @dataclass
 class ImportedModule:
     """Container for imported module with fallback and availability info"""
+
     name: str
     module: Optional[Any] = None
     available: bool = False
@@ -78,25 +79,31 @@ class ImportedModule:
 
 
 def is_available(dependency_name: str) -> bool:
-    """Check if a dependency is available
+    """
+    Check if a dependency is available
 
     Args:
+    ----
         dependency_name: Name of the dependency to check
 
     Returns:
+    -------
         True if dependency is available
     """
     return dependency_status.get(dependency_name, False)
 
 
 def get_module(module_name: str, silent: bool = False) -> ImportedModule:
-    """Get a module with proper error handling and fallback tracking
+    """
+    Get a module with proper error handling and fallback tracking
 
     Args:
+    ----
         module_name: Name of the module to import
         silent: If True, don't log errors
 
     Returns:
+    -------
         ImportedModule object with module and availability information
     """
     result = ImportedModule(name=module_name)
@@ -115,15 +122,20 @@ def get_module(module_name: str, silent: bool = False) -> ImportedModule:
     return result
 
 
-def get_with_fallback(primary_module: str, fallback_module: str, silent: bool = False) -> ImportedModule:
-    """Try to import a primary module, falling back to an alternative if not available
+def get_with_fallback(
+    primary_module: str, fallback_module: str, silent: bool = False
+) -> ImportedModule:
+    """
+    Try to import a primary module, falling back to an alternative if not available
 
     Args:
+    ----
         primary_module: Name of the preferred module to import
         fallback_module: Name of the fallback module
         silent: If True, don't log warnings for fallbacks
 
     Returns:
+    -------
         ImportedModule with either the primary or fallback module
     """
     primary = get_module(primary_module, silent=True)
@@ -148,17 +160,21 @@ def get_with_fallback(primary_module: str, fallback_module: str, silent: bool = 
 
 
 def check_dependency(name: str) -> bool:
-    """Check if a dependency is installed
+    """
+    Check if a dependency is installed
 
     Args:
+    ----
         name: Name of the dependency
 
     Returns:
+    -------
         True if installed, False otherwise
     """
     if name == "tkinter":
         try:
             import tkinter
+
             return True
         except ImportError:
             return False
@@ -186,14 +202,16 @@ def initialize_dependency_status():
                 dependency_import_errors[name] = str(e)
                 logger.debug(f"Dependency {name} import error: {e}")
             except Exception as e:
-                dependency_import_errors[name] = f"Runtime error: {str(e)}"
+                dependency_import_errors[name] = f"Runtime error: {e!s}"
                 logger.debug(f"Dependency {name} runtime error: {e}")
 
 
 def get_missing_dependencies() -> Dict[str, List[str]]:
-    """Get missing dependencies by category
+    """
+    Get missing dependencies by category
 
-    Returns:
+    Returns
+    -------
         Dictionary with categories as keys and lists of missing dependencies as values
     """
     missing = {}
@@ -227,12 +245,15 @@ def get_missing_dependencies() -> Dict[str, List[str]]:
 
 
 def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
-    """Get pip installation commands for missing dependencies
+    """
+    Get pip installation commands for missing dependencies
 
     Args:
+    ----
         missing_deps: Dictionary with categories as keys and lists of missing dependencies as values
 
     Returns:
+    -------
         List of pip install commands
     """
     commands = []
@@ -240,14 +261,17 @@ def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
     # Build installation commands by category
     if "required" in missing_deps:
         required_packages = " ".join(
-            REQUIRED_DEPENDENCIES[name]["package"] for name in missing_deps["required"]
+            REQUIRED_DEPENDENCIES[name]["package"]
+            for name in missing_deps["required"]
             if name != "tkinter"  # tkinter requires special handling
         )
         if required_packages:
             commands.append(f"pip install {required_packages}")
 
     if "core" in missing_deps:
-        core_packages = " ".join(CORE_DEPENDENCIES[name]["package"] for name in missing_deps["core"])
+        core_packages = " ".join(
+            CORE_DEPENDENCIES[name]["package"] for name in missing_deps["core"]
+        )
         if core_packages:
             commands.append(f"pip install {core_packages}")
 
@@ -257,7 +281,9 @@ def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
             commands.append(f"pip install {ui_packages}")
 
     if "chat" in missing_deps:
-        chat_packages = " ".join(CHAT_DEPENDENCIES[name]["package"] for name in missing_deps["chat"])
+        chat_packages = " ".join(
+            CHAT_DEPENDENCIES[name]["package"] for name in missing_deps["chat"]
+        )
         if chat_packages:
             commands.append(f"pip install {chat_packages}")
 
@@ -270,13 +296,16 @@ def get_installation_commands(missing_deps: Dict[str, List[str]]) -> List[str]:
 
 
 def install_dependencies(missing_deps: Dict[str, List[str]], interactive: bool = True) -> bool:
-    """Install missing dependencies
+    """
+    Install missing dependencies
 
     Args:
+    ----
         missing_deps: Dictionary of missing dependencies by category
         interactive: If True, prompt for confirmation before installing
 
     Returns:
+    -------
         True if all installations were successful, False otherwise
     """
     if not missing_deps:
@@ -290,7 +319,9 @@ def install_dependencies(missing_deps: Dict[str, List[str]], interactive: bool =
 
     # Check for tkinter separately
     if "required" in missing_deps and "tkinter" in missing_deps["required"]:
-        logger.warning("tkinter is required and must be installed through your system package manager")
+        logger.warning(
+            "tkinter is required and must be installed through your system package manager"
+        )
         if sys.platform == "win32":
             logger.info("For Windows, reinstall Python and check 'tcl/tk and IDLE'")
         elif sys.platform == "darwin":
@@ -317,7 +348,7 @@ def install_dependencies(missing_deps: Dict[str, List[str]], interactive: bool =
 
         try:
             response = input("\nProceed with installation? [y/N] ").strip().lower()
-            if response != 'y':
+            if response != "y":
                 logger.info("Installation cancelled by user")
                 return False
         except (KeyboardInterrupt, EOFError):
@@ -351,16 +382,20 @@ def install_dependencies(missing_deps: Dict[str, List[str]], interactive: bool =
                 # Some dependencies in this category are still missing
                 for dep in updated_missing[category]:
                     if dep in missing_deps[category] and dep != "tkinter":
-                        logger.warning(f"Dependency {dep} is still missing after installation attempt")
+                        logger.warning(
+                            f"Dependency {dep} is still missing after installation attempt"
+                        )
                         success = False
 
     return success
 
 
 def verify_core_dependencies() -> Tuple[bool, List[str]]:
-    """Verify that core dependencies are available or have fallbacks
+    """
+    Verify that core dependencies are available or have fallbacks
 
-    Returns:
+    Returns
+    -------
         Tuple of (all_core_available, list of critical missing dependencies)
     """
     check_tkinter = check_dependency("tkinter")
@@ -379,9 +414,11 @@ def verify_core_dependencies() -> Tuple[bool, List[str]]:
 
 
 def print_dependency_status(include_errors: bool = False) -> None:
-    """Print status of all dependencies
+    """
+    Print status of all dependencies
 
     Args:
+    ----
         include_errors: If True, include error messages for failed imports
     """
     print("\nDualGPUOptimizer Dependency Check")
@@ -390,7 +427,7 @@ def print_dependency_status(include_errors: bool = False) -> None:
     # Check Python version
     py_version = sys.version.split()[0]
     print(f"Python version: {py_version}")
-    if float(py_version.split('.')[0] + '.' + py_version.split('.')[1]) < 3.8:
+    if float(py_version.split(".")[0] + "." + py_version.split(".")[1]) < 3.8:
         print("  ❌ Python 3.8+ is recommended. Some features may not work correctly.")
     else:
         print("  ✅ Python version is compatible.")
@@ -477,13 +514,16 @@ def print_dependency_status(include_errors: bool = False) -> None:
 
 
 def get_import_wrapper(module_name: str, default_value=None) -> Any:
-    """Create a wrapper that tries to import a module and returns default if not available
+    """
+    Create a wrapper that tries to import a module and returns default if not available
 
     Args:
+    ----
         module_name: Name of the module to import
         default_value: Value to return if module is not available
 
     Returns:
+    -------
         Module if available, else default_value
     """
     try:
@@ -501,10 +541,12 @@ class DynamicImporter:
         """Import UI modules with fallbacks"""
         if dependency_status.get("ttkbootstrap", False):
             import ttkbootstrap as ttk
+
             logger.debug("Using ttkbootstrap for UI")
             return ttk
         else:
             from tkinter import ttk
+
             logger.debug("Using standard ttk for UI")
             return ttk
 
@@ -513,9 +555,8 @@ class DynamicImporter:
         """Import GPU compatibility layer with fallbacks"""
         if dependency_status.get("pynvml", False):
             try:
-                from dualgpuopt.gpu.compat import (
-                    is_mock_mode, set_mock_mode, generate_mock_gpus
-                )
+                from dualgpuopt.gpu.compat import generate_mock_gpus, is_mock_mode, set_mock_mode
+
                 logger.debug("Using GPU compatibility layer")
                 return {
                     "is_mock_mode": is_mock_mode,
@@ -532,8 +573,8 @@ class DynamicImporter:
             "set_mock_mode": lambda enabled=True: None,
             "generate_mock_gpus": lambda count=2: [
                 {"id": 0, "name": "Mock GPU 0", "mem_total": 24576, "mem_used": 8192, "util": 45},
-                {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85}
-            ]
+                {"id": 1, "name": "Mock GPU 1", "mem_total": 12288, "mem_used": 10240, "util": 85},
+            ],
         }
 
     @staticmethod
@@ -541,12 +582,13 @@ class DynamicImporter:
         """Import telemetry system with fallbacks"""
         if dependency_status.get("pynvml", False):
             try:
-                from dualgpuopt.telemetry import get_telemetry_service, GPUMetrics
+                from dualgpuopt.telemetry import GPUMetrics, get_telemetry_service
+
                 logger.debug("Using telemetry system")
                 return {
                     "get_telemetry_service": get_telemetry_service,
                     "GPUMetrics": GPUMetrics,
-                    "available": True
+                    "available": True,
                 }
             except ImportError as e:
                 logger.warning(f"Telemetry import error: {e}")
@@ -555,7 +597,7 @@ class DynamicImporter:
         return {
             "get_telemetry_service": lambda: None,
             "GPUMetrics": None,
-            "available": False
+            "available": False,
         }
 
     @staticmethod
@@ -563,16 +605,17 @@ class DynamicImporter:
         """Import dashboard component with fallbacks"""
         try:
             from dualgpuopt.gui.dashboard import DashboardView
+
             logger.debug("Using dashboard component")
             return {
                 "DashboardView": DashboardView,
-                "available": True
+                "available": True,
             }
         except ImportError as e:
             logger.warning(f"Dashboard import error: {e}")
             return {
                 "DashboardView": None,
-                "available": False
+                "available": False,
             }
 
     @staticmethod
@@ -581,10 +624,11 @@ class DynamicImporter:
         if dependency_status.get("numpy", False):
             try:
                 from dualgpuopt.gui.optimizer_tab import OptimizerTab
+
                 logger.debug("Using optimizer component")
                 return {
                     "OptimizerTab": OptimizerTab,
-                    "available": True
+                    "available": True,
                 }
             except ImportError as e:
                 logger.warning(f"Optimizer import error: {e}")
@@ -593,7 +637,7 @@ class DynamicImporter:
 
         return {
             "OptimizerTab": None,
-            "available": False
+            "available": False,
         }
 
 

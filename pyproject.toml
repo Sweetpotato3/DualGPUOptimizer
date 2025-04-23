@@ -37,8 +37,7 @@ ml = [
 ]
 dev = [
     "black>=23.9.1",
-    "isort>=5.12.0",
-    "flake8>=6.1.0",
+    "ruff>=0.0.292",
     "mypy>=1.5.1",
 ]
 test = [
@@ -57,19 +56,19 @@ dualgpuopt = "dualgpuopt.main:main"
 
 [tool.black]
 line-length = 100
-target-version = ["py38", "py39", "py310", "py311", "py312"]
+target-version = ["py311", "py312"]
 include = '\.pyi?$'
 
-[tool.isort]
-profile = "black"
-line_length = 100
+[tool.ruff]
+line-length = 100
+select = ["ALL"]
+ignore = ["D203", "D212", "COM812", "ISC001"]
+show-fixes = true
 
 [tool.mypy]
-python_version = "3.8"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
+python_version = "3.12"
+strict = true
+plugins = []
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
@@ -83,15 +82,23 @@ markers = [
     "gpu: Tests that require actual GPU hardware (skip in CI if needed)",
     "slow: Tests that take a long time to run",
 ]
+addopts = "-q --strict-config --strict-markers"
 env = [
     "DUALGPUOPT_MOCK_GPU=1",
     "DUALGPUOPT_POLL_INTERVAL=0.1",
     "DUALGPUOPT_SAFETY_MARGIN=0.1",
+    "HF_HOME=~/.cache/huggingface",
+    "TOKENIZERS_PARALLELISM=false"
 ]
 
 [tool.coverage.run]
 source = ["dualgpuopt"]
-omit = ["tests/*", "setup.py"]
+omit = [
+    "tests/*",
+    "setup.py",
+    "dualgpuopt/gui/qt_generated/*",
+    "dualgpuopt/*/compat.py",
+]
 
 [tool.coverage.report]
 exclude_lines = [
@@ -101,4 +108,4 @@ exclude_lines = [
     "if __name__ == .__main__.:",
     "pass",
     "raise ImportError",
-] 
+]

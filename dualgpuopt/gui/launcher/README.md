@@ -89,7 +89,7 @@ from dualgpuopt.gui.launcher import LauncherTab, ModelRunner
 # Create launcher tab in UI
 launcher_tab = LauncherTab(parent_frame)
 
-# Create model runner 
+# Create model runner
 log_queue = queue.Queue()
 runner = ModelRunner(log_queue)
 runner.start(command, env)
@@ -100,4 +100,4 @@ runner.start(command, env)
 - Add unit tests for each component
 - Improve error handling and recovery mechanisms
 - Add support for additional frameworks
-- Enhance GPU memory management strategies 
+- Enhance GPU memory management strategies

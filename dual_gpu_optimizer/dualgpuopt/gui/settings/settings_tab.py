@@ -7,15 +7,17 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk, messagebox
 import logging
-from typing import Dict, List, Any, Optional
+from typing import List, Optional
 
 # Try to import ttkbootstrap components
 try:
     import ttkbootstrap as ttk
     from ttkbootstrap.constants import *
+
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
     import tkinter.ttk as ttk
+
     TTKBOOTSTRAP_AVAILABLE = False
 
 from dualgpuopt.gpu_info import GPU
@@ -33,10 +35,14 @@ from dualgpuopt.gui.settings.application_settings import ApplicationSettingsFram
 class SettingsTab(ttk.Frame):
     """Settings tab that allows configuration of application settings."""
 
-    def __init__(self, parent: ttk.Frame, gpus: Optional[List[GPU]] = None,
-                 config_service_instance = None,
-                 state_service_instance: Optional[StateService] = None,
-                 danger_style: str = "danger") -> None:
+    def __init__(
+        self,
+        parent: ttk.Frame,
+        gpus: Optional[List[GPU]] = None,
+        config_service_instance=None,
+        state_service_instance: Optional[StateService] = None,
+        danger_style: str = "danger",
+    ) -> None:
         """
         Initialize the settings tab.
 
@@ -101,8 +107,7 @@ class SettingsTab(ttk.Frame):
         self.scrollable_frame = ttk.Frame(canvas)
 
         self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+            "<Configure>", lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
         canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
@@ -121,9 +126,7 @@ class SettingsTab(ttk.Frame):
         """Add the settings components to the scrollable frame."""
         # Appearance settings
         self.appearance_frame = AppearanceFrame(
-            self.scrollable_frame,
-            pad=self.PAD,
-            on_theme_change=self._update_status
+            self.scrollable_frame, pad=self.PAD, on_theme_change=self._update_status
         )
         self.appearance_frame.grid(row=0, column=0, sticky="ew")
 
@@ -132,15 +135,13 @@ class SettingsTab(ttk.Frame):
             self.scrollable_frame,
             self.gpus,
             pad=self.PAD,
-            on_status_change=self._update_status
+            on_status_change=self._update_status,
         )
         self.overclocking_frame.grid(row=1, column=0, sticky="ew")
 
         # Application settings
         self.application_settings_frame = ApplicationSettingsFrame(
-            self.scrollable_frame,
-            pad=self.PAD,
-            on_settings_change=self._update_status
+            self.scrollable_frame, pad=self.PAD, on_settings_change=self._update_status
         )
         self.application_settings_frame.grid(row=2, column=0, sticky="ew")
 
@@ -150,31 +151,29 @@ class SettingsTab(ttk.Frame):
             footer_frame = ttk.Frame(self, bootstyle="secondary")
         else:
             footer_frame = ttk.Frame(self, style="Secondary.TFrame")
-        footer_frame.grid(row=1, column=0, sticky="ew", pady=(self.PAD/2, 0))
+        footer_frame.grid(row=1, column=0, sticky="ew", pady=(self.PAD / 2, 0))
         footer_frame.columnconfigure(0, weight=1)  # Status text expands
         footer_frame.columnconfigure(1, weight=0)  # Buttons fixed width
 
         # Status label
         self.status_var = tk.StringVar(value="Ready")
         status_label = ttk.Label(footer_frame, textvariable=self.status_var)
-        status_label.grid(row=0, column=0, sticky="w", padx=self.PAD, pady=self.PAD/2)
+        status_label.grid(row=0, column=0, sticky="w", padx=self.PAD, pady=self.PAD / 2)
 
         # Buttons frame
         buttons_frame = ttk.Frame(footer_frame)
-        buttons_frame.grid(row=0, column=1, sticky="e", padx=self.PAD, pady=self.PAD/2)
+        buttons_frame.grid(
+            row=0, column=1, sticky="e", padx=self.PAD, pady=self.PAD / 2
+        )
 
         # Save button
         ttk.Button(
-            buttons_frame,
-            text="Save Settings",
-            command=self._save_all_settings
+            buttons_frame, text="Save Settings", command=self._save_all_settings
         ).pack(side="right", padx=5)
 
         # Reset button
         ttk.Button(
-            buttons_frame,
-            text="Reset to Defaults",
-            command=self._reset_all_settings
+            buttons_frame, text="Reset to Defaults", command=self._reset_all_settings
         ).pack(side="right", padx=5)
 
     def _update_status(self, message: str) -> None:
@@ -190,20 +189,25 @@ class SettingsTab(ttk.Frame):
 
     def _reset_all_settings(self) -> None:
         """Reset all settings to defaults."""
-        if messagebox.askyesno("Reset Settings",
-                             "Are you sure you want to reset all settings to defaults?",
-                             parent=self.winfo_toplevel()):
+        if messagebox.askyesno(
+            "Reset Settings",
+            "Are you sure you want to reset all settings to defaults?",
+            parent=self.winfo_toplevel(),
+        ):
             # Reset application settings
-            self.application_settings_frame.apply_settings({
-                "start_minimized": False,
-                "idle_alerts": True,
-                "idle_threshold": 30,
-                "idle_time": 5
-            })
+            self.application_settings_frame.apply_settings(
+                {
+                    "start_minimized": False,
+                    "idle_alerts": True,
+                    "idle_threshold": 30,
+                    "idle_time": 5,
+                }
+            )
 
             # Apply default theme
             root_window = self.winfo_toplevel()
             from dualgpuopt.gui.theme import set_theme
+
             set_theme(root_window, "dark_purple")
 
             # Save changes
@@ -219,7 +223,7 @@ class SettingsTab(ttk.Frame):
             app_settings = self.application_settings_frame.get_settings()
             theme_settings = {
                 "theme": self.appearance_frame.get_theme(),
-                "ttk_theme": self.appearance_frame.get_ttk_theme()
+                "ttk_theme": self.appearance_frame.get_ttk_theme(),
             }
 
             # Update config with current values
@@ -232,8 +236,13 @@ class SettingsTab(ttk.Frame):
             # Notify about settings update
             event_bus.publish("settings_saved")
 
-            messagebox.showinfo("Settings", "Settings saved successfully",
-                              parent=self.winfo_toplevel())
+            messagebox.showinfo(
+                "Settings", "Settings saved successfully", parent=self.winfo_toplevel()
+            )
         except Exception as e:
-            error_service.handle_error(e, level="ERROR", title="Settings Error",
-                                     context={"operation": "save_settings"})
+            error_service.handle_error(
+                e,
+                level="ERROR",
+                title="Settings Error",
+                context={"operation": "save_settings"},
+            )

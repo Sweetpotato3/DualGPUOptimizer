@@ -79,24 +79,24 @@ case $STEP in
         echo "Running full pipeline with preset $PRESET..."
         # Install dependencies
         pip install -r dualgpuopt/requirements_legal.txt
-        
+
         # Data ingestion
         python -m dualgpuopt.ingest.operator_tasks.legisqc
         python -m dualgpuopt.ingest.operator_tasks.canlii_fr
         python -m dualgpuopt.ingest.clean_html "$CORPUS_DIR/qc_statutes/raw" "$DATASETS_DIR/qc_legal_clean.jsonl"
-        
+
         # Tokenizer training
         python -m dualgpuopt.tokenizer.train_spm "$DATASETS_DIR/qc_legal_clean.jsonl" tokenizer_frqc
-        
+
         # Training
         accelerate launch -m dualgpuopt.train.train_qlora --preset "dualgpuopt/train/presets.yml#$PRESET"
-        
+
         # Evaluation
         python -m dualgpuopt.eval.lexglue_fr --model checkpoints/qc_legal/merged
-        
+
         # RAG setup
         python -m dualgpuopt.rag.build_faiss "$DATASETS_DIR/qc_legal_clean.jsonl" rag/qc.faiss
-        
+
         # Start server
         export LEGAL_MODEL=checkpoints/qc_legal/merged
         export LEGAL_API_KEY=${LEGAL_API_KEY:-secret}
@@ -110,4 +110,4 @@ case $STEP in
         ;;
 esac
 
-echo "Completed step: $STEP" 
+echo "Completed step: $STEP"

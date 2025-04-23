@@ -3,17 +3,18 @@ Non‑blocking subprocess wrapper + log streamer for llama.cpp / vLLM
 """
 from __future__ import annotations
 import subprocess, threading, queue, pathlib, shlex
-from typing import List
+
 
 class Runner:
-    def __init__(self, cmd: str, workdir: str|pathlib.Path=".") -> None:
+    def __init__(self, cmd: str, workdir: str | pathlib.Path = ".") -> None:
         self.cmd = cmd
-        self.proc: subprocess.Popen|None = None
+        self.proc: subprocess.Popen | None = None
         self.q: "queue.Queue[str]" = queue.Queue()
         self.cwd = pathlib.Path(workdir)
 
     def start(self) -> None:
-        if self.proc: return
+        if self.proc:
+            return
         self.proc = subprocess.Popen(
             shlex.split(self.cmd),
             cwd=self.cwd,

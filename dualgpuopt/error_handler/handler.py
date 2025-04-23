@@ -25,6 +25,7 @@ class ErrorHandler:
     Provides methods for handling, logging, and recovering from errors
     with support for custom callbacks and recovery strategies.
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -44,9 +45,7 @@ class ErrorHandler:
             severity: [] for severity in ErrorSeverity
         }
 
-        self._error_counts: Dict[ErrorCategory, int] = {
-            category: 0 for category in ErrorCategory
-        }
+        self._error_counts: Dict[ErrorCategory, int] = {category: 0 for category in ErrorCategory}
 
         self._recent_errors: List[ErrorDetails] = []
         self._max_recent_errors = 100
@@ -78,14 +77,15 @@ class ErrorHandler:
         Register a callback for a specific error severity
 
         Args:
+        ----
             severity: Error severity level to trigger callback
             callback: Function to call when error occurs
         """
         # Support wildcard '*' to register for all severity levels
-        if severity == '*':
+        if severity == "*":
             for sev in ErrorSeverity:
                 self._callbacks[sev].append(callback)
-            logger.debug(f"Registered error callback for all severity levels")
+            logger.debug("Registered error callback for all severity levels")
         else:
             self._callbacks[severity].append(callback)
             logger.debug(f"Registered error callback for severity {severity.name}")
@@ -95,21 +95,23 @@ class ErrorHandler:
         Unregister a callback
 
         Args:
+        ----
             severity: Error severity level of the callback
             callback: Callback function to remove
 
         Returns:
+        -------
             True if callback was removed, False if not found
         """
         # Support wildcard '*' to unregister from all severity levels
-        if severity == '*':
+        if severity == "*":
             removed = False
             for sev in ErrorSeverity:
                 if callback in self._callbacks[sev]:
                     self._callbacks[sev].remove(callback)
                     removed = True
             if removed:
-                logger.debug(f"Unregistered error callback from all severity levels")
+                logger.debug("Unregistered error callback from all severity levels")
             return removed
 
         if callback in self._callbacks[severity]:
@@ -118,18 +120,21 @@ class ErrorHandler:
             return True
         return False
 
-    def handle_error(self,
-                    exception: Optional[Exception] = None,
-                    component: str = "unknown",
-                    severity: ErrorSeverity = ErrorSeverity.ERROR,
-                    category: Optional[ErrorCategory] = None,
-                    message: str = "",
-                    user_message: str = "",
-                    context: Dict[str, Any] = None) -> ErrorDetails:
+    def handle_error(
+        self,
+        exception: Optional[Exception] = None,
+        component: str = "unknown",
+        severity: ErrorSeverity = ErrorSeverity.ERROR,
+        category: Optional[ErrorCategory] = None,
+        message: str = "",
+        user_message: str = "",
+        context: Dict[str, Any] = None,
+    ) -> ErrorDetails:
         """
         Handle an error
 
         Args:
+        ----
             exception: The original exception
             component: Component or module where the error occurred
             severity: Error severity level
@@ -139,6 +144,7 @@ class ErrorHandler:
             context: Additional context information
 
         Returns:
+        -------
             ErrorDetails object with complete error information
         """
         # Create error details
@@ -149,7 +155,7 @@ class ErrorHandler:
             category=category,
             message=message,
             user_message=user_message,
-            context=context or {}
+            context=context or {},
         )
 
         # Log the error
@@ -190,7 +196,11 @@ class ErrorHandler:
             logger.critical(f"FATAL: {log_message}")
 
         # For severe errors, log the full details to the debug log
-        if error_details.severity in [ErrorSeverity.ERROR, ErrorSeverity.CRITICAL, ErrorSeverity.FATAL]:
+        if error_details.severity in [
+            ErrorSeverity.ERROR,
+            ErrorSeverity.CRITICAL,
+            ErrorSeverity.FATAL,
+        ]:
             logger.debug(error_details.format_for_log())
 
     def _trigger_callbacks(self, error_details: ErrorDetails):
@@ -208,23 +218,29 @@ class ErrorHandler:
             "total_errors": sum(self._error_counts.values()),
             "by_category": {category.name: count for category, count in self._error_counts.items()},
             "recent_count": len(self._recent_errors),
-            "recent_severities": {severity.name: sum(1 for e in self._recent_errors if e.severity == severity)
-                                for severity in ErrorSeverity}
+            "recent_severities": {
+                severity.name: sum(1 for e in self._recent_errors if e.severity == severity)
+                for severity in ErrorSeverity
+            },
         }
 
-    def get_recent_errors(self,
-                         max_count: int = 10,
-                         severity_filter: Optional[List[ErrorSeverity]] = None,
-                         category_filter: Optional[List[ErrorCategory]] = None) -> List[ErrorDetails]:
+    def get_recent_errors(
+        self,
+        max_count: int = 10,
+        severity_filter: Optional[List[ErrorSeverity]] = None,
+        category_filter: Optional[List[ErrorCategory]] = None,
+    ) -> List[ErrorDetails]:
         """
         Get recent errors with optional filtering
 
         Args:
+        ----
             max_count: Maximum number of errors to return
             severity_filter: Only include errors with these severities
             category_filter: Only include errors in these categories
 
         Returns:
+        -------
             List of matching error details
         """
         filtered = self._recent_errors
@@ -251,6 +267,7 @@ class ErrorHandler:
         Global exception handler for unhandled exceptions
 
         Args:
+        ----
             exc_type: Exception type
             exc_value: Exception value
             exc_traceback: Exception traceback
@@ -262,6 +279,7 @@ class ErrorHandler:
 
         # Format the traceback
         import traceback
+
         tb_str = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
 
         # Handle as a critical error
@@ -270,7 +288,7 @@ class ErrorHandler:
             component="UnhandledExceptionHandler",
             severity=ErrorSeverity.CRITICAL,
             message=f"Unhandled exception: {exc_value}",
-            context={"traceback": tb_str}
+            context={"traceback": tb_str},
         )
 
 

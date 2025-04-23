@@ -5,19 +5,17 @@ DualGPUOptimizer Dependency Installer
 This script provides a simple way to install the dependencies required by DualGPUOptimizer.
 It can install core dependencies only or all dependencies.
 """
-import sys
-import os
 import argparse
-import subprocess
 import importlib.util
-from typing import Dict, List, Optional, Set
 import logging
-from pathlib import Path
+import subprocess
+import sys
+from typing import Dict, List, Set
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(levelname)s: %(message)s"
+    format="%(levelname)s: %(message)s",
 )
 logger = logging.getLogger("DualGPUOpt.Installer")
 
@@ -55,41 +53,50 @@ ALL_DEPENDENCIES = {
     **CORE_DEPENDENCIES,
     **UI_DEPENDENCIES,
     **CHAT_DEPENDENCIES,
-    **ML_DEPENDENCIES
+    **ML_DEPENDENCIES,
 }
+
 
 # Colors for terminal output
 class Colors:
-    HEADER = '\033[95m'
-    BLUE = '\033[94m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    RED = '\033[91m'
-    ENDC = '\033[0m'
-    BOLD = '\033[1m'
+    HEADER = "\033[95m"
+    BLUE = "\033[94m"
+    GREEN = "\033[92m"
+    YELLOW = "\033[93m"
+    RED = "\033[91m"
+    ENDC = "\033[0m"
+    BOLD = "\033[1m"
+
 
 def check_dependency(name: str) -> bool:
-    """Check if a dependency is available
+    """
+    Check if a dependency is available
 
     Args:
+    ----
         name: Name of the dependency to check
 
     Returns:
+    -------
         True if available, False otherwise
     """
     if name == "tkinter":
         try:
             import tkinter
+
             return True
         except ImportError:
             return False
     else:
         return importlib.util.find_spec(name) is not None
 
-def get_missing_dependencies() -> Dict[str, List[str]]:
-    """Check all dependencies and return missing ones by category
 
-    Returns:
+def get_missing_dependencies() -> Dict[str, List[str]]:
+    """
+    Check all dependencies and return missing ones by category
+
+    Returns
+    -------
         Dictionary with categories as keys and lists of missing dependencies as values
     """
     missing = {}
@@ -121,14 +128,20 @@ def get_missing_dependencies() -> Dict[str, List[str]]:
 
     return missing
 
-def get_installation_commands(missing_deps: Dict[str, List[str]], install_categories: Set[str]) -> List[str]:
-    """Get pip installation commands for missing dependencies
+
+def get_installation_commands(
+    missing_deps: Dict[str, List[str]], install_categories: Set[str]
+) -> List[str]:
+    """
+    Get pip installation commands for missing dependencies
 
     Args:
+    ----
         missing_deps: Dictionary with categories as keys and lists of missing dependencies as values
         install_categories: Set of categories to install
 
     Returns:
+    -------
         List of pip install commands
     """
     commands = []
@@ -136,14 +149,17 @@ def get_installation_commands(missing_deps: Dict[str, List[str]], install_catego
     # Build installation commands by category
     if "required" in missing_deps and "required" in install_categories:
         required_packages = " ".join(
-            REQUIRED_DEPENDENCIES[name]["package"] for name in missing_deps["required"]
+            REQUIRED_DEPENDENCIES[name]["package"]
+            for name in missing_deps["required"]
             if name != "tkinter"  # tkinter requires special handling
         )
         if required_packages:
             commands.append(f"pip install {required_packages}")
 
     if "core" in missing_deps and "core" in install_categories:
-        core_packages = " ".join(CORE_DEPENDENCIES[name]["package"] for name in missing_deps["core"])
+        core_packages = " ".join(
+            CORE_DEPENDENCIES[name]["package"] for name in missing_deps["core"]
+        )
         if core_packages:
             commands.append(f"pip install {core_packages}")
 
@@ -153,7 +169,9 @@ def get_installation_commands(missing_deps: Dict[str, List[str]], install_catego
             commands.append(f"pip install {ui_packages}")
 
     if "chat" in missing_deps and "chat" in install_categories:
-        chat_packages = " ".join(CHAT_DEPENDENCIES[name]["package"] for name in missing_deps["chat"])
+        chat_packages = " ".join(
+            CHAT_DEPENDENCIES[name]["package"] for name in missing_deps["chat"]
+        )
         if chat_packages:
             commands.append(f"pip install {chat_packages}")
 
@@ -164,6 +182,7 @@ def get_installation_commands(missing_deps: Dict[str, List[str]], install_catego
 
     return commands
 
+
 def print_dependency_status() -> None:
     """Print status of all dependencies"""
     print("\nDualGPUOptimizer Dependency Check")
@@ -172,7 +191,7 @@ def print_dependency_status() -> None:
     # Check Python version
     py_version = sys.version.split()[0]
     print(f"Python version: {py_version}")
-    if float(py_version.split('.')[0] + '.' + py_version.split('.')[1]) < 3.8:
+    if float(py_version.split(".")[0] + "." + py_version.split(".")[1]) < 3.8:
         print("  ❌ Python 3.8+ is recommended. Some features may not work correctly.")
     else:
         print("  ✅ Python version is compatible.")
@@ -221,13 +240,17 @@ def print_dependency_status() -> None:
     else:
         print("\nAll dependencies are installed! ✅")
 
+
 def install_dependencies(args: argparse.Namespace) -> int:
-    """Install missing dependencies based on command-line arguments
+    """
+    Install missing dependencies based on command-line arguments
 
     Args:
+    ----
         args: Command-line arguments
 
     Returns:
+    -------
         Exit code (0 for success, 1 for failure)
     """
     # Check for missing dependencies
@@ -258,7 +281,9 @@ def install_dependencies(args: argparse.Namespace) -> int:
 
     # Check for tkinter separately
     if "required" in missing and "tkinter" in missing["required"]:
-        logger.warning("tkinter is required and must be installed through your system package manager")
+        logger.warning(
+            "tkinter is required and must be installed through your system package manager"
+        )
         if sys.platform == "win32":
             logger.info("For Windows, reinstall Python and check 'tcl/tk and IDLE'")
         elif sys.platform == "darwin":
@@ -279,7 +304,7 @@ def install_dependencies(args: argparse.Namespace) -> int:
     # Confirm installation
     if not args.yes:
         response = input("\nProceed with installation? [y/N] ").strip().lower()
-        if response != 'y':
+        if response != "y":
             logger.info("Installation cancelled by user")
             return 0
 
@@ -312,132 +337,163 @@ def install_dependencies(args: argparse.Namespace) -> int:
         if still_missing:
             logger.warning(f"Some dependencies could not be installed: {', '.join(still_missing)}")
             if "tkinter" in still_missing:
-                logger.warning("Note: tkinter must be installed through your system package manager")
+                logger.warning(
+                    "Note: tkinter must be installed through your system package manager"
+                )
             return 1
         return 0
     else:
         logger.error("Installation failed!")
         return 1
 
+
 def check_package(package_name):
     """Check if a package is installed."""
     try:
-        spec = importlib.util.find_spec(package_name.split('==')[0])
+        spec = importlib.util.find_spec(package_name.split("==")[0])
         return spec is not None
     except (ImportError, AttributeError):
         return False
 
+
 def install_package(package_name, description, verbose=False):
     """Install a package using pip."""
-    if check_package(package_name.split('==')[0]):
+    if check_package(package_name.split("==")[0]):
         print(f"{Colors.GREEN}✓ {package_name} already installed{Colors.ENDC}")
         return True
-    
+
     print(f"{Colors.YELLOW}→ Installing {package_name} ({description}){Colors.ENDC}")
-    
+
     try:
         cmd = [sys.executable, "-m", "pip", "install", package_name]
         if verbose:
-            result = subprocess.run(cmd)
+            result = subprocess.run(cmd, check=False)
         else:
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+            result = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+            )
+
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed {package_name}{Colors.ENDC}")
             return True
         else:
-            error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
+            error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
             print(f"{Colors.RED}✗ Failed to install {package_name}: {error_msg}{Colors.ENDC}")
             return False
     except Exception as e:
-        print(f"{Colors.RED}✗ Error installing {package_name}: {str(e)}{Colors.ENDC}")
+        print(f"{Colors.RED}✗ Error installing {package_name}: {e!s}{Colors.ENDC}")
         return False
+
 
 def install_pytorch(verbose=False):
     """Install PyTorch with CUDA support."""
     cuda_version = "cu121"  # Default CUDA version
-    
+
     print(f"{Colors.YELLOW}→ Installing PyTorch with CUDA support{Colors.ENDC}")
-    
+
     try:
         # PyTorch 2.5.1 with CUDA 12.1
         cmd = [
-            sys.executable, "-m", "pip", "install", 
-            "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1", 
-            "--index-url", f"https://download.pytorch.org/whl/{cuda_version}"
+            sys.executable,
+            "-m",
+            "pip",
+            "install",
+            "torch==2.5.1",
+            "torchvision==0.20.1",
+            "torchaudio==2.5.1",
+            "--index-url",
+            f"https://download.pytorch.org/whl/{cuda_version}",
         ]
-        
+
         if verbose:
-            result = subprocess.run(cmd)
+            result = subprocess.run(cmd, check=False)
         else:
-            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        
+            result = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+            )
+
         if result.returncode == 0:
             print(f"{Colors.GREEN}✓ Successfully installed PyTorch with CUDA support{Colors.ENDC}")
             return True
         else:
-            error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
+            error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
             print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
-            
+
             # Try without CUDA
             print(f"{Colors.YELLOW}→ Trying to install PyTorch without CUDA support{Colors.ENDC}")
-            cmd = [sys.executable, "-m", "pip", "install", "torch==2.5.1", "torchvision==0.20.1", "torchaudio==2.5.1"]
-            
+            cmd = [
+                sys.executable,
+                "-m",
+                "pip",
+                "install",
+                "torch==2.5.1",
+                "torchvision==0.20.1",
+                "torchaudio==2.5.1",
+            ]
+
             if verbose:
-                result = subprocess.run(cmd)
+                result = subprocess.run(cmd, check=False)
             else:
-                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            
+                result = subprocess.run(
+                    cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=False
+                )
+
             if result.returncode == 0:
-                print(f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}")
+                print(
+                    f"{Colors.GREEN}✓ Successfully installed PyTorch without CUDA support{Colors.ENDC}"
+                )
                 return True
             else:
-                error_msg = result.stderr.decode('utf-8') if not verbose else "See above error"
+                error_msg = result.stderr.decode("utf-8") if not verbose else "See above error"
                 print(f"{Colors.RED}✗ Failed to install PyTorch: {error_msg}{Colors.ENDC}")
                 return False
     except Exception as e:
-        print(f"{Colors.RED}✗ Error installing PyTorch: {str(e)}{Colors.ENDC}")
+        print(f"{Colors.RED}✗ Error installing PyTorch: {e!s}{Colors.ENDC}")
         return False
+
 
 def check_dependencies(deps_dict, check_only=False, verbose=False):
     """Check and optionally install dependencies from a dictionary."""
     missing = {}
     installed = {}
-    
+
     for package, description in deps_dict.items():
-        is_installed = check_package(package.split('==')[0])
+        is_installed = check_package(package.split("==")[0])
         if is_installed:
             installed[package] = description
         else:
             missing[package] = description
-    
+
     if check_only:
         return installed, missing
-    
+
     # Install missing packages
     failed = {}
     for package, description in missing.items():
         if package in ML_DEPENDENCIES and package.startswith("torch"):
             # Skip individual torch packages, they'll be handled by install_pytorch
             continue
-        
+
         success = install_package(package, description, verbose)
         if not success:
             failed[package] = description
-    
+
     # If pytorch is missing, install it specially
     if any(p.startswith("torch") for p in missing.keys()):
         pytorch_success = install_pytorch(verbose)
         if not pytorch_success:
             for p in [p for p in missing.keys() if p.startswith("torch")]:
                 failed[p] = missing[p]
-    
+
     return installed, failed
 
-def main() -> int:
-    """Main entry point
 
-    Returns:
+def main() -> int:
+    """
+    Main entry point
+
+    Returns
+    -------
         Exit code
     """
     parser = argparse.ArgumentParser(description="DualGPUOptimizer Dependency Installer")
@@ -468,6 +524,7 @@ def main() -> int:
 
     # Install dependencies
     return install_dependencies(args)
+
 
 if __name__ == "__main__":
     sys.exit(main())

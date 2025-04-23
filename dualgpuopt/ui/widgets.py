@@ -3,9 +3,12 @@ dualgpuopt.ui.widgets
 Reusable neon‑styled ttkbootstrap widgets.
 """
 from __future__ import annotations
-import tkinter as tk
+
+import math
+import time
+
 import ttkbootstrap as ttk
-import time, math
+
 
 # ---------- Custom gradient utility functions for compatibility ----------
 def _create_gradient_data(start_rgb, end_rgb, width):
@@ -24,17 +27,21 @@ def _create_gradient_data(start_rgb, end_rgb, width):
 
     return result
 
+
 def _rgb_to_hex(rgb_tuple):
     """Convert RGB tuple to hex color string."""
     r, g, b = rgb_tuple
-    return f'#{r:02x}{g:02x}{b:02x}'
+    return f"#{r:02x}{g:02x}{b:02x}"
+
 
 # ---------- Simple progress bar for compatibility ----------
 class GradientProgress(ttk.Frame):
-    """A simple progress bar widget that avoids compatibility issues.
+    """
+    A simple progress bar widget that avoids compatibility issues.
 
     Implements a basic progress bar with text display.
     """
+
     def __init__(self, master, width=220, height=16, **kw):
         """Initialize a simple progress bar."""
         super().__init__(master, width=width, height=height, **kw)
@@ -80,6 +87,7 @@ class GradientProgress(ttk.Frame):
             self._update_display()
 
         self.after(50, self._tick)
+
 
 # ---------- Hover‑glow button ----------
 class NeonButton(ttk.Button):

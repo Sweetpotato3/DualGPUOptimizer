@@ -1,19 +1,19 @@
 """
 Direct test of theme module by importing directly from files
 """
-import sys
-import os
 import importlib.util
 import logging
+import sys
 from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler(sys.stdout)]
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
 )
 logger = logging.getLogger("ThemeDirectTest")
+
 
 def import_from_path(module_name, file_path):
     """Import a module directly from a file path"""
@@ -22,6 +22,7 @@ def import_from_path(module_name, file_path):
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     return module
+
 
 # Base directory
 base_dir = Path(__file__).resolve().parent

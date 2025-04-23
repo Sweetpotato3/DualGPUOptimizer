@@ -6,26 +6,29 @@ from __future__ import annotations
 
 import argparse
 import logging
-import pathlib
 import os
+import pathlib
 import sys
 import tkinter as tk
 from tkinter import ttk
-import threading
-from typing import Dict, List, Optional, Any
 
 # Import our module components
-from dualgpuopt import __version__, MOCK_MODE
-from dualgpuopt.logconfig import setup_logging
-from dualgpuopt.gui_constants import (
-    DARK_BACKGROUND, LIGHT_FOREGROUND, PURPLE_PRIMARY,
-    PURPLE_HIGHLIGHT, DEFAULT_FONT, DEFAULT_FONT_SIZE, PAD
-)
+from dualgpuopt import MOCK_MODE, __version__
 from dualgpuopt.gpu_info import probe_gpus
-from dualgpuopt.telemetry import start_stream, register_middleware, LoggingMiddleware
 from dualgpuopt.gui.dashboard import GPUDashboard
 from dualgpuopt.gui.optimizer_tab import OptimizerTab
+from dualgpuopt.gui_constants import (
+    DARK_BACKGROUND,
+    DEFAULT_FONT,
+    DEFAULT_FONT_SIZE,
+    LIGHT_FOREGROUND,
+    PAD,
+    PURPLE_HIGHLIGHT,
+    PURPLE_PRIMARY,
+)
+from dualgpuopt.logconfig import setup_logging
 from dualgpuopt.services.state_service import app_state
+from dualgpuopt.telemetry import LoggingMiddleware, register_middleware, start_stream
 
 
 class MainApplication:
@@ -66,41 +69,44 @@ class MainApplication:
 
         # Configure common styles
         style.configure("TFrame", background=DARK_BACKGROUND)
-        style.configure("TLabel",
-                        background=DARK_BACKGROUND,
-                        foreground=LIGHT_FOREGROUND,
-                        font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
-        style.configure("TButton",
-                        background=PURPLE_PRIMARY,
-                        foreground=LIGHT_FOREGROUND,
-                        padding=5)
-        style.configure("TNotebook",
-                        background=DARK_BACKGROUND,
-                        tabmargins=[2, 5, 2, 0])
-        style.configure("TNotebook.Tab",
-                        background=DARK_BACKGROUND,
-                        foreground=LIGHT_FOREGROUND,
-                        padding=[10, 2],
-                        font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
-        style.configure("TLabelframe",
-                        background=DARK_BACKGROUND,
-                        foreground=LIGHT_FOREGROUND)
-        style.configure("TLabelframe.Label",
-                        background=DARK_BACKGROUND,
-                        foreground=PURPLE_PRIMARY,
-                        font=(DEFAULT_FONT, DEFAULT_FONT_SIZE))
-        style.configure("TEntry",
-                        fieldbackground=DARK_BACKGROUND,
-                        foreground=LIGHT_FOREGROUND)
+        style.configure(
+            "TLabel",
+            background=DARK_BACKGROUND,
+            foreground=LIGHT_FOREGROUND,
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE),
+        )
+        style.configure(
+            "TButton", background=PURPLE_PRIMARY, foreground=LIGHT_FOREGROUND, padding=5
+        )
+        style.configure("TNotebook", background=DARK_BACKGROUND, tabmargins=[2, 5, 2, 0])
+        style.configure(
+            "TNotebook.Tab",
+            background=DARK_BACKGROUND,
+            foreground=LIGHT_FOREGROUND,
+            padding=[10, 2],
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE),
+        )
+        style.configure("TLabelframe", background=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
+        style.configure(
+            "TLabelframe.Label",
+            background=DARK_BACKGROUND,
+            foreground=PURPLE_PRIMARY,
+            font=(DEFAULT_FONT, DEFAULT_FONT_SIZE),
+        )
+        style.configure("TEntry", fieldbackground=DARK_BACKGROUND, foreground=LIGHT_FOREGROUND)
 
         # Map styles for different states
-        style.map("TNotebook.Tab",
-                  background=[("selected", PURPLE_PRIMARY)],
-                  foreground=[("selected", LIGHT_FOREGROUND)])
+        style.map(
+            "TNotebook.Tab",
+            background=[("selected", PURPLE_PRIMARY)],
+            foreground=[("selected", LIGHT_FOREGROUND)],
+        )
 
-        style.map("TButton",
-                  background=[("active", PURPLE_HIGHLIGHT)],
-                  foreground=[("active", LIGHT_FOREGROUND)])
+        style.map(
+            "TButton",
+            background=[("active", PURPLE_HIGHLIGHT)],
+            foreground=[("active", LIGHT_FOREGROUND)],
+        )
 
     def build_ui(self) -> None:
         """Build the user interface."""
@@ -117,7 +123,7 @@ class MainApplication:
             self.header_frame,
             text=f"DualGPUOptimizer v{__version__}",
             font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 8, "bold"),
-            foreground=PURPLE_HIGHLIGHT
+            foreground=PURPLE_HIGHLIGHT,
         ).pack(side=tk.LEFT)
 
         # Mock mode indicator if applicable
@@ -126,7 +132,7 @@ class MainApplication:
                 self.header_frame,
                 text="MOCK MODE",
                 foreground="#FFA726",  # Orange warning color
-                font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2)
+                font=(DEFAULT_FONT, DEFAULT_FONT_SIZE + 2),
             ).pack(side=tk.RIGHT)
 
         # Create notebook for tabs
@@ -157,7 +163,7 @@ class MainApplication:
         self.save_button = ttk.Button(
             self.footer_frame,
             text="Save Settings",
-            command=self.save_state
+            command=self.save_state,
         )
         self.save_button.pack(side=tk.LEFT)
 
@@ -165,7 +171,7 @@ class MainApplication:
         self.exit_button = ttk.Button(
             self.footer_frame,
             text="Exit",
-            command=self.on_exit
+            command=self.on_exit,
         )
         self.exit_button.pack(side=tk.RIGHT)
 

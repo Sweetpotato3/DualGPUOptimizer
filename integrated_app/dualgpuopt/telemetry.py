@@ -3,32 +3,34 @@
 NVML‑based polling generator: yield dict every `interval` seconds.
 """
 from __future__ import annotations
-import time
+
 import dataclasses as dc
+import logging
 import queue
 import threading
-import logging
-from typing import Dict, List, Callable, Protocol, Optional, Any
+import time
+from typing import Protocol
 
 # Import from our reorganized modules
-from dualgpuopt.gpu_info import probe_gpus, GPU
-from dualgpuopt.services.event_bus import event_bus, GPUMetricsEvent
+from dualgpuopt.gpu_info import probe_gpus
+from dualgpuopt.services.event_bus import GPUMetricsEvent, event_bus
 
 
 @dc.dataclass(slots=True)
 class Telemetry:
     """Container for telemetry data."""
+
     ts: float
-    load: List[int]           # GPU utilization %
-    mem_used: List[int]       # MiB
-    pcie_rx: List[int]        # KiB/s
-    pcie_tx: List[int]        # KiB/s
-    temperature: List[int]    # °C
-    power_usage: List[float]  # Watts
-    memory_util: List[int]    # Memory utilization %
-    fan_speed: List[int]      # Fan speed %
-    graphics_clock: List[int] # MHz
-    memory_clock: List[int]   # MHz
+    load: list[int]  # GPU utilization %
+    mem_used: list[int]  # MiB
+    pcie_rx: list[int]  # KiB/s
+    pcie_tx: list[int]  # KiB/s
+    temperature: list[int]  # °C
+    power_usage: list[float]  # Watts
+    memory_util: list[int]  # Memory utilization %
+    fan_speed: list[int]  # Fan speed %
+    graphics_clock: list[int]  # MHz
+    memory_clock: list[int]  # MHz
 
 
 class TelemetryMiddleware(Protocol):
@@ -49,13 +51,15 @@ class EventBusMiddleware:
     def process(self, telemetry: Telemetry) -> None:
         """Publish telemetry data to the event bus."""
         try:
-            for i, (load, mem, temp, power, fan) in enumerate(zip(
-                telemetry.load,
-                telemetry.mem_used,
-                telemetry.temperature,
-                telemetry.power_usage,
-                telemetry.fan_speed
-            )):
+            for i, (load, mem, temp, power, fan) in enumerate(
+                zip(
+                    telemetry.load,
+                    telemetry.mem_used,
+                    telemetry.temperature,
+                    telemetry.power_usage,
+                    telemetry.fan_speed,
+                )
+            ):
                 # We need to determine memory total, but it's not in the telemetry
                 # object. This is an imperfect solution as we may not get the exact
                 # total that was used to calculate, but it should be close enough
@@ -72,7 +76,7 @@ class EventBusMiddleware:
                     memory_total=mem_total,
                     temperature=float(temp),
                     power_draw=power,
-                    fan_speed=fan
+                    fan_speed=fan,
                 )
                 event_bus.publish_typed(event)
         except Exception as e:
@@ -108,6 +112,7 @@ def _collect() -> Telemetry:
 
     try:
         import pynvml as nv
+
         nv.nvmlInit()
 
         try:
@@ -192,12 +197,12 @@ def _collect() -> Telemetry:
         memory_util,
         fan_speed,
         graphics_clock,
-        memory_clock
+        memory_clock,
     )
 
 
 # Global middleware registry
-_middleware: List[TelemetryMiddleware] = []
+_middleware: list[TelemetryMiddleware] = []
 
 
 def register_middleware(middleware: TelemetryMiddleware) -> None:
@@ -216,14 +221,16 @@ def clear_middleware() -> None:
     _middleware.clear()
 
 
-def start_stream(interval: float=1.0) -> queue.Queue[Telemetry]:
+def start_stream(interval: float = 1.0) -> queue.Queue[Telemetry]:
     """
     Start collecting telemetry at the specified interval.
 
     Args:
+    ----
         interval: Polling interval in seconds
 
     Returns:
+    -------
         Queue of telemetry objects
     """
     q: queue.Queue[Telemetry] = queue.Queue()
@@ -243,11 +250,13 @@ def start_stream(interval: float=1.0) -> queue.Queue[Telemetry]:
                         mw.process(telemetry)
                     except Exception as e:
                         logging.getLogger("dualgpuopt.telemetry").error(
-                            f"Middleware error: {e}", exc_info=True
+                            f"Middleware error: {e}",
+                            exc_info=True,
                         )
             except Exception as e:
                 logging.getLogger("dualgpuopt.telemetry").error(
-                    f"Telemetry collection error: {e}", exc_info=True
+                    f"Telemetry collection error: {e}",
+                    exc_info=True,
                 )
             finally:
                 time.sleep(interval)

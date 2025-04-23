@@ -88,7 +88,10 @@ class VLLMBackend:
             "max_tokens": kw.get("max_tokens", 128),
         }
         r = requests.post(
-            f"http://127.0.0.1:{self.port}/v1/chat/completions", json=js, stream=True, timeout=60
+            f"http://127.0.0.1:{self.port}/v1/chat/completions",
+            json=js,
+            stream=True,
+            timeout=60,
         )
         for ev in sseclient.SSEClient(r):
             tok = json.loads(ev.data)["choices"][0]["delta"].get("content", "")
@@ -119,7 +122,6 @@ class HFBackend:
         )
 
     def stream(self, prompt, **kw):
-
         ids = self.tok(prompt, return_tensors="pt").to("cuda")
         gen = self.model.generate(**ids, max_new_tokens=kw.get("max_tokens", 128))
         out = self.tok.decode(gen[0], skip_special_tokens=True)

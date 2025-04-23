@@ -11,9 +11,9 @@ ttkbootstrap>=1.0.0
 
 # Model communication (for Chat functionality)
 requests>=2.25.0
-sseclient-py>=1.7.2 
+sseclient-py>=1.7.2
 
 # PyTorch (optional - used for advanced features)
 torch==2.5.1
 torchvision==0.20.1
-torchaudio==2.5.1 
+torchaudio==2.5.1

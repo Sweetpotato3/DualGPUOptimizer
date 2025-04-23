@@ -2,24 +2,24 @@
 Patched version of the DualGPUOptimizer application
 This addresses the empty GUI issue by using a simplified implementation
 """
-import sys
 import logging
-import os
+import sys
 import tkinter as tk
-from tkinter import ttk, messagebox
 from pathlib import Path
+from tkinter import messagebox, ttk
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[
         logging.FileHandler("dualgpuopt_patched.log"),
-        logging.StreamHandler()
-    ]
+        logging.StreamHandler(),
+    ],
 )
 
 logger = logging.getLogger("PatchedApp")
+
 
 class PatchedGUI:
     """Patched version of the DualGPUOptimizer GUI"""
@@ -38,15 +38,17 @@ class PatchedGUI:
 
         # Try to import theme module
         try:
-            from dualgpuopt.gui.theme import apply_theme, toggle_theme, ThemeToggleButton
-            self.theme_module = sys.modules['dualgpuopt.gui.theme']
+            from dualgpuopt.gui.theme import ThemeToggleButton, apply_theme
+
+            self.theme_module = sys.modules["dualgpuopt.gui.theme"]
             apply_theme(self.root)
             logger.info("Theme applied successfully")
             self.has_theme = True
         except Exception as e:
             logger.error(f"Error applying theme: {e}")
-            messagebox.showwarning("Theme Error",
-                                   f"Could not load theme module. Using default theme.\nError: {e}")
+            messagebox.showwarning(
+                "Theme Error", f"Could not load theme module. Using default theme.\nError: {e}"
+            )
             self.has_theme = False
 
         # Main container
@@ -73,7 +75,7 @@ class PatchedGUI:
                 self.theme_btn = ttk.Button(
                     self.header_frame,
                     text="Toggle Theme",
-                    command=lambda: self._toggle_theme()
+                    command=lambda: self._toggle_theme(),
                 )
                 self.theme_btn.pack(side=tk.RIGHT)
 
@@ -114,8 +116,9 @@ class PatchedGUI:
         header = ttk.Label(dashboard, text="GPU Dashboard", font=("TkDefaultFont", 14, "bold"))
         header.pack(pady=(20, 10))
 
-        description = ttk.Label(dashboard,
-                                text="Monitor your GPU resources and performance metrics")
+        description = ttk.Label(
+            dashboard, text="Monitor your GPU resources and performance metrics"
+        )
         description.pack(pady=(0, 20))
 
         # Create GPU info frames
@@ -127,7 +130,8 @@ class PatchedGUI:
         gpu0_frame.pack(fill=tk.X, padx=10, pady=10)
 
         ttk.Label(gpu0_frame, text="GPU 0: NVIDIA GeForce RTX 5070 Ti").grid(
-            row=0, column=0, columnspan=2, sticky=tk.W)
+            row=0, column=0, columnspan=2, sticky=tk.W
+        )
 
         ttk.Label(gpu0_frame, text="VRAM:").grid(row=1, column=0, sticky=tk.W, padx=10)
         ttk.Label(gpu0_frame, text="12 GB / 16 GB (75%)").grid(row=1, column=1, sticky=tk.W)
@@ -143,7 +147,8 @@ class PatchedGUI:
         gpu1_frame.pack(fill=tk.X, padx=10, pady=10)
 
         ttk.Label(gpu1_frame, text="GPU 1: NVIDIA GeForce RTX 4060 Ti").grid(
-            row=0, column=0, columnspan=2, sticky=tk.W)
+            row=0, column=0, columnspan=2, sticky=tk.W
+        )
 
         ttk.Label(gpu1_frame, text="VRAM:").grid(row=1, column=0, sticky=tk.W, padx=10)
         ttk.Label(gpu1_frame, text="6 GB / 8 GB (75%)").grid(row=1, column=1, sticky=tk.W)
@@ -158,10 +163,14 @@ class PatchedGUI:
         metrics_frame = ttk.LabelFrame(dashboard, text="Performance")
         metrics_frame.pack(fill=tk.X, padx=20, pady=10)
 
-        ttk.Label(metrics_frame, text="Inference Speed:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=5)
+        ttk.Label(metrics_frame, text="Inference Speed:").grid(
+            row=0, column=0, sticky=tk.W, padx=10, pady=5
+        )
         ttk.Label(metrics_frame, text="45 tokens/sec").grid(row=0, column=1, sticky=tk.W, pady=5)
 
-        ttk.Label(metrics_frame, text="PCIe Bandwidth:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=5)
+        ttk.Label(metrics_frame, text="PCIe Bandwidth:").grid(
+            row=1, column=0, sticky=tk.W, padx=10, pady=5
+        )
         ttk.Label(metrics_frame, text="8.5 GB/s").grid(row=1, column=1, sticky=tk.W, pady=5)
 
     def _create_optimizer_tab(self):
@@ -170,11 +179,14 @@ class PatchedGUI:
         self.notebook.add(optimizer, text="Optimizer")
 
         # Add header and description
-        header = ttk.Label(optimizer, text="GPU Split Optimizer", font=("TkDefaultFont", 14, "bold"))
+        header = ttk.Label(
+            optimizer, text="GPU Split Optimizer", font=("TkDefaultFont", 14, "bold")
+        )
         header.pack(pady=(20, 10))
 
-        description = ttk.Label(optimizer,
-                                text="Calculate optimal GPU split ratios for LLM inference")
+        description = ttk.Label(
+            optimizer, text="Calculate optimal GPU split ratios for LLM inference"
+        )
         description.pack(pady=(0, 20))
 
         # Create form for optimizer
@@ -182,13 +194,19 @@ class PatchedGUI:
         form_frame.pack(fill=tk.X, padx=20)
 
         # Model selection
-        ttk.Label(form_frame, text="Model Type:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
-        model_combo = ttk.Combobox(form_frame, values=["Llama 3 8B", "Llama 3 70B", "Mistral 7B", "Custom"])
+        ttk.Label(form_frame, text="Model Type:").grid(
+            row=0, column=0, sticky=tk.W, padx=10, pady=10
+        )
+        model_combo = ttk.Combobox(
+            form_frame, values=["Llama 3 8B", "Llama 3 70B", "Mistral 7B", "Custom"]
+        )
         model_combo.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
         model_combo.current(1)
 
         # Context size
-        ttk.Label(form_frame, text="Context Size:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(form_frame, text="Context Size:").grid(
+            row=1, column=0, sticky=tk.W, padx=10, pady=10
+        )
         context_frame = ttk.Frame(form_frame)
         context_frame.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
 
@@ -199,13 +217,17 @@ class PatchedGUI:
         ttk.Label(context_frame, text="tokens").pack(side=tk.LEFT, padx=5)
 
         # Number of layers
-        ttk.Label(form_frame, text="Model Layers:").grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(form_frame, text="Model Layers:").grid(
+            row=2, column=0, sticky=tk.W, padx=10, pady=10
+        )
         layers_spin = ttk.Spinbox(form_frame, from_=1, to=100, width=10)
         layers_spin.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
         layers_spin.set("80")
 
         # Memory per token
-        ttk.Label(form_frame, text="Memory per Token:").grid(row=3, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(form_frame, text="Memory per Token:").grid(
+            row=3, column=0, sticky=tk.W, padx=10, pady=10
+        )
         memory_frame = ttk.Frame(form_frame)
         memory_frame.grid(row=3, column=1, sticky=tk.W, padx=10, pady=10)
 
@@ -223,16 +245,29 @@ class PatchedGUI:
         results_frame = ttk.LabelFrame(optimizer, text="Results")
         results_frame.pack(fill=tk.X, padx=20, pady=20)
 
-        ttk.Label(results_frame, text="Optimal Split Ratio:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(results_frame, text="60% / 40%").grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(results_frame, text="Optimal Split Ratio:").grid(
+            row=0, column=0, sticky=tk.W, padx=10, pady=10
+        )
+        ttk.Label(results_frame, text="60% / 40%").grid(
+            row=0, column=1, sticky=tk.W, padx=10, pady=10
+        )
 
-        ttk.Label(results_frame, text="VRAM Usage:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
-        ttk.Label(results_frame, text="GPU 0: 12.8 GB, GPU 1: 8.5 GB").grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(results_frame, text="VRAM Usage:").grid(
+            row=1, column=0, sticky=tk.W, padx=10, pady=10
+        )
+        ttk.Label(results_frame, text="GPU 0: 12.8 GB, GPU 1: 8.5 GB").grid(
+            row=1, column=1, sticky=tk.W, padx=10, pady=10
+        )
 
-        ttk.Label(results_frame, text="Command:").grid(row=2, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(results_frame, text="Command:").grid(
+            row=2, column=0, sticky=tk.W, padx=10, pady=10
+        )
         command_text = tk.Text(results_frame, height=3, width=50)
         command_text.grid(row=2, column=1, sticky=tk.W, padx=10, pady=10)
-        command_text.insert("1.0", "./llama.cpp -m models/llama-3-70b.gguf -c 8192 --gpu-layers -1 --tensor-split 0.60,0.40")
+        command_text.insert(
+            "1.0",
+            "./llama.cpp -m models/llama-3-70b.gguf -c 8192 --gpu-layers -1 --tensor-split 0.60,0.40",
+        )
         command_text.config(state="disabled")
 
     def _create_launcher_tab(self):
@@ -244,8 +279,7 @@ class PatchedGUI:
         header = ttk.Label(launcher, text="Model Launcher", font=("TkDefaultFont", 14, "bold"))
         header.pack(pady=(20, 10))
 
-        description = ttk.Label(launcher,
-                                text="Launch LLM models with optimized settings")
+        description = ttk.Label(launcher, text="Launch LLM models with optimized settings")
         description.pack(pady=(0, 20))
 
         # Model path selection
@@ -265,7 +299,9 @@ class PatchedGUI:
         framework_frame.pack(fill=tk.X, padx=20, pady=10)
 
         ttk.Label(framework_frame, text="Framework:").pack(side=tk.LEFT, padx=(0, 10))
-        framework_combo = ttk.Combobox(framework_frame, values=["llama.cpp", "vLLM", "ExLlama", "TGI"])
+        framework_combo = ttk.Combobox(
+            framework_frame, values=["llama.cpp", "vLLM", "ExLlama", "TGI"]
+        )
         framework_combo.pack(side=tk.LEFT)
         framework_combo.current(0)
 
@@ -274,25 +310,33 @@ class PatchedGUI:
         options_frame.pack(fill=tk.X, padx=20, pady=10)
 
         # Context size
-        ttk.Label(options_frame, text="Context Size:").grid(row=0, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(options_frame, text="Context Size:").grid(
+            row=0, column=0, sticky=tk.W, padx=10, pady=10
+        )
         context_entry = ttk.Entry(options_frame, width=10)
         context_entry.grid(row=0, column=1, sticky=tk.W, padx=10, pady=10)
         context_entry.insert(0, "8192")
 
         # Tensor split
-        ttk.Label(options_frame, text="Tensor Split:").grid(row=1, column=0, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(options_frame, text="Tensor Split:").grid(
+            row=1, column=0, sticky=tk.W, padx=10, pady=10
+        )
         split_entry = ttk.Entry(options_frame, width=10)
         split_entry.grid(row=1, column=1, sticky=tk.W, padx=10, pady=10)
         split_entry.insert(0, "0.60,0.40")
 
         # Threads
-        ttk.Label(options_frame, text="Threads:").grid(row=0, column=2, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(options_frame, text="Threads:").grid(
+            row=0, column=2, sticky=tk.W, padx=10, pady=10
+        )
         thread_spin = ttk.Spinbox(options_frame, from_=1, to=32, width=5)
         thread_spin.grid(row=0, column=3, sticky=tk.W, padx=10, pady=10)
         thread_spin.set("8")
 
         # GPU Layers
-        ttk.Label(options_frame, text="GPU Layers:").grid(row=1, column=2, sticky=tk.W, padx=10, pady=10)
+        ttk.Label(options_frame, text="GPU Layers:").grid(
+            row=1, column=2, sticky=tk.W, padx=10, pady=10
+        )
         layers_spin = ttk.Spinbox(options_frame, from_=-1, to=100, width=5)
         layers_spin.grid(row=1, column=3, sticky=tk.W, padx=10, pady=10)
         layers_spin.set("-1")
@@ -319,7 +363,10 @@ class PatchedGUI:
 
         preview_text = tk.Text(preview_frame, height=4, width=80)
         preview_text.pack(padx=10, pady=10, fill=tk.X)
-        preview_text.insert("1.0", "./llama.cpp -m D:/AI/models/llama-3-70b.gguf -c 8192 -t 8 --gpu-layers -1 --tensor-split 0.60,0.40 --mmap")
+        preview_text.insert(
+            "1.0",
+            "./llama.cpp -m D:/AI/models/llama-3-70b.gguf -c 8192 -t 8 --gpu-layers -1 --tensor-split 0.60,0.40 --mmap",
+        )
 
     def _update_gpu_info(self):
         """Update GPU information display with simulated data"""
@@ -331,6 +378,7 @@ class PatchedGUI:
         if self.has_theme:
             try:
                 from dualgpuopt.gui.theme import toggle_theme
+
                 toggle_theme(self.root)
             except Exception as e:
                 logger.error(f"Could not toggle theme: {e}")
@@ -340,10 +388,12 @@ class PatchedGUI:
         logger.info("Starting patched application")
         self.root.mainloop()
 
+
 def main():
     """Main entry point"""
     app = PatchedGUI()
     app.run()
+
 
 if __name__ == "__main__":
     main()

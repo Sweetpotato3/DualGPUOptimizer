@@ -3,9 +3,9 @@ Personas module for DualGPUOptimizer
 Provides functionality for managing different AI personas in chat
 """
 import json
-from pathlib import Path
 import logging
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, Optional
 
 logger = logging.getLogger("DualGPUOpt.Personas")
 
@@ -18,7 +18,7 @@ DEFAULT_PERSONAS = {
         "temperature": 0.7,
         "top_p": 0.9,
         "presence_penalty": 0.0,
-        "frequency_penalty": 0.0
+        "frequency_penalty": 0.0,
     },
     "Programmer": {
         "description": "A coding expert specializing in AI and GPU optimization",
@@ -27,7 +27,7 @@ DEFAULT_PERSONAS = {
         "temperature": 0.3,
         "top_p": 0.9,
         "presence_penalty": 0.0,
-        "frequency_penalty": 0.0
+        "frequency_penalty": 0.0,
     },
     "Tutor": {
         "description": "An educational assistant focused on explaining AI concepts",
@@ -36,14 +36,17 @@ DEFAULT_PERSONAS = {
         "temperature": 0.5,
         "top_p": 0.9,
         "presence_penalty": 0.0,
-        "frequency_penalty": 0.0
-    }
+        "frequency_penalty": 0.0,
+    },
 }
 
-def get_personas_path():
-    """Get the path to the personas file
 
-    Returns:
+def get_personas_path():
+    """
+    Get the path to the personas file
+
+    Returns
+    -------
         Path: Path to the personas file
     """
     # Try to use home directory for configuration
@@ -59,10 +62,13 @@ def get_personas_path():
     # Fallback to current directory if home directory is not accessible
     return Path("personas.json")
 
-def list_personas() -> Dict:
-    """Get all available personas
 
-    Returns:
+def list_personas() -> Dict:
+    """
+    Get all available personas
+
+    Returns
+    -------
         dict: Dictionary of persona configurations
     """
     personas_path = get_personas_path()
@@ -70,7 +76,7 @@ def list_personas() -> Dict:
 
     try:
         if personas_path.exists():
-            with open(personas_path, "r") as f:
+            with open(personas_path) as f:
                 user_personas = json.load(f)
                 personas.update(user_personas)
                 logger.info(f"Loaded {len(user_personas)} custom personas from {personas_path}")
@@ -79,26 +85,34 @@ def list_personas() -> Dict:
 
     return personas
 
+
 def get_persona(name: str) -> Optional[Dict]:
-    """Get a specific persona by name
+    """
+    Get a specific persona by name
 
     Args:
+    ----
         name: Name of the persona to get
 
     Returns:
+    -------
         dict: Persona configuration or None if not found
     """
     personas = list_personas()
     return personas.get(name)
 
+
 def add_persona(name: str, config: Dict) -> bool:
-    """Add or update a persona
+    """
+    Add or update a persona
 
     Args:
+    ----
         name: Name of the persona
         config: Persona configuration
 
     Returns:
+    -------
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
@@ -106,11 +120,11 @@ def add_persona(name: str, config: Dict) -> bool:
     try:
         # Load existing personas first
         if personas_path.exists():
-            with open(personas_path, "r") as f:
+            with open(personas_path) as f:
                 try:
                     personas = json.load(f)
                 except json.JSONDecodeError:
-                    logger.warning(f"Invalid personas file, creating new one")
+                    logger.warning("Invalid personas file, creating new one")
                     personas = {}
         else:
             personas = {}
@@ -128,13 +142,17 @@ def add_persona(name: str, config: Dict) -> bool:
         logger.error(f"Error saving persona {name}: {e}")
         return False
 
+
 def delete_persona(name: str) -> bool:
-    """Delete a persona
+    """
+    Delete a persona
 
     Args:
+    ----
         name: Name of the persona to delete
 
     Returns:
+    -------
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
@@ -142,14 +160,14 @@ def delete_persona(name: str) -> bool:
     try:
         # Load existing personas
         if not personas_path.exists():
-            logger.warning(f"Personas file does not exist")
+            logger.warning("Personas file does not exist")
             return False
 
-        with open(personas_path, "r") as f:
+        with open(personas_path) as f:
             try:
                 personas = json.load(f)
             except json.JSONDecodeError:
-                logger.warning(f"Invalid personas file")
+                logger.warning("Invalid personas file")
                 return False
 
         # Check if persona exists
@@ -170,10 +188,13 @@ def delete_persona(name: str) -> bool:
         logger.error(f"Error deleting persona {name}: {e}")
         return False
 
-def reset_to_defaults() -> bool:
-    """Reset personas to defaults
 
-    Returns:
+def reset_to_defaults() -> bool:
+    """
+    Reset personas to defaults
+
+    Returns
+    -------
         bool: True if successful, False otherwise
     """
     personas_path = get_personas_path()
@@ -183,7 +204,7 @@ def reset_to_defaults() -> bool:
         with open(personas_path, "w") as f:
             json.dump(DEFAULT_PERSONAS, f, indent=2)
 
-        logger.info(f"Reset personas to defaults")
+        logger.info("Reset personas to defaults")
         return True
     except Exception as e:
         logger.error(f"Error resetting personas: {e}")

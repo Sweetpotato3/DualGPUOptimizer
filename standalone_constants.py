@@ -2,8 +2,6 @@
 """
 Standalone constants module for testing without circular imports
 """
-from typing import Dict
-from pathlib import Path
 
 # Application info
 APP_NAME = "DualGPUOptimizer"

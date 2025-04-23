@@ -1,15 +1,14 @@
 import importlib.util
-import sys
-from pathlib import Path
 import os
+import sys
 
-print('Looking for constants.py in the project')
+print("Looking for constants.py in the project")
 
 # Find all constants.py files in the project
 constants_files = []
-for root, dirs, files in os.walk('.'):
+for root, dirs, files in os.walk("."):
     for file in files:
-        if file == 'constants.py':
+        if file == "constants.py":
             full_path = os.path.join(root, file)
             constants_files.append(full_path)
             print(f"Found: {full_path}")
@@ -28,17 +27,17 @@ for constants_path in constants_files:
         print("Successfully imported constants module!")
 
         # Try to access some attributes
-        if hasattr(constants, 'APP_NAME'):
+        if hasattr(constants, "APP_NAME"):
             print(f"APP_NAME: {constants.APP_NAME}")
         else:
             print("APP_NAME not found in module")
 
-        if hasattr(constants, 'THEME'):
+        if hasattr(constants, "THEME"):
             print(f"THEME: {constants.THEME}")
         else:
             print("THEME not found in module")
 
-        if hasattr(constants, 'GPU_COLORS'):
+        if hasattr(constants, "GPU_COLORS"):
             print(f"GPU_COLORS: {constants.GPU_COLORS}")
         else:
             print("GPU_COLORS not found in module")

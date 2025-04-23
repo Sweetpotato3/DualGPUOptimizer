@@ -16,8 +16,9 @@ def check_output(command):
         command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        universal_newlines=True,
-        shell=True
+        text=True,
+        shell=True,
+        check=False,
     )
     return process.returncode, process.stdout, process.stderr
 
@@ -42,6 +43,7 @@ def test_torch_available():
     print("Testing torch availability...")
     try:
         import torch
+
         print(f"✅ Torch {torch.__version__} found")
 
         if torch.cuda.is_available():
@@ -63,6 +65,7 @@ def test_assets_present():
     print("Testing assets directory...")
     try:
         from dualgpuopt.gui.constants import ASSET_DIR
+
         if not ASSET_DIR.exists():
             print(f"❌ Assets directory not found: {ASSET_DIR}")
             return False
@@ -111,7 +114,7 @@ def main():
         test_constants_packaged,
         test_torch_available,
         test_assets_present,
-        test_app_runs_in_mock_mode
+        test_app_runs_in_mock_mode,
     ]
 
     results = []

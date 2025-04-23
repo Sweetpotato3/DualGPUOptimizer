@@ -1,30 +1,31 @@
 """
 Tests for the GPU module
 """
-import unittest
-from unittest.mock import patch, MagicMock
-import sys
 import os
+import sys
+import unittest
+from unittest.mock import MagicMock
 
 # Add parent directory to path so we can import directly
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import directly to be able to patch properly
-import dualgpuopt.gpu.mock
 import dualgpuopt.gpu.info
+import dualgpuopt.gpu.mock
 import dualgpuopt.gpu.monitor
 from dualgpuopt.gpu import (
-    query,
+    generate_mock_gpus,
     get_gpu_count,
     get_gpu_names,
-    set_mock_mode,
-    get_mock_mode,
-    generate_mock_gpus,
     get_memory_info,
-    get_utilization,
+    get_mock_mode,
+    get_power_usage,
     get_temperature,
-    get_power_usage
+    get_utilization,
+    query,
+    set_mock_mode,
 )
+
 
 class TestGpuModule(unittest.TestCase):
     """Tests for the GPU module"""
@@ -56,7 +57,7 @@ class TestGpuModule(unittest.TestCase):
                 "power_usage": 150.0,
                 "clock_sm": 1300,
                 "clock_memory": 1000,
-            }
+            },
         ]
 
         # Print test GPUs to verify data
@@ -251,12 +252,12 @@ class TestGpuModule(unittest.TestCase):
         mock_module._generate_mock_gpus.return_value = self.test_gpus
 
         # Replace the real module
-        original_module = sys.modules.get('dualgpuopt.gpu_info', None)
-        sys.modules['dualgpuopt.gpu_info'] = mock_module
+        original_module = sys.modules.get("dualgpuopt.gpu_info", None)
+        sys.modules["dualgpuopt.gpu_info"] = mock_module
 
         try:
             # Import should use our mock
-            import dualgpuopt.gpu_info as gpu_info
+            from dualgpuopt import gpu_info
 
             # Test functionality
             gpus = gpu_info.query()
@@ -273,9 +274,10 @@ class TestGpuModule(unittest.TestCase):
         finally:
             # Restore original module if it existed
             if original_module:
-                sys.modules['dualgpuopt.gpu_info'] = original_module
+                sys.modules["dualgpuopt.gpu_info"] = original_module
             else:
-                del sys.modules['dualgpuopt.gpu_info']
+                del sys.modules["dualgpuopt.gpu_info"]
+
 
 if __name__ == "__main__":
     unittest.main()

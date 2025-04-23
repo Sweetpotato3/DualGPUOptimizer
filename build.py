@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+
 def main():
     """
     Build the application with PyInstaller using our custom spec.
@@ -22,7 +23,7 @@ def main():
         "pyinstaller",
         "DualGPUOptimizer.spec",
         "--noconfirm",
-        "--clean"
+        "--clean",
     ]
 
     result = subprocess.run(cmd, check=False)
@@ -33,6 +34,7 @@ def main():
 
     print("✅ Build completed successfully!")
     print(f"Application is available at: {os.path.abspath('dist/DualGPUOptimizer')}")
+
 
 if __name__ == "__main__":
     main()

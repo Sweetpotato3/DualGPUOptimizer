@@ -5,13 +5,11 @@ Checks for updates from GitHub and notifies the user when a new version is avail
 """
 import json
 import logging
-import threading
-import time
-from typing import Optional, Dict, Any, Tuple, Callable
-import re
 import os
-from pathlib import Path
+import re
+import threading
 from datetime import datetime, timedelta
+from typing import Any, Callable, Dict, Optional, Tuple
 
 logger = logging.getLogger("DualGPUOpt.UpdateChecker")
 
@@ -26,9 +24,10 @@ RELEASES_URL = "https://github.com/yourusername/DualGPUOptimizer/releases"
 DEFAULT_CHECK_FREQUENCY = 24  # Check once per day by default
 
 # Local cache file
-LOCAL_CACHE_DIR = os.path.join(os.path.expanduser('~'), '.dualgpuopt')
+LOCAL_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".dualgpuopt")
 os.makedirs(LOCAL_CACHE_DIR, exist_ok=True)
-UPDATE_CACHE_FILE = os.path.join(LOCAL_CACHE_DIR, 'update_cache.json')
+UPDATE_CACHE_FILE = os.path.join(LOCAL_CACHE_DIR, "update_cache.json")
+
 
 class Version:
     """Version parser and comparison"""
@@ -38,7 +37,7 @@ class Version:
         self.version_str = version_str
 
         # Parse version string
-        match = re.match(r'v?(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.-]+))?', version_str)
+        match = re.match(r"v?(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.-]+))?", version_str)
         if match:
             self.major = int(match.group(1))
             self.minor = int(match.group(2))
@@ -78,10 +77,12 @@ class Version:
 
     def __eq__(self, other) -> bool:
         """Equality comparison"""
-        return (self.major == other.major and
-                self.minor == other.minor and
-                self.patch == other.patch and
-                self.prerelease == other.prerelease)
+        return (
+            self.major == other.major
+            and self.minor == other.minor
+            and self.patch == other.patch
+            and self.prerelease == other.prerelease
+        )
 
     def __le__(self, other) -> bool:
         """Less than or equal comparison"""
@@ -99,11 +100,12 @@ class Version:
 class UpdateInfo:
     """Information about an available update"""
 
-    def __init__(self, version: str, release_date: str,
-                 release_notes: str, download_url: str):
-        """Initialize update info
+    def __init__(self, version: str, release_date: str, release_notes: str, download_url: str):
+        """
+        Initialize update info
 
         Args:
+        ----
             version: Version string (e.g., "1.2.3")
             release_date: Release date string
             release_notes: Release notes markdown
@@ -115,33 +117,38 @@ class UpdateInfo:
         self.download_url = download_url
 
     def to_dict(self) -> Dict[str, Any]:
-        """Convert to dictionary for serialization
+        """
+        Convert to dictionary for serialization
 
-        Returns:
+        Returns
+        -------
             Dictionary representation
         """
         return {
             "version": str(self.version),
             "release_date": self.release_date,
             "release_notes": self.release_notes,
-            "download_url": self.download_url
+            "download_url": self.download_url,
         }
 
     @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> 'UpdateInfo':
-        """Create from dictionary
+    def from_dict(cls, data: Dict[str, Any]) -> "UpdateInfo":
+        """
+        Create from dictionary
 
         Args:
+        ----
             data: Dictionary with update info
 
         Returns:
+        -------
             UpdateInfo object
         """
         return cls(
             version=data.get("version", "0.0.0"),
             release_date=data.get("release_date", ""),
             release_notes=data.get("release_notes", ""),
-            download_url=data.get("download_url", "")
+            download_url=data.get("download_url", ""),
         )
 
 
@@ -159,13 +166,18 @@ class UpdateChecker:
                 cls._instance._initialized = False
             return cls._instance
 
-    def __init__(self, check_frequency: int = DEFAULT_CHECK_FREQUENCY,
-                 repo_url: str = DEFAULT_REPO_URL,
-                 current_version: str = VERSION,
-                 auto_check: bool = True):
-        """Initialize the update checker
+    def __init__(
+        self,
+        check_frequency: int = DEFAULT_CHECK_FREQUENCY,
+        repo_url: str = DEFAULT_REPO_URL,
+        current_version: str = VERSION,
+        auto_check: bool = True,
+    ):
+        """
+        Initialize the update checker
 
         Args:
+        ----
             check_frequency: How often to check for updates (in hours)
             repo_url: URL to check for updates
             current_version: Current version string
@@ -203,7 +215,7 @@ class UpdateChecker:
             return
 
         try:
-            with open(UPDATE_CACHE_FILE, 'r') as f:
+            with open(UPDATE_CACHE_FILE) as f:
                 cache = json.load(f)
 
             # Parse last check time
@@ -228,11 +240,13 @@ class UpdateChecker:
         """Save update cache to disk"""
         try:
             cache = {
-                "last_check_time": self._last_check_time.isoformat() if self._last_check_time else None,
-                "update_info": self._update_info.to_dict() if self._update_info else None
+                "last_check_time": self._last_check_time.isoformat()
+                if self._last_check_time
+                else None,
+                "update_info": self._update_info.to_dict() if self._update_info else None,
             }
 
-            with open(UPDATE_CACHE_FILE, 'w') as f:
+            with open(UPDATE_CACHE_FILE, "w") as f:
                 json.dump(cache, f, indent=2)
 
         except Exception as e:
@@ -246,7 +260,7 @@ class UpdateChecker:
         self._stop_event.clear()
         self._check_thread = threading.Thread(
             target=self._background_check_loop,
-            daemon=True
+            daemon=True,
         )
         self._check_thread.start()
 
@@ -264,9 +278,11 @@ class UpdateChecker:
             logger.error(f"Error in update check background thread: {e}")
 
     def _should_check_now(self) -> bool:
-        """Check if it's time to check for updates
+        """
+        Check if it's time to check for updates
 
-        Returns:
+        Returns
+        -------
             True if should check now, False otherwise
         """
         # If never checked, check now
@@ -287,9 +303,11 @@ class UpdateChecker:
             self._check_thread.join(timeout=1.0)
 
     def check_for_updates(self) -> Tuple[bool, Optional[UpdateInfo]]:
-        """Check for updates
+        """
+        Check for updates
 
-        Returns:
+        Returns
+        -------
             Tuple of (update_available, update_info)
         """
         # Record check time
@@ -328,7 +346,7 @@ class UpdateChecker:
                     version=version_str,
                     release_date=release_data.get("published_at", ""),
                     release_notes=release_data.get("body", ""),
-                    download_url=release_data.get("html_url", RELEASES_URL)
+                    download_url=release_data.get("html_url", RELEASES_URL),
                 )
 
                 self._update_available = True
@@ -350,37 +368,46 @@ class UpdateChecker:
             return self._update_available, self._update_info
 
     def is_update_available(self) -> bool:
-        """Check if an update is available
+        """
+        Check if an update is available
 
-        Returns:
+        Returns
+        -------
             True if an update is available, False otherwise
         """
         return self._update_available
 
     def get_update_info(self) -> Optional[UpdateInfo]:
-        """Get information about the available update
+        """
+        Get information about the available update
 
-        Returns:
+        Returns
+        -------
             UpdateInfo object or None if no update is available
         """
         return self._update_info
 
     def add_listener(self, listener: Callable[[UpdateInfo], None]) -> None:
-        """Add a listener for update notifications
+        """
+        Add a listener for update notifications
 
         Args:
+        ----
             listener: Function to call when an update is available
         """
         if listener not in self._listeners:
             self._listeners.append(listener)
 
     def remove_listener(self, listener: Callable[[UpdateInfo], None]) -> bool:
-        """Remove a listener
+        """
+        Remove a listener
 
         Args:
+        ----
             listener: Listener to remove
 
         Returns:
+        -------
             True if removed, False if not found
         """
         if listener in self._listeners:
@@ -403,10 +430,13 @@ class UpdateChecker:
 # Singleton instance
 _update_checker: Optional[UpdateChecker] = None
 
-def get_update_checker() -> UpdateChecker:
-    """Get the global update checker instance
 
-    Returns:
+def get_update_checker() -> UpdateChecker:
+    """
+    Get the global update checker instance
+
+    Returns
+    -------
         UpdateChecker instance
     """
     global _update_checker
@@ -416,27 +446,33 @@ def get_update_checker() -> UpdateChecker:
 
 
 def check_for_updates() -> Tuple[bool, Optional[UpdateInfo]]:
-    """Check for updates
+    """
+    Check for updates
 
-    Returns:
+    Returns
+    -------
         Tuple of (update_available, update_info)
     """
     return get_update_checker().check_for_updates()
 
 
 def is_update_available() -> bool:
-    """Check if an update is available
+    """
+    Check if an update is available
 
-    Returns:
+    Returns
+    -------
         True if an update is available, False otherwise
     """
     return get_update_checker().is_update_available()
 
 
 def get_update_info() -> Optional[UpdateInfo]:
-    """Get information about the available update
+    """
+    Get information about the available update
 
-    Returns:
+    Returns
+    -------
         UpdateInfo object or None if no update is available
     """
     return get_update_checker().get_update_info()

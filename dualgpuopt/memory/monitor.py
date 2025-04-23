@@ -15,7 +15,7 @@ from dualgpuopt.error_handler import ErrorCategory, ErrorHandler, ErrorSeverity,
 from dualgpuopt.memory.alerts import MemoryAlert, MemoryAlertCallback, MemoryAlertLevel
 from dualgpuopt.memory.metrics import GPUMemoryStats, MemoryUnit
 from dualgpuopt.memory.predictor import MemoryProfile
-from dualgpuopt.memory.recovery import RecoveryManager, MemoryRecoveryStrategy
+from dualgpuopt.memory.recovery import MemoryRecoveryStrategy, RecoveryManager
 
 # Initialize module-level logger
 logger = logging.getLogger("DualGPUOpt.MemoryMonitor")
@@ -23,6 +23,7 @@ logger = logging.getLogger("DualGPUOpt.MemoryMonitor")
 # Forward declarations for type hints
 try:
     import pynvml
+
     NVML_AVAILABLE = True
 except ImportError:
     logger.warning("NVML not available, using mock GPU memory monitoring")
@@ -36,6 +37,7 @@ class MemoryMonitor:
     Provides real-time memory monitoring, alerts, projections, and
     OOM prevention strategies for dual-GPU setups.
     """
+
     _instance = None
 
     def __new__(cls, *args, **kwargs):
@@ -45,15 +47,18 @@ class MemoryMonitor:
             cls._instance._initialized = False
         return cls._instance
 
-    def __init__(self,
-                update_interval: float = 1.0,
-                warning_threshold: float = 80.0,
-                critical_threshold: float = 90.0,
-                emergency_threshold: float = 95.0):
+    def __init__(
+        self,
+        update_interval: float = 1.0,
+        warning_threshold: float = 80.0,
+        critical_threshold: float = 90.0,
+        emergency_threshold: float = 95.0,
+    ):
         """
         Initialize memory monitor
 
         Args:
+        ----
             update_interval: Interval between memory checks in seconds
             warning_threshold: Memory usage percentage for WARNING level
             critical_threshold: Memory usage percentage for CRITICAL level
@@ -67,7 +72,7 @@ class MemoryMonitor:
         self._thresholds = {
             MemoryAlertLevel.WARNING: warning_threshold,
             MemoryAlertLevel.CRITICAL: critical_threshold,
-            MemoryAlertLevel.EMERGENCY: emergency_threshold
+            MemoryAlertLevel.EMERGENCY: emergency_threshold,
         }
 
         # Initialize NVML if available
@@ -136,7 +141,9 @@ class MemoryMonitor:
         self._alert_callbacks[level].append(callback)
         logger.debug(f"Registered alert callback for level {level.name}")
 
-    def unregister_alert_callback(self, level: MemoryAlertLevel, callback: MemoryAlertCallback) -> bool:
+    def unregister_alert_callback(
+        self, level: MemoryAlertLevel, callback: MemoryAlertCallback
+    ) -> bool:
         """Unregister callback for memory alerts"""
         if callback in self._alert_callbacks[level]:
             self._alert_callbacks[level].remove(callback)
@@ -157,7 +164,7 @@ class MemoryMonitor:
         self._monitoring_thread = threading.Thread(
             target=self._monitoring_loop,
             daemon=True,
-            name="MemoryMonitorThread"
+            name="MemoryMonitorThread",
         )
         self._monitoring_active = True
         self._monitoring_thread.start()
@@ -193,7 +200,7 @@ class MemoryMonitor:
                     component="MemoryMonitor",
                     severity=ErrorSeverity.ERROR,
                     category=ErrorCategory.MEMORY_ERROR,
-                    message=f"Error in memory monitoring loop: {e}"
+                    message=f"Error in memory monitoring loop: {e}",
                 )
                 time.sleep(self._update_interval)  # Sleep to avoid tight loop on errors
 
@@ -233,7 +240,7 @@ class MemoryMonitor:
                 used_memory=info.used,
                 free_memory=info.free,
                 process_memory=processes,
-                timestamp=time.time()
+                timestamp=time.time(),
             )
         except Exception as e:
             logger.error(f"Error getting memory stats for GPU {gpu_id}: {e}")
@@ -246,7 +253,18 @@ class MemoryMonitor:
             prev_stats = self._memory_stats[gpu_id]
             # Simulate small memory fluctuations
             total = prev_stats.total_memory
-            used = max(0, min(total, prev_stats.used_memory + int(total * 0.01 * (0.5 - (0.5 * threading.current_thread().name.__hash__() % 100) / 100))))
+            used = max(
+                0,
+                min(
+                    total,
+                    prev_stats.used_memory
+                    + int(
+                        total
+                        * 0.01
+                        * (0.5 - (0.5 * threading.current_thread().name.__hash__() % 100) / 100)
+                    ),
+                ),
+            )
             free = total - used
         else:
             # First-time initialization with reasonable values
@@ -260,7 +278,7 @@ class MemoryMonitor:
             used_memory=used,
             free_memory=free,
             process_memory={},  # No process info in mock mode
-            timestamp=time.time()
+            timestamp=time.time(),
         )
 
     def _check_alerts(self):
@@ -289,10 +307,18 @@ class MemoryMonitor:
             recommendations = ["Consider reducing batch size", "Monitor for further increases"]
         elif level == MemoryAlertLevel.CRITICAL:
             message = f"Memory usage on GPU {gpu_id} is approaching critical level"
-            recommendations = ["Reduce batch size", "Clear caches if possible", "Consider terminating non-essential processes"]
+            recommendations = [
+                "Reduce batch size",
+                "Clear caches if possible",
+                "Consider terminating non-essential processes",
+            ]
         else:  # EMERGENCY
             message = f"Memory usage on GPU {gpu_id} is at emergency level, OOM risk"
-            recommendations = ["Immediately reduce workload", "Terminate non-essential processes", "Clear all caches"]
+            recommendations = [
+                "Immediately reduce workload",
+                "Terminate non-essential processes",
+                "Clear all caches",
+            ]
             # Try automatic recovery
             self._attempt_recovery(gpu_id, stats)
 
@@ -307,12 +333,12 @@ class MemoryMonitor:
             context={
                 "total_memory": stats.total_memory,
                 "used_memory": stats.used_memory,
-                "free_memory": stats.free_memory
-            }
+                "free_memory": stats.free_memory,
+            },
         )
 
         # Log alert
-        log_msg = f"{str(alert)}"
+        log_msg = f"{alert!s}"
         if level == MemoryAlertLevel.WARNING:
             logger.warning(log_msg)
         elif level == MemoryAlertLevel.CRITICAL:
@@ -331,16 +357,19 @@ class MemoryMonitor:
         """Attempt to recover from impending OOM"""
         self._recovery_manager.attempt_recovery(gpu_id, stats.as_dict())
 
-    def get_memory_stats(self, gpu_id: Optional[int] = None,
-                        unit: MemoryUnit = MemoryUnit.GB) -> Union[Dict[str, float], Dict[int, Dict[str, float]]]:
+    def get_memory_stats(
+        self, gpu_id: Optional[int] = None, unit: MemoryUnit = MemoryUnit.GB
+    ) -> Union[Dict[str, float], Dict[int, Dict[str, float]]]:
         """
         Get current memory statistics
 
         Args:
+        ----
             gpu_id: Specific GPU ID or None for all GPUs
             unit: Memory unit for returned values
 
         Returns:
+        -------
             Dictionary of memory stats or dictionary of GPU ID to memory stats
         """
         # Update stats if stale (> 2x update interval)
@@ -362,16 +391,20 @@ class MemoryMonitor:
 
         return {gpu_id: stats.as_dict() for gpu_id, stats in self._memory_stats.items()}
 
-    def estimate_max_batch(self, gpu_id: int, token_count: int, profile_name: Optional[str] = None) -> int:
+    def estimate_max_batch(
+        self, gpu_id: int, token_count: int, profile_name: Optional[str] = None
+    ) -> int:
         """
         Estimate maximum batch size for a GPU
 
         Args:
+        ----
             gpu_id: GPU device ID
             token_count: Number of tokens per batch item
             profile_name: Specific profile to use (or active profile if None)
 
         Returns:
+        -------
             Maximum batch size estimation
         """
         # Use specified profile or active profile
@@ -403,10 +436,12 @@ class MemoryMonitor:
         Project memory usage ahead in time
 
         Args:
+        ----
             gpu_id: GPU device ID
             seconds_ahead: Time in seconds to project ahead
 
         Returns:
+        -------
             Projected memory usage in percent or None if projection failed
         """
         # Need an active profile with history
@@ -428,17 +463,20 @@ class MemoryMonitor:
 
         return (projected_bytes / total_memory) * 100
 
-    def estimate_safe_context_size(self, gpu_id: int, batch_size: int,
-                                 buffer_percent: float = 10.0) -> int:
+    def estimate_safe_context_size(
+        self, gpu_id: int, batch_size: int, buffer_percent: float = 10.0
+    ) -> int:
         """
         Estimate safe context size based on available memory
 
         Args:
+        ----
             gpu_id: GPU device ID
             batch_size: Batch size
             buffer_percent: Safety buffer percentage
 
         Returns:
+        -------
             Safe context size in tokens
         """
         # Need a profile for estimation

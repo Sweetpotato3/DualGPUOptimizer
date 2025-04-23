@@ -8,8 +8,10 @@ import time
 from typing import Dict
 
 try:
-    from dualgpuopt.telemetry import GPUMetrics, get_telemetry_service, hist
     import importlib.util
+
+    from dualgpuopt.telemetry import GPUMetrics, get_telemetry_service, hist
+
     # Check if TelemetrySample is available without importing it
     if importlib.util.find_spec("dualgpuopt.telemetry.sample"):
         pass  # Module exists but we don't need to import it
@@ -43,7 +45,7 @@ def test_telemetry_service_with_history():
             print(
                 f"GPU {gpu_id}: Util={gpu_metrics.utilization}%, "
                 f"Memory={gpu_metrics.memory_percent:.1f}%, "
-                f"Temp={gpu_metrics.temperature}°C"
+                f"Temp={gpu_metrics.temperature}°C",
             )
 
     # Register callback
@@ -87,7 +89,7 @@ def test_telemetry_service_with_history():
             print(f"{per_gpu_metric} history length: {len(history)}")
             if len(history) < 3:
                 print(
-                    f"Error: Expected at least 3 samples for {per_gpu_metric}, got {len(history)}"
+                    f"Error: Expected at least 3 samples for {per_gpu_metric}, got {len(history)}",
                 )
                 success = False
 

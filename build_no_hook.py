@@ -3,11 +3,12 @@
 Build script for DualGPUOptimizer that disables built-in torch hook.
 """
 import os
+import shutil
 import subprocess
 import sys
-import shutil
 import tempfile
 from pathlib import Path
+
 
 def create_empty_hook():
     """
@@ -17,7 +18,8 @@ def create_empty_hook():
 
     # Create an empty hook for torch to bypass the problematic hook
     with open(os.path.join(temp_dir, "hook-torch.py"), "w") as f:
-        f.write("""
+        f.write(
+            """
 # -*- coding: utf-8 -*-
 # Minimal torch hook to avoid the built-in hook's subprocess issues
 hiddenimports = [
@@ -32,11 +34,13 @@ excludedimports = [
     'torch.testing',
     'torch.utils.tensorboard',
 ]
-""")
+"""
+        )
 
     # Create a hook for prometheus_client
     with open(os.path.join(temp_dir, "hook-prometheus_client.py"), "w") as f:
-        f.write("""
+        f.write(
+            """
 # -*- coding: utf-8 -*-
 # Hook for prometheus_client
 hiddenimports = [
@@ -44,15 +48,18 @@ hiddenimports = [
     'prometheus_client.exposition',
     'prometheus_client.metrics',
 ]
-""")
+"""
+        )
 
     return temp_dir
+
 
 def copy_required_dlls(dist_dir):
     """Copy required DLLs to the distribution directory."""
     # Check if torch is available
     try:
         import torch
+
         torch_lib_dir = Path(torch.__file__).parent / "lib"
 
         if not torch_lib_dir.exists():
@@ -70,6 +77,7 @@ def copy_required_dlls(dist_dir):
 
     except ImportError:
         print("Warning: torch not found, skipping DLL copy")
+
 
 def main():
     """
@@ -127,7 +135,7 @@ def main():
             "--hidden-import=dualgpuopt.gui.constants",
             "--hidden-import=prometheus_client",
             "--collect-submodules=ttkbootstrap",
-            main_py
+            main_py,
         ]
 
         print(f"Running command: {' '.join(cmd)}")
@@ -147,6 +155,7 @@ def main():
     finally:
         # Clean up temporary directory
         shutil.rmtree(hooks_dir)
+
 
 if __name__ == "__main__":
     main()

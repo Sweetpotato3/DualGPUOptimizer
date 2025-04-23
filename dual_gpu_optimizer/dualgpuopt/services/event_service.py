@@ -4,7 +4,8 @@ Event bus system for component communication.
 from __future__ import annotations
 
 import logging
-from typing import Dict, Callable, List, Any, Optional
+from typing import Dict, Callable, List, Any
+
 
 class EventBus:
     """Central event manager for component communication."""
@@ -39,7 +40,9 @@ class EventBus:
             self.logger.debug(f"No subscribers for event '{event_type}'")
             return
 
-        self.logger.debug(f"Publishing event '{event_type}' to {len(self._subscribers[event_type])} subscribers")
+        self.logger.debug(
+            f"Publishing event '{event_type}' to {len(self._subscribers[event_type])} subscribers"
+        )
         for callback in self._subscribers[event_type]:
             try:
                 callback(data)
@@ -54,9 +57,13 @@ class EventBus:
             event_type: The type of event to unsubscribe from
             callback: Function to remove from subscribers
         """
-        if event_type in self._subscribers and callback in self._subscribers[event_type]:
+        if (
+            event_type in self._subscribers
+            and callback in self._subscribers[event_type]
+        ):
             self._subscribers[event_type].remove(callback)
             self.logger.debug(f"Unsubscribed from event '{event_type}'")
+
 
 # Create a global event bus
 event_bus = EventBus()

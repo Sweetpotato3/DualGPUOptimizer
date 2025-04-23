@@ -8,13 +8,12 @@ import concurrent.futures as _fut
 import dataclasses as _dc
 import logging
 import os
-from typing import List, Optional
 
 try:
     import pynvml  # external, tiny
 except ImportError as _exc:
     raise RuntimeError(
-        "pynvml missing – pip install nvidia‑ml‑py3 inside your environment"
+        "pynvml missing – pip install nvidia‑ml‑py3 inside your environment",
     ) from _exc
 
 # Configure logging
@@ -24,20 +23,21 @@ logger = logging.getLogger("dualgpuopt.gpu_info")
 @_dc.dataclass(slots=True, frozen=True)
 class GPU:
     """Enhanced GPU information container with comprehensive metrics."""
+
     index: int
     name: str
     mem_total: int  # MiB
-    mem_free: int   # MiB
+    mem_free: int  # MiB
 
     # Additional hardware info
     architecture: str = ""  # GPU architecture (e.g., "Ampere", "Ada Lovelace")
-    cuda_cores: int = 0     # Number of CUDA cores
+    cuda_cores: int = 0  # Number of CUDA cores
     compute_capability: str = ""  # CUDA compute capability
     driver_version: str = ""  # NVIDIA driver version
 
     # Performance metrics
-    temperature: int = 0     # Temperature in Celsius
-    fan_speed: int = 0       # Fan speed percentage
+    temperature: int = 0  # Temperature in Celsius
+    fan_speed: int = 0  # Fan speed percentage
     power_usage: float = 0.0  # Current power draw in Watts
     power_limit: float = 0.0  # Maximum power limit in Watts
     gpu_utilization: int = 0  # GPU utilization percentage
@@ -45,12 +45,12 @@ class GPU:
 
     # Clock speeds
     graphics_clock: int = 0  # Graphics clock in MHz
-    memory_clock: int = 0    # Memory clock in MHz
-    sm_clock: int = 0        # SM clock in MHz
+    memory_clock: int = 0  # Memory clock in MHz
+    sm_clock: int = 0  # SM clock in MHz
 
     # PCIe info
-    pcie_gen: str = ""      # PCIe generation
-    pcie_width: int = 0     # PCIe link width
+    pcie_gen: str = ""  # PCIe generation
+    pcie_width: int = 0  # PCIe link width
 
     @property
     def mem_used(self) -> int:
@@ -89,7 +89,7 @@ class GPU:
         name = self.name
         for prefix in ["NVIDIA GeForce ", "NVIDIA ", "GeForce "]:
             if name.startswith(prefix):
-                name = name[len(prefix):]
+                name = name[len(prefix) :]
         return name
 
 
@@ -121,7 +121,8 @@ def _query_gpu(index: int) -> GPU:
     try:
         # Temperature
         additional_info["temperature"] = pynvml.nvmlDeviceGetTemperature(
-            handle, pynvml.NVML_TEMPERATURE_GPU
+            handle,
+            pynvml.NVML_TEMPERATURE_GPU,
         )
     except Exception as e:
         logger.debug(f"Could not get temperature for GPU {index}: {e}")
@@ -143,7 +144,9 @@ def _query_gpu(index: int) -> GPU:
 
     try:
         # Power limit
-        power_limit = pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0  # Convert from mW to W
+        power_limit = (
+            pynvml.nvmlDeviceGetPowerManagementLimit(handle) / 1000.0
+        )  # Convert from mW to W
         additional_info["power_limit"] = power_limit
     except Exception as e:
         logger.debug(f"Could not get power limit for GPU {index}: {e}")
@@ -179,7 +182,7 @@ def _query_gpu(index: int) -> GPU:
             "6": "Pascal",
             "7": "Volta/Turing",
             "8": "Ampere",
-            "9": "Hopper/Ada Lovelace"
+            "9": "Hopper/Ada Lovelace",
         }
         additional_info["architecture"] = arch_map.get(str(major), "Unknown")
     except Exception as e:
@@ -199,11 +202,11 @@ def _query_gpu(index: int) -> GPU:
         # CUDA cores - this is an estimate based on compute capability and multiprocessor count
         multiprocessor_count = pynvml.nvmlDeviceGetNumGpuCores(handle)
         cuda_cores_per_mp = {
-            "5": 128,   # Maxwell
-            "6": 64,    # Pascal
-            "7": 64,    # Volta/Turing
-            "8": 64,    # Ampere
-            "9": 128    # Hopper/Ada Lovelace
+            "5": 128,  # Maxwell
+            "6": 64,  # Pascal
+            "7": 64,  # Volta/Turing
+            "8": 64,  # Ampere
+            "9": 128,  # Hopper/Ada Lovelace
         }
         if "compute_capability" in additional_info:
             major = additional_info["compute_capability"].split(".")[0]
@@ -217,7 +220,7 @@ def _query_gpu(index: int) -> GPU:
     return _dc.replace(gpu, **additional_info)
 
 
-def _mock_gpus() -> List[GPU]:
+def _mock_gpus() -> list[GPU]:
     """Create detailed mock GPU objects for testing or demo purposes."""
     return [
         GPU(
@@ -239,7 +242,7 @@ def _mock_gpus() -> List[GPU]:
             memory_clock=9000,
             sm_clock=1900,
             pcie_gen="Gen 4",
-            pcie_width=16
+            pcie_width=16,
         ),
         GPU(
             index=1,
@@ -260,22 +263,25 @@ def _mock_gpus() -> List[GPU]:
             memory_clock=8500,
             sm_clock=1800,
             pcie_gen="Gen 4",
-            pcie_width=8
-        )
+            pcie_width=8,
+        ),
     ]
 
 
-def probe_gpus(max_workers: int = 4) -> List[GPU]:
+def probe_gpus(max_workers: int = 4) -> list[GPU]:
     """
     Probe for NVIDIA GPUs using NVML.
 
     Args:
+    ----
         max_workers: Maximum number of worker threads for parallel probing
 
     Returns:
+    -------
         List of GPU objects with device information
 
     Raises:
+    ------
         RuntimeError: If GPU detection fails
     """
     # Check if mock mode is enabled
@@ -308,7 +314,9 @@ def probe_gpus(max_workers: int = 4) -> List[GPU]:
 
             # Check if we have at least 2 GPUs for dual optimization
             if len(gpus) < 2:
-                logger.warning(f"Only {len(gpus)} GPU detected, at least 2 are recommended for optimal use")
+                logger.warning(
+                    f"Only {len(gpus)} GPU detected, at least 2 are recommended for optimal use"
+                )
 
             return gpus
 

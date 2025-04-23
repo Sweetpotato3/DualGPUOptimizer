@@ -55,7 +55,11 @@ MODEL_PRESETS = {
         kv_heads=8,
     ),
     "Phi-2": ModelParameters(
-        name="Phi-2", context_length=2048, hidden_size=2560, num_layers=32, num_heads=32
+        name="Phi-2",
+        context_length=2048,
+        hidden_size=2560,
+        num_layers=32,
+        num_heads=32,
     ),
     "Custom": None,  # Placeholder for custom model
 }
@@ -65,9 +69,11 @@ class OptimizerTab(ttk.Frame):
     """Tab for GPU memory optimization settings"""
 
     def __init__(self, parent):
-        """Initialize optimizer tab
+        """
+        Initialize optimizer tab
 
         Args:
+        ----
             parent: Parent widget
         """
         super().__init__(parent, padding=15)
@@ -85,7 +91,7 @@ class OptimizerTab(ttk.Frame):
         title_frame.grid(row=0, column=0, sticky="ew", pady=(0, 15))
 
         ttk.Label(title_frame, text="GPU Split Optimizer", font=("Arial", 16, "bold")).pack(
-            side=tk.LEFT
+            side=tk.LEFT,
         )
 
         # GPU Information section - use TLabelframe style
@@ -106,7 +112,10 @@ class OptimizerTab(ttk.Frame):
 
         # Model selection section - use TLabelframe style
         model_frame = ttk.LabelFrame(
-            self, text="Model Configuration", padding=10, style="TLabelframe"
+            self,
+            text="Model Configuration",
+            padding=10,
+            style="TLabelframe",
         )
         model_frame.grid(row=2, column=0, sticky="ew", pady=(0, 15))
 
@@ -114,7 +123,11 @@ class OptimizerTab(ttk.Frame):
 
         # Model preset dropdown
         ttk.Label(model_frame, text="Model:", style="Inner.TLabel").grid(
-            row=0, column=0, sticky="w", padx=(0, 10), pady=5
+            row=0,
+            column=0,
+            sticky="w",
+            padx=(0, 10),
+            pady=5,
         )
 
         self.model_var = tk.StringVar(value=list(MODEL_PRESETS.keys())[0])
@@ -130,11 +143,15 @@ class OptimizerTab(ttk.Frame):
 
         # Context length entry
         ttk.Label(model_frame, text="Context Length:", style="Inner.TLabel").grid(
-            row=1, column=0, sticky="w", padx=(0, 10), pady=5
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 10),
+            pady=5,
         )
 
         self.context_var = tk.StringVar(
-            value=str(MODEL_PRESETS[self.model_var.get()].context_length)
+            value=str(MODEL_PRESETS[self.model_var.get()].context_length),
         )
         context_entry = ttk.Entry(model_frame, textvariable=self.context_var, width=10)
         context_entry.grid(row=1, column=1, sticky="w", pady=5)
@@ -147,7 +164,11 @@ class OptimizerTab(ttk.Frame):
 
         # Hidden size
         ttk.Label(self.custom_frame, text="Hidden Size:", style="Inner.TLabel").grid(
-            row=0, column=0, sticky="w", padx=(0, 10), pady=5
+            row=0,
+            column=0,
+            sticky="w",
+            padx=(0, 10),
+            pady=5,
         )
         self.hidden_var = tk.StringVar(value="4096")
         hidden_entry = ttk.Entry(self.custom_frame, textvariable=self.hidden_var, width=10)
@@ -155,7 +176,11 @@ class OptimizerTab(ttk.Frame):
 
         # Layers
         ttk.Label(self.custom_frame, text="Layers:", style="Inner.TLabel").grid(
-            row=0, column=2, sticky="w", padx=(20, 10), pady=5
+            row=0,
+            column=2,
+            sticky="w",
+            padx=(20, 10),
+            pady=5,
         )
         self.layers_var = tk.StringVar(value="32")
         layers_entry = ttk.Entry(self.custom_frame, textvariable=self.layers_var, width=10)
@@ -163,7 +188,11 @@ class OptimizerTab(ttk.Frame):
 
         # Heads
         ttk.Label(self.custom_frame, text="Attention Heads:", style="Inner.TLabel").grid(
-            row=1, column=0, sticky="w", padx=(0, 10), pady=5
+            row=1,
+            column=0,
+            sticky="w",
+            padx=(0, 10),
+            pady=5,
         )
         self.heads_var = tk.StringVar(value="32")
         heads_entry = ttk.Entry(self.custom_frame, textvariable=self.heads_var, width=10)
@@ -171,7 +200,11 @@ class OptimizerTab(ttk.Frame):
 
         # KV Heads
         ttk.Label(self.custom_frame, text="KV Heads:", style="Inner.TLabel").grid(
-            row=1, column=2, sticky="w", padx=(20, 10), pady=5
+            row=1,
+            column=2,
+            sticky="w",
+            padx=(20, 10),
+            pady=5,
         )
         self.kv_heads_var = tk.StringVar(value="32")
         kv_heads_entry = ttk.Entry(self.custom_frame, textvariable=self.kv_heads_var, width=10)
@@ -185,12 +218,17 @@ class OptimizerTab(ttk.Frame):
         button_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(15, 0))
 
         ttk.Button(
-            button_frame, text="Calculate Optimal Split", command=self._calculate_split
+            button_frame,
+            text="Calculate Optimal Split",
+            command=self._calculate_split,
         ).pack(side=tk.RIGHT)
 
         # Results section - use TLabelframe style
         results_frame = ttk.LabelFrame(
-            self, text="Optimization Results", padding=10, style="TLabelframe"
+            self,
+            text="Optimization Results",
+            padding=10,
+            style="TLabelframe",
         )
         results_frame.grid(row=3, column=0, sticky="nsew")
 
@@ -354,11 +392,11 @@ class OptimizerTab(ttk.Frame):
 
                 # Generate command strings
                 llama_cmd = f"--model {model_path if model_path else '<model_path>'} " + " ".join(
-                    [f"--{k.replace('_', '-')} {v}" for k, v in llama_kwargs.items()]
+                    [f"--{k.replace('_', '-')} {v}" for k, v in llama_kwargs.items()],
                 )
 
                 vllm_cmd = f"--model {model_path if model_path else '<model_path>'} " + " ".join(
-                    [f"--{k.replace('_', '-')} {v}" for k, v in vllm_kwargs.items()]
+                    [f"--{k.replace('_', '-')} {v}" for k, v in vllm_kwargs.items()],
                 )
 
             except ImportError:
@@ -377,9 +415,11 @@ class OptimizerTab(ttk.Frame):
             messagebox.showerror("Error", f"Failed to calculate GPU split: {e}")
 
     def _display_results(self, model: ModelParameters, config: SplitConfiguration):
-        """Display optimization results
+        """
+        Display optimization results
 
         Args:
+        ----
             model: Model parameters used
             config: Resulting split configuration
         """
@@ -407,16 +447,19 @@ class OptimizerTab(ttk.Frame):
         # Context size
         self.results_text.insert(tk.END, f"Maximum Context: {config.max_context_length} tokens\n")
         self.results_text.insert(
-            tk.END, f"Recommended Context: {config.recommended_context_length} tokens\n"
+            tk.END,
+            f"Recommended Context: {config.recommended_context_length} tokens\n",
         )
 
         # Disable for read-only
         self.results_text.config(state=tk.DISABLED)
 
     def _copy_to_clipboard(self, text: str):
-        """Copy text to clipboard
+        """
+        Copy text to clipboard
 
         Args:
+        ----
             text: Text to copy
         """
         self.clipboard_clear()

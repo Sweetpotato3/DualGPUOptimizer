@@ -92,4 +92,4 @@ Write-Host ""
 # Deactivate virtual environment
 deactivate
 
-Read-Host "Press Enter to exit" 
+Read-Host "Press Enter to exit"

@@ -2,9 +2,9 @@
 """
 Simple script to fix the psutil issue with PyInstaller
 """
+import os
 import subprocess
 import sys
-import os
 
 # Uninstall and reinstall psutil
 print("Fixing psutil installation for PyInstaller...")

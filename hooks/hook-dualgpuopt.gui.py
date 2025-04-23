@@ -3,11 +3,12 @@ Hook for dualgpuopt.gui to ensure all files are collected
 """
 import os
 from pathlib import Path
-from PyInstaller.utils.hooks import get_module_file_attribute, collect_data_files
+
+from PyInstaller.utils.hooks import collect_data_files, get_module_file_attribute
 
 # Get the location of the dualgpuopt.gui package
 try:
-    gui_path = Path(get_module_file_attribute('dualgpuopt.gui'))
+    gui_path = Path(get_module_file_attribute("dualgpuopt.gui"))
     package_path = gui_path.parent
 
     # Collect all Python files in the gui directory
@@ -20,4 +21,4 @@ except (ImportError, ModuleNotFoundError):
     datas = []
 
 # Collect all data files too
-datas.extend(collect_data_files('dualgpuopt.gui', includes=['*.py', '*.png', '*.json']))
+datas.extend(collect_data_files("dualgpuopt.gui", includes=["*.py", "*.png", "*.json"]))

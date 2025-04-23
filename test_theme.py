@@ -1,17 +1,16 @@
 """
 Test script for theme functionality in DualGPUOptimizer
 """
-import os
-import sys
 import logging
 import pathlib
+import sys
 import tkinter as tk
 from tkinter import ttk
 
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
 logger = logging.getLogger("ThemeTester")
@@ -23,6 +22,7 @@ print(f"Current directory: {current_dir}")
 # Add the current directory to the path
 sys.path.insert(0, str(current_dir))
 
+
 # Create a services directory and config_service.py if they don't exist
 def create_service_structure():
     """Create the service directory structure and basic config service"""
@@ -33,7 +33,9 @@ def create_service_structure():
     init_file = services_dir / "__init__.py"
     if not init_file.exists():
         with open(init_file, "w") as f:
-            f.write('"""Services package for DualGPUOptimizer."""\n\n__all__ = ["config_service", "event_service"]')
+            f.write(
+                '"""Services package for DualGPUOptimizer."""\n\n__all__ = ["config_service", "event_service"]'
+            )
 
     # Create basic config_service.py if it doesn't exist
     config_file = services_dir / "config_service.py"
@@ -121,16 +123,16 @@ config_service = ConfigService()
 '''
             f.write(config_content)
 
+
 # Create a simple theme test window
 def run_theme_test():
     """Create a simple window to test themes"""
-
     # Create necessary files first
     create_service_structure()
 
     try:
         # Import our theme module
-        from dualgpuopt.gui.theme import set_theme, apply_theme, toggle_theme, AVAILABLE_THEMES
+        from dualgpuopt.gui.theme import AVAILABLE_THEMES, apply_theme, set_theme, toggle_theme
 
         root = tk.Tk()
         root.title("Theme Tester")
@@ -157,6 +159,7 @@ def run_theme_test():
 
         # Add buttons for each theme
         for theme_name in AVAILABLE_THEMES:
+
             def theme_changer(name=theme_name):
                 set_theme(root, name)
 
@@ -164,8 +167,7 @@ def run_theme_test():
             btn.pack(side=tk.LEFT, padx=10)
 
         # Add a toggle button
-        toggle_btn = ttk.Button(main_frame, text="Toggle Theme",
-                               command=lambda: toggle_theme(root))
+        toggle_btn = ttk.Button(main_frame, text="Toggle Theme", command=lambda: toggle_theme(root))
         toggle_btn.pack(pady=10)
 
         # Add an entry field
@@ -215,7 +217,9 @@ def run_theme_test():
         logger.error(f"Error in theme test: {e}", exc_info=True)
         print(f"Error: {e}")
         import traceback
+
         traceback.print_exc()
+
 
 if __name__ == "__main__":
     run_theme_test()

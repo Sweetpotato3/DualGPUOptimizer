@@ -10,7 +10,8 @@ from PySide6.QtWidgets import QApplication
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 from dualgpuopt.services.telemetry import TelemetryWorker
 
@@ -79,7 +80,7 @@ class TelemetryTester(QObject):
     def _handle_pcie(self, gpu_id, tx_kb_s, rx_kb_s):
         self.update_counts["pcie"] += 1
         logger.debug(
-            f"PCIe update: GPU {gpu_id}, TX: {tx_kb_s/1024:.1f} MB/s, RX: {rx_kb_s/1024:.1f} MB/s"
+            f"PCIe update: GPU {gpu_id}, TX: {tx_kb_s/1024:.1f} MB/s, RX: {rx_kb_s/1024:.1f} MB/s",
         )
 
     def _check_updates(self):

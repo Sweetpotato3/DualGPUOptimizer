@@ -7,8 +7,8 @@ model profiles and historical data.
 
 import logging
 import os
-import time
 import threading
+import time
 from collections import OrderedDict
 from functools import lru_cache
 from typing import List, Optional, Set, Tuple
@@ -72,6 +72,7 @@ class MemoryProfile:
         Initialize memory profile
 
         Args:
+        ----
             name: Profile name
             base_usage: Base memory usage in bytes
             per_batch_usage: Additional memory per batch item in bytes
@@ -102,21 +103,27 @@ class MemoryProfile:
 
     # Using thread-safe LRU cache instead of lru_cache to avoid memory leaks
     def _estimate_usage_cached(
-        self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
+        self,
+        batch_size: int,
+        token_count: int,
+        kv_cache_factor: float = 1.0,
     ) -> int:
-        """Cached version of memory estimation
+        """
+        Cached version of memory estimation
 
         Args:
+        ----
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
 
         Returns:
+        -------
             Estimated memory usage in bytes
         """
         # Create cache key
         cache_key = (batch_size, token_count, kv_cache_factor)
-        
+
         # Check if result is in cache
         try:
             result = self._estimation_cache[cache_key]
@@ -128,22 +135,28 @@ class MemoryProfile:
             # Apply the KV cache factor to the token memory calculation
             token_memory = self.per_token_usage * token_count * kv_cache_factor
             result = self.base_usage + (self.per_batch_usage * batch_size) + token_memory
-            
+
             # Store in cache (will automatically evict oldest items when full)
             self._estimation_cache[cache_key] = result
             return result
 
     def estimate_usage(
-        self, batch_size: int, token_count: int, kv_cache_factor: float = 1.0
+        self,
+        batch_size: int,
+        token_count: int,
+        kv_cache_factor: float = 1.0,
     ) -> int:
-        """Estimate memory usage for given batch size and token count
+        """
+        Estimate memory usage for given batch size and token count
 
         Args:
+        ----
             batch_size: Batch size to estimate for
             token_count: Number of tokens to estimate for
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
 
         Returns:
+        -------
             Estimated memory usage in bytes
         """
         # Convert to positive integers
@@ -156,18 +169,21 @@ class MemoryProfile:
 
     # Using thread-safe LRU cache instead of lru_cache to avoid memory leaks
     def max_batch_size(self, available_memory: int, token_count: int) -> int:
-        """Calculate maximum batch size given available memory and token count
+        """
+        Calculate maximum batch size given available memory and token count
 
         Args:
+        ----
             available_memory: Available memory in bytes
             token_count: Number of tokens per sequence
 
         Returns:
+        -------
             Maximum batch size
         """
         # Create cache key
         cache_key = (available_memory, token_count)
-        
+
         # Check if result is in cache
         try:
             result = self._max_batch_cache[cache_key]
@@ -176,7 +192,7 @@ class MemoryProfile:
         except KeyError:
             # Not in cache, calculate result
             self._cache_misses += 1
-            
+
             if self.per_batch_usage <= 0:
                 result = 1  # Avoid division by zero
                 self._max_batch_cache[cache_key] = result
@@ -194,26 +210,31 @@ class MemoryProfile:
             if batch_memory <= 0:
                 result = 1  # No memory available for batches
             else:
-                result = max(1, int(batch_memory / self.per_batch_usage))  # Ensure at least batch size 1
-            
+                result = max(
+                    1, int(batch_memory / self.per_batch_usage)
+                )  # Ensure at least batch size 1
+
             # Store in cache (will automatically evict oldest items when full)
             self._max_batch_cache[cache_key] = result
             return result
 
     # Using thread-safe LRU cache instead of lru_cache to avoid memory leaks
     def max_sequence_length(self, available_memory: int, batch_size: int) -> int:
-        """Calculate maximum sequence length given available memory and batch size
+        """
+        Calculate maximum sequence length given available memory and batch size
 
         Args:
+        ----
             available_memory: Available memory in bytes
             batch_size: Batch size
 
         Returns:
+        -------
             Maximum sequence length
         """
         # Create cache key
         cache_key = (available_memory, batch_size)
-        
+
         # Check if result is in cache
         try:
             result = self._max_seq_cache[cache_key]
@@ -222,7 +243,7 @@ class MemoryProfile:
         except KeyError:
             # Not in cache, calculate result
             self._cache_misses += 1
-            
+
             if self.per_token_usage <= 0:
                 result = 2048  # Default to reasonable value
                 self._max_seq_cache[cache_key] = result
@@ -240,16 +261,20 @@ class MemoryProfile:
             if token_memory <= 0:
                 result = 128  # Minimum reasonable length
             else:
-                result = max(128, int(token_memory / self.per_token_usage))  # Ensure reasonable minimum
-            
+                result = max(
+                    128, int(token_memory / self.per_token_usage)
+                )  # Ensure reasonable minimum
+
             # Store in cache (will automatically evict oldest items when full)
             self._max_seq_cache[cache_key] = result
             return result
 
     def update_history(self, memory_usage: int, max_history: int = 100) -> None:
-        """Update usage history with current memory usage
+        """
+        Update usage history with current memory usage
 
         Args:
+        ----
             memory_usage: Current memory usage in bytes
             max_history: Maximum history points to keep
         """
@@ -261,12 +286,15 @@ class MemoryProfile:
             self.usage_history = self.usage_history[-max_history:]
 
     def project_growth(self, time_horizon: float = 60.0) -> Optional[int]:
-        """Project memory growth over time horizon in seconds
+        """
+        Project memory growth over time horizon in seconds
 
         Args:
+        ----
             time_horizon: Time horizon for projection in seconds
 
         Returns:
+        -------
             Projected memory usage in bytes, or None if projection not possible
         """
         if len(self.usage_history) < 5:
@@ -357,15 +385,20 @@ class MemoryProfile:
                 return None  # Error in projection
 
     def batch_estimate_usage(
-        self, batch_configs: List[Tuple[int, int]], kv_cache_factor: float = 1.0
+        self,
+        batch_configs: List[Tuple[int, int]],
+        kv_cache_factor: float = 1.0,
     ) -> List[int]:
-        """Estimate memory usage for multiple batch configurations at once
+        """
+        Estimate memory usage for multiple batch configurations at once
 
         Args:
+        ----
             batch_configs: List of (batch_size, token_count) tuples
             kv_cache_factor: Multiplier for token memory (KV cache scaling)
 
         Returns:
+        -------
             List of estimated memory usage in bytes
         """
         if NUMPY_AVAILABLE and len(batch_configs) > 1:
@@ -425,9 +458,11 @@ _profile_cache_lock = threading.RLock()
 
 @lru_cache(maxsize=1)
 def get_available_profiles() -> Set[str]:
-    """Get the set of available profile names
+    """
+    Get the set of available profile names
 
-    Returns:
+    Returns
+    -------
         Set of profile names
     """
     return set(DEFAULT_PROFILES.keys())
@@ -435,12 +470,15 @@ def get_available_profiles() -> Set[str]:
 
 @lru_cache(maxsize=ENV_PROFILE_CACHE_SIZE)
 def get_profile(name: str) -> Optional[MemoryProfile]:
-    """Get a memory profile by name
+    """
+    Get a memory profile by name
 
     Args:
+    ----
         name: Profile name
 
     Returns:
+    -------
         MemoryProfile or None if not found
     """
     return DEFAULT_PROFILES.get(name)
@@ -476,15 +514,18 @@ def find_optimal_batch(
     token_lengths: List[int],
     memory_buffer: float = 0.9,
 ) -> Tuple[int, int]:
-    """Find optimal batch size and sequence length given available memory
+    """
+    Find optimal batch size and sequence length given available memory
 
     Args:
+    ----
         available_memory: Available memory in bytes
         profile: Memory profile to use
         token_lengths: List of possible token lengths to consider
         memory_buffer: Safety buffer factor (1.0 = use all memory)
 
     Returns:
+    -------
         Tuple of (batch_size, sequence_length)
     """
     # Apply safety buffer
@@ -498,7 +539,7 @@ def find_optimal_batch(
         # Vectorized approach
         seq_lengths = np.array(token_lengths)
         batch_sizes = np.array(
-            [profile.max_batch_size(effective_memory, seq_len) for seq_len in seq_lengths]
+            [profile.max_batch_size(effective_memory, seq_len) for seq_len in seq_lengths],
         )
 
         # Calculate throughput (batch_size * sequence_length)

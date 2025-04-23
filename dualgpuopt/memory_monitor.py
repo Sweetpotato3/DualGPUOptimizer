@@ -19,35 +19,35 @@ warnings.warn(
     "Importing directly from memory_monitor.py is deprecated. "
     "Please import from dualgpuopt.memory instead.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Re-export all components from the memory module
 from dualgpuopt.memory import (
-    MemoryUnit,
-    MemoryAlertLevel,
+    DEFAULT_PROFILES,
     GPUMemoryStats,
     MemoryAlert,
     MemoryAlertCallback,
+    MemoryAlertLevel,
+    MemoryMonitor,
     MemoryProfile,
     MemoryRecoveryStrategy,
-    MemoryMonitor,
+    MemoryUnit,
     get_memory_monitor,
-    DEFAULT_PROFILES,
-    initialize_memory_profiles
+    initialize_memory_profiles,
 )
 
 # Maintain backward compatibility
 __all__ = [
-    'MemoryUnit',
-    'MemoryAlertLevel',
-    'GPUMemoryStats',
-    'MemoryAlert',
-    'MemoryAlertCallback',
-    'MemoryProfile',
-    'MemoryRecoveryStrategy',
-    'MemoryMonitor',
-    'get_memory_monitor',
-    'DEFAULT_PROFILES',
-    'initialize_memory_profiles'
+    "MemoryUnit",
+    "MemoryAlertLevel",
+    "GPUMemoryStats",
+    "MemoryAlert",
+    "MemoryAlertCallback",
+    "MemoryProfile",
+    "MemoryRecoveryStrategy",
+    "MemoryMonitor",
+    "get_memory_monitor",
+    "DEFAULT_PROFILES",
+    "initialize_memory_profiles",
 ]

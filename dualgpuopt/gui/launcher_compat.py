@@ -8,30 +8,31 @@ while we transition to the new modular structure.
 from __future__ import annotations
 
 import logging
-import tkinter as tk
-from tkinter import ttk, scrolledtext
 import os
-import queue
-import threading
 import subprocess
-from typing import Dict, List, Optional, Any
+import threading
+
+from dualgpuopt.gui.launcher.process_monitor import ProcessMonitor
 
 # Import refactored components
-from dualgpuopt.gui.launcher.ui_components import LauncherTab
-from dualgpuopt.gui.launcher.launch_controller import LaunchController
-from dualgpuopt.gui.launcher.process_monitor import ProcessMonitor
 
 # Try to import advanced features
 try:
-    from dualgpuopt.batch.smart_batch import optimize_batch_size, BatchStats
+    from dualgpuopt.batch.smart_batch import BatchStats, optimize_batch_size
     from dualgpuopt.ctx_size import calc_max_ctx, model_params_from_name
+    from dualgpuopt.error_handler import (
+        ErrorCategory,
+        ErrorSeverity,
+        get_error_handler,
+        show_error_dialog,
+    )
     from dualgpuopt.layer_balance import rebalance
-    from dualgpuopt.vram_reset import reset_vram, ResetMethod, ResetResult
-    from dualgpuopt.mpolicy import autocast, scaler
-    from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel, MemoryAlert
+    from dualgpuopt.memory_monitor import MemoryAlert, MemoryAlertLevel, get_memory_monitor
     from dualgpuopt.model_profiles import apply_profile, get_model_profile
-    from dualgpuopt.error_handler import get_error_handler, show_error_dialog, ErrorSeverity, ErrorCategory
+    from dualgpuopt.mpolicy import autocast, scaler
     from dualgpuopt.telemetry import get_telemetry_service
+    from dualgpuopt.vram_reset import ResetMethod, ResetResult, reset_vram
+
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Advanced optimization modules not available: {e}")
@@ -53,6 +54,7 @@ class ModelRunner:
         Initialize model runner with log queue.
 
         Args:
+        ----
             log_queue: Queue for log messages
         """
         self.log_queue = log_queue
@@ -62,11 +64,14 @@ class ModelRunner:
         self.process_id = None
         self.logger = logging.getLogger("DualGPUOpt.ModelRunner")
 
-    def start(self, command, env=None, cwd=None, use_layer_balancing=False, use_mixed_precision=False):
+    def start(
+        self, command, env=None, cwd=None, use_layer_balancing=False, use_mixed_precision=False
+    ):
         """
         Start model process.
 
         Args:
+        ----
             command: Command string to execute
             env: Environment variables
             cwd: Working directory
@@ -74,6 +79,7 @@ class ModelRunner:
             use_mixed_precision: Whether to use mixed precision
 
         Returns:
+        -------
             True if started successfully, False otherwise
         """
         if self.process and self.process.poll() is None:
@@ -100,7 +106,7 @@ class ModelRunner:
                 reset_vram()
                 self.log_queue.put("VRAM reset completed")
             except Exception as e:
-                self.log_queue.put(f"Warning: VRAM reset failed: {str(e)}")
+                self.log_queue.put(f"Warning: VRAM reset failed: {e!s}")
 
         # Log the command
         self.log_queue.put(f"Executing: {command}")
@@ -116,7 +122,7 @@ class ModelRunner:
                 universal_newlines=True,
                 env=full_env,
                 cwd=cwd,
-                shell=True
+                shell=True,
             )
 
             self.process = process
@@ -136,13 +142,13 @@ class ModelRunner:
             self.process_monitor.start_monitoring(
                 self.process_id,
                 process,
-                on_exit=on_exit
+                on_exit=on_exit,
             )
 
             # Start output reader thread
             threading.Thread(
                 target=self._read_output,
-                daemon=True
+                daemon=True,
             ).start()
 
             # Monitor OOM if requested
@@ -153,7 +159,7 @@ class ModelRunner:
 
         except Exception as e:
             self.running = False
-            error_msg = f"Error starting process: {str(e)}"
+            error_msg = f"Error starting process: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             self.log_queue.put(error_msg)
             return False
@@ -174,7 +180,7 @@ class ModelRunner:
             return
 
         try:
-            for line in iter(self.process.stdout.readline, ''):
+            for line in iter(self.process.stdout.readline, ""):
                 if not self.running:
                     break
 
@@ -183,7 +189,7 @@ class ModelRunner:
                     continue
 
                 # Check for OOM errors
-                if 'out of memory' in line.lower() or 'cuda error' in line.lower():
+                if "out of memory" in line.lower() or "cuda error" in line.lower():
                     self._handle_oom_error(line)
 
                 # Add to log queue
@@ -200,7 +206,7 @@ class ModelRunner:
                 self.running = False
 
         except Exception as e:
-            self.log_queue.put(f"Error reading process output: {str(e)}")
+            self.log_queue.put(f"Error reading process output: {e!s}")
             self.running = False
 
     def _handle_oom_error(self, error_line):
@@ -208,6 +214,7 @@ class ModelRunner:
         Handle out-of-memory errors.
 
         Args:
+        ----
             error_line: Error line from process
         """
         self.log_queue.put("CRITICAL: GPU out of memory detected!")
@@ -215,12 +222,13 @@ class ModelRunner:
         # Try to recover by clearing CUDA cache
         try:
             import torch
+
             if torch.cuda.is_available():
                 self.log_queue.put("Attempting to clear CUDA cache...")
                 torch.cuda.empty_cache()
                 self.log_queue.put("CUDA cache cleared")
         except (ImportError, Exception) as e:
-            self.log_queue.put(f"Failed to clear CUDA cache: {str(e)}")
+            self.log_queue.put(f"Failed to clear CUDA cache: {e!s}")
 
         # Log error details
         self.logger.error(f"OOM error detected: {error_line}")
@@ -242,12 +250,13 @@ class ModelRunner:
 
                 self.log_queue.put(
                     f"WARNING: High memory pressure on GPU {gpu_id}: "
-                    f"{used_mb:.0f}MB/{total_mb:.0f}MB ({pressure_pct:.1f}%)"
+                    f"{used_mb:.0f}MB/{total_mb:.0f}MB ({pressure_pct:.1f}%)",
                 )
 
                 # Try to alleviate pressure by clearing CUDA cache
                 try:
                     import torch
+
                     if torch.cuda.is_available():
                         self.log_queue.put("Clearing CUDA cache to prevent OOM...")
                         torch.cuda.empty_cache()
@@ -264,7 +273,8 @@ class ModelRunner:
         """
         Check if process is running.
 
-        Returns:
+        Returns
+        -------
             True if running, False otherwise
         """
         if not self.process:

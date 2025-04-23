@@ -30,7 +30,7 @@ We successfully implemented significant enhancements to the Memory Profiling and
 
 ### Implementation Approach
 
-1. **Memory Timeline Chart**: 
+1. **Memory Timeline Chart**:
    - Enhanced the existing matplotlib-based chart with interactive features
    - Added mouse event handling for zooming and panning
    - Implemented time-based filtering with a dropdown menu
@@ -77,4 +77,4 @@ Based on our implementation, several directions for future work have been identi
 
 The enhancements to Memory Profiling and Chart functionality significantly improve the ability of users to analyze and optimize GPU memory usage. By providing interactive tools and actionable recommendations, these features enable more effective diagnosis of memory-related issues in machine learning workloads.
 
-These improvements align perfectly with the core mission of DualGPUOptimizer to provide comprehensive tools for managing and optimizing dual GPU setups, particularly for large language model deployment scenarios. 
+These improvements align perfectly with the core mission of DualGPUOptimizer to provide comprehensive tools for managing and optimizing dual GPU setups, particularly for large language model deployment scenarios.

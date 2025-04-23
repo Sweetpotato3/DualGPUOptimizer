@@ -4,9 +4,15 @@ Unit tests for the telemetry module
 
 import threading
 import time
+from enum import Enum
 from unittest.mock import MagicMock, patch
 
 import pytest
+
+# Define environment variable constants early
+ENV_POLL_INTERVAL = 1.0
+ENV_MOCK_TELEMETRY = False
+ENV_MAX_RECOVERY_ATTEMPTS = 3
 
 # Import the module under test - use a try/except to handle possible import errors
 try:
@@ -27,7 +33,7 @@ except ImportError:
     TELEMETRY_AVAILABLE = False
 
     # Mock class definitions for testing
-    class AlertLevel:
+    class AlertLevel(Enum):
         NORMAL = 0
         WARNING = 1
         CRITICAL = 2
@@ -89,17 +95,42 @@ except ImportError:
             return f"TX: {self.pcie_tx/1024:.1f} MB/s, RX: {self.pcie_rx/1024:.1f} MB/s"
 
         def get_alert_level(self):
-            # Mock implementation
-            if self.memory_percent >= 95 or self.temperature >= 90:
-                return AlertLevel.EMERGENCY
-            elif self.memory_percent >= 90 or self.temperature >= 80:
-                return AlertLevel.CRITICAL
-            elif self.memory_percent >= 75 or self.temperature >= 70:
-                return AlertLevel.WARNING
-            return AlertLevel.NORMAL
+            # Match the actual implementation in dualgpuopt/telemetry.py
+            # Start with NORMAL alert level
+            level = AlertLevel.NORMAL
+
+            # Memory usage thresholds
+            if self.memory_percent >= 95:
+                level = AlertLevel.EMERGENCY
+            elif self.memory_percent >= 90:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.memory_percent >= 75:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            # Temperature thresholds
+            if self.temperature >= 90:
+                level = AlertLevel.EMERGENCY
+            elif self.temperature >= 80:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.temperature >= 70:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            # Power usage thresholds (percentage of limit)
+            if self.power_percent >= 98:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.power_percent >= 90:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            return level
 
     class TelemetryService:
-        def __init__(self, poll_interval=1.0, use_mock=True):
+        def __init__(
+            self,
+            poll_interval=ENV_POLL_INTERVAL,
+            use_mock=ENV_MOCK_TELEMETRY,
+            gpu_provider=None,
+            event_bus=None,
+        ):
             self.poll_interval = poll_interval
             self.force_mock = use_mock
             self.use_mock = True
@@ -109,8 +140,22 @@ except ImportError:
             self._thread = None
             self._stop_event = threading.Event()
             self._nvml_initialized = False
+            self._recovery_attempts = 0
+            self._last_error_time = 0
+            self._consecutive_errors = 0
+            self._metrics_lock = threading.RLock()
+            self._callback_lock = threading.RLock()
+            self._gpu_handles = {}
             self._metrics_history = {}
             self._history_length = 60
+
+            # Monitor callbacks for testing
+            self._monitor_temperature_check = None
+            self._monitor_memory_check = None
+
+            # Store custom GPU provider and event bus
+            self._gpu_provider = gpu_provider
+            self._event_bus = event_bus if event_bus else None
 
         def start(self):
             self.running = True
@@ -160,9 +205,6 @@ except ImportError:
     def reset_telemetry_service():
         return True
 
-    ENV_POLL_INTERVAL = 1.0
-    ENV_MOCK_TELEMETRY = False
-    ENV_MAX_RECOVERY_ATTEMPTS = 3
 
 # Skip all tests if the module is not available
 pytestmark = pytest.mark.skipif(not TELEMETRY_AVAILABLE, reason="Telemetry module not available")
@@ -336,6 +378,25 @@ class TestGPUMetrics:
         )
         assert metrics.get_alert_level() == AlertLevel.WARNING
 
+        # Warning level due to power usage
+        metrics = GPUMetrics(
+            gpu_id=0,
+            name="Test GPU",
+            utilization=50,
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=60,
+            power_usage=225,
+            power_limit=250,  # 90% power
+            fan_speed=50,
+            clock_sm=1000,
+            clock_memory=2000,
+            pcie_tx=1000,
+            pcie_rx=2000,
+            timestamp=time.time(),
+        )
+        assert metrics.get_alert_level() == AlertLevel.WARNING
+
         # Critical level due to temperature
         metrics = GPUMetrics(
             gpu_id=0,
@@ -365,6 +426,25 @@ class TestGPUMetrics:
             temperature=60,
             power_usage=150,
             power_limit=250,  # 60% power
+            fan_speed=50,
+            clock_sm=1000,
+            clock_memory=2000,
+            pcie_tx=1000,
+            pcie_rx=2000,
+            timestamp=time.time(),
+        )
+        assert metrics.get_alert_level() == AlertLevel.CRITICAL
+
+        # Critical level due to power usage
+        metrics = GPUMetrics(
+            gpu_id=0,
+            name="Test GPU",
+            utilization=50,
+            memory_used=4096,
+            memory_total=8192,  # 50% memory
+            temperature=60,
+            power_usage=245,
+            power_limit=250,  # 98% power
             fan_speed=50,
             clock_sm=1000,
             clock_memory=2000,
@@ -412,11 +492,30 @@ class TestGPUMetrics:
         )
         assert metrics.get_alert_level() == AlertLevel.EMERGENCY
 
+        # Test priority ordering - Emergency temperature overrides Critical memory
+        metrics = GPUMetrics(
+            gpu_id=0,
+            name="Test GPU",
+            utilization=50,
+            memory_used=7373,
+            memory_total=8192,  # 90% memory - Critical
+            temperature=92,  # Emergency temperature
+            power_usage=150,
+            power_limit=250,  # 60% power
+            fan_speed=50,
+            clock_sm=1000,
+            clock_memory=2000,
+            pcie_tx=1000,
+            pcie_rx=2000,
+            timestamp=time.time(),
+        )
+        assert metrics.get_alert_level() == AlertLevel.EMERGENCY
+
 
 class TestTelemetryService:
     """Test the TelemetryService class"""
 
-    @pytest.fixture
+    @pytest.fixture()
     def mock_nvml(self):
         """Mock the pynvml module"""
         mock = MagicMock()
@@ -445,7 +544,7 @@ class TestTelemetryService:
 
         return mock
 
-    @pytest.fixture
+    @pytest.fixture()
     def telemetry_service(self):
         """Create a telemetry service for testing"""
         # Create service with higher poll interval for testing
@@ -678,11 +777,11 @@ class TestTelemetryService:
                         > telemetry_service._history_length
                     ):
                         # Keep only the last _history_length entries
-                        telemetry_service._metrics_history[gpu_id] = (
-                            telemetry_service._metrics_history[gpu_id][
-                                -telemetry_service._history_length :
-                            ]
-                        )
+                        telemetry_service._metrics_history[
+                            gpu_id
+                        ] = telemetry_service._metrics_history[gpu_id][
+                            -telemetry_service._history_length :
+                        ]
 
             # Call process_metrics_update
             telemetry_service._process_metrics_update(batch_metrics)

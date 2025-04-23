@@ -31,9 +31,11 @@ class OptimizerTab(QWidget):
     settings_applied = Signal(dict)  # Emitted when settings are applied
 
     def __init__(self, parent: Optional[QWidget] = None):
-        """Initialize the optimizer tab
+        """
+        Initialize the optimizer tab
 
         Args:
+        ----
             parent: Parent widget
         """
         super().__init__(parent)
@@ -69,7 +71,7 @@ class OptimizerTab(QWidget):
         # Model selection
         self.model_combo = QComboBox()
         self.model_combo.addItems(
-            ["Llama-2-7B", "Llama-2-13B", "Llama-2-70B", "Mistral-7B", "Mixtral-8x7B"]
+            ["Llama-2-7B", "Llama-2-13B", "Llama-2-70B", "Mistral-7B", "Mixtral-8x7B"],
         )
         self.model_combo.currentIndexChanged.connect(self._on_model_changed)
         input_layout.addRow("Model:", self.model_combo)
@@ -160,9 +162,11 @@ class OptimizerTab(QWidget):
         main_layout.addStretch(1)
 
     def _on_model_changed(self, index):
-        """Handle model selection change
+        """
+        Handle model selection change
 
         Args:
+        ----
             index: New index
         """
         model_name = self.model_combo.currentText()
@@ -253,9 +257,11 @@ class OptimizerTab(QWidget):
 
     @Slot(dict)
     def apply_preset(self, preset_data: Dict[str, Any]):
-        """Apply preset data to the optimizer tab
+        """
+        Apply preset data to the optimizer tab
 
         Args:
+        ----
             preset_data: Dictionary containing preset configuration
         """
         try:
@@ -265,7 +271,7 @@ class OptimizerTab(QWidget):
                 return
 
             logger.info(f"Applying preset: {preset_data.get('name', 'Unknown')}")
-            
+
             # Extract model information - support both formats
             model_name = preset_data.get("model_name", preset_data.get("model", ""))
             if model_name:
@@ -332,8 +338,9 @@ class OptimizerTab(QWidget):
     def save_preset(self):
         """Save current configuration as a preset"""
         try:
-            from dualgpuopt.services.presets import PresetManager
             from PySide6.QtWidgets import QInputDialog
+
+            from dualgpuopt.services.presets import PresetManager
 
             name, ok = QInputDialog.getText(self, "Save Preset", "Enter preset name:")
 
@@ -355,7 +362,7 @@ class OptimizerTab(QWidget):
                         "layer_distribution": self.layer_distribution.text(),
                     },
                     "prompt_template": "",  # For chat components
-                    "persona": "",          # For chat components
+                    "persona": "",  # For chat components
                 }
 
                 # Save preset

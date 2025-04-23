@@ -13,4 +13,4 @@ echo "Note: API and retriever tests require additional dependencies."
 echo "To run these tests, install: pip install fastapi faiss-cpu uvicorn sentence-transformers"
 echo.
 echo "To run API tests: pytest tests/test_api.py -v"
-echo "To run retriever tests: pytest tests/test_retriever.py -v" 
+echo "To run retriever tests: pytest tests/test_retriever.py -v"

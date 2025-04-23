@@ -9,7 +9,7 @@ import subprocess
 
 
 def _run(cmd, tag):
-    proc = subprocess.run(cmd, capture_output=True, text=True)
+    proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
     if proc.returncode:
         raise RuntimeError(f"{tag} failed:\n{proc.stderr}")
 

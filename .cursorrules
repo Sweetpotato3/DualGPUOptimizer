@@ -265,7 +265,7 @@ Path: dualgpuopt/optimizer.py
 4. Model Execution Management
 
 - Intelligent model caching with LRU eviction
-- Health monitoring with auto-restart capability  
+- Health monitoring with auto-restart capability
 - Process isolation for model execution
 Path: dualgpuopt/engine/pool/core.py
 
@@ -455,7 +455,7 @@ Core Business Components:
 1. GPU Telemetry System (dualgpuopt/telemetry.py):
 
 - Comprehensive GPU health monitoring with metrics collection
-- Four-tier alert classification system (EMERGENCY, CRITICAL, WARNING, NORMAL)  
+- Four-tier alert classification system (EMERGENCY, CRITICAL, WARNING, NORMAL)
 - Progressive recovery strategy for monitoring failures
 - 60-second rolling metrics history with aggregate statistics
 
@@ -584,6 +584,75 @@ File Organization:
 - Telemetry: dualgpuopt/telemetry/*
 
 The system focuses on optimizing GPU resource allocation and monitoring for large language models, with particular emphasis on dual-GPU configurations and legal domain applications.
+
+$END$
+END SPECIFICATION
+
+START SPECIFICATION:
+---
+description: Apply this overview documentation when creating high-level documentation of GPU optimization and monitoring systems, focusing on dual-GPU configurations with specialized memory management and model deployment features. This rule should be applied to codebases managing GPU resources, ML model optimization, and telemetry data collection.
+globs: *.py,src/*,lib/*
+alwaysApply: false
+---
+
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+
+DualGPUOptimizer implements specialized GPU resource optimization and monitoring focused on:
+
+1. GPU Memory Management System
+- GPU telemetry collection with alert thresholds:
+  * EMERGENCY: Memory ≥95%, Temperature ≥90°C
+  * CRITICAL: Memory ≥90%, Temperature ≥80°C
+  * WARNING: Memory ≥75%, Temperature ≥70°C
+- Memory leak detection with:
+  * Rapid growth spike detection
+  * Gradual leak monitoring
+  * Custom cooldown periods
+- Historical metrics tracking with 60-second rolling window
+
+2. Model Optimization Engine
+- Layer balancing across dual GPUs:
+  * Performance profiling at different sequence lengths
+  * Utilization-based distribution with memory quotas
+  * Tensor parallelism configuration
+- Memory prediction and allocation:
+  * Model size estimation from architecture
+  * Context length optimization
+  * Batch size autotuning
+
+3. Telemetry and Monitoring
+- Real-time GPU metrics collection:
+  * Utilization rates
+  * Memory pressure
+  * Temperature monitoring
+  * Power consumption
+  * PCIe bandwidth
+- Metrics visualization and alerting
+
+4. Recovery System
+- Progressive recovery strategy:
+  * CACHE_ONLY: PyTorch cache clearing
+  * CLOCK_RESET: GPU clock configuration reset
+  * FULL_RESET: Complete memory reclamation
+  * SYSTEM_CMD: OS-specific memory management
+
+Core Business Components:
+- Memory profiling: `dualgpuopt/memory/profiler.py`
+- GPU telemetry: `dualgpuopt/telemetry.py`
+- Layer balancing: `dualgpuopt/layer_balance.py`
+- Recovery system: `dualgpuopt/vram_reset.py`
+
+The system implements comprehensive GPU resource management with emphasis on memory optimization, workload distribution, and real-time monitoring for dual-GPU setups running large language models.
 
 $END$
 END SPECIFICATION

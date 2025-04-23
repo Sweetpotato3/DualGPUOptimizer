@@ -18,4 +18,4 @@ EXPORTS_DIR = RESOURCE_DIR / "exports"
 
 # Create directories if they don't exist
 for directory in [RESOURCE_DIR, PRESETS_DIR, EXPORTS_DIR]:
-    directory.mkdir(exist_ok=True) 
+    directory.mkdir(exist_ok=True)

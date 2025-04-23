@@ -3,8 +3,8 @@ Mixed precision policies for accelerated inference and training
 Provides utilities for controlling precision of tensor operations
 """
 import contextlib
-from typing import Any, Optional
 import logging
+from typing import Any, Optional
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.MixedPrecision")
@@ -12,6 +12,7 @@ logger = logging.getLogger("DualGPUOpt.MixedPrecision")
 # Check for PyTorch dependency
 try:
     import torch
+
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning("PyTorch not available - mixed precision operations will be disabled")
@@ -20,12 +21,15 @@ except ImportError:
 
 @contextlib.contextmanager
 def autocast(dtype: Optional[Any] = None):
-    """Context manager for automatic mixed precision
+    """
+    Context manager for automatic mixed precision
 
     Args:
+    ----
         dtype: Optional torch data type (defaults to float16 if None)
 
     Notes:
+    -----
         - LayerNorm, softmax, residual adds remain in FP32 automatically
         - Works with PyTorch 2.0+ for best performance
         - No-op if PyTorch is not available
@@ -39,8 +43,7 @@ def autocast(dtype: Optional[Any] = None):
     prev_dtype = torch.get_default_dtype()
 
     # Use setter to change dtype - fallback to _C version if needed
-    setter = getattr(torch, "set_default_dtype",
-                    getattr(torch._C, "_set_default_dtype", None))
+    setter = getattr(torch, "set_default_dtype", getattr(torch._C, "_set_default_dtype", None))
 
     if setter is None:
         # Can't change dtype, just yield and return
@@ -65,15 +68,19 @@ def autocast(dtype: Optional[Any] = None):
 
 
 def scaler(enabled: bool = True) -> Any:
-    """Create a GradScaler for mixed precision training
+    """
+    Create a GradScaler for mixed precision training
 
     Args:
+    ----
         enabled: Whether to enable the scaler
 
     Returns:
+    -------
         GradScaler object or None if PyTorch not available
 
     Notes:
+    -----
         - Used during training to prevent underflow in FP16
         - No-op if PyTorch is not available
     """

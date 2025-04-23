@@ -1,61 +1,71 @@
 ---
-description: Documents how LLM models are executed across GPUs including command generation, config handling, and GPU resource allocation
-globs: **/commands/*.py,**/engine/*.py,**/services/*.py,**/launcher/*.py,**/optimizer.py
+description: Documents the execution flow and configuration of LLM models, focusing on command generation, memory allocation, and resource management.
+globs: **/model/**,**/engine/**,**/gpu/**,**/memory/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-## Command Generation & Launch Parameters
+The model execution flow implements specialized handling of LLM deployment across dual GPUs with focus on memory optimization and resource allocation.
 
-1. Framework-Specific Command Generation (dualgpuopt/optimizer.py):
-- Generates optimized launch commands for llama.cpp and vLLM based on model/GPU configurations 
-- Calculates tensor parallel sizes and GPU memory splits
-- Handles context length recommendations based on available VRAM
-- Sets environment variables for CUDA/NCCL optimization
+## Command Generation
+The launcher component generates framework-specific commands for model execution:
 
-2. Launch Controller Logic (dualgpuopt/gui/launcher/launch_controller.py):
-- Manages model launch process through separate process management
-- Coordinates GPU resource allocation between loaded models
-- Implements graceful process termination with cleanup
-- Handles OOM recovery through cache clearing
+```python
+# llama.cpp configuration
+- GPU split ratios for memory allocation
+- Layer distribution parameters
+- Context size optimization
 
-## Engine Management
+# vLLM configuration
+- Tensor parallel configuration
+- GPU device mapping
+- Memory allocation strategy
+```
 
-1. Engine Pool System (dualgpuopt/engine/pool/core.py):
-- Implements hot-swapping LRU cache for loaded model instances
-- Health monitoring with auto-recovery for failed engines
-- Metrics tracking for load times and performance
-- Built-in fallback to mock engines on failures
+## Memory Management Strategy
+- Dynamic memory profiler tracks GPU allocation patterns during inference
+- Implements sliding window analysis for leak detection
+- Memory recovery with progressive strategy:
+  - Cache clearing
+  - Clock reset
+  - Full reset
+  - System command fallback
 
-2. Backend Selection (dualgpuopt/engine/backend.py):
-- Routes model loading requests to appropriate backends:
-  - GGUF files to LlamaCppBackend
-  - AWQ models to VLLMBackend 
-  - Standard models to HFBackend
-- Validates model formats against backend capabilities
-- Configures tensor parallel settings per backend
+## Resource Allocation
+- Calculates optimal tensor splits based on:
+  - Available VRAM per GPU
+  - Model architecture parameters
+  - Context window requirements
+  - Framework-specific overheads
 
-## Optimization System
+## Process Lifecycle
+1. Pre-execution:
+   - VRAM reset
+   - Memory pressure check
+   - Resource allocation calculation
 
-1. Layer Balance Optimization (dualgpuopt/layer_balance.py):
-- Custom algorithm for distributing model layers across GPUs
-- Uses profiling data from 64 and 1024 sequence samples
-- Weights allocation based on 20% short / 80% long sequences
-- Maintains minimum 3-layer blocks per GPU
+2. Execution:
+   - Command generation with optimized parameters
+   - Process launch with resource constraints
+   - Output/error stream handling
 
-2. Memory Split Optimization (dualgpuopt/optimizer.py):
-- Analyzes available GPU memory and model requirements
-- Calculates optimal tensor parallel splits
-- Generates environment settings for layer distribution
-- Handles specialized MoE model memory requirements
+3. Post-execution:
+   - Memory cleanup
+   - Resource release
+   - Metrics collection
 
-Relevant File Paths:
-- dualgpuopt/optimizer.py
-- dualgpuopt/layer_balance.py 
-- dualgpuopt/engine/pool/core.py
-- dualgpuopt/engine/backend.py
-- dualgpuopt/gui/launcher/launch_controller.py
+## Health Monitoring
+- Real-time memory pressure monitoring
+- Temperature threshold tracking
+- Power consumption monitoring
+- Automated recovery on resource exhaustion
+
+## Key Files
+- `dualgpuopt/engine/backend.py`: Framework-specific execution backends
+- `dualgpuopt/memory/profiler.py`: Memory tracking and optimization
+- `dualgpuopt/gpu_info.py`: Resource monitoring and allocation
+- `dualgpuopt/runner.py`: Process execution management
 
 $END$

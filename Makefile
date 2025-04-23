@@ -57,10 +57,10 @@ format:
 # Installation of dev dependencies
 install-dev:
 	$(PYTHON) -m pip install -e ".[dev,test]"
-	
+
 # Installation for users
 install:
 	$(PYTHON) -m pip install .
 
 # Default target
-.DEFAULT_GOAL := help 
+.DEFAULT_GOAL := help

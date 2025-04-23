@@ -182,4 +182,4 @@ The Québec-French Legal LLM is designed with legal compliance in mind:
 - **Model loading failures**: Check if the model path is correct and the model is properly saved
 - **API authentication errors**: Verify API key is correctly set and passed in the header
 
-For more information, refer to the DualGPUOptimizer documentation. 
+For more information, refer to the DualGPUOptimizer documentation.

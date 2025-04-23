@@ -12,28 +12,28 @@ import subprocess
 import threading
 import time
 import uuid
-from typing import Dict, List, Optional, Tuple, Union, Any, Callable
+from typing import Any, Callable, Optional
 
 from dualgpuopt.gpu_info import GPU
-from dualgpuopt.services.event_service import event_bus
-from dualgpuopt.services.config_service import config_service
+from dualgpuopt.gui.launcher.model_validation import ModelValidator
+from dualgpuopt.gui.launcher.parameter_resolver import ParameterResolver
 
 # Import process monitor
 from dualgpuopt.gui.launcher.process_monitor import ProcessMonitor
-from dualgpuopt.gui.launcher.parameter_resolver import ParameterResolver
-from dualgpuopt.gui.launcher.model_validation import ModelValidator
+from dualgpuopt.services.event_service import event_bus
 
 # Try to import advanced optimization modules
 try:
     from dualgpuopt.batch.smart_batch import optimize_batch_size
     from dualgpuopt.ctx_size import calc_max_ctx, model_params_from_name
+    from dualgpuopt.error_handler import ErrorCategory, ErrorSeverity, get_error_handler
     from dualgpuopt.layer_balance import rebalance
-    from dualgpuopt.vram_reset import reset_vram, ResetMethod, ResetResult
-    from dualgpuopt.mpolicy import autocast, scaler
-    from dualgpuopt.memory_monitor import get_memory_monitor, MemoryAlertLevel, MemoryAlert
+    from dualgpuopt.memory_monitor import MemoryAlert, MemoryAlertLevel, get_memory_monitor
     from dualgpuopt.model_profiles import apply_profile, get_model_profile
-    from dualgpuopt.error_handler import get_error_handler, ErrorSeverity, ErrorCategory
+    from dualgpuopt.mpolicy import autocast, scaler
     from dualgpuopt.telemetry import get_telemetry_service
+    from dualgpuopt.vram_reset import ResetMethod, ResetResult, reset_vram
+
     ADVANCED_FEATURES_AVAILABLE = True
 except ImportError as e:
     logging.warning(f"Advanced optimization modules not available: {e}")
@@ -43,16 +43,17 @@ except ImportError as e:
 class LaunchController:
     """Controller for launching models on multiple GPUs."""
 
-    def __init__(self, gpus: List[GPU] = None) -> None:
+    def __init__(self, gpus: list[GPU] = None) -> None:
         """
         Initialize the launch controller.
 
         Args:
+        ----
             gpus: List of GPU objects to use for launching models
         """
         self.gpus = gpus or []
         self.logger = logging.getLogger("dualgpuopt.gui.launcher.controller")
-        self.active_processes: Dict[str, subprocess.Popen] = {}
+        self.active_processes: dict[str, subprocess.Popen] = {}
 
         # Create component instances
         self.process_monitor = ProcessMonitor()
@@ -74,11 +75,12 @@ class LaunchController:
         """Register event handlers."""
         event_bus.subscribe("gpu_list_updated", self._handle_gpu_update)
 
-    def _handle_gpu_update(self, data: Dict[str, Any]) -> None:
+    def _handle_gpu_update(self, data: dict[str, Any]) -> None:
         """
         Handle GPU list updates.
 
         Args:
+        ----
             data: Event data containing updated GPU list
         """
         if "gpus" in data:
@@ -89,16 +91,17 @@ class LaunchController:
         self,
         model_path: str,
         framework: str,
-        parameters: Dict[str, Any],
-        env_vars: Optional[Dict[str, str]] = None,
+        parameters: dict[str, Any],
+        env_vars: Optional[dict[str, str]] = None,
         on_output: Optional[Callable[[str], None]] = None,
         on_exit: Optional[Callable[[str, int], None]] = None,
-        cwd: Optional[str] = None
-    ) -> Tuple[bool, str, Optional[str]]:
+        cwd: Optional[str] = None,
+    ) -> tuple[bool, str, Optional[str]]:
         """
         Launch a model with the specified parameters.
 
         Args:
+        ----
             model_path: Path to the model file
             framework: Framework to use (llama.cpp, vllm)
             parameters: Launch parameters
@@ -108,11 +111,15 @@ class LaunchController:
             cwd: Working directory
 
         Returns:
+        -------
             Tuple of (success, process_id, error_message)
         """
         # Validate parameters
         valid, error_msg = self.model_validator.validate_launch_parameters(
-            model_path, framework, parameters, self.gpus
+            model_path,
+            framework,
+            parameters,
+            self.gpus,
         )
 
         if not valid:
@@ -168,7 +175,7 @@ class LaunchController:
                 universal_newlines=True,
                 env=full_env,
                 cwd=cwd,
-                shell=True
+                shell=True,
             )
 
             # Store process
@@ -179,7 +186,7 @@ class LaunchController:
                 process_id,
                 process,
                 on_exit=on_exit,
-                interval=1.0
+                interval=1.0,
             )
 
             # Start output reader thread if callback provided
@@ -187,21 +194,24 @@ class LaunchController:
                 threading.Thread(
                     target=self._read_process_output,
                     args=(process, on_output),
-                    daemon=True
+                    daemon=True,
                 ).start()
 
             # Publish launch event
-            event_bus.publish("model_launched", {
-                "process_id": process_id,
-                "model_path": model_path,
-                "framework": framework,
-                "parameters": parameters
-            })
+            event_bus.publish(
+                "model_launched",
+                {
+                    "process_id": process_id,
+                    "model_path": model_path,
+                    "framework": framework,
+                    "parameters": parameters,
+                },
+            )
 
             return True, process_id, None
 
         except Exception as e:
-            error_msg = f"Error launching model: {str(e)}"
+            error_msg = f"Error launching model: {e!s}"
             self.logger.error(error_msg, exc_info=True)
             return False, "", error_msg
 
@@ -210,9 +220,11 @@ class LaunchController:
         Stop a running model process.
 
         Args:
+        ----
             process_id: ID of the process to stop
 
         Returns:
+        -------
             True if stop successful, False otherwise
         """
         if process_id not in self.active_processes:
@@ -227,27 +239,34 @@ class LaunchController:
             del self.active_processes[process_id]
 
         # Publish stop event
-        event_bus.publish("model_stopped", {
-            "process_id": process_id,
-            "result": result
-        })
+        event_bus.publish(
+            "model_stopped",
+            {
+                "process_id": process_id,
+                "result": result,
+            },
+        )
 
         return result
 
-    def get_active_processes(self) -> Dict[str, subprocess.Popen]:
+    def get_active_processes(self) -> dict[str, subprocess.Popen]:
         """
         Get active model processes.
 
-        Returns:
+        Returns
+        -------
             Dictionary of active processes
         """
         return self.active_processes.copy()
 
-    def _read_process_output(self, process: subprocess.Popen, callback: Callable[[str], None]) -> None:
+    def _read_process_output(
+        self, process: subprocess.Popen, callback: Callable[[str], None]
+    ) -> None:
         """
         Read and process output from the model process.
 
         Args:
+        ----
             process: Subprocess Popen object
             callback: Callback function for output lines
         """
@@ -255,7 +274,7 @@ class LaunchController:
             return
 
         try:
-            for line in iter(process.stdout.readline, ''):
+            for line in iter(process.stdout.readline, ""):
                 # Skip empty lines
                 if not line.strip():
                     continue
@@ -264,7 +283,7 @@ class LaunchController:
                 callback(line.strip())
 
                 # Check for OOM or CUDA errors
-                if 'out of memory' in line.lower() or 'cuda error' in line.lower():
+                if "out of memory" in line.lower() or "cuda error" in line.lower():
                     self._handle_oom_error(line)
 
                 # Process completed or failed
@@ -272,13 +291,14 @@ class LaunchController:
                     break
 
         except Exception as e:
-            self.logger.error(f"Error reading process output: {str(e)}", exc_info=True)
+            self.logger.error(f"Error reading process output: {e!s}", exc_info=True)
 
     def _handle_oom_error(self, error_line: str) -> None:
         """
         Handle out-of-memory errors.
 
         Args:
+        ----
             error_line: Error line from process output
         """
         self.logger.error(f"OOM error detected: {error_line}")
@@ -286,6 +306,7 @@ class LaunchController:
         # Try to recover by clearing CUDA cache
         try:
             import torch
+
             if torch.cuda.is_available():
                 self.logger.info("Clearing CUDA cache to recover from OOM")
                 torch.cuda.empty_cache()
@@ -293,21 +314,28 @@ class LaunchController:
             pass
 
         # Publish OOM event
-        event_bus.publish("oom_error", {
-            "error_line": error_line,
-            "timestamp": time.time()
-        })
+        event_bus.publish(
+            "oom_error",
+            {
+                "error_line": error_line,
+                "timestamp": time.time(),
+            },
+        )
 
-    def estimate_memory_requirements(self, model_path: str, framework: str, ctx_size: int) -> Dict[str, Any]:
+    def estimate_memory_requirements(
+        self, model_path: str, framework: str, ctx_size: int
+    ) -> dict[str, Any]:
         """
         Estimate memory requirements for a model.
 
         Args:
+        ----
             model_path: Path to model file
             framework: Framework (llama.cpp, vllm)
             ctx_size: Context size in tokens
 
         Returns:
+        -------
             Dictionary with memory requirement estimates
         """
         if not ADVANCED_FEATURES_AVAILABLE:
@@ -343,11 +371,11 @@ class LaunchController:
                 "kv_cache_mb": kv_cache_mb,
                 "model_weight_mb": model_weight_mb,
                 "available_memory_mb": available_memory,
-                "total_required_mb": kv_cache_mb + model_weight_mb
+                "total_required_mb": kv_cache_mb + model_weight_mb,
             }
 
         except Exception as e:
-            self.logger.error(f"Error estimating memory requirements: {str(e)}", exc_info=True)
+            self.logger.error(f"Error estimating memory requirements: {e!s}", exc_info=True)
             return {"error": str(e)}
 
     def _estimate_model_size(self, model_name: str) -> float:
@@ -355,9 +383,11 @@ class LaunchController:
         Estimate model size in billions of parameters from name.
 
         Args:
+        ----
             model_name: Model name or path
 
         Returns:
+        -------
             Model size in billions of parameters
         """
         # Estimate model size based on filename patterns
@@ -380,7 +410,8 @@ class LaunchController:
         """
         Calculate optimal GPU split for the available GPUs.
 
-        Returns:
+        Returns
+        -------
             GPU split as a comma-separated string of percentages
         """
         if not self.gpus:

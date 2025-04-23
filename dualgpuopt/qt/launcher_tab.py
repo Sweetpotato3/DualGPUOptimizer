@@ -4,11 +4,17 @@ Provides an interface for launching and managing model execution.
 """
 
 import logging
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
 from typing import Any, Dict, Optional
 
 from PySide6.QtCore import QProcess, QTimer, Signal, Slot
 from PySide6.QtGui import QFont, QIcon, QTextCursor
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
@@ -25,8 +31,12 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+# Import shared constants
+from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE
+
 from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.presets import PresetManager
+from dualgpuopt.engine.pool import EnginePool
 
 logger = logging.getLogger("DualGPUOptimizer.Launcher")
 
@@ -130,7 +140,7 @@ class ProcessCard(QWidget):
             self.status_label.setStyleSheet("color: #55FF55;")
         except Exception as e:
             logger.error(f"Failed to start process: {e}")
-            self.output_display.append(f"Error starting process: {str(e)}")
+            self.output_display.append(f"Error starting process: {e!s}")
 
     def stop_process(self):
         """Stop the running process."""
@@ -188,10 +198,13 @@ class LauncherTab(QWidget):
     """Launcher tab for model execution"""
 
     def __init__(self, parent: Optional[QWidget] = None):
-        """Initialize the launcher tab
+        """
+        Initialize the launcher tab
 
         Args:
+        ----
             parent: Parent widget
+
         """
         super().__init__(parent)
 
@@ -204,10 +217,13 @@ class LauncherTab(QWidget):
         self._setup_ui()
 
     def set_engine(self, engine: Engine):
-        """Set the engine instance
+        """
+        Set the engine instance
 
         Args:
+        ----
             engine: The unified Engine instance
+
         """
         self.engine = engine
         logger.info("Engine instance set in LauncherTab")
@@ -311,7 +327,10 @@ class LauncherTab(QWidget):
     def _browse_model(self):
         """Open file browser to select model"""
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Select Model File", "", "Model Files (*.gguf *.bin *.pt);;All Files (*.*)"
+            self,
+            "Select Model File",
+            "",
+            "Model Files (*.gguf *.bin *.pt);;All Files (*.*)",
         )
 
         if file_path:
@@ -393,8 +412,8 @@ class LauncherTab(QWidget):
 
         except Exception as e:
             logger.error(f"Failed to launch model: {e}")
-            self.status_label.setText(f"Error: {str(e)}")
-            QMessageBox.critical(self, "Launch Error", f"Failed to launch model: {str(e)}")
+            self.status_label.setText(f"Error: {e!s}")
+            QMessageBox.critical(self, "Launch Error", f"Failed to launch model: {e!s}")
 
     def _close_process_tab(self, index):
         """Handle tab close request"""
@@ -433,10 +452,13 @@ class LauncherTab(QWidget):
 
     @Slot(dict)
     def apply_optimizer_settings(self, config: Dict[str, Any]):
-        """Apply settings from the optimizer tab
+        """
+        Apply settings from the optimizer tab
 
         Args:
+        ----
             config: Configuration dictionary
+
         """
         # Apply settings
         self.model_path.setText(config.get("model", ""))
@@ -471,10 +493,13 @@ class LauncherTab(QWidget):
 
     @Slot(dict)
     def apply_preset(self, preset_data: Dict[str, Any]):
-        """Apply preset data to the launcher tab
+        """
+        Apply preset data to the launcher tab
 
         Args:
+        ----
             preset_data: Dictionary containing preset configuration
+
         """
         try:
             # Extract settings from preset

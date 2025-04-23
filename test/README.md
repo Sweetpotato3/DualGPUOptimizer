@@ -78,10 +78,10 @@ def test_memory_prediction():
     # Arrange
     model_size_gb = 7
     context_length = 4096
-    
+
     # Act
     result = predict_memory_requirements(model_size_gb, context_length)
-    
+
     # Assert
     assert result > model_size_gb * 1024 * 1024 * 1024  # Should be larger than model
 ```
@@ -94,12 +94,12 @@ def test_gpu_monitor_and_telemetry():
     event_bus = EventBus()
     telemetry = TelemetryService(event_bus=event_bus)
     monitor = GPUMonitor(event_bus=event_bus)
-    
+
     # Act - Run the integration
     telemetry.start()
     time.sleep(0.3)  # Allow events to flow
     telemetry.stop()
-    
+
     # Assert - Verify expected behavior
     assert monitor.received_metrics_count > 0
 ```
@@ -120,7 +120,7 @@ def test_with_mocked_gpu(mock_gpu_list):
     # The mock_gpu_list fixture provides controlled GPU data
     gpu_monitor = GPUMonitor()
     metrics = gpu_monitor.get_metrics()
-    
+
     # We can make assertions based on the known mock data
     assert metrics['temperature'][0] == 65
 ```
@@ -167,4 +167,4 @@ Tests are automatically run in CI/CD pipelines:
 - `slow`: Tests that take a long time to run (only run in nightly builds)
 - `unit`: Unit tests that test a single component
 - `integration`: Tests that verify multiple components working together
-- `functional`: End-to-end tests 
+- `functional`: End-to-end tests

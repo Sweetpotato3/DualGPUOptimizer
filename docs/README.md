@@ -42,7 +42,7 @@ DualGPUOptimizer/
 │   ├── layer_balance.py # Layer distribution optimization
 │   ├── model_profiles.py # Model memory profiles
 │   ├── telemetry.py     # Real-time GPU metrics collection
-│   └── ... 
+│   └── ...
 ├── docs/                # Documentation (you are here)
 ├── tests/               # Test suite
 └── ...
@@ -60,4 +60,4 @@ Documentation improvements are always welcome! To contribute:
 2. Add or update documentation in the `docs/` directory
 3. Submit a pull request
 
-Please maintain the existing documentation style and format. 
+Please maintain the existing documentation style and format.

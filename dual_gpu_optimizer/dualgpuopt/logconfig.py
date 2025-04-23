@@ -10,7 +10,9 @@ import sys
 from typing import Dict, Optional
 
 
-def setup_logging(verbose: bool = False, log_file: Optional[pathlib.Path] = None) -> logging.Logger:
+def setup_logging(
+    verbose: bool = False, log_file: Optional[pathlib.Path] = None
+) -> logging.Logger:
     """
     Configure application-wide logging.
 
@@ -49,7 +51,7 @@ def setup_logging(verbose: bool = False, log_file: Optional[pathlib.Path] = None
         log_file.parent.mkdir(parents=True, exist_ok=True)
 
         file_handler = logging.handlers.RotatingFileHandler(
-            log_file, maxBytes=1024*1024, backupCount=3
+            log_file, maxBytes=1024 * 1024, backupCount=3
         )
         file_handler.setLevel(logging.DEBUG)  # Always log details to file
         file_handler.setFormatter(detailed_fmt)
@@ -78,16 +80,14 @@ def configure_module_log_levels(verbose: bool = False) -> None:
         "dualgpuopt.telemetry": logging.WARNING,
         "dualgpuopt.telemetry.middleware": logging.WARNING,
         "dualgpuopt.telemetry.logging": logging.WARNING,
-
         # Keep critical modules at INFO level even in non-verbose mode
         "dualgpuopt.services.error": logging.INFO,
         "dualgpuopt.services.config": logging.INFO,
         "dualgpuopt.services.state": logging.INFO,
-
         # Set other modules at default level
         "dualgpuopt.optimizer": default_level,
         "dualgpuopt.layer_balance": default_level,
-        "dualgpuopt.mpolicy": default_level
+        "dualgpuopt.mpolicy": default_level,
     }
 
     # Override with DEBUG if verbose mode is enabled

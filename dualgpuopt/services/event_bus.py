@@ -11,13 +11,14 @@ import enum
 import logging
 import threading
 import time
-from typing import Any, Callable, Dict, Generic, List, Set, Type, TypeVar, Union
+from typing import Any, Callable, Generic, TypeVar, Union
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class EventPriority(enum.IntEnum):
     """Priority levels for event handlers."""
+
     LOW = 0
     NORMAL = 1
     HIGH = 2
@@ -27,6 +28,7 @@ class EventPriority(enum.IntEnum):
 @dataclasses.dataclass
 class Event:
     """Base class for all typed events."""
+
     timestamp: float = dataclasses.field(default_factory=time.time)
     source: str = "system"
 
@@ -34,12 +36,14 @@ class Event:
 @dataclasses.dataclass
 class GPUEvent(Event):
     """Base class for GPU-related events."""
+
     gpu_index: int = 0
 
 
 @dataclasses.dataclass
 class GPUMetricsEvent(GPUEvent):
     """Event fired when GPU metrics are updated."""
+
     utilization: float = 0.0
     memory_used: int = 0
     memory_total: int = 0
@@ -51,6 +55,7 @@ class GPUMetricsEvent(GPUEvent):
 @dataclasses.dataclass
 class ModelSelectedEvent(Event):
     """Event fired when a model is selected."""
+
     model_name: str = ""
     model_path: str = ""
     context_length: int = 0
@@ -59,14 +64,16 @@ class ModelSelectedEvent(Event):
 @dataclasses.dataclass
 class SplitCalculatedEvent(Event):
     """Event fired when GPU split is calculated."""
-    split_ratio: List[float] = dataclasses.field(default_factory=list)
-    gpu_indexes: List[int] = dataclasses.field(default_factory=list)
+
+    split_ratio: list[float] = dataclasses.field(default_factory=list)
+    gpu_indexes: list[int] = dataclasses.field(default_factory=list)
     context_length: int = 0
 
 
 @dataclasses.dataclass
 class ConfigChangedEvent(Event):
     """Event fired when configuration changes."""
+
     config_key: str = ""
     new_value: Any = None
     old_value: Any = None
@@ -78,7 +85,7 @@ class EventCallback(Generic[T]):
     def __init__(
         self,
         callback: Callable[[T], Any],
-        priority: EventPriority = EventPriority.NORMAL
+        priority: EventPriority = EventPriority.NORMAL,
     ):
         self.callback = callback
         self.priority = priority
@@ -101,22 +108,23 @@ class EventBus:
 
     def __init__(self) -> None:
         """Initialize the event bus."""
-        self._subscribers: Dict[Type[Event], List[EventCallback]] = {}
-        self._string_subscribers: Dict[str, List[EventCallback]] = {}
-        self._locked_types: Set[Type[Event]] = set()
+        self._subscribers: dict[type[Event], list[EventCallback]] = {}
+        self._string_subscribers: dict[str, list[EventCallback]] = {}
+        self._locked_types: set[type[Event]] = set()
         self._lock = threading.RLock()
         self.logger = logging.getLogger("DualGPUOpt.Services.Event")
 
     def subscribe_typed(
         self,
-        event_type: Type[T],
+        event_type: type[T],
         callback: Callable[[T], Any],
-        priority: EventPriority = EventPriority.NORMAL
+        priority: EventPriority = EventPriority.NORMAL,
     ) -> None:
         """
         Subscribe to a typed event.
 
         Args:
+        ----
             event_type: The type of event to subscribe to
             callback: Function to call when event is published
             priority: Priority level for this handler
@@ -130,20 +138,20 @@ class EventBus:
             self._subscribers[event_type].sort()  # Sort by priority
 
             self.logger.debug(
-                f"Subscribed to event '{event_type.__name__}' with "
-                f"priority={priority.name}"
+                f"Subscribed to event '{event_type.__name__}' with " f"priority={priority.name}",
             )
 
     def subscribe(
         self,
-        event_type: Union[str, Type[Event]],
+        event_type: Union[str, type[Event]],
         callback: Callable[[Any], Any],
-        priority: EventPriority = EventPriority.NORMAL
+        priority: EventPriority = EventPriority.NORMAL,
     ) -> None:
         """
         Universal subscribe method supporting both string and typed events.
 
         Args:
+        ----
             event_type: String event name or event type class
             callback: Function to call when event is published
             priority: Priority level for this handler
@@ -152,7 +160,7 @@ class EventBus:
         if isinstance(event_type, type) and issubclass(event_type, Event):
             self.subscribe_typed(event_type, callback, priority)
             return
-        
+
         # Handle string types
         event_name = str(event_type)
         with self._lock:
@@ -164,8 +172,7 @@ class EventBus:
             self._string_subscribers[event_name].sort()  # Sort by priority
 
             self.logger.debug(
-                f"Subscribed to event '{event_name}' with "
-                f"priority={priority.name}"
+                f"Subscribed to event '{event_name}' with " f"priority={priority.name}",
             )
 
     def publish_typed(self, event: Event) -> None:
@@ -173,10 +180,11 @@ class EventBus:
         Publish a typed event to subscribers.
 
         Args:
+        ----
             event: The event instance to publish
         """
         event_type = type(event)
-        handlers: List[EventCallback] = []
+        handlers: list[EventCallback] = []
 
         with self._lock:
             # Find all matching handlers (exact type or parent classes)
@@ -188,7 +196,9 @@ class EventBus:
             self.logger.debug(f"No subscribers for event '{event_type.__name__}'")
             return
 
-        self.logger.debug(f"Publishing event '{event_type.__name__}' to {len(handlers)} subscribers")
+        self.logger.debug(
+            f"Publishing event '{event_type.__name__}' to {len(handlers)} subscribers"
+        )
 
         for handler in handlers:
             try:
@@ -196,11 +206,12 @@ class EventBus:
             except Exception as e:
                 self.logger.error(f"Error in event handler for '{event_type.__name__}': {e}")
 
-    def publish(self, event_type: Union[str, Type[Event], Event], data: Any = None) -> None:
+    def publish(self, event_type: Union[str, type[Event], Event], data: Any = None) -> None:
         """
         Universal publish method supporting typed events and string events.
 
         Args:
+        ----
             event_type: Either an event type, event instance, or string event name
             data: Optional data for string events
         """
@@ -231,11 +242,12 @@ class EventBus:
             except Exception as e:
                 self.logger.error(f"Error in event handler for '{event_name}': {e}")
 
-    def unsubscribe_typed(self, event_type: Type[Event], callback: Callable) -> None:
+    def unsubscribe_typed(self, event_type: type[Event], callback: Callable) -> None:
         """
         Unsubscribe from a typed event.
 
         Args:
+        ----
             event_type: Event type to unsubscribe from
             callback: Callback function to remove
         """
@@ -245,16 +257,16 @@ class EventBus:
 
             # Find and remove the matching callback
             self._subscribers[event_type] = [
-                h for h in self._subscribers[event_type]
-                if h.callback != callback
+                h for h in self._subscribers[event_type] if h.callback != callback
             ]
             self.logger.debug(f"Unsubscribed from event '{event_type.__name__}'")
 
-    def unsubscribe(self, event_type: Union[str, Type[Event]], callback: Callable) -> None:
+    def unsubscribe(self, event_type: Union[str, type[Event]], callback: Callable) -> None:
         """
         Universal unsubscribe method supporting both string and typed events.
 
         Args:
+        ----
             event_type: String event name or event type class
             callback: Callback to unsubscribe
         """
@@ -267,8 +279,7 @@ class EventBus:
                     return
 
                 self._string_subscribers[event_name] = [
-                    h for h in self._string_subscribers[event_name]
-                    if h.callback != callback
+                    h for h in self._string_subscribers[event_name] if h.callback != callback
                 ]
                 self.logger.debug(f"Unsubscribed from event '{event_name}'")
 
@@ -277,13 +288,14 @@ class EventBus:
         Publish an event asynchronously in a separate thread.
 
         Args:
+        ----
             event: The event instance to publish
         """
         threading.Thread(
             target=self.publish_typed,
             args=(event,),
             daemon=True,
-            name=f"EventThread-{type(event).__name__}"
+            name=f"EventThread-{type(event).__name__}",
         ).start()
         self.logger.debug(f"Started async thread for event '{type(event).__name__}'")
 
@@ -296,4 +308,4 @@ class EventBus:
 
 
 # Create a global event bus instance
-event_bus = EventBus() 
+event_bus = EventBus()

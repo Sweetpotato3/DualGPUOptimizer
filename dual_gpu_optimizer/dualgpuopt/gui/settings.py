@@ -6,7 +6,6 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Any, Dict, List, Optional, Callable
 
 # Import everything from the refactored settings module
 from dualgpuopt.gui.settings.settings_tab import SettingsTab
@@ -23,13 +22,13 @@ warnings.warn(
     "Direct import from 'dualgpuopt.gui.settings' is deprecated. "
     "Import from 'dualgpuopt.gui.settings.settings_tab' or other submodules instead.",
     DeprecationWarning,
-    stacklevel=2
+    stacklevel=2,
 )
 
 # Re-export main classes and functions for backward compatibility
 __all__ = [
-    'SettingsTab',
-    'AppearanceFrame',
-    'OverclockingFrame',
-    'ApplicationSettingsFrame'
+    "SettingsTab",
+    "AppearanceFrame",
+    "OverclockingFrame",
+    "ApplicationSettingsFrame",
 ]

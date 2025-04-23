@@ -31,6 +31,7 @@ from dualgpuopt.batch.heuristics import BucketPolicy, pow2_bucket
 Request: _t.TypeAlias = dict[str, _t.Any]
 _logger = _log("smart_batch")
 
+
 class SmartBatcher:
     """Length‑aware async batching queue."""
 
@@ -100,6 +101,7 @@ class SmartBatcher:
                 raise
             _logger.warning("OOM caught – retrying after cache clear")
             import torch
+
             torch.cuda.empty_cache()
             return await self.model_call(inputs)
 
@@ -117,4 +119,5 @@ class SmartBatcher:
 
 
 class InferenceFn(_t.Protocol):
-    async def __call__(self, inputs: list[list[int]]) -> list[str]: ...
+    async def __call__(self, inputs: list[list[int]]) -> list[str]:
+        ...

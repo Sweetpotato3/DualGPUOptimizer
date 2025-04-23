@@ -19,4 +19,4 @@ excludedimports = ["torch._dynamo", "torch._inductor", "torch._functorch.aot_aut
 patterns = ("cudart*", "cublas*", "cudnn*")
 binaries = []
 for pat in patterns:
-    binaries += collect_dynamic_libs("torch", match=pat) 
+    binaries += collect_dynamic_libs("torch", match=pat)

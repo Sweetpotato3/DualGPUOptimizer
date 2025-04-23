@@ -23,7 +23,7 @@ if CHAT_DEPENDENCIES["requests"]["available"] and CHAT_DEPENDENCIES["sseclient"]
 else:
     CHAT_DEPS_AVAILABLE = False
     logger.warning(
-        "Chat dependencies (requests/sseclient) not available - chat functionality will be limited"
+        "Chat dependencies (requests/sseclient) not available - chat functionality will be limited",
     )
 
 # Try importing ttkbootstrap - fall back to standard ttk if not available
@@ -34,7 +34,7 @@ try:
 
     TTKBOOTSTRAP_AVAILABLE = True
 except ImportError:
-    import tkinter.ttk as ttk
+    from tkinter import ttk
 
     TTKBOOTSTRAP_AVAILABLE = False
 
@@ -76,7 +76,10 @@ except ImportError:
             bg_color = "#3D2A50" if not is_user else "#6A3EBD"
             self.label = ttk.Label(self, text=text, wraplength=400, background=bg_color, padding=10)
             self.label.pack(
-                side="right" if is_user else "left", anchor="e" if is_user else "w", pady=5, padx=5
+                side="right" if is_user else "left",
+                anchor="e" if is_user else "w",
+                pady=5,
+                padx=5,
             )
 
 
@@ -140,7 +143,9 @@ class ChatTab(ttk.Frame):
         notice_frame.grid(row=0, column=0, sticky="nsew")
 
         title = ttk.Label(
-            notice_frame, text="Chat Functionality Unavailable", font=("Segoe UI", 16, "bold")
+            notice_frame,
+            text="Chat Functionality Unavailable",
+            font=("Segoe UI", 16, "bold"),
         )
         title.pack(pady=(20, 10))
 
@@ -192,7 +197,10 @@ class ChatTab(ttk.Frame):
         ttk.Label(top, text="Model").grid(row=0, column=0, sticky="w")
         self.model_var = tk.StringVar(value=BACKENDS[0]["name"])
         model_menu = ttk.OptionMenu(
-            top, self.model_var, BACKENDS[0]["name"], *[b["name"] for b in BACKENDS]
+            top,
+            self.model_var,
+            BACKENDS[0]["name"],
+            *[b["name"] for b in BACKENDS],
         )
         model_menu.grid(row=0, column=1, padx=(5, 15), sticky="w")
 
@@ -200,7 +208,12 @@ class ChatTab(ttk.Frame):
         ttk.Label(top, text="Temp").grid(row=0, column=2, sticky="w")
         self.temp = tk.DoubleVar(value=0.7)
         temp_scale = ttk.Scale(
-            top, variable=self.temp, from_=0.1, to=1.3, length=150, orient="horizontal"
+            top,
+            variable=self.temp,
+            from_=0.1,
+            to=1.3,
+            length=150,
+            orient="horizontal",
         )
         temp_scale.grid(row=0, column=3, padx=(5, 10), sticky="ew")
 
@@ -324,21 +337,30 @@ class ChatTab(ttk.Frame):
         ttk.Label(metrics_frame, text="Total Tokens:").grid(row=0, column=0, sticky="w", pady=2)
         self.total_tokens_var = tk.StringVar(value="0")
         ttk.Label(metrics_frame, textvariable=self.total_tokens_var).grid(
-            row=0, column=1, sticky="e", pady=2
+            row=0,
+            column=1,
+            sticky="e",
+            pady=2,
         )
 
         # Messages count
         ttk.Label(metrics_frame, text="Messages:").grid(row=1, column=0, sticky="w", pady=2)
         self.message_count_var = tk.StringVar(value="0")
         ttk.Label(metrics_frame, textvariable=self.message_count_var).grid(
-            row=1, column=1, sticky="e", pady=2
+            row=1,
+            column=1,
+            sticky="e",
+            pady=2,
         )
 
         # Generation speed
         ttk.Label(metrics_frame, text="Speed:").grid(row=2, column=0, sticky="w", pady=2)
         self.speed_var = tk.StringVar(value="0 tok/s")
         ttk.Label(metrics_frame, textvariable=self.speed_var).grid(
-            row=2, column=1, sticky="e", pady=2
+            row=2,
+            column=1,
+            sticky="e",
+            pady=2,
         )
 
         # History section
@@ -362,19 +384,23 @@ class ChatTab(ttk.Frame):
 
         # Export button
         ttk.Button(btn_frame, text="Export Chat", command=self._export_chat).pack(
-            side="left", padx=2
+            side="left",
+            padx=2,
         )
 
         # Clear history button
         ttk.Button(btn_frame, text="Clear History", command=self._clear_history).pack(
-            side="right", padx=2
+            side="right",
+            padx=2,
         )
 
     # ------------ actions --------------
     def _append(self, md: str, user=False):
-        """Append a new message bubble to the chat
+        """
+        Append a new message bubble to the chat
 
         Args:
+        ----
             md: Markdown/HTML formatted message content
             user: True if this is a user message
         """
@@ -415,14 +441,16 @@ class ChatTab(ttk.Frame):
     def _show_dependency_error(self):
         """Show a message about missing dependencies"""
         self._append(
-            "<b>System:</b> Chat functionality requires additional dependencies.", user=False
+            "<b>System:</b> Chat functionality requires additional dependencies.",
+            user=False,
         )
         self._append(
             "<b>System:</b> Please install 'requests' and 'sseclient-py' to enable chat.",
             user=False,
         )
         self._append(
-            "<b>System:</b> Run: <code>pip install requests sseclient-py</code>", user=False
+            "<b>System:</b> Run: <code>pip install requests sseclient-py</code>",
+            user=False,
         )
 
     def _regen(self):
@@ -473,9 +501,11 @@ class ChatTab(ttk.Frame):
 
     # --- exposed to main GUI poller ---
     def handle_queue(self, kind, val):
-        """Handle messages from the queue
+        """
+        Handle messages from the queue
 
         Args:
+        ----
             kind: Message type
             val: Message value
         """

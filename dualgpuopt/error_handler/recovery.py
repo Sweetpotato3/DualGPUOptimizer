@@ -5,11 +5,11 @@ This module provides utilities for recovering from various error conditions,
 including GPU failures, memory issues, and configuration problems.
 """
 
+import logging
 import os
 import sys
-import logging
 import time
-from typing import Any, Dict, List, Optional, Tuple, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Recovery")
@@ -17,6 +17,7 @@ logger = logging.getLogger("DualGPUOpt.Recovery")
 # Import error handling if available
 try:
     from dualgpuopt.error_handler.base import ErrorCategory, ErrorSeverity
+
     error_handler_available = True
 except ImportError:
     error_handler_available = False
@@ -25,30 +26,34 @@ except ImportError:
 
 class RecoveryAction:
     """Enumeration of possible recovery actions"""
-    RETRY = "retry"                  # Simply retry the operation
-    REINIT_GPU = "reinit_gpu"        # Reinitialize GPU subsystem
-    CLEAR_CACHE = "clear_cache"      # Clear memory/caches
-    REDUCE_BATCH = "reduce_batch"    # Reduce batch size or workload
-    USE_FALLBACK = "use_fallback"    # Use fallback implementation
-    RESTART_SERVICE = "restart"      # Restart the affected service
-    SHOW_ERROR = "show_error"        # Show error to user
-    ABORT = "abort"                  # Abort operation
+
+    RETRY = "retry"  # Simply retry the operation
+    REINIT_GPU = "reinit_gpu"  # Reinitialize GPU subsystem
+    CLEAR_CACHE = "clear_cache"  # Clear memory/caches
+    REDUCE_BATCH = "reduce_batch"  # Reduce batch size or workload
+    USE_FALLBACK = "use_fallback"  # Use fallback implementation
+    RESTART_SERVICE = "restart"  # Restart the affected service
+    SHOW_ERROR = "show_error"  # Show error to user
+    ABORT = "abort"  # Abort operation
 
 
 class RecoveryStrategy:
     """Defines a recovery strategy for a specific error condition"""
 
-    def __init__(self,
-                category: Optional[str] = None,
-                component: Optional[str] = None,
-                error_type: Optional[str] = None,
-                max_attempts: int = 3,
-                backoff_factor: float = 2.0,
-                actions: List[str] = None):
+    def __init__(
+        self,
+        category: Optional[str] = None,
+        component: Optional[str] = None,
+        error_type: Optional[str] = None,
+        max_attempts: int = 3,
+        backoff_factor: float = 2.0,
+        actions: List[str] = None,
+    ):
         """
         Initialize recovery strategy
 
         Args:
+        ----
             category: Error category to match (or None for any)
             component: Component name to match (or None for any)
             error_type: Error type to match (or None for any)
@@ -80,27 +85,28 @@ DEFAULT_STRATEGIES = [
     RecoveryStrategy(
         category="GPU_ERROR",
         error_type="OutOfMemoryError",
-        actions=[RecoveryAction.CLEAR_CACHE, RecoveryAction.REDUCE_BATCH, RecoveryAction.USE_FALLBACK]
+        actions=[
+            RecoveryAction.CLEAR_CACHE,
+            RecoveryAction.REDUCE_BATCH,
+            RecoveryAction.USE_FALLBACK,
+        ],
     ),
-
     # NVML initialization errors
     RecoveryStrategy(
         category="GPU_ERROR",
         error_type="NVMLError",
-        actions=[RecoveryAction.REINIT_GPU, RecoveryAction.USE_FALLBACK]
+        actions=[RecoveryAction.REINIT_GPU, RecoveryAction.USE_FALLBACK],
     ),
-
     # File access errors
     RecoveryStrategy(
         category="FILE_ERROR",
-        actions=[RecoveryAction.RETRY, RecoveryAction.USE_FALLBACK, RecoveryAction.SHOW_ERROR]
+        actions=[RecoveryAction.RETRY, RecoveryAction.USE_FALLBACK, RecoveryAction.SHOW_ERROR],
     ),
-
     # Configuration errors
     RecoveryStrategy(
         category="CONFIG_ERROR",
-        actions=[RecoveryAction.USE_FALLBACK, RecoveryAction.SHOW_ERROR]
-    )
+        actions=[RecoveryAction.USE_FALLBACK, RecoveryAction.SHOW_ERROR],
+    ),
 ]
 
 
@@ -124,7 +130,9 @@ class RecoveryManager:
         """Add a new recovery strategy"""
         self.strategies.append(strategy)
 
-    def find_strategy(self, category: str, component: str, error_type: str) -> Optional[RecoveryStrategy]:
+    def find_strategy(
+        self, category: str, component: str, error_type: str
+    ) -> Optional[RecoveryStrategy]:
         """Find a matching recovery strategy for the error"""
         for strategy in self.strategies:
             if strategy.matches(category, component, error_type):
@@ -132,13 +140,16 @@ class RecoveryManager:
         return None
 
     def get_next_action(self, error_id: str, strategy: RecoveryStrategy) -> Optional[str]:
-        """Get the next recovery action to try
+        """
+        Get the next recovery action to try
 
         Args:
+        ----
             error_id: Unique identifier for this error
             strategy: The recovery strategy to use
 
         Returns:
+        -------
             Next action to try, or None if no more actions available
         """
         # Initialize if this is a new error
@@ -148,12 +159,16 @@ class RecoveryManager:
 
         # Check if we've exceeded max attempts
         if self.attempt_counts[error_id] >= strategy.max_attempts:
-            logger.warning(f"Max recovery attempts ({strategy.max_attempts}) reached for {error_id}")
+            logger.warning(
+                f"Max recovery attempts ({strategy.max_attempts}) reached for {error_id}"
+            )
             return None
 
         # Apply backoff if needed
         current_time = time.time()
-        if current_time - self.last_attempt_time[error_id] < (strategy.backoff_factor ** self.attempt_counts[error_id]):
+        if current_time - self.last_attempt_time[error_id] < (
+            strategy.backoff_factor ** self.attempt_counts[error_id]
+        ):
             logger.debug(f"Backoff in effect for {error_id}, waiting...")
             return None
 
@@ -167,15 +182,19 @@ class RecoveryManager:
 
         return action
 
-    def attempt_recovery(self,
-                        error_id: str,
-                        category: str,
-                        component: str,
-                        error_type: str,
-                        context: Dict[str, Any] = None) -> Tuple[bool, str]:
-        """Attempt to recover from an error
+    def attempt_recovery(
+        self,
+        error_id: str,
+        category: str,
+        component: str,
+        error_type: str,
+        context: Dict[str, Any] = None,
+    ) -> Tuple[bool, str]:
+        """
+        Attempt to recover from an error
 
         Args:
+        ----
             error_id: Unique identifier for this error
             category: Error category
             component: Component where error occurred
@@ -183,12 +202,15 @@ class RecoveryManager:
             context: Additional context for recovery
 
         Returns:
+        -------
             Tuple of (success, action_taken)
         """
         # Find appropriate strategy
         strategy = self.find_strategy(category, component, error_type)
         if not strategy:
-            logger.debug(f"No recovery strategy found for {error_id} ({category}/{component}/{error_type})")
+            logger.debug(
+                f"No recovery strategy found for {error_id} ({category}/{component}/{error_type})"
+            )
             return False, RecoveryAction.ABORT
 
         # Get next action to try
@@ -242,11 +264,13 @@ class RecoveryManager:
         try:
             # Try to run garbage collection
             import gc
+
             gc.collect()
 
             # If torch is available, clear CUDA cache
             try:
                 import torch
+
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
                     logger.info("CUDA cache cleared")
@@ -310,6 +334,7 @@ class RecoveryManager:
             # No restart function, try to restart based on service name
             if service_name == "telemetry":
                 from dualgpuopt.telemetry import get_telemetry_service
+
                 service = get_telemetry_service()
                 # Stop and start the service
                 service.stop()
@@ -336,27 +361,28 @@ def get_recovery_manager() -> RecoveryManager:
     return _recovery_manager
 
 
-def attempt_recovery(error_id: str,
-                   category: str,
-                   component: str,
-                   error_type: str,
-                   context: Dict[str, Any] = None) -> Tuple[bool, str]:
+def attempt_recovery(
+    error_id: str, category: str, component: str, error_type: str, context: Dict[str, Any] = None
+) -> Tuple[bool, str]:
     """Attempt to recover from an error (convenience function)"""
     manager = get_recovery_manager()
     return manager.attempt_recovery(error_id, category, component, error_type, context)
 
 
-def verify_config(config: Dict[str, Any],
-                required_keys: List[str],
-                defaults: Dict[str, Any]) -> Dict[str, Any]:
-    """Verify configuration and apply defaults for missing values
+def verify_config(
+    config: Dict[str, Any], required_keys: List[str], defaults: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Verify configuration and apply defaults for missing values
 
     Args:
+    ----
         config: Configuration dictionary to verify
         required_keys: List of required keys
         defaults: Default values for missing keys
 
     Returns:
+    -------
         Verified configuration with defaults applied
     """
     if not isinstance(config, dict):
@@ -377,12 +403,15 @@ def verify_config(config: Dict[str, Any],
 
 
 def ensure_directory(directory_path: str) -> bool:
-    """Ensure a directory exists, creating it if necessary
+    """
+    Ensure a directory exists, creating it if necessary
 
     Args:
+    ----
         directory_path: Path to directory
 
     Returns:
+    -------
         True if directory exists or was created, False on error
     """
     if not directory_path:
@@ -398,12 +427,15 @@ def ensure_directory(directory_path: str) -> bool:
 
 
 def safe_import(module_name: str) -> Tuple[bool, Any]:
-    """Safely import a module with error handling
+    """
+    Safely import a module with error handling
 
     Args:
+    ----
         module_name: Name of module to import
 
     Returns:
+    -------
         Tuple of (success, module) where module is None on failure
     """
     try:

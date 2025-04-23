@@ -3,7 +3,6 @@
 # Default development environment setup
 setup:
 	python -m pip install -e .[dev,train]
-	pre-commit install
 	cursor trust
 
 # One-liner for data download and processing
@@ -34,4 +33,4 @@ clean:
 	rm -rf .pytest_cache/
 	rm -rf __pycache__/
 	rm -rf dualgpuopt/__pycache__/
-	find . -name "*.pyc" -delete 
+	find . -name "*.pyc" -delete

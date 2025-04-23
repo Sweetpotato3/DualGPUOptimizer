@@ -4,13 +4,11 @@ Chat Compatibility Layer
 Provides graceful fallbacks for chat-related dependencies like requests and sseclient.
 """
 from __future__ import annotations
+
 import logging
+import queue
 import tkinter as tk
 from tkinter import ttk
-from typing import Any, Dict, Optional, Callable, List, Tuple
-import queue
-import threading
-import time
 
 # Configure logger
 logger = logging.getLogger("DualGPUOpt.UI.ChatCompat")
@@ -24,6 +22,7 @@ DEPENDENCIES = {
 # Try to import optional dependencies and mark their availability
 try:
     import requests
+
     DEPENDENCIES["requests"]["available"] = True
     DEPENDENCIES["requests"]["module"] = requests
     logger.info("requests is available")
@@ -32,19 +31,23 @@ except ImportError:
 
 try:
     import sseclient
+
     DEPENDENCIES["sseclient"]["available"] = True
     DEPENDENCIES["sseclient"]["module"] = sseclient
     logger.info("sseclient is available")
 except ImportError:
     logger.warning("sseclient is not installed - chat streaming will be limited")
 
+
 class MockChatTab(ttk.Frame):
     """A mock chat tab that shows installation instructions when dependencies are missing"""
 
     def __init__(self, master, out_q: queue.Queue):
-        """Initialize the mock chat tab
+        """
+        Initialize the mock chat tab
 
         Args:
+        ----
             master: Parent widget
             out_q: Output queue for messages
         """
@@ -60,8 +63,9 @@ class MockChatTab(ttk.Frame):
         frame.grid(row=0, column=0, sticky="nsew")
 
         # Add explanatory text
-        ttk.Label(frame, text="Chat Module Dependencies Missing",
-                 font=('Arial', 16, 'bold')).pack(pady=(20, 10))
+        ttk.Label(frame, text="Chat Module Dependencies Missing", font=("Arial", 16, "bold")).pack(
+            pady=(20, 10)
+        )
 
         # Create a text widget for the detailed message
         text = tk.Text(frame, wrap="word", height=15, width=60)
@@ -100,13 +104,15 @@ Note: You can continue to use other features of the application without these de
         btn.pack(pady=(0, 20))
 
     def handle_queue(self, kind, val):
-        """Stub method to handle messages from the queue
+        """
+        Stub method to handle messages from the queue
 
         Args:
+        ----
             kind: Message type
             val: Message value
         """
-        pass  # Nothing to do in mock implementation
+        # Nothing to do in mock implementation
 
 
 def get_chat_tab(master, out_q: queue.Queue) -> ttk.Frame:
@@ -114,10 +120,12 @@ def get_chat_tab(master, out_q: queue.Queue) -> ttk.Frame:
     Get the best available chat tab implementation based on installed dependencies
 
     Args:
+    ----
         master: Parent widget
         out_q: Output queue for messages
 
     Returns:
+    -------
         ttk.Frame: A chat tab with the best available implementation
     """
     # Check if we have the required dependencies
@@ -125,6 +133,7 @@ def get_chat_tab(master, out_q: queue.Queue) -> ttk.Frame:
         # Try to import the real ChatTab
         try:
             from ..chat_tab import ChatTab
+
             return ChatTab(master, out_q)
         except ImportError:
             logger.warning("Failed to import ChatTab module - using mock implementation")

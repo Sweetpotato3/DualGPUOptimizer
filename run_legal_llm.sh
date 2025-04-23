@@ -77,7 +77,7 @@ case $STEP in
     echo "=== Data ingestion ==="
     echo "Crawling LégisQuébec..."
     python -m dualgpuopt.ingest.clean_html $DATA_DIR/qc_statutes/raw $OUTPUT_DIR/qc_legal_clean.jsonl
-    
+
     echo "Chunking documents..."
     python -m dualgpuopt.ingest.chunk_jsonl $OUTPUT_DIR/qc_legal_clean.jsonl $OUTPUT_DIR/qc_legal_chunks.jsonl --max-length 512 --overlap 64
     ;;
@@ -121,13 +121,13 @@ case $STEP in
       export LEGAL_API_KEY=$(openssl rand -hex 16)
       echo "Generated API key: $LEGAL_API_KEY"
     fi
-    
+
     export LEGAL_MODEL=$MODEL_DIR/merged
     export FAISS_INDEX=$INDEX_DIR/qc.faiss
     export PORT=$PORT
-    
+
     python -m dualgpuopt.serve.legal_api
     ;;
 esac
 
-echo "Done!" 
+echo "Done!"

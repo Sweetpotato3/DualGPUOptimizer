@@ -4,7 +4,6 @@ Smart batching system for length-aware inference scheduling.
 from __future__ import annotations
 
 import logging
-from typing import List, Dict, Any, Optional, Tuple
 
 logger = logging.getLogger("dualgpuopt.batch")
 
@@ -20,12 +19,13 @@ class SmartBatcher:
     def __init__(
         self,
         max_batch_size: int = 32,
-        length_threshold: int = 256
+        length_threshold: int = 256,
     ) -> None:
         """
         Initialize the smart batcher.
 
         Args:
+        ----
             max_batch_size: Maximum number of sequences in a batch
             length_threshold: Threshold for considering sequences as "long"
         """
@@ -35,15 +35,17 @@ class SmartBatcher:
 
     def optimize_batches(
         self,
-        sequences: List[Tuple[str, int]]
-    ) -> List[List[int]]:
+        sequences: list[tuple[str, int]],
+    ) -> list[list[int]]:
         """
         Group sequences into optimized batches.
 
         Args:
+        ----
             sequences: List of (text, sequence_id) tuples
 
         Returns:
+        -------
             List of batches, where each batch is a list of sequence IDs
         """
         if not sequences:
@@ -54,15 +56,16 @@ class SmartBatcher:
         sorted_seqs = sorted(seq_lengths, key=lambda x: x[0])
 
         # Group into batches
-        batches: List[List[int]] = []
-        current_batch: List[int] = []
+        batches: list[list[int]] = []
+        current_batch: list[int] = []
         current_length = 0
 
         for length, seq_id in sorted_seqs:
             # If adding this sequence would exceed max batch size or
             # it's a long sequence and the batch already has items
-            if (len(current_batch) >= self.max_batch_size or
-                (length > self.length_threshold and current_batch)):
+            if len(current_batch) >= self.max_batch_size or (
+                length > self.length_threshold and current_batch
+            ):
                 batches.append(current_batch)
                 current_batch = [seq_id]
                 current_length = length
@@ -74,22 +77,26 @@ class SmartBatcher:
         if current_batch:
             batches.append(current_batch)
 
-        self.logger.debug(f"Created {len(batches)} optimized batches from {len(sequences)} sequences")
+        self.logger.debug(
+            f"Created {len(batches)} optimized batches from {len(sequences)} sequences"
+        )
         return batches
 
 
 def optimize_batch_size(
     gpu_memory_gb: float,
-    model_size_gb: float
+    model_size_gb: float,
 ) -> int:
     """
     Calculate optimal batch size based on available GPU memory.
 
     Args:
+    ----
         gpu_memory_gb: Available GPU memory in GB
         model_size_gb: Model size in GB
 
     Returns:
+    -------
         Optimal batch size
     """
     # Simple heuristic: leave 20% for overhead, use rest for batching

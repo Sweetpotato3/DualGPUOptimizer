@@ -38,4 +38,4 @@ python run_direct_app.py
 
 echo.
 echo Application closed.
-pause 
+pause

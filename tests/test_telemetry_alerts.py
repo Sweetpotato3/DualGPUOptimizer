@@ -3,6 +3,7 @@ Unit tests for the telemetry alert system
 """
 
 import time
+from enum import Enum
 
 import pytest
 
@@ -13,14 +14,87 @@ try:
 except ImportError:
     TELEMETRY_AVAILABLE = False
 
-    class AlertLevel:
+    class AlertLevel(Enum):
         NORMAL = 0
         WARNING = 1
         CRITICAL = 2
         EMERGENCY = 3
 
     class GPUMetrics:
-        pass
+        def __init__(
+            self,
+            gpu_id=0,
+            name="",
+            utilization=0,
+            memory_used=0,
+            memory_total=0,
+            temperature=0,
+            power_usage=0,
+            power_limit=0,
+            fan_speed=0,
+            clock_sm=0,
+            clock_memory=0,
+            pcie_tx=0,
+            pcie_rx=0,
+            timestamp=0,
+            error_state=False,
+        ):
+            self.gpu_id = gpu_id
+            self.name = name
+            self.utilization = utilization
+            self.memory_used = memory_used
+            self.memory_total = memory_total
+            self.temperature = temperature
+            self.power_usage = power_usage
+            self.power_limit = power_limit
+            self.fan_speed = fan_speed
+            self.clock_sm = clock_sm
+            self.clock_memory = clock_memory
+            self.pcie_tx = pcie_tx
+            self.pcie_rx = pcie_rx
+            self.timestamp = timestamp
+            self.error_state = error_state
+
+        @property
+        def memory_percent(self):
+            if self.memory_total == 0:
+                return 0.0
+            return (self.memory_used / self.memory_total) * 100.0
+
+        @property
+        def power_percent(self):
+            if self.power_limit == 0:
+                return 0.0
+            return (self.power_usage / self.power_limit) * 100.0
+
+        def get_alert_level(self):
+            # Match the actual implementation in dualgpuopt/telemetry.py
+            # Start with NORMAL alert level
+            level = AlertLevel.NORMAL
+
+            # Memory usage thresholds
+            if self.memory_percent >= 95:
+                level = AlertLevel.EMERGENCY
+            elif self.memory_percent >= 90:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.memory_percent >= 75:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            # Temperature thresholds
+            if self.temperature >= 90:
+                level = AlertLevel.EMERGENCY
+            elif self.temperature >= 80:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.temperature >= 70:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            # Power usage thresholds (percentage of limit)
+            if self.power_percent >= 98:
+                level = AlertLevel.CRITICAL if level.value < AlertLevel.CRITICAL.value else level
+            elif self.power_percent >= 90:
+                level = AlertLevel.WARNING if level.value < AlertLevel.WARNING.value else level
+
+            return level
 
     class TelemetryService:
         pass

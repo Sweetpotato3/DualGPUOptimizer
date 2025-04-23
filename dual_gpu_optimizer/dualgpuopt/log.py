@@ -14,6 +14,7 @@ logging.basicConfig(
     datefmt="%H:%M:%S",
 )
 
+
 def get(name: str) -> logging.Logger:
     """Return package‑scoped logger."""
     return logging.getLogger(f"dualgpuopt.{name}")

@@ -37,7 +37,7 @@ There are two options for fixing the empty GUI issue:
    ```
    python patched_app.py
    ```
-   
+
    This standalone version contains all necessary UI components and will work without additional dependencies.
 
 ### Option 2: Fix the Original Application
@@ -52,11 +52,11 @@ If you want to fix the original application, follow these steps:
 2. Create the missing services directory structure:
    ```python
    from pathlib import Path
-   
+
    # Create services directory and basic config service
    services_dir = Path("dualgpuopt/services")
    services_dir.mkdir(exist_ok=True, parents=True)
-   
+
    # Create __init__.py
    init_file = services_dir / "__init__.py"
    if not init_file.exists():
@@ -84,4 +84,4 @@ If you want to fix the original application, follow these steps:
 
 - The patched version uses simulated data for GPU information display.
 - While functional, the patched version does not include all advanced features of the original application.
-- For a complete fix, the original dependencies need to be properly implemented. 
+- For a complete fix, the original dependencies need to be properly implemented.

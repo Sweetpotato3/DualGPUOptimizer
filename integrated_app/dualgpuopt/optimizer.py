@@ -6,31 +6,32 @@ from __future__ import annotations
 import os
 import textwrap
 from pathlib import Path
-from typing import List
 
 from dualgpuopt.gpu_info import GPU
 
 
-def split_string(gpus: List[GPU]) -> str:
+def split_string(gpus: list[GPU]) -> str:
     """Generate a comma-separated string of GPU memory sizes in GB."""
     return ",".join(str(g.mem_total_gb) for g in gpus)
 
 
-def tensor_fractions(gpus: List[GPU]) -> list[float]:
+def tensor_fractions(gpus: list[GPU]) -> list[float]:
     """Calculate tensor parallel fractions based on relative GPU memory sizes."""
     top = max(g.mem_total for g in gpus)
     return [round(g.mem_total / top, 3) for g in gpus]
 
 
-def make_env_file(gpus: List[GPU], filename: Path) -> Path:
+def make_env_file(gpus: list[GPU], filename: Path) -> Path:
     """
     Create an environment file with optimal GPU configuration.
 
     Args:
+    ----
         gpus: List of GPU objects
         filename: Path to save the environment file
 
     Returns:
+    -------
         Path to the created file
     """
     env = textwrap.dedent(
@@ -42,7 +43,7 @@ def make_env_file(gpus: List[GPU], filename: Path) -> Path:
         NCCL_NET_GDR_LEVEL=2
         OMP_NUM_THREADS={os.cpu_count()//2}
         PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-        """
+        """,
     ).strip()
     filename.write_text(env, encoding="utf-8")
     return filename
@@ -53,17 +54,16 @@ def llama_command(model_path: str, ctx: int, split: str) -> str:
     Generate command for llama.cpp with optimized parameters.
 
     Args:
+    ----
         model_path: Path to the model file
         ctx: Context size
         split: GPU memory split string
 
     Returns:
+    -------
         Formatted command string
     """
-    return (
-        f"./main -m {model_path} "
-        f"--gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}"
-    )
+    return f"./main -m {model_path} " f"--gpu-split {split} --n-gpu-layers 999 --ctx-size {ctx}"
 
 
 def vllm_command(model_path: str, tp: int) -> str:
@@ -71,10 +71,12 @@ def vllm_command(model_path: str, tp: int) -> str:
     Generate command for vLLM with optimized parameters.
 
     Args:
+    ----
         model_path: Path to the model file
         tp: Tensor parallel size (usually number of GPUs)
 
     Returns:
+    -------
         Formatted command string
     """
     return (

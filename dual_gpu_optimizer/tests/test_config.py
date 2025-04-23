@@ -29,21 +29,17 @@ def test_validate_config_theme():
 def test_validate_config_integers():
     """Test integer validation."""
     # Valid values
-    result = configio.validate_config({
-        "ctx": 32768,
-        "alert_threshold": 50,
-        "alert_duration": 120
-    })
+    result = configio.validate_config(
+        {"ctx": 32768, "alert_threshold": 50, "alert_duration": 120}
+    )
     assert result["ctx"] == 32768
     assert result["alert_threshold"] == 50
     assert result["alert_duration"] == 120
 
     # Invalid values (negative)
-    result = configio.validate_config({
-        "ctx": -1000,
-        "alert_threshold": -10,
-        "alert_duration": -50
-    })
+    result = configio.validate_config(
+        {"ctx": -1000, "alert_threshold": -10, "alert_duration": -50}
+    )
     assert result["ctx"] == configio._DEFAULT["ctx"]
     assert result["alert_threshold"] == configio._DEFAULT["alert_threshold"]
     assert result["alert_duration"] == configio._DEFAULT["alert_duration"]
@@ -70,14 +66,11 @@ def test_validate_config_monitor_interval():
 
 def test_validate_config_env_overrides():
     """Test environment overrides validation."""
-    overrides = {
-        "CUDA_VISIBLE_DEVICES": "0,1",
-        "OMP_NUM_THREADS": 8
-    }
+    overrides = {"CUDA_VISIBLE_DEVICES": "0,1", "OMP_NUM_THREADS": 8}
     result = configio.validate_config({"env_overrides": overrides})
     assert result["env_overrides"] == {
         "CUDA_VISIBLE_DEVICES": "0,1",
-        "OMP_NUM_THREADS": "8"
+        "OMP_NUM_THREADS": "8",
     }
 
     # Invalid type

@@ -2,11 +2,13 @@
 Integration code to connect the Optimizer to the UI
 """
 from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Callable, Any
+from typing import Optional
 
 # Initialize logger
 logger = logging.getLogger("DualGPUOpt.Integration")
+
 
 class OptimizerIntegration:
     """
@@ -27,6 +29,7 @@ class OptimizerIntegration:
         Update the model path
 
         Args:
+        ----
             path: Path to the model file
         """
         self.model_path = path
@@ -38,6 +41,7 @@ class OptimizerIntegration:
         Update command strings
 
         Args:
+        ----
             llama_cmd: llama.cpp command
             vllm_cmd: vLLM command
         """
@@ -60,7 +64,8 @@ class OptimizerIntegration:
         """
         Get the current llama.cpp command
 
-        Returns:
+        Returns
+        -------
             Command string for llama.cpp
         """
         return self.llama_cmd
@@ -69,7 +74,8 @@ class OptimizerIntegration:
         """
         Get the current vLLM command
 
-        Returns:
+        Returns
+        -------
             Command string for vLLM
         """
         return self.vllm_cmd
@@ -78,19 +84,23 @@ class OptimizerIntegration:
         """
         Check if the current configuration is valid
 
-        Returns:
+        Returns
+        -------
             True if the configuration is valid
         """
         return self.has_valid_config
 
+
 # Singleton instance
 _optimizer_integration: Optional[OptimizerIntegration] = None
+
 
 def get_optimizer_integration() -> OptimizerIntegration:
     """
     Get the optimizer integration singleton instance
 
-    Returns:
+    Returns
+    -------
         OptimizerIntegration instance
     """
     global _optimizer_integration

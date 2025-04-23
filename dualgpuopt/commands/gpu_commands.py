@@ -2,23 +2,26 @@
 GPU command generation for llama.cpp and vLLM
 """
 from __future__ import annotations
+
 import logging
-from typing import Dict, List, Optional, Union
+from typing import Optional
 
 logger = logging.getLogger("DualGPUOpt.Commands")
 
+
 def generate_llama_cpp_cmd(
     model_path: str,
-    gpu_split: List[float] = None,
+    gpu_split: list[float] = None,
     ctx_size: int = 4096,
     n_gpu_layers: int = -1,
     threads: int = 8,
-    additional_args: str = ""
+    additional_args: str = "",
 ) -> str:
     """
     Generate command line for llama.cpp
 
     Args:
+    ----
         model_path: Path to the model file
         gpu_split: List of GPU split ratios
         ctx_size: Context size in tokens
@@ -27,6 +30,7 @@ def generate_llama_cpp_cmd(
         additional_args: Additional command line arguments
 
     Returns:
+    -------
         Command string for llama.cpp
     """
     cmd = f"./llama.cpp -m {model_path} -c {ctx_size} -t {threads}"
@@ -46,17 +50,19 @@ def generate_llama_cpp_cmd(
     logger.info(f"Generated llama.cpp command: {cmd}")
     return cmd
 
+
 def generate_vllm_cmd(
     model_path: str,
     tensor_parallel_size: int = 2,
     max_model_len: Optional[int] = None,
     gpu_memory_utilization: float = 0.9,
-    quantization: Optional[str] = None
+    quantization: Optional[str] = None,
 ) -> str:
     """
     Generate command line for vLLM
 
     Args:
+    ----
         model_path: Path to the model
         tensor_parallel_size: Number of GPUs to use (typically 2)
         max_model_len: Maximum context length
@@ -64,6 +70,7 @@ def generate_vllm_cmd(
         quantization: Quantization mode (e.g., "awq", "sq", None)
 
     Returns:
+    -------
         Command string for vLLM
     """
     cmd = f"python -m vllm.entrypoints.openai.api_server --model {model_path}"
@@ -85,20 +92,23 @@ def generate_vllm_cmd(
     logger.info(f"Generated vLLM command: {cmd}")
     return cmd
 
-def generate_env_vars(use_tensor_parallel: bool = True) -> Dict[str, str]:
+
+def generate_env_vars(use_tensor_parallel: bool = True) -> dict[str, str]:
     """
     Generate environment variables for optimal performance
 
     Args:
+    ----
         use_tensor_parallel: Whether tensor parallelism is being used
 
     Returns:
+    -------
         Dictionary of environment variables
     """
     env_vars = {
         "CUDA_DEVICE_MAX_CONNECTIONS": "1",  # Limit connections for better tensor parallel perf
         "NCCL_P2P_DISABLE": "1" if use_tensor_parallel else "0",  # Disable P2P for TP
-        "CUDA_VISIBLE_DEVICES": "0,1"  # Use both GPUs
+        "CUDA_VISIBLE_DEVICES": "0,1",  # Use both GPUs
     }
 
     return env_vars

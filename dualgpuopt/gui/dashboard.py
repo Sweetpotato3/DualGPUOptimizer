@@ -1,18 +1,18 @@
 """
 GPU monitoring dashboard for real-time metrics visualization
 """
-import tkinter as tk
-from tkinter import ttk, messagebox
-import time
-import threading
-from typing import Dict
 import logging
+import time
+import tkinter as tk
+from tkinter import messagebox, ttk
+from typing import Dict
 
-from ..telemetry import get_telemetry_service, GPUMetrics
+from ..telemetry import GPUMetrics, get_telemetry_service
 
 # Try to import VRAM reset functionality
 try:
     from ..vram_reset import reset_vram
+
     VRAM_RESET_AVAILABLE = True
 except ImportError:
     VRAM_RESET_AVAILABLE = False
@@ -20,6 +20,7 @@ except ImportError:
 # Try to import memory profiler tab
 try:
     from .memory_profile_tab import MemoryProfileTab
+
     MEMORY_PROFILER_AVAILABLE = True
 except ImportError:
     MEMORY_PROFILER_AVAILABLE = False
@@ -32,9 +33,11 @@ class GPUMonitorFrame(ttk.Frame):
     """Frame showing metrics for a single GPU"""
 
     def __init__(self, parent, gpu_id: int, gpu_name: str):
-        """Initialize GPU monitor frame
+        """
+        Initialize GPU monitor frame
 
         Args:
+        ----
             parent: Parent widget
             gpu_id: GPU identifier
             gpu_name: GPU name to display
@@ -53,7 +56,7 @@ class GPUMonitorFrame(ttk.Frame):
             self,
             text=f"GPU {self.gpu_id}: {self.gpu_name}",
             font=("Arial", 12, "bold"),
-            style="Inner.TLabel"
+            style="Inner.TLabel",
         )
         self.header.grid(row=0, column=0, columnspan=3, sticky="w", pady=(0, 10))
 
@@ -73,11 +76,13 @@ class GPUMonitorFrame(ttk.Frame):
         for i, (name, unit, _min_val, max_val) in enumerate(metrics):
             # Create frame for this metric
             frame = ttk.Frame(self, style="Inner.TFrame")
-            frame.grid(row=i+1, column=0, columnspan=3, sticky="ew", pady=(0, 5))
+            frame.grid(row=i + 1, column=0, columnspan=3, sticky="ew", pady=(0, 5))
             self.metric_frames[name.lower()] = frame
 
             # Metric label
-            ttk.Label(frame, text=f"{name}:", width=12, anchor="e", style="Inner.TLabel").pack(side=tk.LEFT, padx=(0, 5))
+            ttk.Label(frame, text=f"{name}:", width=12, anchor="e", style="Inner.TLabel").pack(
+                side=tk.LEFT, padx=(0, 5)
+            )
 
             # Progress bar
             progress = ttk.Progressbar(frame, length=180, maximum=max_val)
@@ -85,21 +90,25 @@ class GPUMonitorFrame(ttk.Frame):
             self.progress_bars[name.lower()] = progress
 
             # Value label
-            value_label = ttk.Label(frame, text=f"0 {unit}", width=8, anchor="w", style="Inner.TLabel")
+            value_label = ttk.Label(
+                frame, text=f"0 {unit}", width=8, anchor="w", style="Inner.TLabel"
+            )
             value_label.pack(side=tk.LEFT)
             self.value_labels[name.lower()] = value_label
 
         # Additional metrics (without progress bars)
         self.clock_label = ttk.Label(self, text="Clocks: 0 MHz / 0 MHz", style="Inner.TLabel")
-        self.clock_label.grid(row=len(metrics)+1, column=0, columnspan=3, sticky="w", pady=(5, 0))
+        self.clock_label.grid(row=len(metrics) + 1, column=0, columnspan=3, sticky="w", pady=(5, 0))
 
         self.pcie_label = ttk.Label(self, text="PCIe: 0 MB/s TX, 0 MB/s RX", style="Inner.TLabel")
-        self.pcie_label.grid(row=len(metrics)+2, column=0, columnspan=3, sticky="w")
+        self.pcie_label.grid(row=len(metrics) + 2, column=0, columnspan=3, sticky="w")
 
     def update_metrics(self, metrics: GPUMetrics) -> None:
-        """Update displayed metrics
+        """
+        Update displayed metrics
 
         Args:
+        ----
             metrics: New GPU metrics to display
         """
         # Update utilization
@@ -132,14 +141,14 @@ class GPUMonitorFrame(ttk.Frame):
 
         # Update clock speeds
         self.clock_label.config(
-            text=f"Clocks: {metrics.clock_sm} MHz / {metrics.clock_memory} MHz"
+            text=f"Clocks: {metrics.clock_sm} MHz / {metrics.clock_memory} MHz",
         )
 
         # Update PCIe bandwidth
         tx_mb = metrics.pcie_tx / 1024  # Convert to MB/s
         rx_mb = metrics.pcie_rx / 1024  # Convert to MB/s
         self.pcie_label.config(
-            text=f"PCIe: {tx_mb:.1f} MB/s TX, {rx_mb:.1f} MB/s RX"
+            text=f"PCIe: {tx_mb:.1f} MB/s TX, {rx_mb:.1f} MB/s RX",
         )
 
 
@@ -147,9 +156,11 @@ class MetricsView(ttk.Frame):
     """GPU metrics dashboard frame"""
 
     def __init__(self, parent):
-        """Initialize the metrics view widget
+        """
+        Initialize the metrics view widget
 
         Args:
+        ----
             parent: Parent widget
         """
         super().__init__(parent, padding=10)
@@ -161,7 +172,7 @@ class MetricsView(ttk.Frame):
         ttk.Label(
             header_frame,
             text="GPU Metrics Monitor",
-            font=("Arial", 16, "bold")
+            font=("Arial", 16, "bold"),
         ).pack(side=tk.LEFT)
 
         # Add VRAM reset button if available
@@ -169,19 +180,21 @@ class MetricsView(ttk.Frame):
             reset_btn = ttk.Button(
                 header_frame,
                 text="Reset VRAM",
-                command=self._reset_vram
+                command=self._reset_vram,
             )
             reset_btn.pack(side=tk.RIGHT, padx=5)
 
         self.status_label = ttk.Label(
             header_frame,
             text="Status: Connecting...",
-            foreground="gray"
+            foreground="gray",
         )
         self.status_label.pack(side=tk.RIGHT)
 
         # Main content area with a background frame - helps with theming
-        content_container = ttk.LabelFrame(self, text="GPU Metrics", padding=10, style="TLabelframe")
+        content_container = ttk.LabelFrame(
+            self, text="GPU Metrics", padding=10, style="TLabelframe"
+        )
         content_container.pack(fill=tk.BOTH, expand=True)
 
         # Main content area - will hold GPU monitor frames
@@ -208,9 +221,11 @@ class MetricsView(ttk.Frame):
                 self.status_label.config(text="Status: Error", foreground="red")
 
     def _on_metrics_update(self, metrics: Dict[int, GPUMetrics]) -> None:
-        """Callback for telemetry updates
+        """
+        Callback for telemetry updates
 
         Args:
+        ----
             metrics: Dictionary of GPU ID to metrics
         """
         # Update no more than once every 100ms to avoid overwhelming the UI
@@ -227,7 +242,7 @@ class MetricsView(ttk.Frame):
                 frame = GPUMonitorFrame(
                     self.content_frame,
                     gpu_id=gpu_id,
-                    gpu_name=gpu_metrics.name
+                    gpu_name=gpu_metrics.name,
                 )
                 frame.pack(fill=tk.X, pady=(0, 10))
                 self.gpu_frames[gpu_id] = frame
@@ -248,8 +263,12 @@ class MetricsView(ttk.Frame):
             # Access the fields directly from the ResetResult object
             if result.success:
                 if result.memory_reclaimed > 0:
-                    messagebox.showinfo("VRAM Reset", f"Successfully reclaimed {result.memory_reclaimed} MB of VRAM")
-                    self.status_label.config(text=f"Status: Reclaimed {result.memory_reclaimed} MB", foreground="green")
+                    messagebox.showinfo(
+                        "VRAM Reset", f"Successfully reclaimed {result.memory_reclaimed} MB of VRAM"
+                    )
+                    self.status_label.config(
+                        text=f"Status: Reclaimed {result.memory_reclaimed} MB", foreground="green"
+                    )
                 else:
                     messagebox.showinfo("VRAM Reset", "No VRAM was reclaimed")
                     self.status_label.config(text="Status: No VRAM reclaimed", foreground="orange")
@@ -267,13 +286,15 @@ class DashboardView(ttk.Frame):
     """GPU monitoring dashboard widget with tabbed interface"""
 
     def __init__(self, parent):
-        """Initialize the dashboard widget
+        """
+        Initialize the dashboard widget
 
         Args:
+        ----
             parent: Parent widget
         """
         super().__init__(parent, padding=10)
-        
+
         # Header section
         header_frame = ttk.Frame(self)
         header_frame.pack(fill=tk.X, pady=(0, 10))
@@ -281,17 +302,17 @@ class DashboardView(ttk.Frame):
         ttk.Label(
             header_frame,
             text="GPU Monitoring Dashboard",
-            font=("Arial", 16, "bold")
+            font=("Arial", 16, "bold"),
         ).pack(side=tk.LEFT)
-        
+
         # Create notebook for tabs
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill=tk.BOTH, expand=True)
-        
+
         # Create metrics tab
         self.metrics_tab = MetricsView(self.notebook)
         self.notebook.add(self.metrics_tab, text="GPU Metrics")
-        
+
         # Create memory profiler tab if available
         if MEMORY_PROFILER_AVAILABLE:
             try:

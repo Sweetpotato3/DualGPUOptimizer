@@ -1,8 +1,8 @@
 """
 Simple script to check if the theme module files exist
 """
-import os
 from pathlib import Path
+
 
 def check_files():
     """Check if the theme module files exist"""
@@ -20,7 +20,7 @@ def check_files():
         "compatibility.py",
         "core.py",
         "compat.py",
-        "README.md"
+        "README.md",
     ]
 
     all_exist = True
@@ -43,11 +43,11 @@ def check_files():
 
             # Try to count lines with proper encoding
             try:
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, encoding="utf-8") as f:
                     line_count = sum(1 for _ in f)
                 print(f"    Lines: {line_count}")
             except UnicodeDecodeError:
-                print(f"    Lines: Could not count (encoding issue)")
+                print("    Lines: Could not count (encoding issue)")
 
         except Exception as e:
             print(f"    Error getting file stats: {e}")
@@ -59,15 +59,16 @@ def check_files():
     original_theme = base_dir / "dualgpuopt" / "gui" / "theme.py"
     if original_theme.exists():
         print("\nOriginal theme.py:")
-        print(f"  Exists: ✓")
+        print("  Exists: ✓")
         stats = original_theme.stat()
         print(f"  Size: {stats.st_size / 1024:.2f} KB")
         try:
-            with open(original_theme, 'r', encoding='utf-8') as f:
+            with open(original_theme, encoding="utf-8") as f:
                 line_count = sum(1 for _ in f)
             print(f"  Lines: {line_count}")
         except UnicodeDecodeError:
-            print(f"  Lines: Could not count (encoding issue)")
+            print("  Lines: Could not count (encoding issue)")
+
 
 if __name__ == "__main__":
     check_files()

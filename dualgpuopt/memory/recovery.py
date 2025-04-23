@@ -15,10 +15,11 @@ logger = logging.getLogger("DualGPUOpt.MemoryRecovery")
 
 class MemoryRecoveryStrategy(Enum):
     """Memory recovery strategies when approaching OOM"""
+
     REDUCE_BATCH = auto()  # Reduce batch size
-    CLEAR_CACHE = auto()   # Clear caches
-    OFFLOAD = auto()       # Offload to CPU/disk
-    TERMINATE = auto()     # Terminate low-priority processes
+    CLEAR_CACHE = auto()  # Clear caches
+    OFFLOAD = auto()  # Offload to CPU/disk
+    TERMINATE = auto()  # Terminate low-priority processes
 
 
 class RecoveryManager:
@@ -38,6 +39,7 @@ class RecoveryManager:
         Register a recovery function for the specified strategy
 
         Args:
+        ----
             strategy: Recovery strategy to register
             func: Function to call when strategy is executed
         """
@@ -49,11 +51,13 @@ class RecoveryManager:
         Execute a specific recovery strategy
 
         Args:
+        ----
             strategy: Recovery strategy to execute
             *args: Arguments to pass to the recovery function
             **kwargs: Keyword arguments to pass to the recovery function
 
         Returns:
+        -------
             True if recovery was successful, False otherwise
         """
         if strategy not in self._recovery_functions:
@@ -73,17 +77,20 @@ class RecoveryManager:
             logger.error(f"Error executing recovery strategy {strategy.name}: {e}")
             return False
 
-    def attempt_recovery(self, gpu_id: int, memory_stats: dict,
-                        strategies: Optional[list] = None) -> bool:
+    def attempt_recovery(
+        self, gpu_id: int, memory_stats: dict, strategies: Optional[list] = None
+    ) -> bool:
         """
         Attempt recovery using multiple strategies
 
         Args:
+        ----
             gpu_id: GPU device ID
             memory_stats: Current memory statistics
             strategies: List of strategies to try in order (default is all strategies)
 
         Returns:
+        -------
             True if any recovery strategy succeeded, False otherwise
         """
         if strategies is None:
@@ -92,7 +99,7 @@ class RecoveryManager:
                 MemoryRecoveryStrategy.CLEAR_CACHE,
                 MemoryRecoveryStrategy.REDUCE_BATCH,
                 MemoryRecoveryStrategy.OFFLOAD,
-                MemoryRecoveryStrategy.TERMINATE
+                MemoryRecoveryStrategy.TERMINATE,
             ]
 
         logger.warning(f"Attempting automatic memory recovery for GPU {gpu_id}")
