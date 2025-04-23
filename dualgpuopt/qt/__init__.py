@@ -75,8 +75,6 @@ def get_system_tray_manager():
 # Define __all__ to explicitly list exported components
 __all__ = [
     "DashboardTab",
-    "GPUCard",
-    "GPUChart",
     "LauncherTab",
     "main",
     "MemoryProfilerTab",
@@ -85,7 +83,7 @@ __all__ = [
     "SettingsTab",
 ]
 # Import components
-from dualgpuopt.qt.dashboard_tab import DashboardTab, GPUCard, GPUChart
+from dualgpuopt.qt.dashboard_tab import DashboardTab
 from dualgpuopt.qt.launcher_tab import LauncherTab
 
 # Import components (continued)

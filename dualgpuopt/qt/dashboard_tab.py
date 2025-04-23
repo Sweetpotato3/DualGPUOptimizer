@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from dualgpuopt.gpu_metrics import GPUMetrics
+from dualgpuopt.services.telemetry import GPUMetrics
 
 # Import telemetry
 from dualgpuopt.services.telemetry import TelemetryWorker

@@ -588,10 +588,80 @@ The system focuses on optimizing GPU resource allocation and monitoring for larg
 $END$
 END SPECIFICATION
 
-START SPECIFICATION:
+START SPECIFICATION
 ---
+
 description: Applied when documenting high-level architecture overview of the DualGPUOptimizer project, focusing on core business logic organization and key domain components
 globs: *.py,*.md,*.txt
+alwaysApply: false
+---
+
+# main-overview
+
+## Development Guidelines
+
+- Only modify code directly relevant to the specific request. Avoid changing unrelated functionality.
+- Never replace code with placeholders like `# ... rest of the processing ...`. Always include complete code.
+- Break problems into smaller steps. Think through each step separately before implementing.
+- Always provide a complete PLAN with REASONING based on evidence from code and logs before making changes.
+- Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
+
+DualGPUOptimizer implements a specialized system for managing and optimizing large language model deployment across multiple GPUs.
+
+Core Business Components:
+
+1. GPU Resource Management (dualgpuopt/gpu/monitor.py):
+
+- Real-time GPU telemetry system tracking utilization, memory, temperature
+- Implements multi-tiered alert system with specific thresholds
+- Automatic recovery strategies for GPU memory pressure
+- Historical metrics with 60-second rolling window
+
+2. Model Optimization Engine (dualgpuopt/optimizer.py):
+
+- Calculates optimal GPU memory splits for model deployment
+- Layer distribution algorithms for parallel processing
+- Context length optimization based on model architecture
+- Framework-specific command generation (llama.cpp, vLLM)
+
+3. Memory Management System (dualgpuopt/memory/monitor.py):
+
+- Predictive memory usage monitoring
+- OOM prevention through proactive resource management
+- Memory leak detection during model inference
+- Automatic recovery procedures for memory pressure
+
+4. Legal Domain Integration (dualgpuopt/rag/retrieve.py):
+
+- Specialized legal document retrieval system
+- French legal language model evaluation framework
+- Domain-specific citation generation
+- Custom relevance thresholds for legal content
+
+5. Model Execution Management (dualgpuopt/engine/pool/core.py):
+
+- Dynamic model loading/unloading with LRU caching
+- Health monitoring system with automatic recovery
+- Resource quota management across GPUs
+- Framework-specific deployment optimizations
+
+The system architecture focuses on optimizing LLM deployment across multiple GPUs while providing specialized features for legal document processing and analysis. The core value lies in intelligent resource distribution and management of GPU resources for machine learning workloads.
+
+Key Integration Points:
+
+- Telemetry system feeds into optimization engine for dynamic resource allocation
+- Memory monitoring triggers automatic recovery procedures
+- Model pool coordinates with memory management for resource optimization
+
+The implementation emphasizes reliable model deployment with automatic failover and recovery mechanisms while maintaining domain-specific optimizations for legal text processing.
+
+$END$
+END SPECIFICATION
+
+START SPECIFICATION:
+---
+description: Use this overview documentation for the core dual GPU optimization engine and related components. Applicable when documenting high-level system architecture and core business logic organization.
+globs: *.py,*.code-workspace
 alwaysApply: false
 ---
 
@@ -607,48 +677,50 @@ alwaysApply: false
 - Explain your OBSERVATIONS clearly, then provide REASONING to identify the exact issue. Add console logs when needed to gather more information.
 
 
-DualGPUOptimizer implements a specialized system for managing and optimizing large language model deployment across multiple GPUs.
+The DualGPUOptimizer implements specialized logic for optimizing large language model deployment across dual GPU configurations.
 
 Core Business Components:
 
-1. GPU Resource Management (dualgpuopt/gpu/monitor.py):
-- Real-time GPU telemetry system tracking utilization, memory, temperature
-- Implements multi-tiered alert system with specific thresholds
-- Automatic recovery strategies for GPU memory pressure
-- Historical metrics with 60-second rolling window
+1. GPU Memory Management and Telemetry
+- Real-time monitoring of GPU metrics (utilization, memory, temperature)
+- Multi-level alert classification system (EMERGENCY/CRITICAL/WARNING/NORMAL)
+- 60-second rolling history of performance metrics
+- Automatic recovery protocols for monitoring failures
+- Paths: dualgpuopt/telemetry.py, dualgpuopt/vram_reset.py
 
-2. Model Optimization Engine (dualgpuopt/optimizer.py):
-- Calculates optimal GPU memory splits for model deployment
-- Layer distribution algorithms for parallel processing
-- Context length optimization based on model architecture
+2. Memory Profiling System
+- Session-based memory tracking for inference operations
+- Memory leak detection with configurable thresholds
+- Pattern analysis using linear regression
+- Custom chunking for legal document processing
+- Paths: dualgpuopt/memory/profiler.py
+
+3. Model Optimization Engine
 - Framework-specific command generation (llama.cpp, vLLM)
+- GPU layer distribution for transformer models
+- Memory split optimization based on model architecture
+- Context length calculations with safety margins
+- Path: dualgpuopt/optimizer.py
 
-3. Memory Management System (dualgpuopt/memory/monitor.py):
-- Predictive memory usage monitoring
-- OOM prevention through proactive resource management
-- Memory leak detection during model inference
-- Automatic recovery procedures for memory pressure
+4. Recovery and Error Handling
+- Multi-strategy VRAM reset system (CACHE_ONLY/CLOCK_RESET/FULL_RESET)
+- Cross-platform memory reclamation
+- Selective GPU targeting
+- Automatic fallback mechanisms
+- Path: dualgpuopt/error_handler/recovery.py
 
-4. Legal Domain Integration (dualgpuopt/rag/retrieve.py):
-- Specialized legal document retrieval system
-- French legal language model evaluation framework
-- Domain-specific citation generation
-- Custom relevance thresholds for legal content
+5. Legal Document Processing
+- Specialized embedding index construction
+- Citation generation and formatting
+- Chunked processing with metadata preservation
+- Text truncation rules for legal documents
+- Path: dualgpuopt/rag/build_faiss.py
 
-5. Model Execution Management (dualgpuopt/engine/pool/core.py):
-- Dynamic model loading/unloading with LRU caching
-- Health monitoring system with automatic recovery
-- Resource quota management across GPUs
-- Framework-specific deployment optimizations
-
-The system architecture focuses on optimizing LLM deployment across multiple GPUs while providing specialized features for legal document processing and analysis. The core value lies in intelligent resource distribution and management of GPU resources for machine learning workloads.
-
-Key Integration Points:
-- Telemetry system feeds into optimization engine for dynamic resource allocation
-- Memory monitoring triggers automatic recovery procedures
-- Model pool coordinates with memory management for resource optimization
-
-The implementation emphasizes reliable model deployment with automatic failover and recovery mechanisms while maintaining domain-specific optimizations for legal text processing.
+Core Integration Points:
+- Memory profiling connects with telemetry for real-time monitoring
+- Recovery system interfaces with memory management
+- Optimization engine coordinates with profiling for resource allocation
+- Legal processing integrates with memory management for efficient processing
 
 $END$
 END SPECIFICATION

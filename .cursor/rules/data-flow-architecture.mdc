@@ -1,52 +1,74 @@
 ---
-description: Documents data flow between components in a dual-GPU optimization system for machine learning workloads.
-globs: **/services/**/*.py,**/telemetry/**/*.py,**/engine/**/*.py,**/memory/**/*.py
+description: Documents data flow between components in dual-GPU optimization system, including resource metrics, parameters, and monitoring data.
+globs: dualgpuopt/telemetry.py,dualgpuopt/memory/*,dualgpuopt/services/*,dualgpuopt/gui/*,dualgpuopt/engine/*
 alwaysApply: false
 ---
 
 
 # data-flow-architecture
 
-Core Data Flow Components:
+## Core Data Flow Components
 
-1. GPU Telemetry Pipeline (dualgpuopt/telemetry.py)
-- Metric Collection Flow:
-  - GPU utilization/memory/temperature/power metrics collected via NVML
-  - 60-second rolling history buffer maintained per GPU
-  - Synchronous data feed to visualization components through event bus
-  - Failover to mock data generation on hardware access failures
+### 1. GPU Telemetry Pipeline
+- Realtime metrics collection from dual GPUs via telemetry service
+- Metrics published to event bus for system-wide consumption
+- Core metrics include:
+  - GPU utilization, memory usage, temperature
+  - PCIe bandwidth (TX/RX)
+  - Clock speeds and power consumption
+- Rolling 60-second history maintained for trend analysis
 
-2. Memory Event Flow (dualgpuopt/memory/profiler.py)
-- Memory Event Processing:
-  - Capture allocation/deallocation/growth events
-  - Associate events with specific inference sessions
-  - Channel memory metrics to monitoring dashboards
-  - Feed historical data to leak detection system
+### 2. Memory Management Flow
+- Memory profiler tracks allocations/deallocations across GPUs
+- Maintains session-based memory timelines for historical analysis
+- Leak detection using linear regression analysis of memory patterns
+- Inference session tracking with start/end memory baselines
+- Anomaly detection through sliding window analysis
 
-3. Model Optimization Flow (dualgpuopt/engine/backend.py)
-- Model Processing Pipeline:
-  - Initial model format detection (.gguf, .safetensors, HF)
-  - Route to appropriate engine implementation
-  - Stream inference results through non-blocking queue
-  - Monitor engine health via status checks
+### 3. Event Bus Communication
+- Central event bus handles GPU metrics distribution
+- Priority-based event handling for critical GPU states
+- Event categories:
+  - GPU metrics updates
+  - Alert level changes (NORMAL, WARNING, CRITICAL, EMERGENCY)
+  - Configuration changes 
+  - Error states
 
-4. Cross-Component Data Exchange:
-- GPU Metrics → Memory Monitor → Optimizer
-- Model States → Engine Pool → Launch Controller
-- Memory Events → Alert System → Dashboard
-- Telemetry Data → Event Bus → UI Components
+### 4. Model Layer Distribution
+- Layer balancing algorithm calculates optimal distribution across GPUs
+- Layer assignment based on:
+  - Memory availability per GPU
+  - Layer latency profiling
+  - Workload characteristics
+- Updates distributed through model configuration events
 
-5. Resource Management Flow:
-- Engine Pool → Memory Monitor → Recovery System
-- GPU States → Optimizer → Command Generator
-- Memory Alerts → Event Bus → Status Display
+### 5. Optimization Parameter Flow
+- Command generation system processes optimization parameters:
+  - GPU split ratios
+  - Tensor parallelism configuration
+  - Memory thresholds
+  - Context lengths
+- Parameters flow through launcher to execution environment
 
-Key Integration Points:
-- Telemetry Service interfaces with NVML for hardware metrics
-- Memory Profiler feeds data to leak detection system
-- Engine Pool coordinates with Memory Monitor for resource constraints
-- Event Bus provides central nervous system for metric distribution
+### 6. Alert Propagation
+- Alert system monitors thresholds:
+  - Memory usage ≥95% or temperature ≥90°C: EMERGENCY
+  - Memory usage ≥90% or temperature ≥80°C: CRITICAL
+  - Memory usage ≥75% or temperature ≥70°C: WARNING
+- Alerts propagate through event bus to UI components
+- Enables automatic recovery procedures
 
-The architecture emphasizes reliable metric collection and distribution while maintaining system stability through graceful degradation and failover mechanisms.
+### 7. Cache Management Flow
+- Smart batch scheduler integrates with GPU cache
+- Memory pressure triggers cache clearing
+- Cache statistics flow to monitoring system
+
+### File Paths
+- dualgpuopt/telemetry.py
+- dualgpuopt/memory/profiler.py
+- dualgpuopt/services/event_bus.py
+- dualgpuopt/engine/pool/core.py
+- dualgpuopt/gpu/monitor.py
+- dualgpuopt/batch/smart_batch.py
 
 $END$

@@ -21,12 +21,14 @@ This guide will help you quickly set up and start using the DualGPUOptimizer for
 ### Method 2: From Source
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/DualGPUOptimizer.git
    cd DualGPUOptimizer
    ```
 
 2. Create a virtual environment:
+
    ```bash
    python -m venv .venv
 
@@ -38,12 +40,13 @@ This guide will help you quickly set up and start using the DualGPUOptimizer for
    ```
 
 3. Install dependencies:
+
    ```bash
    pip install -e .
 
    # Install PyTorch with CUDA support
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
-   
+
    # For Python 3.12 compatibility, install pre-release qdarktheme
    pip install --pre qdarktheme
    ```

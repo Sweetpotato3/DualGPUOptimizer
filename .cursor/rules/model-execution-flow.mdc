@@ -1,65 +1,57 @@
 ---
-description: Handles model loading, GPU allocation, execution flow and resource management for large language model inference
-globs: **/model/*.py,**/engine/*.py,**/gpu/*.py,**/optimizer*.py,**/vram*.py
+description: Specifies the model execution flow, command generation, and GPU resource allocation for LLM inference
+globs: **/engine/**,**/model/**,**/serve/**,**/commands/**,**/optimizer/**
 alwaysApply: false
 ---
 
 
 # model-execution-flow
 
-Core Model Execution Components:
+The model execution flow comprises several key components:
 
-1. Engine Pool Management (dualgpuopt/engine/pool.py)
-- Manages active model instances with LRU cache (2 model maximum)
-- Implements health monitoring with 3-failure threshold 
-- Auto-restarts failed model instances
-- Tracks performance metrics and status
-- Graceful model switching and unloading
+## Model Execution Logic
+- Framework-specific command generation for llama.cpp and vLLM backends
+- GPU memory split calculation based on model architecture and available VRAM
+- Context length optimization using KV cache requirements and safety margins
+- Dynamic batch size adjustment based on sequence lengths
+- Custom tensor parallel configuration for multi-GPU deployments
+- MoE (Mixture of Experts) model scaling with expert count adjustments
 
-2. Mixed Precision Execution (dualgpuopt/mpolicy.py)
-- FP32 precision for critical operations (LayerNorm, softmax)
-- Manages tensor parallelism across dual GPUs
-- Context-aware autocast selection
-- Adaptive gradient scaling
+File paths:
+- `dualgpuopt/optimizer.py`
+- `dualgpuopt/ctx_size.py`
 
-3. GPU Memory Split Logic (dualgpuopt/vram_reset.py)
-- Four-tier memory reset strategy:
-  * CACHE_ONLY: PyTorch cache clearing
-  * CLOCK_RESET: GPU clock manipulation
-  * FULL_RESET: Total memory reclamation
-  * SYSTEM_CMD: OS-level recovery
-- Platform-specific implementations
-- Selective device targeting
-- Memory reclamation tracking
+## Resource Allocation 
+- Optimal GPU split ratio calculations for memory distribution
+- Layer balancing algorithm for distributing model layers across GPUs
+- Per-GPU memory quotas with configurable reserve ratios
+- Profile-based memory requirements estimation
+- Automatic fallback to mock mode when hardware unavailable
+- Progressive recovery mechanisms for GPU monitoring failures
 
-4. Model Launch Workflow (dualgpuopt/optimizer.py)
-- GPU memory split optimization with model-specific ratios:
-  * 70B models: 70/30 split, 40 layers
-  * Mixtral: 60/40 split, 16 layers
-  * 13B models: 50/50 split, 20 layers
-  * Standard: Single GPU, full layers
-- Dynamic context size limits:
-  * 70B: 4096 max
-  * Mixtral: 8192 max  
-  * 13B: 12288 max
-  * Standard: 16384 max
-- Command generation for:
-  * llama.cpp deployment
-  * vLLM tensor parallel setup
+File paths:
+- `dualgpuopt/layer_balance.py`
+- `dualgpuopt/mpolicy.py`
 
-5. Smart Batch Processing (dualgpuopt/batch/smart_batch.py)
-- Length-aware batch scheduling
-- OOM recovery with 25% reduction
-- 5-batch window for stability monitoring
-- Gradual recovery up to 95% capacity
-- 16,384 token batch limit
-- 256 token sequence threshold
+## Command Generation
+- Framework-specific parameter resolution:
+  - llama.cpp: GPU split configuration and context size
+  - vLLM: Tensor parallel size and memory limits
+  - Custom environment variable generation for CUDA optimization
+- Model preset configurations for common architectures (7B, 13B, 70B)
+- Validation rules for memory requirements and context sizes
 
-File paths containing core logic:
-- dualgpuopt/engine/pool.py
-- dualgpuopt/optimizer.py 
-- dualgpuopt/vram_reset.py
-- dualgpuopt/batch/smart_batch.py
-- dualgpuopt/mpolicy.py
+File paths:
+- `dualgpuopt/commands/gpu_commands.py`
+
+## Engine Pool Management
+- LRU caching system for loaded models with configurable size limits
+- Health monitoring with automatic model reloading
+- Smart eviction policies based on memory pressure
+- Fallback to mock engines for testing/development
+- Thread-safe metrics collection for model performance
+
+File paths:
+- `dualgpuopt/engine/pool/core.py`
 
 $END$

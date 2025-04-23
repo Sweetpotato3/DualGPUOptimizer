@@ -1,62 +1,52 @@
 ---
-description: Telemetry and resource monitoring system for tracking GPU metrics, utilization, and performance alerts
-globs: 
+description: Resource monitoring, GPU metrics collection, utilization tracking, and alert mechanism implementation details
+globs: **/telemetry.py,**/tray.py,**/monitor.py,**/metrics.py
 alwaysApply: false
 ---
 
 
 # resource-monitoring-system
 
-Core Telemetry System:
+## Core Monitoring Components
 
-1. GPU Metrics Collection
-- Collects comprehensive GPU performance metrics:
-  * Utilization percentage
-  * Memory usage and allocation
-  * Temperature readings
-  * Power consumption
-  * PCIe bandwidth utilization
-  * Clock speeds (core/memory)
-  * Fan speeds
-- Maintains 60-second rolling history buffer
-- Implements exponential backoff for failed collections
+1. GPU Telemetry Manager
+- Implements real-time monitoring of dual GPU systems tracking:
+  - GPU utilization, memory, temperature, power draw
+  - PCIe bandwidth (TX/RX metrics)
+  - Clock speeds (SM and memory clocks)
+  - Fan speed control
+  - Power limit management
 
 2. Alert Classification System
-Custom alert level logic with thresholds:
-- EMERGENCY: Memory ≥95% or Temperature ≥90°C
-- CRITICAL: Memory ≥90% or Temperature ≥80°C or Power ≥98%
-- WARNING: Memory ≥75% or Temperature ≥70°C or Power ≥90%
-- NORMAL: All metrics below thresholds
+- Custom alerting with thresholds:
+  - EMERGENCY: Memory ≥95% or temp ≥90°C
+  - CRITICAL: Memory ≥90% or temp ≥80°C or power ≥98%
+  - WARNING: Memory ≥75% or temp ≥70°C or power ≥90%
+  - NORMAL: Below threshold metrics
 
-3. Memory Profiling
-- Specialized memory event classification:
-  * Allocation/deallocation tracking
-  * Growth spike detection
-  * Potential leak identification
-  * Inference session monitoring
-- Token-aware memory analysis for ML workloads
-- Session-based metrics aggregation
+3. Metrics History Management
+- Maintains 60-second rolling history for key metrics:
+  - Per-GPU performance metrics
+  - Aggregate system metrics
+  - Moving averages (utilization, memory, temperature)
+  - Historical trending analysis
 
-4. Recovery System
-Progressive recovery strategy for monitoring failures:
-- Exponential backoff between retries
-- NVML reinitialization attempts
-- Fallback to mock data generation
-- Service continuity preservation
+4. GPU Recovery Protocol
+- Progressive recovery mechanism:
+  - Exponential backoff between attempts 
+  - Maximum 3 recovery attempts
+  - Fallback to mock data after failures
+  - Telemetry preservation during recovery
 
-5. Mock Data Generation
-Simulates realistic GPU behavior:
-- High-end GPU profile (24GB, 350W)
-- Mid-range GPU profile (12GB, 200W)
-- Correlated metrics generation:
-  * Utilization affects temperature
-  * Load impacts power draw
-  * Memory usage patterns
-  * Fan speed response
+## Relevant File Paths
+- `dualgpuopt/telemetry.py`
+- `dualgpuopt/memory/monitor.py`
+- `dualgpuopt/telemetry_history.py`
 
-Key Files:
-- dualgpuopt/telemetry.py
-- dualgpuopt/memory/profiler.py
-- dualgpuopt/telemetry_history.py
+## Importance Scores
+- GPU Telemetry Manager: 95
+- Alert Classification System: 90  
+- Metrics History Management: 85
+- GPU Recovery Protocol: 80
 
 $END$

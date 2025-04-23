@@ -6,7 +6,7 @@ Welcome to the DualGPUOptimizer documentation. This directory contains detailed 
 
 - Python 3.8 or higher (Python 3.12 fully supported)
 - NVIDIA GPUs with CUDA support
-- PySide6 ≥ 6.6 (tested on 6.8) for the Qt-based GUI 
+- PySide6 ≥ 6.6 (tested on 6.8) for the Qt-based GUI
 
 ## Available Documentation
 
@@ -25,13 +25,13 @@ The DualGPUOptimizer is built around several key concepts:
 
 ## Main Components
 
-| Component | Description |
-|-----------|-------------|
-| Model Profiles | Standardized memory consumption patterns for ML models |
-| GPU Telemetry | Real-time monitoring of GPU metrics |
-| Optimization Engine | Algorithms for optimal resource allocation |
-| Launcher | Execution management for inference processes |
-| Dashboard | Visual monitoring of GPU performance |
+| Component           | Description                                            |
+| ------------------- | ------------------------------------------------------ |
+| Model Profiles      | Standardized memory consumption patterns for ML models |
+| GPU Telemetry       | Real-time monitoring of GPU metrics                    |
+| Optimization Engine | Algorithms for optimal resource allocation             |
+| Launcher            | Execution management for inference processes           |
+| Dashboard           | Visual monitoring of GPU performance                   |
 
 ## Project Structure
 

@@ -1,11 +1,12 @@
 """
 Application settings component for the DualGPUOptimizer.
 """
+
 from __future__ import annotations
 
+import logging
 import tkinter as tk
 from tkinter import ttk
-import logging
 from typing import Callable, Optional
 
 # Try to import ttkbootstrap components

@@ -47,30 +47,35 @@ The Engine Pool makes it possible to instantly switch between different models a
 The Engine Pool system has been enhanced with several critical improvements:
 
 #### Enhanced Thread Safety
+
 - **Lock-Free Health Checks**: Health verification occurs outside critical sections to prevent blocking
 - **Careful Lock Hierarchy**: Avoids deadlocks when checking model health during eviction
 - **Thread-Local Metrics Updates**: Lock isolation for statistical updates from health checks
 - **Atomic Operations**: Where appropriate, atomic counters replace lock-guarded integers
 
 #### Improved Cache Management
+
 - **Real-Time Cache Monitor**: New Qt dock widget visualizes current model caching status
 - **Manual Eviction Controls**: Directly evict specific models from the UI when needed
 - **Auto-Refreshing View**: Automatically updates every 2.5 seconds with current cache state
 - **Leak Prevention**: Proper widget cleanup to prevent memory leaks during refreshes
 
 #### Robust Error Handling
+
 - **Global Exception Dialog**: System-wide exception handler catches and displays errors in dialogs
 - **Health-Based Recovery**: Automatic unloading and reloading of unhealthy models
 - **Progressive Fault Tolerance**: Models are only restarted after multiple consecutive failures
 - **Graceful Application Exit**: Proper cleanup of all resources during shutdown
 
 #### Performance Tracking
+
 - **WAL-Mode Database**: Thread-safe SQLite database using Write-Ahead Logging
 - **Connection Pooling**: Single global connection with proper locking
 - **Benchmark History**: Tracks model performance metrics across sessions
 - **Safe Label Handling**: Prometheus metrics use sanitized model names as labels
 
 #### Production-Grade Metrics
+
 - **Conditional Prometheus Server**: Only starts when explicitly enabled via environment variable
 - **Clean Label Handling**: Sanitizes and truncates model paths for metric labels
 - **Delta-Based Updates**: Efficient counter updates tracking only changes
