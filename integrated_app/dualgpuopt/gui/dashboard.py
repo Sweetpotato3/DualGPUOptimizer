@@ -99,7 +99,7 @@ class GPUDashboard(ttk.Frame):
             self.gpu_data.clear()
 
             # Create frames for each GPU
-            for i, gpu in enumerate(gpus):
+            for __i, gpu in enumerate(gpus):
                 self._create_gpu_frame(gpu)
 
             if not gpus:

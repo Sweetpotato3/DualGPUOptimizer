@@ -1,11 +1,14 @@
 """
 FastAPI server for legal LLM model with RAG integration.
 """
+
 import asyncio
 import logging
 import os
 import secrets
 import time
+import json
+import faiss
 from functools import lru_cache
 from typing import Any, Dict, Generator, List, Optional
 
@@ -35,8 +38,9 @@ logger = logging.getLogger(__name__)
 
 # Load environment variables
 API_KEY = os.getenv("LEGAL_API_KEY", "dev_key")  # Default for development
-MODEL_PATH = os.getenv("LEGAL_MODEL", "models/qc_legal")
-INDEX_PATH = os.getenv("FAISS_INDEX", "rag/qc.faiss")
+MODEL_PATH = os.getenv("LEGAL_MODEL", "checkpoints/legal-lora/full")
+INDEX_PATH = os.getenv("FAISS_INDEX", "datasets/faiss_qc/index.bin")
+META_PATH = os.getenv("FAISS_META", "datasets/faiss_qc/meta.json")
 ENABLE_RAG = os.getenv("ENABLE_RAG", "true").lower() in ("true", "1", "t", "yes")
 MAX_TOKENS = int(os.getenv("MAX_TOKENS", "512"))
 MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", "2048"))
@@ -51,6 +55,19 @@ TOKEN_EXPIRY = 86400  # 24 hours in seconds
 api_tokens = {}  # token -> expiry_timestamp
 rate_limits = {}  # token -> [(timestamp, count), ...]
 
+# Initialize FAISS index if RAG is enabled
+IDX = None
+DOCS = None
+if ENABLE_RAG:
+    try:
+        logger.info(f"Loading FAISS index from {INDEX_PATH}")
+        IDX = faiss.read_index(INDEX_PATH)
+        DOCS = json.loads(open(META_PATH).read())
+        logger.info(f"Loaded {len(DOCS)} documents in FAISS index")
+    except Exception as e:
+        logger.error(f"Error loading FAISS index: {e}")
+        ENABLE_RAG = False
+
 
 # Models
 class ChatRequest(BaseModel):
@@ -61,6 +78,7 @@ class ChatRequest(BaseModel):
     max_tokens: Optional[int] = Field(None, description="Maximum number of tokens to generate")
     temperature: Optional[float] = Field(0.7, description="Temperature for generation")
     model_params: Optional[Dict[str, Any]] = Field(None, description="Additional model parameters")
+    session_id: Optional[str] = Field(None, description="Session ID for tracking conversations")
 
 
 class TokenRequest(BaseModel):
@@ -79,7 +97,7 @@ class TokenResponse(BaseModel):
 
 # Create FastAPI app
 app = FastAPI(
-    title="Legal API",
+    title="QC Legal Assistant",
     description="Legal LLM API with RAG capabilities",
     version="1.0.0",
 )
@@ -147,6 +165,33 @@ def check_rate_limit(token: str = Depends(verify_token)) -> str:
 # Helper functions
 # -----------------------------------------------------------------------------
 
+def rag(prompt: str, k=3) -> str:
+    """
+    Perform RAG (Retrieval-Augmented Generation) using FAISS index.
+    
+    Args:
+        prompt: The user query to find relevant documents for
+        k: Number of documents to retrieve
+        
+    Returns:
+        Formatted context with citations
+    """
+    # Skip if RAG is disabled or index not loaded
+    if not ENABLE_RAG or IDX is None or DOCS is None:
+        return None
+        
+    try:
+        # very simple cosine search
+        import sentence_transformers
+        embedder = sentence_transformers.SentenceTransformer("all-MiniLM-L6-v2")
+        v = embedder.encode([prompt])
+        D, I = IDX.search(v, k)
+        cites = "\n".join(f"[{i}] {DOCS[i]['url']} – {DOCS[i]['excerpt']}" for i in I[0])
+        return f"{cites}\n\nQuestion: {prompt}"
+    except Exception as e:
+        logger.error(f"Error in RAG retrieval: {e}")
+        return None
+
 
 @lru_cache(maxsize=100)
 def get_template() -> str:
@@ -192,7 +237,7 @@ def format_prompt(query: str, context: List[str] = None) -> str:
     return template.format(prompt=query, context=context_text)
 
 
-async def stream_generator(prompt: str, max_tokens: int) -> Generator[str, None, None]:
+async def stream_generator(prompt: str, max_tokens: int, temperature: float = 0.7) -> Generator[str, None, None]:
     """Generate streaming response tokens."""
     if not engine:
         yield "Erreur: Le modèle n'est pas disponible. Veuillez réessayer plus tard."
@@ -200,10 +245,10 @@ async def stream_generator(prompt: str, max_tokens: int) -> Generator[str, None,
 
     try:
         # Stream tokens from the model
-        for token in engine.stream(prompt, max_tokens=max_tokens):
+        for token in engine.stream(prompt, max_tokens=max_tokens, temperature=temperature):
             yield token
             # Small delay to avoid overwhelming the client
-            await asyncio.sleep(0.01)
+            await asyncio.sleep(0.005)
     except Exception as e:
         logger.error(f"Error streaming response: {e}")
         yield f"\nErreur pendant la génération: {e!s}"
@@ -233,22 +278,16 @@ async def create_token(request: TokenRequest) -> TokenResponse:
     return TokenResponse(token=token, expires_at=expires_at)
 
 
-@app.post("/api/chat")
-async def chat(
-    request: ChatRequest,
-    token: str = Depends(check_rate_limit),
-) -> StreamingResponse:
+@app.post("/chat", dependencies=[Depends(check_rate_limit)])
+async def chat(request: ChatRequest):
     """
     Chat endpoint with RAG support and streaming response.
-
+    
     Args:
-    ----
         request: Chat request with prompt and parameters
-        token: API token (injected by dependency)
-
+        
     Returns:
-    -------
-        Streaming response with generated text
+        Streaming response with generated text in Server-Sent Events format
     """
     # Check if model is available
     if not engine:
@@ -258,46 +297,38 @@ async def chat(
     logger.info(f"Received chat request: {request.prompt[:50]}...")
 
     try:
-        # Retrieve relevant documents if RAG is enabled
-        context = []
-        if request.use_rag and ENABLE_RAG and retrieve:
-            logger.info("Using RAG for retrieval")
-
-            # Get RAG parameters from request if provided
-            k = request.model_params.get("rag_k", 3) if request.model_params else 3
-            threshold = (
-                request.model_params.get("rag_threshold", 0.6) if request.model_params else 0.6
-            )
-
-            context = retrieve.top_k(
-                request.prompt,
-                k=k,
-                threshold=threshold,
-                index_path=INDEX_PATH,
-            )
-            logger.info(f"Retrieved {len(context)} documents")
-        elif request.use_rag and not ENABLE_RAG:
-            # Graceful degradation when RAG is requested but disabled
-            logger.warning("RAG requested but disabled on server")
-            context = [
-                "Note: La recherche contextuelle (RAG) a été demandée mais est désactivée sur le serveur."
-            ]
-
+        # Get context from RAG if enabled
+        context = None
+        if request.use_rag and ENABLE_RAG:
+            context = rag(request.prompt)
+            if context:
+                logger.info("Retrieved context from FAISS")
+        
         # Format the prompt with context
-        formatted_prompt = format_prompt(request.prompt, context)
-
+        prompt = format_prompt(request.prompt, context and [context])
+        
         # Set max tokens
-        max_tokens = request.max_tokens or MAX_TOKENS
-
-        # Create streaming response
-        return StreamingResponse(
-            stream_generator(formatted_prompt, max_tokens),
-            media_type="text/plain",
-        )
+        max_tokens = min(request.max_tokens or MAX_TOKENS, MAX_TOKENS)
+        
+        # Create streaming response with SSE format
+        async def _gen():
+            for tok in engine.stream(prompt, max_tokens=max_tokens, 
+                                    temperature=request.temperature or 0.7):
+                yield f"data: {tok}\n\n"
+                await asyncio.sleep(0.005)
+                
+        return StreamingResponse(_gen(), media_type="text/event-stream")
 
     except Exception as e:
         logger.error(f"Error processing chat request: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e)) from e
+
+
+# Keep legacy API path for backward compatibility
+@app.post("/api/chat")
+async def api_chat(request: ChatRequest, token: str = Depends(check_rate_limit)):
+    """Legacy API endpoint that redirects to the main chat endpoint."""
+    return await chat(request)
 
 
 @app.get("/api/health")
@@ -307,6 +338,7 @@ async def health_check() -> Dict[str, Any]:
         "status": "ok" if engine else "unavailable",
         "model": MODEL_PATH,
         "rag_enabled": ENABLE_RAG,
+        "faiss_documents": len(DOCS) if DOCS else 0,
         "timestamp": time.time(),
     }
 
@@ -321,6 +353,7 @@ if os.getenv("ENVIRONMENT", "development") == "development":
         expires_at = int(time.time() + TOKEN_EXPIRY)
         api_tokens[token] = expires_at
         return TokenResponse(token=token, expires_at=expires_at)
+
 
 # -----------------------------------------------------------------------------
 # Startup and shutdown events
@@ -359,7 +392,7 @@ if __name__ == "__main__":
     import uvicorn
 
     # Get port from environment or use default
-    port = int(os.getenv("PORT", "8080"))
+    port = int(os.getenv("PORT", "8009"))
 
     # Run server
     uvicorn.run(

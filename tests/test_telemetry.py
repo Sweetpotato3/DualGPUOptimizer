@@ -777,11 +777,11 @@ class TestTelemetryService:
                         > telemetry_service._history_length
                     ):
                         # Keep only the last _history_length entries
-                        telemetry_service._metrics_history[
-                            gpu_id
-                        ] = telemetry_service._metrics_history[gpu_id][
-                            -telemetry_service._history_length :
-                        ]
+                        telemetry_service._metrics_history[gpu_id] = (
+                            telemetry_service._metrics_history[gpu_id][
+                                -telemetry_service._history_length :
+                            ]
+                        )
 
             # Call process_metrics_update
             telemetry_service._process_metrics_update(batch_metrics)

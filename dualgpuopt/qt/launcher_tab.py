@@ -4,17 +4,11 @@ Provides an interface for launching and managing model execution.
 """
 
 import logging
-import os
-import subprocess
-import sys
-import time
-from pathlib import Path
 from typing import Any, Dict, Optional
 
 from PySide6.QtCore import QProcess, QTimer, Signal, Slot
 from PySide6.QtGui import QFont, QIcon, QTextCursor
 from PySide6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QFileDialog,
     QFormLayout,
@@ -32,11 +26,9 @@ from PySide6.QtWidgets import (
 )
 
 # Import shared constants
-from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE
 
 from dualgpuopt.engine.backend import Engine
 from dualgpuopt.services.presets import PresetManager
-from dualgpuopt.engine.pool import EnginePool
 
 logger = logging.getLogger("DualGPUOptimizer.Launcher")
 

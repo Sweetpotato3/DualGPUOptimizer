@@ -5,16 +5,14 @@ Provides quick access to application features from system tray.
 
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from PySide6.QtCore import QObject, QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QIcon, QPixmap
-from PySide6.QtWidgets import QAction, QMenu, QSystemTrayIcon, QMessageBox
+from PySide6.QtWidgets import QAction, QMenu, QSystemTrayIcon
 
 # Import shared constants
-from dualgpuopt.qt.shared_constants import PRODUCT_NAME
 
-from dualgpuopt.services.config_service import get_config_service
 
 logger = logging.getLogger("DualGPUOptimizer")
 

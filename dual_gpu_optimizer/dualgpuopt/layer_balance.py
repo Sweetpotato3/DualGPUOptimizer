@@ -9,7 +9,9 @@ Key routine
 ``rebalance(model, gpu_info, warm_input)``  →  dict device_map
 """
 from __future__ import annotations
-import json, pathlib, time
+import json
+import pathlib
+import time
 from typing import Any, Dict, List
 from dualgpuopt.log import get as _log
 

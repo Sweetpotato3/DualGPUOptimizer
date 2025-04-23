@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
 )
 
 # Import shared constants
-from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE, GPU_COLORS
 
 # Try to import matplotlib for visualization
 try:
@@ -1112,8 +1111,8 @@ class MemoryStatsPanel(QFrame):
 
             # Get peak memory values
             peak_memory = self.stats.get("peak_memory", {})
-            avg_memory = self.stats.get("avg_memory", {})
-            duration = self.stats.get("duration", 0)
+            self.stats.get("avg_memory", {})
+            self.stats.get("duration", 0)
             inference_count = self.stats.get("inference_count", 0)
 
             # Analyze memory usage patterns

@@ -1,23 +1,27 @@
-import json
-import re
-import sys
+from __future__ import annotations
+import re, html, bs4
 from pathlib import Path
 
-from bs4 import BeautifulSoup
+SCRIPT_STYLE = ("script", "style", "noscript")
 
-
-def clean_file(fp: Path) -> str:
-    soup = BeautifulSoup(fp.read_text(encoding="utf-8"), "lxml")
-    for tag in soup(["script", "style", "header", "footer", "nav"]):
+def clean_html(raw: str) -> str:
+    soup = bs4.BeautifulSoup(raw, "lxml")
+    for tag in soup(SCRIPT_STYLE):
         tag.decompose()
-    text = re.sub(r"\s+", " ", soup.get_text(" ", strip=True))
+    text = soup.get_text(separator="\n")
+    text = html.unescape(text)
+    text = re.sub(r"\n{2,}", "\n", text)          # collapse blank lines
+    text = re.sub(r"[ \t]+", " ", text).strip()
     return text
 
+def clean_file(path: Path) -> str:
+    return clean_html(path.read_text(encoding="utf-8", errors="ignore"))
 
 if __name__ == "__main__":
-    raw_dir, out = Path(sys.argv[1]), Path(sys.argv[2])
-    out.open("w").write("")
-    with out.open("a", encoding="utf-8") as fh:
-        for fp in raw_dir.rglob("*.htm*"):
-            txt = clean_file(fp)
-            fh.write(json.dumps({"text": txt}, ensure_ascii=False) + "\n")
+    import sys, json
+    root = Path(sys.argv[1])
+    out  = Path(sys.argv[2])
+    out.open("w").write(
+        "\n".join(json.dumps({"text": clean_file(p)})
+                  for p in root.rglob("*.html"))
+    )

@@ -1,10 +1,11 @@
-.PHONY: test test-unit test-integration test-functional test-all test-coverage clean lint format help
+.PHONY: test test-unit test-integration test-functional test-all test-coverage clean lint format help ingest train eval serve
 
 # Variables
 PYTHON := python
 PYTEST := pytest
 PYTEST_ARGS := -v
 COVERAGE_THRESHOLD := 70
+PY := python -m
 
 help:
 	@echo "Available targets:"
@@ -17,6 +18,10 @@ help:
 	@echo "  clean             Remove temp files and artifacts"
 	@echo "  lint              Run linting checks"
 	@echo "  format            Format code with black"
+	@echo "  ingest            Clean and tokenize HTML files"
+	@echo "  train             Train a model"
+	@echo "  eval              Evaluate the model"
+	@echo "  serve             Serve the model"
 
 test: test-unit
 
@@ -64,3 +69,18 @@ install:
 
 # Default target
 .DEFAULT_GOAL := help
+
+ingest:
+	$(PY) ingest.clean_html datasets/raw_qc datasets/legal_clean.jsonl
+	$(PY) datasets.qc_tokeniser
+
+train:
+	$(PY) scripts.train_qlora --base_model mistralai/Mistral-7B-Instruct \
+	   --dataset_path datasets/legal_clean.jsonl \
+	   --output_dir checkpoints/legal-lora
+
+eval:
+	pytest -q tests/test_lexglue_fr.py
+
+serve:
+	$(PY) serve.legal_api

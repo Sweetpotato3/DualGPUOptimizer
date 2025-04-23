@@ -26,7 +26,6 @@ from PySide6.QtWidgets import (
 )
 
 # Import shared constants
-from dualgpuopt.qt.shared_constants import PAD, DEFAULT_FONT, DEFAULT_FONT_SIZE
 
 from dualgpuopt.engine.pool import EnginePool
 from dualgpuopt.gpu.info import query as gpu_query

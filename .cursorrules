@@ -610,43 +610,48 @@ alwaysApply: false
 DualGPUOptimizer implements specialized GPU resource optimization and monitoring focused on:
 
 1. GPU Memory Management System
+
 - GPU telemetry collection with alert thresholds:
-  * EMERGENCY: Memory ≥95%, Temperature ≥90°C
-  * CRITICAL: Memory ≥90%, Temperature ≥80°C
-  * WARNING: Memory ≥75%, Temperature ≥70°C
+  - EMERGENCY: Memory ≥95%, Temperature ≥90°C
+  - CRITICAL: Memory ≥90%, Temperature ≥80°C
+  - WARNING: Memory ≥75%, Temperature ≥70°C
 - Memory leak detection with:
-  * Rapid growth spike detection
-  * Gradual leak monitoring
-  * Custom cooldown periods
+  - Rapid growth spike detection
+  - Gradual leak monitoring
+  - Custom cooldown periods
 - Historical metrics tracking with 60-second rolling window
 
 2. Model Optimization Engine
+
 - Layer balancing across dual GPUs:
-  * Performance profiling at different sequence lengths
-  * Utilization-based distribution with memory quotas
-  * Tensor parallelism configuration
+  - Performance profiling at different sequence lengths
+  - Utilization-based distribution with memory quotas
+  - Tensor parallelism configuration
 - Memory prediction and allocation:
-  * Model size estimation from architecture
-  * Context length optimization
-  * Batch size autotuning
+  - Model size estimation from architecture
+  - Context length optimization
+  - Batch size autotuning
 
 3. Telemetry and Monitoring
+
 - Real-time GPU metrics collection:
-  * Utilization rates
-  * Memory pressure
-  * Temperature monitoring
-  * Power consumption
-  * PCIe bandwidth
+  - Utilization rates
+  - Memory pressure
+  - Temperature monitoring
+  - Power consumption
+  - PCIe bandwidth
 - Metrics visualization and alerting
 
 4. Recovery System
+
 - Progressive recovery strategy:
-  * CACHE_ONLY: PyTorch cache clearing
-  * CLOCK_RESET: GPU clock configuration reset
-  * FULL_RESET: Complete memory reclamation
-  * SYSTEM_CMD: OS-specific memory management
+  - CACHE_ONLY: PyTorch cache clearing
+  - CLOCK_RESET: GPU clock configuration reset
+  - FULL_RESET: Complete memory reclamation
+  - SYSTEM_CMD: OS-specific memory management
 
 Core Business Components:
+
 - Memory profiling: `dualgpuopt/memory/profiler.py`
 - GPU telemetry: `dualgpuopt/telemetry.py`
 - Layer balancing: `dualgpuopt/layer_balance.py`

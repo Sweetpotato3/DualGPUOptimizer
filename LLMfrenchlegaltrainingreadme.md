@@ -4,13 +4,15 @@
 
 ---
 
-### 1  Executive summary
+###  1  Executive summary
 *The infrastructure is 80 % ready.* You already have:
+
 * One‑click model download/quantise/fit‑plan → **VRAM, RAM, SSD spill** safeguards.
 * **EnginePool** with watchdog, hot‑reload and Prometheus metrics.
 * GUI Model Manager + Prometheus dashboard.
 
 **Missing pieces (this doc provides code for all):**
+
 1. Data ingest & cleaning from LégisQuébec + CanLII (FR).
 2. Custom SentencePiece tokenizer (Fr‑QC legal variant).
 3. QLoRA fine‑tune wrapper + adaptive batch hooks.
@@ -22,7 +24,8 @@ Implementation fits on a single A100 40 GB *or* your dual 8 GB PC (using Lo
 
 ---
 
-### 2  Directory layout
+###  2  Directory layout
+
 ```
 dualgpuopt/
 ├─ ingest/
@@ -50,8 +53,9 @@ dualgpuopt/
 
 ---
 
-### 3  Code snippets
-#### 3.1 ingest/clean_html.py
+###  3  Code snippets
+####  3.1 ingest/clean_html.py
+
 ```python
 from bs4 import BeautifulSoup, NavigableString
 from pathlib import Path
@@ -72,7 +76,8 @@ if __name__ == "__main__":
             fh.write(json.dumps({'text': txt}, ensure_ascii=False)+'\n')
 ```
 
-#### 3.2 tokenizer/train_spm.py
+####  3.2 tokenizer/train_spm.py
+
 ```python
 import sentencepiece as spm, sys, pathlib, json
 
@@ -87,7 +92,8 @@ spm.SentencePieceTrainer.train(input=str(texts), model_prefix=model_prefix,
                               model_type='bpe', user_defined_symbols=['<art>', '<al>'])
 ```
 
-#### 3.3 train/train_qlora.py
+####  3.3 train/train_qlora.py
+
 ```python
 """QLoRA wrapper using HF PEFT + your adaptive batch callbacks."""
 from __future__ import annotations
@@ -121,7 +127,8 @@ trainer.train()
 model.save_pretrained(conf['out']+'/merged')
 ```
 
-#### 3.4 eval/lexglue_fr.py
+####  3.4 eval/lexglue_fr.py
+
 ```python
 from datasets import load_dataset
 from transformers import pipeline, AutoTokenizer, AutoModelForSequenceClassification
@@ -137,7 +144,8 @@ for ex in lex:
 print(json.dumps({'acc': correct/len(lex)}, indent=2))
 ```
 
-#### 3.5 rag/build_faiss.py
+####  3.5 rag/build_faiss.py
+
 ```python
 import faiss, json, sys, SentenceTransformers, pathlib
 model = SentenceTransformers.SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
@@ -149,7 +157,8 @@ for line in pathlib.Path(sys.argv[1]).read_text().splitlines():
 faiss.write_index(index, sys.argv[2]); json.dump(texts, open(sys.argv[2]+'.meta','w'))
 ```
 
-#### 3.6 serve/legal_api.py
+####  3.6 serve/legal_api.py
+
 ```python
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.responses import StreamingResponse
@@ -177,7 +186,8 @@ if __name__ == '__main__': uvicorn.run(app, host='0.0.0.0', port=8080)
 
 ---
 
-### 4  presets.yml (example A100)
+###  4  presets.yml (example A100)
+
 ```yaml
 a100_bf16_large:
   base_model: mistralai/Mistral-7B-Instruct-v0.2
@@ -193,7 +203,8 @@ a100_bf16_large:
 
 ---
 
-### 5  Integration steps
+###  5  Integration steps
+
 1. **Run Operator tasks** in `ingest/operator_tasks/*` to crawl statutes & CanLII FR.
 2. `python ingest/clean_html.py corpora/qc_statutes/raw datasets/qc_legal_clean.jsonl`.
 3. `python tokenizer/train_spm.py datasets/qc_legal_clean.jsonl tokenizer_frqc`.
@@ -206,7 +217,8 @@ Prometheus & GUI will automatically pick up training, evaluation and serving met
 
 ---
 
-### 6  Security / legal compliance checklist
+###  6  Security / legal compliance checklist
+
 * Train only on public‑domain content (LégisQuébec, CanLII, Gazette).
 * Cite URLs & article numbers in every answer (`retrieve.top_k`).
 * API key + rate limit middleware guards inference endpoint.
@@ -216,12 +228,12 @@ Prometheus & GUI will automatically pick up training, evaluation and serving met
 
 > **Deliverable:** After following the steps above you will have a Québec‑French legal LLM fine‑tuned on public‑domain law, running locally (or on an A100) with RAG citations and an authenticated REST endpoint for your website.
 
-
 ---
 
-### IDE Integration (Cursor‑VS Code)
+###  IDE Integration (Cursor‑VS Code)
 
 > **First task for the agent:** **Generate the full folder structure** exactly as shown below if it does not already exist.
+
 ```
 dualgpuopt/
 ├─ engine/
@@ -249,6 +261,7 @@ dualgpuopt/
    ├─ test_backend_flags.py
    └─ test_hf_download_checksum.py
 ```
+
 *Create directories (`mkdir -p`) and stub `__init__.py` files where needed.*
 
  (Cursor‑VS Code)
@@ -256,6 +269,7 @@ dualgpuopt/
 > **Goal:** make the autonomous agent understand exactly *where* to put each file, how to run scripts, and how to hook live telemetry while coding.
 
 1. **Project checkout**
+
    ```bash
    git clone https://github.com/your‑org/dualgpuopt.git
    code dualgpuopt   # opens in VS Code / Cursor
@@ -268,6 +282,7 @@ dualgpuopt/
 
 3. **Cursor tasks**
    Add to `.vscode/tasks.json` (Cursor understands native tasks):
+
    ```json
    {
       "label": "pytest",
@@ -287,16 +302,19 @@ dualgpuopt/
 
 4. **File‑watcher for Operator dumps**
    In `.vscode/settings.json` add:
+
    ```json
    "files.watcherExclude": {
       "**/corpora/qc_statutes/raw/**": true,
       "**/datasets/**": false
    }
    ```
+
    → prevents the raw HTML dump from overloading the TS/JS watcher.
 
 5. **Run & debug configuration**
    `.vscode/launch.json` entry to attach to FastAPI server:
+
    ```json
    {
       "name": "FastAPI",
@@ -323,9 +341,10 @@ dualgpuopt/
 
 8. **One‑shot bootstrap**
    Add a `Makefile` target so the agent can call `make setup`:
+
    ```makefile
    setup:
-   	python -m pip install -e .[dev,train]
-   	pre-commit install
-   	cursor trust
+    python -m pip install -e .[dev,train]
+    pre-commit install
+    cursor trust
    ```

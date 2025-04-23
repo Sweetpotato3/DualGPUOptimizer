@@ -4,12 +4,12 @@ jobs:
   lint-test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-python@v5
-      with: {python-version: '3.12'}
-    - run: pip install -r dualgpuopt/requirements_legal.txt pytest coverage ruff black mypy pytest-env
-    - run: ruff check .
-    - run: black --check .
-    - run: mypy dualgpuopt
-    - run: coverage run -m pytest
-    - run: coverage html
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r dualgpuopt/requirements_legal.txt pytest coverage ruff black mypy pytest-env
+      - run: ruff check .
+      - run: black --check .
+      - run: mypy dualgpuopt
+      - run: coverage run -m pytest
+      - run: coverage html
