@@ -22,6 +22,6 @@ GPU_COLORS = {
     2: "#ec407a",  # Pink accent
     3: "#42a5f5",  # Blue accent
     "memory": "#ec407a",  # Pink for memory
-    "temp": "#ff9800",    # Orange for temperature
-    "power": "#26a69a",   # Teal for power
-} 
+    "temp": "#ff9800",  # Orange for temperature
+    "power": "#26a69a",  # Teal for power
+}
