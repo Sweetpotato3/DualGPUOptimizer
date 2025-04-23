@@ -43,6 +43,9 @@ This guide will help you quickly set up and start using the DualGPUOptimizer for
 
    # Install PyTorch with CUDA support
    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+   
+   # For Python 3.12 compatibility, install pre-release qdarktheme
+   pip install --pre qdarktheme
    ```
 
 4. Launch the application:

@@ -5,7 +5,7 @@ numpy>=1.24.0   # For optimization algorithms
 
 # GUI dependencies
 PySide6>=6.6,<6.10  # 6.8.3 tested with Python 3.12
-qdarktheme>=1.3
+qdarktheme>=1.3.0rc3          # pre-release supports PySide6 6.8 & Python 3.12
 deepdiff>=6.0
 
 # UI enhancements (legacy - being phased out)

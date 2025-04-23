@@ -8,6 +8,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r dualgpuopt/requirements_legal.txt pytest coverage ruff black mypy pytest-env
+      - run: pip install --pre qdarktheme
       - run: ruff check .
       - run: black --check .
       - run: mypy dualgpuopt
